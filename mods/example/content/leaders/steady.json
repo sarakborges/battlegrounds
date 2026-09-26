@@ -2,5 +2,6 @@
   "id": "steady",
   "name": "Steady Leader",
   "healthModifier": 0,
-  "armor": 2
+  "armor": 2,
+  "initialPowerId": "steady-pulse"
 }

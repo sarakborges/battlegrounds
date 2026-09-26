@@ -58,6 +58,7 @@ public static class NativeEffectKeys
     public static NativeEffectKey AddBehavior { get; } = new("addBehavior");
     public static NativeEffectKey RemoveBehavior { get; } = new("removeBehavior");
     public static NativeEffectKey AddResource { get; } = new("addResource");
+    public static NativeEffectKey SetPower { get; } = new("setPower");
 
     private static readonly HashSet<NativeEffectKey> Supported =
     [
@@ -69,6 +70,7 @@ public static class NativeEffectKeys
         AddBehavior,
         RemoveBehavior,
         AddResource,
+        SetPower,
     ];
 
     public static bool IsSupported(NativeEffectKey key) => Supported.Contains(key);

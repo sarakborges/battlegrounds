@@ -38,12 +38,14 @@ public sealed class EffectResolutionContext
 
     public UnitInstanceId SourceInstanceId { get; }
     public PlayerId SourcePlayerId { get; }
+    public UnitInstanceId? SelectedTargetInstanceId { get; }
     public IReadOnlyList<EffectUnitSnapshot> Units => _units;
 
     public EffectResolutionContext(
         UnitInstanceId sourceInstanceId,
         PlayerId sourcePlayerId,
-        IEnumerable<EffectUnitSnapshot> units)
+        IEnumerable<EffectUnitSnapshot> units,
+        UnitInstanceId? selectedTargetInstanceId = null)
     {
         ArgumentNullException.ThrowIfNull(units);
         var materialized = units.ToArray();
@@ -52,8 +54,15 @@ public sealed class EffectResolutionContext
             throw new ArgumentException($"Duplicate effect unit instance id '{duplicate.Key}'.", nameof(units));
         if (!materialized.Any(unit => unit.InstanceId == sourceInstanceId && unit.OwnerPlayerId == sourcePlayerId))
             throw new ArgumentException("Effect source must be present in the resolution context.", nameof(units));
+        if (selectedTargetInstanceId is not null &&
+            !materialized.Any(unit => unit.InstanceId == selectedTargetInstanceId.Value && unit.IsAlive))
+        {
+            throw new ArgumentException("Selected effect target must be a living unit in the resolution context.", nameof(selectedTargetInstanceId));
+        }
+
         SourceInstanceId = sourceInstanceId;
         SourcePlayerId = sourcePlayerId;
+        SelectedTargetInstanceId = selectedTargetInstanceId;
         _units = Array.AsReadOnly(materialized);
     }
 }
@@ -152,7 +161,7 @@ public sealed class EffectPipeline
 
         return selector.Scope switch
         {
-            EffectTargetScope.Self => candidates.Take(1).ToArray(),
+            EffectTargetScope.Self or EffectTargetScope.Selected => candidates.Take(1).ToArray(),
             EffectTargetScope.RandomFriendly or EffectTargetScope.RandomEnemy =>
                 candidates.Length == 0 ? [] : [candidates[randomSource.NextInt(0, candidates.Length)]],
             EffectTargetScope.AllFriendly or EffectTargetScope.AllEnemy => candidates,
@@ -164,6 +173,10 @@ public sealed class EffectPipeline
         scope switch
         {
             EffectTargetScope.Self => unit.InstanceId == context.SourceInstanceId && unit.IsAlive,
+            EffectTargetScope.Selected =>
+                context.SelectedTargetInstanceId is not null &&
+                unit.InstanceId == context.SelectedTargetInstanceId.Value &&
+                unit.IsAlive,
             EffectTargetScope.RandomFriendly or EffectTargetScope.AllFriendly => unit.IsAlive && unit.OwnerPlayerId == context.SourcePlayerId,
             EffectTargetScope.RandomEnemy or EffectTargetScope.AllEnemy => unit.IsAlive && unit.OwnerPlayerId != context.SourcePlayerId,
             _ => false,

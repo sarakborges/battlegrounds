@@ -9,7 +9,7 @@ namespace Battlegrounds.Content.Tests;
 public sealed class ModLoaderTests
 {
     [Fact]
-    public void Load_ReadsRulesLeadersTaxonomyBehaviorsTriggersUnitsAndPoolFromModDirectory()
+    public void Load_ReadsRulesLeadersPowersTaxonomyBehaviorsTriggersUnitsAndPoolFromModDirectory()
     {
         var path = Path.Combine(AppContext.BaseDirectory, "mods", "example");
 
@@ -29,10 +29,21 @@ public sealed class ModLoaderTests
         Assert.Equal("Steady Leader", steady.Name);
         Assert.Equal(0, steady.HealthModifier);
         Assert.Equal(2, steady.StartingArmor);
+        Assert.Equal(new PowerId("steady-pulse"), steady.InitialPowerId);
+
+        var steadyPower = mod.Powers.GetRequired(new PowerId("steady-pulse"));
+        Assert.Equal(1, steadyPower.Cost);
+        Assert.Equal(1, steadyPower.MaxUsesPerTurn);
+        var powerEffect = Assert.IsType<ModifyStatsEffectDefinition>(Assert.Single(steadyPower.Effects));
+        Assert.Equal(EffectTargetScope.Selected, powerEffect.Target.Scope);
 
         var vital = mod.Leaders.GetRequired(new LeaderId("vital"));
         Assert.Equal(5, vital.HealthModifier);
         Assert.Equal(0, vital.StartingArmor);
+        Assert.Equal(new PowerId("vital-shift"), vital.InitialPowerId);
+        var shift = mod.Powers.GetRequired(new PowerId("vital-shift"));
+        var setPower = Assert.IsType<SetPowerEffectDefinition>(Assert.Single(shift.Effects));
+        Assert.Equal(new PowerId("steady-pulse"), setPower.PowerId);
 
         var protector = mod.Behaviors.GetRequired(new BehaviorId("protector"));
         Assert.Equal(NativeBehaviorKeys.TargetPriority, protector.Handler);

@@ -12,6 +12,7 @@ public sealed record ReleaseUnitCommand(PlayerId PlayerId, int FieldSlot) : IPre
 public sealed record DeployUnitCommand(PlayerId PlayerId, int ReserveSlot) : IPreparationCommand;
 public sealed record RefreshOfferCommand(PlayerId PlayerId) : IPreparationCommand;
 public sealed record UpgradeTierCommand(PlayerId PlayerId) : IPreparationCommand;
+public sealed record UsePowerCommand(PlayerId PlayerId, UnitInstanceId? TargetUnitInstanceId = null) : IPreparationCommand;
 public sealed record FreezeOfferCommand(PlayerId PlayerId) : IPreparationCommand;
 public sealed record UnfreezeOfferCommand(PlayerId PlayerId) : IPreparationCommand;
 public sealed record EndPreparationCommand(PlayerId PlayerId) : IPreparationCommand;

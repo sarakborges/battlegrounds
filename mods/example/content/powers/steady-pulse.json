@@ -1,0 +1,14 @@
+{
+  "id": "steady-pulse",
+  "name": "Steady Pulse",
+  "cost": 1,
+  "maxUsesPerTurn": 1,
+  "effects": [
+    {
+      "kind": "modifyStats",
+      "target": { "scope": "selected" },
+      "attack": 1,
+      "health": 1
+    }
+  ]
+}

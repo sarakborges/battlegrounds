@@ -29,6 +29,8 @@ internal interface IEffectRuntimeWorld
         UnitDefinition definition,
         int count);
     void AdjustResource(PlayerId playerId, int amount);
+    void SetPower(PlayerId playerId, PowerId powerId) =>
+        throw new InvalidOperationException("This effect world does not support persistent power changes.");
     IReadOnlyList<IEffectRuntimeUnit> ExtractDeadUnits();
     IEffectRuntimeUnit? TryRevive(IEffectRuntimeUnit deadUnit);
     void FinalizeDeath(IEffectRuntimeUnit deadUnit);
@@ -76,6 +78,21 @@ internal sealed class GameEffectRuntime
             queue.Enqueue(effectEvent);
         }
 
+        DrainEventQueue(queue);
+        ResolveDeathWaves();
+    }
+
+    public void ProcessTrigger(
+        IEffectRuntimeUnit source,
+        TriggerDefinition trigger,
+        UnitInstanceId? selectedTargetInstanceId = null)
+    {
+        ArgumentNullException.ThrowIfNull(source);
+        ArgumentNullException.ThrowIfNull(trigger);
+        _processedEvents = 0;
+
+        var queue = new Queue<GameEffectEvent>();
+        ResolveSpecificTrigger(source, trigger, queue, selectedTargetInstanceId);
         DrainEventQueue(queue);
         ResolveDeathWaves();
     }
@@ -138,9 +155,10 @@ internal sealed class GameEffectRuntime
     private void ResolveSpecificTrigger(
         IEffectRuntimeUnit listener,
         TriggerDefinition trigger,
-        Queue<GameEffectEvent> queue)
+        Queue<GameEffectEvent> queue,
+        UnitInstanceId? selectedTargetInstanceId = null)
     {
-        var context = BuildContext(listener);
+        var context = BuildContext(listener, selectedTargetInstanceId);
         var resolvedEffects = _pipeline.ResolveTrigger(
             listener.Definition,
             trigger,
@@ -247,6 +265,10 @@ internal sealed class GameEffectRuntime
 
             case AddResourceEffectDefinition addResource:
                 _world.AdjustResource(source.OwnerPlayerId, addResource.Amount);
+                break;
+
+            case SetPowerEffectDefinition setPower:
+                _world.SetPower(source.OwnerPlayerId, setPower.PowerId);
                 break;
 
             default:
@@ -380,7 +402,9 @@ internal sealed class GameEffectRuntime
         }
     }
 
-    private EffectResolutionContext BuildContext(IEffectRuntimeUnit source)
+    private EffectResolutionContext BuildContext(
+        IEffectRuntimeUnit source,
+        UnitInstanceId? selectedTargetInstanceId = null)
     {
         var snapshots = _world.Units
             .Select(unit => CreateSnapshot(unit, isSelectable: true))
@@ -394,7 +418,8 @@ internal sealed class GameEffectRuntime
         return new EffectResolutionContext(
             source.InstanceId,
             source.OwnerPlayerId,
-            snapshots);
+            snapshots,
+            selectedTargetInstanceId);
     }
 
     private static EffectUnitSnapshot CreateSnapshot(IEffectRuntimeUnit unit, bool isSelectable) =>

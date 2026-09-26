@@ -12,6 +12,7 @@ Examples:
 | --- | --- |
 | `Unit` | Minion, Digimon, Fighter, Creature |
 | `Leader` | Hero, Tamer, Trainer, Commander |
+| `Power` | Hero Power, Ability, Skill, Technique |
 | `Resource` | Gold, Data, Credits, Energy |
 | `Offer` | Tavern, Market, Portal, Draft |
 | `Tier` | Tavern Tier, Level, Rank, Stage |
@@ -24,7 +25,7 @@ The Core must never encode fandom-specific display terminology into IDs, command
 
 ## One authored entity per file
 
-Mod content never uses giant catalog arrays such as `units.json`, `leaders.json`, `types.json` or `behaviors.json`.
+Mod content never uses giant catalog arrays such as `units.json`, `leaders.json`, `powers.json`, `types.json` or `behaviors.json`.
 
 Every authored entity with its own ID lives in its own file:
 
@@ -33,6 +34,9 @@ content/
   leaders/
     steady.json
     vital.json
+  powers/
+    steady-pulse.json
+    vital-shift.json
   units/
     scout.json
     guard.json
@@ -48,26 +52,33 @@ content/
 
 The file name is part of the validation contract: `content/units/guard.json` must contain `"id": "guard"`. A mismatch rejects the whole mod.
 
-This rule applies to future ID-addressable content too: powers, artifacts, spells, quests, anomalies, or other authored entities should each have their own file rather than being accumulated into one array document.
+This rule applies to future ID-addressable content too: artifacts, spells, quests, anomalies, or other authored entities should each have their own file rather than being accumulated into one array document.
 
 Aggregate files are reserved for genuinely package-global configuration, such as `mod.json`, `rules/*.json` and `content/pool.json`.
 
-## Leaders
+## Leaders and powers
 
 `Leader` is the neutral Core role for concepts such as a Battlegrounds Hero, Digimon Tamer, Pokémon Trainer, Commander, etc.
 
-Leaders are authored under `content/leaders/<id>.json` and currently define:
+Leaders are authored under `content/leaders/<id>.json` and define stable identity, display name, `healthModifier`, starting `armor`, and an `initialPowerId` reference.
 
-- stable `LeaderId`;
-- display name;
-- `healthModifier` applied to generic starting Health;
-- starting `armor`.
+Powers are independent authored entities under `content/powers/<id>.json`. A leader does **not** own or embed a power definition. `LeaderDefinition.InitialPowerId` only selects the starting power; `LeaderState.CurrentPowerId` is mutable runtime state and may change during the match.
+
+A power currently defines:
+
+- stable `PowerId` and display name;
+- `cost` in the mod's generic Resource;
+- `maxUsesPerTurn`;
+- optional `maxUsesPerMatch`;
+- ordered shared `effects`.
+
+`UsePowerCommand` activates the player's current power during Preparation. Usage is tracked per `PowerId`, so replacing a power and later returning to it does not erase its usage history. Per-turn counts reset when a new Preparation round begins.
+
+Power effects run through the same `GameEffectRuntime` as unit-triggered effects. There is no power-specific effect language. Powers may use `selected` targeting for an explicit Field unit chosen by UI/AI, and the neutral `setPower` effect can replace `LeaderState.CurrentPowerId` without mutating the immutable `LeaderDefinition`.
 
 `PlayerState` owns a `LeaderState`. Armor is mutable runtime state and absorbs player damage before Health. A player is eliminated only when Health reaches zero.
 
 Match creation from a real mod uses explicit `PlayerSetup(PlayerId, LeaderId)` values. The Core resolves the selected ID through the mod's validated `LeaderCatalog`; callers cannot invent Health or Armor values outside the authored leader definition.
-
-Leader powers are intentionally not a separate effect language. When added, they will reuse the shared trigger/effect runtime described below.
 
 ## Native behaviors, mod-defined identities
 
@@ -83,7 +94,7 @@ Current native handlers:
 
 ## Shared triggers and effects
 
-Battlecry-like, Deathrattle-like, summon, damage, destroy and buff mechanics belong to the shared game domain, not to a specific phase.
+Battlecry-like, Deathrattle-like, summon, damage, destroy, buff and power mechanics belong to the shared game domain, not to a specific phase.
 
 Current triggers:
 
@@ -108,6 +119,7 @@ Current effects:
 - `addBehavior`
 - `removeBehavior`
 - `addResource`
+- `setPower`
 
 `GameEffectRuntime` owns deterministic trigger/effect ordering. Preparation supplies a persistent authoritative state adapter; Combat supplies an isolated combat-local adapter.
 
@@ -178,19 +190,7 @@ When the match finishes, the remaining player receives placement 1. Consumers ca
 
 `ModLoader.Validate(...)` and `ModValidator.Validate(...)` return a structured report suitable for UI, including the actual file, JSON path, issue code, severity and message.
 
-Validation covers:
-
-- required global files and content directories;
-- required and unknown keys;
-- JSON types and numeric ranges;
-- one-object-per-entity-file structure;
-- entity ID/file-name agreement;
-- duplicate IDs/references;
-- cross-file references;
-- unsupported native handlers/triggers/effects/policies;
-- taxonomy references;
-- leader starting values;
-- conditional effect/trigger parameters.
+Validation covers required global files/content directories, required and unknown keys, JSON types/ranges, one-object-per-entity-file structure, entity ID/file-name agreement, duplicate IDs/references, cross-file references, unsupported native handlers/triggers/effects/policies, taxonomy references, leader starting values, leader → initial-power references, power → power references, and conditional effect/trigger parameters.
 
 Examples of required rules:
 
@@ -224,6 +224,8 @@ mods/
     content/
       leaders/
         <leader-id>.json
+      powers/
+        <power-id>.json
       behaviors/
         <behavior-id>.json
       types/
@@ -267,16 +269,18 @@ Read `ARCHITECTURE.md` before adding features. Its ownership, dependency, mutati
 
 - authoritative `MatchState` lifecycle (`Setup → Preparation → Combat → Finished`), Health, elimination, placement and history;
 - neutral `LeaderDefinition`, `LeaderCatalog`, `LeaderState`, Health modifiers and Armor;
+- independent `PowerDefinition`/`PowerCatalog`, leader initial-power references and mutable current-power state;
+- active power cost/usage limits, selected targets and runtime `setPower` replacement;
 - explicit player-to-leader setup through validated `LeaderId` values;
 - `MatchEngine` round orchestration, explicit pairings, post-combat settlement and odd-player eliminated-opponent combat;
 - immutable eliminated-player combat snapshots using the latest prior elimination;
 - mod-driven starting Health, starting-side policy and post-combat damage policy;
 - authoritative `PlayerState` with read-only `Reserve`, `Field` and `Offer` views;
 - immutable `UnitDefinition` separated from mutable `UnitInstance`;
-- deterministic catalogs for units, leaders, behaviors, types and tags;
+- deterministic catalogs for units, leaders, powers, behaviors, types and tags;
 - one authored ID-addressable entity per JSON file;
 - authoritative shared `UnitPool`;
-- preparation commands for acquire, release, deploy, refresh, tier upgrade, freeze/unfreeze and end preparation;
+- preparation commands for acquire, release, deploy, refresh, tier upgrade, power use, freeze/unfreeze and end preparation;
 - deterministic injected RNG;
 - shared phase-neutral `GameEffectRuntime`;
 - deterministic death waves, counted friendly-death listeners, Deathrattle-like effects, Reborn-like behavior and summons;
@@ -298,4 +302,4 @@ dotnet test tests/Battlegrounds.Content.Tests/Battlegrounds.Content.Tests.csproj
 
 ## Next architectural slice
 
-Add leader powers on top of the existing shared trigger/effect runtime without creating a leader-specific effect engine. After that, expand match setup around leader availability/selection rules and continue matchmaking policy/history separately from combat pairing execution.
+Expand power/leader lifecycle events and match setup rules (leader availability, offers and selection) while continuing to reuse the shared effect runtime. Matchmaking policy/history remains separate from combat pairing execution.
