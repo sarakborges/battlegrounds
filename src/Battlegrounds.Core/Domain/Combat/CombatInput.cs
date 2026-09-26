@@ -35,14 +35,16 @@ public sealed class CombatInput
         PlayerId leftPlayerId,
         IReadOnlyList<UnitInstance> leftField,
         PlayerId rightPlayerId,
-        IReadOnlyList<UnitInstance> rightField)
+        IReadOnlyList<UnitInstance> rightField,
+        PowerId? leftPowerId = null,
+        PowerId? rightPowerId = null)
     {
         ArgumentNullException.ThrowIfNull(leftField);
         ArgumentNullException.ThrowIfNull(rightField);
 
         return new CombatInput(
-            CombatParticipant.FromField(leftPlayerId, leftField),
-            CombatParticipant.FromField(rightPlayerId, rightField));
+            CombatParticipant.FromField(leftPlayerId, leftField, leftPowerId),
+            CombatParticipant.FromField(rightPlayerId, rightField, rightPowerId));
     }
 }
 
@@ -51,9 +53,13 @@ public sealed class CombatParticipant
     private readonly ReadOnlyCollection<CombatUnitSnapshot> _units;
 
     public PlayerId PlayerId { get; }
+    public PowerId? CurrentPowerId { get; }
     public IReadOnlyList<CombatUnitSnapshot> Units => _units;
 
-    public CombatParticipant(PlayerId playerId, IEnumerable<CombatUnitSnapshot> units)
+    public CombatParticipant(
+        PlayerId playerId,
+        IEnumerable<CombatUnitSnapshot> units,
+        PowerId? currentPowerId = null)
     {
         ArgumentNullException.ThrowIfNull(units);
 
@@ -68,10 +74,14 @@ public sealed class CombatParticipant
         }
 
         PlayerId = playerId;
+        CurrentPowerId = currentPowerId;
         _units = Array.AsReadOnly(materialized);
     }
 
-    internal static CombatParticipant FromField(PlayerId playerId, IReadOnlyList<UnitInstance> field) =>
+    internal static CombatParticipant FromField(
+        PlayerId playerId,
+        IReadOnlyList<UnitInstance> field,
+        PowerId? currentPowerId = null) =>
         new(
             playerId,
             field.Select(unit => new CombatUnitSnapshot(
@@ -82,7 +92,8 @@ public sealed class CombatParticipant
                 unit.Health,
                 unit.Behaviors.Select(behavior =>
                     new CombatBehaviorSnapshot(behavior.Id, behavior.Handler)),
-                unit.Definition)));
+                unit.Definition)),
+            currentPowerId);
 }
 
 public readonly record struct CombatUnitSnapshot
