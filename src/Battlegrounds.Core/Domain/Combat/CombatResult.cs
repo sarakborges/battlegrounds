@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using Battlegrounds.Core.Domain.Effects;
 using Battlegrounds.Core.Domain.Ids;
 
 namespace Battlegrounds.Core.Domain.Combat;
@@ -16,6 +17,7 @@ public sealed class CombatResult
     private readonly ReadOnlyCollection<CombatSurvivor> _rightSurvivors;
     private readonly ReadOnlyDictionary<PlayerId, int> _resourceDeltas;
     private readonly ReadOnlyDictionary<PlayerId, PowerId> _powerChanges;
+    private readonly ReadOnlyDictionary<PlayerId, EffectHistoryDelta> _historyDeltas;
 
     public PlayerId? WinnerPlayerId { get; }
     public bool IsDraw => WinnerPlayerId is null;
@@ -26,6 +28,7 @@ public sealed class CombatResult
     public IReadOnlyList<CombatSurvivor> RightSurvivors => _rightSurvivors;
     public IReadOnlyDictionary<PlayerId, int> ResourceDeltas => _resourceDeltas;
     public IReadOnlyDictionary<PlayerId, PowerId> PowerChanges => _powerChanges;
+    internal IReadOnlyDictionary<PlayerId, EffectHistoryDelta> HistoryDeltas => _historyDeltas;
 
     internal CombatResult(
         PlayerId? winnerPlayerId,
@@ -34,7 +37,8 @@ public sealed class CombatResult
         IEnumerable<CombatSurvivor> leftSurvivors,
         IEnumerable<CombatSurvivor> rightSurvivors,
         IReadOnlyDictionary<PlayerId, int>? resourceDeltas = null,
-        IReadOnlyDictionary<PlayerId, PowerId>? powerChanges = null)
+        IReadOnlyDictionary<PlayerId, PowerId>? powerChanges = null,
+        IReadOnlyDictionary<PlayerId, EffectHistoryDelta>? historyDeltas = null)
     {
         WinnerPlayerId = winnerPlayerId;
         EndReason = endReason;
@@ -45,6 +49,8 @@ public sealed class CombatResult
             new Dictionary<PlayerId, int>(resourceDeltas ?? new Dictionary<PlayerId, int>()));
         _powerChanges = new ReadOnlyDictionary<PlayerId, PowerId>(
             new Dictionary<PlayerId, PowerId>(powerChanges ?? new Dictionary<PlayerId, PowerId>()));
+        _historyDeltas = new ReadOnlyDictionary<PlayerId, EffectHistoryDelta>(
+            new Dictionary<PlayerId, EffectHistoryDelta>(historyDeltas ?? new Dictionary<PlayerId, EffectHistoryDelta>()));
     }
 }
 
