@@ -15,16 +15,19 @@ public sealed class CombatEngine
         var right = new SideState(input.Right);
         var attacks = new List<CombatAttack>();
 
-        var initial = CreateResultIfTerminal(left, right, CombatEndReason.Elimination, attacks);
+        var initial = CreateResultIfTerminal(left, right, attacks);
         if (initial is not null)
         {
             return initial;
         }
 
         var attackingLeft = ChooseStartingSide(left, right, rules.StartingSidePolicy, randomSource);
+        var sequence = 0;
 
-        for (var sequence = 1; sequence <= rules.MaximumAttacks; sequence++)
+        while (true)
         {
+            sequence++;
+
             var attackerSide = attackingLeft ? left : right;
             var targetSide = attackingLeft ? right : left;
 
@@ -59,7 +62,7 @@ public sealed class CombatEngine
                 attacker.Health <= 0,
                 target.Health <= 0));
 
-            var terminal = CreateResultIfTerminal(left, right, CombatEndReason.Elimination, attacks);
+            var terminal = CreateResultIfTerminal(left, right, attacks);
             if (terminal is not null)
             {
                 return terminal;
@@ -67,8 +70,6 @@ public sealed class CombatEngine
 
             attackingLeft = !attackingLeft;
         }
-
-        return BuildResult(left, right, CombatEndReason.AttackLimit, attacks);
     }
 
     private static bool ChooseStartingSide(
@@ -93,15 +94,19 @@ public sealed class CombatEngine
     private static CombatResult? CreateResultIfTerminal(
         SideState left,
         SideState right,
-        CombatEndReason reason,
         IReadOnlyCollection<CombatAttack> attacks)
     {
-        if (left.LivingCount > 0 && right.LivingCount > 0)
+        if (left.LivingCount == 0 || right.LivingCount == 0)
         {
-            return null;
+            return BuildResult(left, right, CombatEndReason.Elimination, attacks);
         }
 
-        return BuildResult(left, right, reason, attacks);
+        if (!left.HasAttackPower && !right.HasAttackPower)
+        {
+            return BuildResult(left, right, CombatEndReason.NoAttackPower, attacks);
+        }
+
+        return null;
     }
 
     private static CombatResult BuildResult(
@@ -135,6 +140,7 @@ public sealed class CombatEngine
 
         public PlayerId PlayerId { get; }
         public int LivingCount => _units.Count(unit => unit.Health > 0);
+        public bool HasAttackPower => _units.Any(unit => unit.Health > 0 && unit.Attack > 0);
 
         public SideState(CombatParticipant participant)
         {
