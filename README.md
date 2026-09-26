@@ -34,6 +34,7 @@ mods/
     rules/
       match.json
       preparation.json
+      combat.json
     content/
       units.json
       pool.json
@@ -41,7 +42,7 @@ mods/
     localization/           # future
 ```
 
-`mod.json` owns package identity and display terminology. Rule files own numbers and capacities. Content files own unit definitions and pool composition. Filesystem/JSON loading lives in `Battlegrounds.Content`; `Battlegrounds.Core` never reads files or JSON directly.
+`mod.json` owns package identity and display terminology. Rule files own numbers and policies. Content files own unit definitions and pool composition. Filesystem/JSON loading lives in `Battlegrounds.Content`; `Battlegrounds.Core` never reads files or JSON directly.
 
 The repository contains `mods/example` only as a schema/integration fixture. It is not a canonical gameplay ruleset.
 
@@ -82,8 +83,12 @@ Read `ARCHITECTURE.md` before adding features. Its ownership, dependency, mutati
 - `PreparationEngine` as the mutation boundary shared by future UI and AI;
 - unlimited offer freeze/unfreeze toggling;
 - deterministic injected RNG;
-- data-driven `MatchRules` and `PreparationRules` loaded from the active mod;
+- data-driven `MatchRules`, `PreparationRules`, and `CombatRules` loaded from the active mod;
 - data-driven terminology, units, and pool configuration;
+- immutable combat snapshots isolated from persistent preparation state;
+- deterministic combat starting-side selection, attacker rotation, target selection, simultaneous damage, deaths, and winner/draw resolution;
+- combat ends immediately as a draw when all surviving units have zero attack;
+- ordered combat attack log and survivor result for replay/UI/AI consumers;
 - mod schema validation outside Core;
 - regression/invariant tests and CI.
 
@@ -100,4 +105,4 @@ dotnet test tests/Battlegrounds.Content.Tests/Battlegrounds.Content.Tests.csproj
 
 ## Next architectural slice
 
-Build combat as a deterministic state machine using the same neutral vocabulary. Combat algorithms belong to Core; combat labels, unit content, effects, numbers, visuals, and other theme-specific data belong to mods whenever they can be represented as data.
+Extend combat through explicit, composable unit tags/effects and ordered triggers without introducing a global event bus. Keep effect definitions data-driven where they are parameterizable, while novel mechanics remain narrow Core behaviors. Player health/combat damage can then consume the deterministic combat result without coupling temporary combat state back into preparation state.
