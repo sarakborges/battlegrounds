@@ -4,16 +4,69 @@ using Battlegrounds.Core.Domain.Ids;
 
 namespace Battlegrounds.Core.Domain.Powers;
 
-public sealed class PowerDefinition
+public sealed record PowerActivationDefinition
 {
-    private readonly ReadOnlyCollection<EffectDefinition> _effects;
-
-    public PowerId Id { get; }
-    public string Name { get; }
     public int Cost { get; }
     public int MaxUsesPerTurn { get; }
     public int? MaxUsesPerMatch { get; }
-    public IReadOnlyList<EffectDefinition> Effects => _effects;
+
+    public PowerActivationDefinition(int cost, int maxUsesPerTurn, int? maxUsesPerMatch = null)
+    {
+        if (cost < 0) throw new ArgumentOutOfRangeException(nameof(cost));
+        if (maxUsesPerTurn <= 0) throw new ArgumentOutOfRangeException(nameof(maxUsesPerTurn));
+        if (maxUsesPerMatch is not null && maxUsesPerMatch.Value <= 0)
+            throw new ArgumentOutOfRangeException(nameof(maxUsesPerMatch));
+
+        Cost = cost;
+        MaxUsesPerTurn = maxUsesPerTurn;
+        MaxUsesPerMatch = maxUsesPerMatch;
+    }
+}
+
+public sealed class PowerDefinition
+{
+    private readonly ReadOnlyCollection<TriggerDefinition> _triggers;
+
+    public PowerId Id { get; }
+    public string Name { get; }
+    public PowerActivationDefinition? Activation { get; }
+    public IReadOnlyList<TriggerDefinition> Triggers => _triggers;
+    public bool IsActivatable => Activation is not null;
+
+    // Compatibility read-model properties for callers that only care about active powers.
+    public int Cost => Activation?.Cost ?? 0;
+    public int MaxUsesPerTurn => Activation?.MaxUsesPerTurn ?? 0;
+    public int? MaxUsesPerMatch => Activation?.MaxUsesPerMatch;
+    public IReadOnlyList<EffectDefinition> Effects =>
+        _triggers.FirstOrDefault(trigger => trigger.Event == NativeTriggerKeys.OnActivate)?.Effects ?? [];
+
+    public PowerDefinition(
+        PowerId id,
+        string name,
+        PowerActivationDefinition? activation,
+        IEnumerable<TriggerDefinition> triggers)
+    {
+        if (string.IsNullOrWhiteSpace(name))
+            throw new ArgumentException("Power name cannot be empty.", nameof(name));
+
+        ArgumentNullException.ThrowIfNull(triggers);
+        var materialized = triggers.ToArray();
+        if (materialized.Length == 0)
+            throw new ArgumentException("A power must contain at least one trigger.", nameof(triggers));
+        if (materialized.Any(trigger => trigger is null))
+            throw new ArgumentException("Power triggers cannot contain null values.", nameof(triggers));
+
+        var activationTriggers = materialized.Count(trigger => trigger.Event == NativeTriggerKeys.OnActivate);
+        if (activation is null && activationTriggers != 0)
+            throw new ArgumentException("A passive-only power cannot define onActivate.", nameof(triggers));
+        if (activation is not null && activationTriggers != 1)
+            throw new ArgumentException("An activatable power requires exactly one onActivate trigger.", nameof(triggers));
+
+        Id = id;
+        Name = name;
+        Activation = activation;
+        _triggers = Array.AsReadOnly(materialized);
+    }
 
     public PowerDefinition(
         PowerId id,
@@ -22,30 +75,16 @@ public sealed class PowerDefinition
         int maxUsesPerTurn,
         IEnumerable<EffectDefinition> effects,
         int? maxUsesPerMatch = null)
+        : this(
+            id,
+            name,
+            new PowerActivationDefinition(cost, maxUsesPerTurn, maxUsesPerMatch),
+            [new TriggerDefinition(NativeTriggerKeys.OnActivate, effects)])
     {
-        if (string.IsNullOrWhiteSpace(name))
-            throw new ArgumentException("Power name cannot be empty.", nameof(name));
-        if (cost < 0)
-            throw new ArgumentOutOfRangeException(nameof(cost));
-        if (maxUsesPerTurn <= 0)
-            throw new ArgumentOutOfRangeException(nameof(maxUsesPerTurn));
-        if (maxUsesPerMatch is not null && maxUsesPerMatch.Value <= 0)
-            throw new ArgumentOutOfRangeException(nameof(maxUsesPerMatch));
-
-        ArgumentNullException.ThrowIfNull(effects);
-        var materialized = effects.ToArray();
-        if (materialized.Length == 0)
-            throw new ArgumentException("A power must contain at least one effect.", nameof(effects));
-        if (materialized.Any(effect => effect is null))
-            throw new ArgumentException("Power effects cannot contain null values.", nameof(effects));
-
-        Id = id;
-        Name = name;
-        Cost = cost;
-        MaxUsesPerTurn = maxUsesPerTurn;
-        MaxUsesPerMatch = maxUsesPerMatch;
-        _effects = Array.AsReadOnly(materialized);
     }
+
+    public TriggerDefinition? FindTrigger(NativeTriggerKey eventKey) =>
+        _triggers.FirstOrDefault(trigger => trigger.Event == eventKey);
 }
 
 public sealed class PowerCatalog

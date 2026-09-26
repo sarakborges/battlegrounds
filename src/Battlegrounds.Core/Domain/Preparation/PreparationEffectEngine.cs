@@ -16,6 +16,7 @@ internal sealed class PreparationEffectEngine
     private readonly IRandomSource _randomSource;
     private readonly UnitCatalog? _unitCatalog;
     private readonly BehaviorCatalog? _behaviorCatalog;
+    private readonly PowerCatalog? _powerCatalog;
     private MatchState? _runtimeMatch;
     private int _runtimeRound = -1;
     private PreparationEffectWorld? _runtimeWorld;
@@ -27,13 +28,15 @@ internal sealed class PreparationEffectEngine
         IUnitPool unitPool,
         IRandomSource randomSource,
         UnitCatalog? unitCatalog,
-        BehaviorCatalog? behaviorCatalog)
+        BehaviorCatalog? behaviorCatalog,
+        PowerCatalog? powerCatalog = null)
     {
         _rules = rules ?? throw new ArgumentNullException(nameof(rules));
         _unitPool = unitPool ?? throw new ArgumentNullException(nameof(unitPool));
         _randomSource = randomSource ?? throw new ArgumentNullException(nameof(randomSource));
         _unitCatalog = unitCatalog;
         _behaviorCatalog = behaviorCatalog;
+        _powerCatalog = powerCatalog;
     }
 
     public void ProcessPlayedUnit(MatchState match, PlayerState owner, UnitInstance unit)
@@ -56,31 +59,29 @@ internal sealed class PreparationEffectEngine
         UnitInstanceId? selectedTargetInstanceId)
     {
         ArgumentNullException.ThrowIfNull(power);
-        var (world, runtime) = GetRuntime(match);
-        var trigger = new TriggerDefinition(NativeTriggerKeys.OnPlay, power.Effects);
-        var definition = new UnitDefinition(
-            new UnitId("__power__" + power.Id.Value),
-            power.Name,
-            tier: 1,
-            baseAttack: 0,
-            baseHealth: 1,
-            triggers: [trigger]);
-
-        while (_nextSyntheticInstanceId > 0 &&
-               world.TryGetUnit(new UnitInstanceId(_nextSyntheticInstanceId), out _))
-        {
-            _nextSyntheticInstanceId--;
-        }
-        if (_nextSyntheticInstanceId <= 0)
-        {
-            throw new InvalidOperationException("Synthetic effect source id space was exhausted.");
-        }
-
-        var source = new PowerRuntimeUnit(
-            new UnitInstanceId(_nextSyntheticInstanceId--),
-            owner.Id,
-            definition);
+        var trigger = power.FindTrigger(NativeTriggerKeys.OnActivate)
+            ?? throw new InvalidOperationException($"Power '{power.Id}' has no onActivate trigger.");
+        var (_, runtime) = GetRuntime(match);
+        var source = CreatePowerSource(owner, power);
         runtime.ProcessTrigger(source, trigger, selectedTargetInstanceId);
+    }
+
+    public void ProcessPowerEvent(MatchState match, PlayerState owner, NativeTriggerKey eventKey)
+    {
+        if (eventKey != NativeTriggerKeys.OnMatchStart &&
+            eventKey != NativeTriggerKeys.OnTurnStart &&
+            eventKey != NativeTriggerKeys.OnTurnEnd)
+        {
+            throw new ArgumentException("Preparation power lifecycle event is not supported here.", nameof(eventKey));
+        }
+
+        if (!TryGetCurrentPower(owner, out var power) || power.FindTrigger(eventKey) is null)
+        {
+            return;
+        }
+
+        var (_, runtime) = GetRuntime(match);
+        runtime.Process(new GameEffectEvent(eventKey, CreatePowerSource(owner, power)));
     }
 
     public void ProcessTurnEvent(MatchState match, PlayerState owner, NativeTriggerKey eventKey)
@@ -91,8 +92,14 @@ internal sealed class PreparationEffectEngine
         }
 
         var (world, runtime) = GetRuntime(match);
-        var initialUnits = owner.Field.ToArray();
 
+        // Player-scoped power lifecycle resolves before field listeners.
+        if (TryGetCurrentPower(owner, out var power) && power.FindTrigger(eventKey) is not null)
+        {
+            runtime.Process(new GameEffectEvent(eventKey, CreatePowerSource(owner, power)));
+        }
+
+        var initialUnits = owner.Field.ToArray();
         foreach (var unit in initialUnits)
         {
             if (!unit.IsAlive || !owner.Field.Any(candidate => candidate.Id == unit.Id))
@@ -104,13 +111,48 @@ internal sealed class PreparationEffectEngine
         }
     }
 
+    private bool TryGetCurrentPower(PlayerState owner, out PowerDefinition power)
+    {
+        power = null!;
+        return _powerCatalog is not null &&
+               owner.Leader?.CurrentPowerId is PowerId powerId &&
+               _powerCatalog.TryGet(powerId, out power);
+    }
+
+    private PowerRuntimeUnit CreatePowerSource(PlayerState owner, PowerDefinition power)
+    {
+        var (world, _) = GetRuntime(_runtimeMatch ?? throw new InvalidOperationException("Effect runtime has not been initialized."));
+        while (_nextSyntheticInstanceId > 0 &&
+               world.TryGetUnit(new UnitInstanceId(_nextSyntheticInstanceId), out _))
+        {
+            _nextSyntheticInstanceId--;
+        }
+        if (_nextSyntheticInstanceId <= 0)
+        {
+            throw new InvalidOperationException("Synthetic effect source id space was exhausted.");
+        }
+
+        var definition = new UnitDefinition(
+            new UnitId("__power__" + power.Id.Value),
+            power.Name,
+            tier: 1,
+            baseAttack: 0,
+            baseHealth: 1,
+            triggers: power.Triggers);
+
+        return new PowerRuntimeUnit(
+            new UnitInstanceId(_nextSyntheticInstanceId--),
+            owner.Id,
+            definition);
+    }
+
     private (PreparationEffectWorld World, GameEffectRuntime Runtime) GetRuntime(MatchState match)
     {
         if (!ReferenceEquals(_runtimeMatch, match) || _runtimeRound != match.Round)
         {
             _runtimeMatch = match;
             _runtimeRound = match.Round;
-            _runtimeWorld = new PreparationEffectWorld(match, _rules, _unitPool);
+            _runtimeWorld = new PreparationEffectWorld(match, _rules, _unitPool, _powerCatalog);
             _runtime = new GameEffectRuntime(
                 _runtimeWorld,
                 _randomSource,
@@ -126,6 +168,7 @@ internal sealed class PreparationEffectEngine
         private readonly MatchState _match;
         private readonly PreparationRules _rules;
         private readonly IUnitPool _unitPool;
+        private readonly PowerCatalog? _powerCatalog;
         private readonly Dictionary<UnitInstanceId, PreparationRuntimeUnit> _wrappers = [];
         private readonly Dictionary<UnitInstanceId, (PlayerId OwnerId, int Index)> _deathPositions = [];
         private readonly Dictionary<UnitInstanceId, int> _summonCursors = [];
@@ -133,11 +176,13 @@ internal sealed class PreparationEffectEngine
         public PreparationEffectWorld(
             MatchState match,
             PreparationRules rules,
-            IUnitPool unitPool)
+            IUnitPool unitPool,
+            PowerCatalog? powerCatalog)
         {
             _match = match ?? throw new ArgumentNullException(nameof(match));
             _rules = rules ?? throw new ArgumentNullException(nameof(rules));
             _unitPool = unitPool ?? throw new ArgumentNullException(nameof(unitPool));
+            _powerCatalog = powerCatalog;
         }
 
         public IReadOnlyList<IEffectRuntimeUnit> Units =>
@@ -232,6 +277,10 @@ internal sealed class PreparationEffectEngine
 
         public void SetPower(PlayerId playerId, PowerId powerId)
         {
+            if (_powerCatalog is not null && !_powerCatalog.TryGet(powerId, out _))
+            {
+                throw new InvalidOperationException($"Unknown power '{powerId}'.");
+            }
             if (!_match.TryGetPlayer(playerId, out var player) || player.Leader is null)
             {
                 throw new InvalidOperationException("Effect source owner has no leader state.");

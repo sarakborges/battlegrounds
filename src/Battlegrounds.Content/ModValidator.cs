@@ -10,7 +10,7 @@ public sealed class ModValidator
                 issue.Code == "UNKNOWN_KEY" &&
                 issue.File.StartsWith("content/leaders/", StringComparison.Ordinal) &&
                 issue.Path == "$.initialPowerId"))
-            .Concat(new PowerModValidator().Validate(modDirectory))
+            .Concat(new PowerLifecycleModValidator().Validate(modDirectory))
             .ToArray();
 
         var preliminaryReport = new ModValidationReport(issues);

@@ -81,10 +81,13 @@ public sealed class ModLoader
             new PowerDefinition(
                 new PowerId(data.Id),
                 data.Name,
-                data.Cost,
-                data.MaxUsesPerTurn,
-                data.Effects.Select(BuildEffect),
-                data.MaxUsesPerMatch)));
+                data.Activation is null
+                    ? null
+                    : new PowerActivationDefinition(
+                        data.Activation.Cost,
+                        data.Activation.MaxUsesPerTurn,
+                        data.Activation.MaxUsesPerMatch),
+                data.Triggers.Select(BuildTrigger))));
         var leaderCatalog = new LeaderCatalog(leaderData.Select(data =>
             new LeaderDefinition(
                 new LeaderId(data.Id),
@@ -209,13 +212,12 @@ public sealed class ModLoader
         StartingSidePolicy StartingSidePolicy,
         PostCombatDamagePolicy PostCombatDamagePolicy);
     private sealed record BehaviorData(string Id, string Name, string Handler);
+    private sealed record PowerActivationData(int Cost, int MaxUsesPerTurn, int? MaxUsesPerMatch);
     private sealed record PowerData(
         string Id,
         string Name,
-        int Cost,
-        int MaxUsesPerTurn,
-        EffectData[] Effects,
-        int? MaxUsesPerMatch);
+        PowerActivationData? Activation,
+        TriggerData[] Triggers);
     private sealed record LeaderData(string Id, string Name, int HealthModifier, int Armor, string InitialPowerId);
     private sealed record NamedIdData(string Id, string Name);
     private sealed record UnitData(

@@ -15,6 +15,8 @@ public readonly record struct NativeTriggerKey
 
 public static class NativeTriggerKeys
 {
+    public static NativeTriggerKey OnActivate { get; } = new("onActivate");
+    public static NativeTriggerKey OnMatchStart { get; } = new("onMatchStart");
     public static NativeTriggerKey OnPlay { get; } = new("onPlay");
     public static NativeTriggerKey OnDeath { get; } = new("onDeath");
     public static NativeTriggerKey AfterFriendlyDeaths { get; } = new("afterFriendlyDeaths");
@@ -28,7 +30,7 @@ public static class NativeTriggerKeys
 
     private static readonly HashSet<NativeTriggerKey> Supported =
     [
-        OnPlay, OnDeath, AfterFriendlyDeaths, OnSummon, OnAttack, OnDamage,
+        OnActivate, OnMatchStart, OnPlay, OnDeath, AfterFriendlyDeaths, OnSummon, OnAttack, OnDamage,
         OnCombatStart, OnCombatEnd, OnTurnStart, OnTurnEnd,
     ];
 

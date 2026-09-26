@@ -108,7 +108,7 @@ public sealed class MatchEngine
             powerCatalog);
 
         _combatEngine = unitCatalog is not null && behaviorCatalog is not null
-            ? new CombatEngine(preparationRules.FieldCapacity, unitCatalog, behaviorCatalog)
+            ? new CombatEngine(preparationRules.FieldCapacity, unitCatalog, behaviorCatalog, powerCatalog)
             : new CombatEngine();
     }
 
@@ -171,6 +171,7 @@ public sealed class MatchEngine
             eliminatedOpponent);
 
         var resourceAdjustments = new Dictionary<PlayerId, int>();
+        var powerChanges = new Dictionary<PlayerId, PowerId>();
         var settlements = new List<CombatSettlement>(materializedPairings.Length);
         var newlyEliminated = new List<PlayerId>();
 
@@ -182,14 +183,12 @@ public sealed class MatchEngine
                 var snapshot = eliminatedOpponent
                     ?? throw new InvalidOperationException("No eliminated-opponent snapshot is available for this round.");
                 var input = new CombatInput(
-                    CombatParticipant.FromField(player.Id, player.Field),
+                    CombatParticipant.FromField(player.Id, player.Field, player.Leader?.CurrentPowerId),
                     snapshot.Participant);
                 var combatResult = _combatEngine.Resolve(input, _combatRules, _randomSource);
 
-                AccumulateResourceDeltas(
-                    combatResult,
-                    resourceAdjustments,
-                    [player.Id]);
+                AccumulateResourceDeltas(combatResult, resourceAdjustments, [player.Id]);
+                AccumulatePowerChanges(combatResult, powerChanges, [player.Id]);
 
                 var settlement = SettleAgainstEliminatedOpponent(player, snapshot, input, combatResult);
                 settlements.Add(settlement);
@@ -204,13 +203,17 @@ public sealed class MatchEngine
             var rightPlayerId = pairing.RightPlayerId!.Value;
             var left = GetActivePlayer(match, pairing.LeftPlayerId);
             var right = GetActivePlayer(match, rightPlayerId);
-            var liveInput = CombatInput.FromFields(left.Id, left.Field, right.Id, right.Field);
+            var liveInput = CombatInput.FromFields(
+                left.Id,
+                left.Field,
+                right.Id,
+                right.Field,
+                left.Leader?.CurrentPowerId,
+                right.Leader?.CurrentPowerId);
             var liveResult = _combatEngine.Resolve(liveInput, _combatRules, _randomSource);
 
-            AccumulateResourceDeltas(
-                liveResult,
-                resourceAdjustments,
-                [left.Id, right.Id]);
+            AccumulateResourceDeltas(liveResult, resourceAdjustments, [left.Id, right.Id]);
+            AccumulatePowerChanges(liveResult, powerChanges, [left.Id, right.Id]);
 
             settlements.Add(SettleLiveCombat(left, right, liveInput, liveResult));
             if (left.IsEliminated)
@@ -223,6 +226,7 @@ public sealed class MatchEngine
             }
         }
 
+        ApplyPowerChanges(match, powerChanges);
         match.RecordEliminations(newlyEliminated, healthBeforeCombat);
 
         if (match.ActivePlayerCount <= 1)
@@ -394,6 +398,36 @@ public sealed class MatchEngine
             }
 
             adjustments[delta.Key] = adjustments.GetValueOrDefault(delta.Key) + delta.Value;
+        }
+    }
+
+    private static void AccumulatePowerChanges(
+        CombatResult result,
+        Dictionary<PlayerId, PowerId> changes,
+        IReadOnlyCollection<PlayerId> allowedPlayers)
+    {
+        var allowed = allowedPlayers.ToHashSet();
+        foreach (var change in result.PowerChanges)
+        {
+            if (allowed.Contains(change.Key))
+            {
+                changes[change.Key] = change.Value;
+            }
+        }
+    }
+
+    private static void ApplyPowerChanges(
+        MatchState match,
+        IReadOnlyDictionary<PlayerId, PowerId> changes)
+    {
+        foreach (var change in changes)
+        {
+            if (!match.TryGetPlayer(change.Key, out var player) || player.Leader is null)
+            {
+                throw new InvalidOperationException($"Cannot settle power change for player '{change.Key}'.");
+            }
+
+            player.Leader.SetPower(change.Value);
         }
     }
 

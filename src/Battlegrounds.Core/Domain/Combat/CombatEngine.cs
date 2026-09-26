@@ -1,6 +1,7 @@
 using Battlegrounds.Core.Domain.Behaviors;
 using Battlegrounds.Core.Domain.Effects;
 using Battlegrounds.Core.Domain.Ids;
+using Battlegrounds.Core.Domain.Powers;
 using Battlegrounds.Core.Domain.Units;
 using Battlegrounds.Core.Randomness;
 
@@ -11,6 +12,7 @@ public sealed class CombatEngine
     private readonly int? _fieldCapacity;
     private readonly UnitCatalog? _unitCatalog;
     private readonly BehaviorCatalog? _behaviorCatalog;
+    private readonly PowerCatalog? _powerCatalog;
 
     public CombatEngine()
     {
@@ -19,12 +21,14 @@ public sealed class CombatEngine
     public CombatEngine(
         int fieldCapacity,
         UnitCatalog unitCatalog,
-        BehaviorCatalog behaviorCatalog)
+        BehaviorCatalog behaviorCatalog,
+        PowerCatalog? powerCatalog = null)
     {
         if (fieldCapacity <= 0) throw new ArgumentOutOfRangeException(nameof(fieldCapacity));
         _fieldCapacity = fieldCapacity;
         _unitCatalog = unitCatalog ?? throw new ArgumentNullException(nameof(unitCatalog));
         _behaviorCatalog = behaviorCatalog ?? throw new ArgumentNullException(nameof(behaviorCatalog));
+        _powerCatalog = powerCatalog;
     }
 
     public CombatResult Resolve(CombatInput input, CombatRules rules, IRandomSource randomSource)
@@ -33,7 +37,7 @@ public sealed class CombatEngine
         ArgumentNullException.ThrowIfNull(rules);
         ArgumentNullException.ThrowIfNull(randomSource);
 
-        var world = new CombatEffectWorld(input, _fieldCapacity ?? int.MaxValue);
+        var world = new CombatEffectWorld(input, _fieldCapacity ?? int.MaxValue, _powerCatalog);
         var runtime = new GameEffectRuntime(world, randomSource, _unitCatalog, _behaviorCatalog);
 
         ProcessPhaseEvent(world, runtime, NativeTriggerKeys.OnCombatStart);
@@ -146,7 +150,7 @@ public sealed class CombatEngine
         }
     }
 
-    private static CombatResult Complete(
+    private CombatResult Complete(
         CombatEffectWorld world,
         GameEffectRuntime runtime,
         CombatEndReason reason,
@@ -160,15 +164,47 @@ public sealed class CombatEngine
             attacks,
             world.Left.GetSurvivors(),
             world.Right.GetSurvivors(),
-            world.ResourceDeltas);
+            world.ResourceDeltas,
+            world.PowerChanges);
     }
 
-    private static void ProcessPhaseEvent(
+    private void ProcessPhaseEvent(
         CombatEffectWorld world,
         GameEffectRuntime runtime,
         NativeTriggerKey eventKey)
     {
-        var initialUnits = world.Units.ToArray();
+        var leftInitialUnits = world.Left.Units.ToArray();
+        var rightInitialUnits = world.Right.Units.ToArray();
+
+        ProcessPowerPhaseEvent(world, runtime, world.Left, eventKey);
+        ProcessInitialUnitPhaseEvent(world, runtime, leftInitialUnits, eventKey);
+        ProcessPowerPhaseEvent(world, runtime, world.Right, eventKey);
+        ProcessInitialUnitPhaseEvent(world, runtime, rightInitialUnits, eventKey);
+    }
+
+    private void ProcessPowerPhaseEvent(
+        CombatEffectWorld world,
+        GameEffectRuntime runtime,
+        SideState side,
+        NativeTriggerKey eventKey)
+    {
+        if (_powerCatalog is null ||
+            side.CurrentPowerId is not PowerId powerId ||
+            !_powerCatalog.TryGet(powerId, out var power) ||
+            power.FindTrigger(eventKey) is null)
+        {
+            return;
+        }
+
+        runtime.Process(new GameEffectEvent(eventKey, world.CreatePowerSource(side, power)));
+    }
+
+    private static void ProcessInitialUnitPhaseEvent(
+        CombatEffectWorld world,
+        GameEffectRuntime runtime,
+        IReadOnlyList<CombatRuntimeUnit> initialUnits,
+        NativeTriggerKey eventKey)
+    {
         foreach (var unit in initialUnits)
         {
             if (!unit.IsAlive || !world.TryGetUnit(unit.InstanceId, out _))
@@ -255,27 +291,57 @@ public sealed class CombatEngine
     private sealed class CombatEffectWorld : IEffectRuntimeWorld
     {
         private readonly int _fieldCapacity;
+        private readonly PowerCatalog? _powerCatalog;
         private readonly Dictionary<UnitInstanceId, (SideState Side, int Index)> _deathPositions = [];
         private readonly Dictionary<UnitInstanceId, int> _summonCursors = [];
         private readonly Dictionary<PlayerId, int> _resourceDeltas = [];
+        private readonly Dictionary<PlayerId, PowerId> _powerChanges = [];
         private long _nextInstanceId;
+        private long _nextSyntheticInstanceId = long.MaxValue;
 
         public SideState Left { get; }
         public SideState Right { get; }
         public IReadOnlyDictionary<PlayerId, int> ResourceDeltas => _resourceDeltas;
+        public IReadOnlyDictionary<PlayerId, PowerId> PowerChanges => _powerChanges;
 
         public IReadOnlyList<IEffectRuntimeUnit> Units =>
             Left.Units.Cast<IEffectRuntimeUnit>()
                 .Concat(Right.Units)
                 .ToArray();
 
-        public CombatEffectWorld(CombatInput input, int fieldCapacity)
+        public CombatEffectWorld(CombatInput input, int fieldCapacity, PowerCatalog? powerCatalog)
         {
             _fieldCapacity = fieldCapacity;
+            _powerCatalog = powerCatalog;
             Left = new SideState(input.Left);
             Right = new SideState(input.Right);
             var ids = input.Left.Units.Concat(input.Right.Units).Select(unit => unit.InstanceId.Value).ToArray();
             _nextInstanceId = ids.Length == 0 ? 1 : ids.Max() + 1;
+        }
+
+        public CombatPowerRuntimeUnit CreatePowerSource(SideState side, PowerDefinition power)
+        {
+            while (_nextSyntheticInstanceId > 0 && TryGetUnit(new UnitInstanceId(_nextSyntheticInstanceId), out _))
+            {
+                _nextSyntheticInstanceId--;
+            }
+            if (_nextSyntheticInstanceId <= 0)
+            {
+                throw new InvalidOperationException("Synthetic combat effect source id space was exhausted.");
+            }
+
+            var definition = new UnitDefinition(
+                new UnitId("__power__" + power.Id.Value),
+                power.Name,
+                tier: 1,
+                baseAttack: 0,
+                baseHealth: 1,
+                triggers: power.Triggers);
+
+            return new CombatPowerRuntimeUnit(
+                new UnitInstanceId(_nextSyntheticInstanceId--),
+                side.PlayerId,
+                definition);
         }
 
         public bool TryGetUnit(UnitInstanceId instanceId, out IEffectRuntimeUnit unit)
@@ -299,7 +365,7 @@ public sealed class CombatEngine
             GetUnit(unit).ModifyStats(attackDelta, healthDelta);
 
         public bool TryConsumeBehavior(IEffectRuntimeUnit unit, NativeBehaviorKey handler) =>
-            GetUnit(unit).RemoveBehavior(handler);
+            unit is CombatRuntimeUnit runtimeUnit && runtimeUnit.RemoveBehavior(handler);
 
         public bool AddBehavior(IEffectRuntimeUnit unit, BehaviorDefinition behavior) =>
             GetUnit(unit).AddBehavior(behavior);
@@ -317,7 +383,9 @@ public sealed class CombatEngine
             int count)
         {
             var side = GetSide(source.OwnerPlayerId);
-            var insertionIndex = ResolveSummonIndex(source, side);
+            var insertionIndex = source is CombatPowerRuntimeUnit
+                ? side.UnitCount
+                : ResolveSummonIndex(source, side);
             var summoned = new List<IEffectRuntimeUnit>();
 
             for (var index = 0; index < count && side.UnitCount < _fieldCapacity; index++)
@@ -329,7 +397,10 @@ public sealed class CombatEngine
                 insertionIndex = Math.Clamp(insertionIndex, 0, side.UnitCount);
                 side.InsertAt(insertionIndex, unit);
                 insertionIndex++;
-                _summonCursors[source.InstanceId] = insertionIndex;
+                if (source is not CombatPowerRuntimeUnit)
+                {
+                    _summonCursors[source.InstanceId] = insertionIndex;
+                }
                 summoned.Add(unit);
             }
 
@@ -339,6 +410,18 @@ public sealed class CombatEngine
         public void AdjustResource(PlayerId playerId, int amount)
         {
             _resourceDeltas[playerId] = _resourceDeltas.GetValueOrDefault(playerId) + amount;
+        }
+
+        public void SetPower(PlayerId playerId, PowerId powerId)
+        {
+            if (_powerCatalog is not null && !_powerCatalog.TryGet(powerId, out _))
+            {
+                throw new InvalidOperationException($"Unknown power '{powerId}'.");
+            }
+
+            var side = GetSide(playerId);
+            side.SetPower(powerId);
+            _powerChanges[playerId] = powerId;
         }
 
         public IReadOnlyList<IEffectRuntimeUnit> ExtractDeadUnits()
@@ -434,6 +517,7 @@ public sealed class CombatEngine
         private int _nextAttackerIndex;
 
         public PlayerId PlayerId { get; }
+        public PowerId? CurrentPowerId { get; private set; }
         public IReadOnlyList<CombatRuntimeUnit> Units => _units;
         public int UnitCount => _units.Count;
         public bool HasAttackPower => _units.Any(unit => unit.IsAlive && unit.Attack > 0);
@@ -441,10 +525,13 @@ public sealed class CombatEngine
         public SideState(CombatParticipant participant)
         {
             PlayerId = participant.PlayerId;
+            CurrentPowerId = participant.CurrentPowerId;
             _units = participant.Units
                 .Select(snapshot => CombatRuntimeUnit.FromSnapshot(participant.PlayerId, snapshot))
                 .ToList();
         }
+
+        public void SetPower(PowerId powerId) => CurrentPowerId = powerId;
 
         public CombatRuntimeUnit? TakeNextAttacker()
         {
@@ -646,6 +733,24 @@ public sealed class CombatEngine
             _behaviors.Clear();
             _behaviors.AddRange(
                 _initialBehaviors.Where(behavior => behavior.Handler != NativeBehaviorKeys.ReviveOnce));
+        }
+    }
+
+    private sealed class CombatPowerRuntimeUnit : IEffectRuntimeUnit
+    {
+        public UnitInstanceId InstanceId { get; }
+        public PlayerId OwnerPlayerId { get; }
+        public UnitDefinition Definition { get; }
+        public bool IsAlive => false;
+
+        public CombatPowerRuntimeUnit(
+            UnitInstanceId instanceId,
+            PlayerId ownerPlayerId,
+            UnitDefinition definition)
+        {
+            InstanceId = instanceId;
+            OwnerPlayerId = ownerPlayerId;
+            Definition = definition ?? throw new ArgumentNullException(nameof(definition));
         }
     }
 
