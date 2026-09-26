@@ -6,11 +6,11 @@ Architecture exists to make invalid ownership, mutation, theme coupling, and non
 
 1. `Battlegrounds.Core` is framework-free and must not reference Godot, JSON, filesystem, or presentation APIs.
 2. The engine is mod-first. Core owns mechanics; the active mod owns theme, terminology, content, assets, and configurable numbers/policies.
-3. Core public vocabulary must be fandom-neutral. Prefer mechanical roles such as `Unit`, `Resource`, `Offer`, `Tier`, `Reserve`, `Field`, `Health`, and `Preparation`.
+3. Core public vocabulary must be fandom-neutral. Prefer mechanical roles such as `Unit`, `Leader`, `Resource`, `Offer`, `Tier`, `Reserve`, `Field`, `Health`, and `Preparation`.
 4. Theme words such as Gold, Tavern, Minion, Hero, or fandom-specific names must not become Core domain types, property names, commands, rule names, or IDs.
 5. Authoritative mutable game state has one owner: the match aggregate and its owned aggregates.
 6. UI and AI never mutate domain state directly. They issue explicit commands through the same domain boundary.
-7. Unit definitions are immutable authored data; unit instances contain runtime state only.
+7. Unit and Leader definitions are immutable authored data; runtime instances/state contain mutable facts only.
 8. Randomness is injected through an explicit deterministic RNG abstraction and seeded per match.
 9. Lifecycle logic is modeled with explicit state/phase types, not loosely related booleans.
 10. Domain collections expose read-only views. Mutation stays beside the invariant it protects.
@@ -18,20 +18,42 @@ Architecture exists to make invalid ownership, mutation, theme coupling, and non
 12. New abstractions must correspond to an observed invariant or real boundary; no speculative frameworks.
 13. Trigger/effect semantics belong to the game domain, not to Preparation or Combat. Phases provide state adapters to one shared effect runtime.
 14. Combat simulation is isolated. Persistent player health/resource/lifecycle changes happen only during explicit post-combat settlement.
+15. Every authored content entity with a stable ID gets one source file. Do not create aggregate entity arrays such as `units.json`, `leaders.json`, `types.json`, or `behaviors.json`.
 
 ## Mod boundary
 
-Mods live under `mods/<mod-id>/` and may provide package metadata, terminology, rules, unit content, pool composition, effects/taxonomy, localization, and presentation assets.
+Mods live under `mods/<mod-id>/` and may provide package metadata, terminology, rules, units, leaders, pool composition, effects/taxonomy, localization, and presentation assets.
 
 `Battlegrounds.Content` reads and validates untrusted mod files and maps them into validated Core models. Core never knows which directory, JSON document, fandom, localization, or asset produced those models.
 
 There is no canonical `Standard` rules object in Core. Defaults that define gameplay belong to a mod package.
 
+### One entity per file
+
+ID-addressable authored content is stored by category and ID:
+
+```text
+content/
+  units/<unit-id>.json
+  leaders/<leader-id>.json
+  behaviors/<behavior-id>.json
+  types/<type-id>.json
+  tags/<tag-id>.json
+```
+
+The entity ID must equal the file stem. `content/units/foo.json` must contain `"id": "foo"`; otherwise validation fails.
+
+Future ID-addressable content follows the same convention. Powers, spells, artifacts, quests, anomalies, or equivalent concepts get one file per entity rather than an array catalog.
+
+Aggregate documents are allowed only for genuinely aggregate/package-wide facts such as `mod.json`, `rules/*.json`, or current pool composition in `content/pool.json`.
+
+Validation errors for authored entities must identify the concrete source file and JSON path so presentation can expose useful diagnostics without re-running validation logic.
+
 ## Neutral identifiers
 
-IDs identify stable mechanical/content entities, not themed labels. Examples: `PlayerId`, `UnitId`, `UnitInstanceId`, `BehaviorId`, `UnitTypeId`, and `TagId`.
+IDs identify stable mechanical/content entities, not themed labels. Examples: `PlayerId`, `UnitId`, `UnitInstanceId`, `LeaderId`, `BehaviorId`, `UnitTypeId`, and `TagId`.
 
-Display names are data. Renaming a displayed resource from "Gold" to "Data" must not require changing Core code or persisted mechanical IDs.
+Display names are data. Renaming a displayed resource from "Gold" to "Data" or a displayed Leader from "Hero" to "Tamer" must not require changing Core code or persisted mechanical IDs.
 
 ## Dependency direction
 
@@ -52,17 +74,27 @@ A future `Battlegrounds.Application` layer may orchestrate use cases between Gam
 
 ### Match
 
-`MatchState` owns authoritative lifecycle, round/revision, player collection, player elimination state through owned `PlayerState` objects, and terminal winner state.
+`MatchState` owns authoritative lifecycle, round/revision, player collection, elimination state, placement/history, and terminal winner state.
 
 `MatchRules` are injected from the active mod and currently include player-count constraints and generic starting Health.
 
-`MatchEngine` owns cross-phase orchestration that is now a real domain boundary: starting a match, delegating Preparation commands, resolving explicit combat pairings, applying post-combat settlement, carrying combat resource deltas into the next Preparation, and ending the match when one or fewer active players remain.
+`MatchEngine` owns cross-phase orchestration: starting a match, resolving player/Leader setup, delegating Preparation commands, resolving explicit combat pairings, applying post-combat settlement, carrying combat resource deltas into the next Preparation, and ending the match.
 
-Pairing selection itself is not hidden in `MatchEngine`. A round receives explicit `CombatPairing` values so matchmaking/ghost-opponent policy can evolve independently.
+Pairing selection itself is not hidden in `MatchEngine`. A round receives explicit `CombatPairing` values so matchmaking policy can evolve independently.
 
 ### Player
 
-Owns player-scoped runtime facts: generic Health, elimination, resource amount, tier, reserve, field, current offer, upgrade cost, and readiness. External consumers cannot mutate these directly.
+Owns player-scoped runtime facts: generic Health, elimination, selected `LeaderState`, resource amount, tier, reserve, field, current offer, upgrade cost, and readiness. External consumers cannot mutate these directly.
+
+### Leader
+
+`LeaderDefinition` is immutable authored data resolved by stable `LeaderId`. `LeaderState` is player-owned runtime state.
+
+The current Leader runtime owns Armor. Starting Health is calculated from mod-wide `MatchRules.StartingHealth` plus the selected Leader's `HealthModifier`; that result must remain positive. Starting Armor comes from the selected Leader definition and is consumed before Health when player damage is applied.
+
+A real mod-backed match must receive explicit `PlayerSetup(PlayerId, LeaderId)` values. Callers choose IDs; they do not directly supply Leader stats.
+
+Leader powers must reuse shared trigger/effect infrastructure. Do not create a separate leader-only effect engine or callback system.
 
 ### Unit catalog
 
@@ -94,9 +126,11 @@ Combat-local effects must never mutate persistent Preparation state directly. Pe
 
 ### Post-combat settlement
 
-Settlement belongs to match orchestration, not combat simulation. A native damage policy selected by mod data converts `CombatResult` plus authoritative player state into player Health damage.
+Settlement belongs to match orchestration, not combat simulation. A native damage policy selected by mod data converts `CombatResult` plus authoritative player state into player damage.
 
-The current policy `winnerTierPlusSurvivorTiers` mirrors Battlegrounds-style settlement: winner Tier plus surviving unit Tiers; draw deals zero. Generated/token survivors not present in the initial combat snapshot currently default to Tier 1.
+The current policy `winnerTierPlusSurvivorTiers` uses winner Tier plus surviving unit Tiers; draw deals zero. Generated/token survivors not present in the initial combat snapshot currently default to Tier 1.
+
+Incoming player damage is absorbed by Leader Armor first, then reduces Health. Settlement result data records the absorption and resulting values explicitly.
 
 If settlement eliminates all but one player, the match enters `Finished`. Otherwise the next Preparation begins and any combat resource deltas are applied after the new round's baseline resource is initialized and before `onTurnStart` effects.
 
@@ -107,6 +141,8 @@ Prefer data for repeated/configurable variants and code for algorithms/invariant
 Data should own, when representable:
 
 - terminology and display names;
+- unit, Leader, behavior, type and tag definitions;
+- Leader starting modifiers such as Health delta and Armor;
 - starting Health and numeric costs/rewards/capacities;
 - player-count constraints;
 - selectable native policies such as starting-side and post-combat-damage policy;
@@ -116,7 +152,7 @@ Data should own, when representable:
 - effect parameters;
 - presentation metadata.
 
-Core code should own command validation, state transitions, ownership invariants, deterministic selection/order, combat algorithms, settlement algorithms, trigger ordering, and effect execution semantics.
+Core code should own command validation, state transitions, ownership invariants, deterministic selection/order, combat algorithms, settlement algorithms, trigger ordering, armor application, and effect execution semantics.
 
 Do not add a themed hardcoded default to Core merely because one mod currently needs it.
 
@@ -130,9 +166,9 @@ Public setters on authoritative runtime state are forbidden unless a type is exp
 
 ## Determinism
 
-Simulation correctness must not depend on wall-clock time, Godot frame timing, hash/dictionary iteration order, global random state, or machine-specific ordering.
+Simulation correctness must not depend on wall-clock time, Godot frame timing, hash/dictionary iteration order, global random state, filesystem enumeration order, or machine-specific ordering.
 
-Randomness is injected, order-sensitive candidates use deterministic tie-breakers, simulation time is logical, and replay/debug state must record enough information to reproduce behavior.
+Content files are sorted ordinally before materialization. Randomness is injected, order-sensitive candidates use deterministic tie-breakers, simulation time is logical, and replay/debug state must record enough information to reproduce behavior.
 
 ## Effects
 
@@ -151,10 +187,12 @@ Priority coverage:
 - allowed/invalid phase transitions;
 - legal command validation;
 - state ownership and player elimination;
+- Leader selection, Health modifiers and Armor;
 - deterministic ordering/RNG;
 - reserve/field capacity and preparation economy;
 - pool copy invariants;
-- mod validation/mapping;
+- per-entity-file mod validation/mapping;
+- ID/file-name agreement;
 - cross-phase effect semantics and death waves;
 - combat resolution;
 - post-combat damage and full round-loop settlement;
@@ -170,7 +208,10 @@ Reject or refactor changes that introduce without a strong reason:
 
 - fandom/theme terminology into Core mechanics;
 - hardcoded gameplay presets that belong to mods;
+- aggregate JSON arrays for ID-addressable authored entities;
+- entity IDs that disagree with their source file name;
 - phase-specific copies of shared effect mechanics;
+- leader-specific copies of shared effect mechanics;
 - combat simulation mutating persistent match state directly;
 - multiple mutable owners for one fact;
 - Godot/filesystem/JSON types inside Core;
