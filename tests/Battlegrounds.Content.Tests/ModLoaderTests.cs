@@ -1,4 +1,5 @@
 using Battlegrounds.Content;
+using Battlegrounds.Core.Domain.Combat;
 using Battlegrounds.Core.Domain.Ids;
 
 namespace Battlegrounds.Content.Tests;
@@ -19,6 +20,7 @@ public sealed class ModLoaderTests
         Assert.Equal(3, mod.PreparationRules.StartingResource);
         Assert.Equal(3, mod.PreparationRules.AcquireCost);
         Assert.Equal(7, mod.PreparationRules.FieldCapacity);
+        Assert.Equal(StartingSidePolicy.LargerFieldThenRandom, mod.CombatRules.StartingSidePolicy);
         Assert.Equal("Scout", mod.Units.GetRequired(new UnitId("scout")).Name);
 
         var pool = mod.CreateUnitPool();
