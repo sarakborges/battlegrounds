@@ -161,11 +161,11 @@ public sealed class ModLoader
         {
             "modifyStats" => new ModifyStatsEffectDefinition(
                 BuildTarget(data.Target),
-                data.Attack ?? 0,
-                data.Health ?? 0),
+                BuildOptionalValue(data.Attack),
+                BuildOptionalValue(data.Health)),
             "dealDamage" => new DealDamageEffectDefinition(
                 BuildTarget(data.Target),
-                data.Amount ?? throw new InvalidDataException("Validated dealDamage effect is missing amount.")),
+                BuildRequiredValue(data.Amount, "dealDamage.amount")),
             "destroyUnit" => new DestroyUnitEffectDefinition(
                 BuildTarget(data.Target)),
             "triggerEvent" => new TriggerEventEffectDefinition(
@@ -173,7 +173,9 @@ public sealed class ModLoader
                 new NativeTriggerKey(data.Event ?? throw new InvalidDataException("Validated triggerEvent effect is missing event."))),
             "summonUnit" => new SummonUnitEffectDefinition(
                 new UnitId(data.UnitId ?? throw new InvalidDataException("Validated summonUnit effect is missing unitId.")),
-                data.Count ?? 1),
+                data.Count is null
+                    ? new ConstantEffectValueExpression(1)
+                    : BuildRequiredValue(data.Count, "summonUnit.count")),
             "addBehavior" => new AddBehaviorEffectDefinition(
                 BuildTarget(data.Target),
                 new BehaviorId(data.BehaviorId ?? throw new InvalidDataException("Validated addBehavior effect is missing behaviorId."))),
@@ -181,11 +183,81 @@ public sealed class ModLoader
                 BuildTarget(data.Target),
                 new BehaviorId(data.BehaviorId ?? throw new InvalidDataException("Validated removeBehavior effect is missing behaviorId."))),
             "addResource" => new AddResourceEffectDefinition(
-                data.Amount ?? throw new InvalidDataException("Validated addResource effect is missing amount.")),
+                BuildRequiredValue(data.Amount, "addResource.amount")),
             "setPower" => new SetPowerEffectDefinition(
                 new PowerId(data.PowerId ?? throw new InvalidDataException("Validated setPower effect is missing powerId."))),
             _ => throw new InvalidDataException($"Validated effect kind '{data.Kind}' is unsupported."),
         };
+
+    private static EffectValueExpression? BuildOptionalValue(JsonElement? data) =>
+        data is null ? null : BuildValue(data.Value);
+
+    private static EffectValueExpression BuildRequiredValue(JsonElement? data, string label) =>
+        data is null
+            ? throw new InvalidDataException($"Validated effect value '{label}' is missing.")
+            : BuildValue(data.Value);
+
+    private static EffectValueExpression BuildValue(JsonElement data)
+    {
+        if (data.ValueKind == JsonValueKind.Number && data.TryGetInt32(out var literal))
+        {
+            return new ConstantEffectValueExpression(literal);
+        }
+
+        if (data.ValueKind != JsonValueKind.Object ||
+            !data.TryGetProperty("kind", out var kindElement) ||
+            kindElement.ValueKind != JsonValueKind.String)
+        {
+            throw new InvalidDataException("Validated effect value expression has an invalid shape.");
+        }
+
+        var kind = kindElement.GetString();
+        return kind switch
+        {
+            "sourceStat" => new SourceStatEffectValueExpression(ReadEnum<EffectStat>(data, "stat")),
+            "targetStat" => new TargetStatEffectValueExpression(ReadEnum<EffectStat>(data, "stat")),
+            "unitCount" => new UnitCountEffectValueExpression(BuildQuery(ReadObject(data, "query"))),
+            "add" => BuildComposite(EffectValueOperation.Add, data),
+            "multiply" => BuildComposite(EffectValueOperation.Multiply, data),
+            "min" => BuildComposite(EffectValueOperation.Min, data),
+            "max" => BuildComposite(EffectValueOperation.Max, data),
+            _ => throw new InvalidDataException($"Validated effect value kind '{kind}' is unsupported."),
+        };
+    }
+
+    private static CompositeEffectValueExpression BuildComposite(
+        EffectValueOperation operation,
+        JsonElement data)
+    {
+        var values = ReadArray(data, "values")
+            .EnumerateArray()
+            .Select(BuildValue)
+            .ToArray();
+        return new CompositeEffectValueExpression(operation, values);
+    }
+
+    private static TEnum ReadEnum<TEnum>(JsonElement data, string property)
+        where TEnum : struct, Enum
+    {
+        var element = data.GetProperty(property);
+        return JsonSerializer.Deserialize<TEnum>(element.GetRawText(), JsonOptions);
+    }
+
+    private static JsonElement ReadObject(JsonElement data, string property)
+    {
+        var element = data.GetProperty(property);
+        if (element.ValueKind != JsonValueKind.Object)
+            throw new InvalidDataException($"Validated property '{property}' must be an object.");
+        return element;
+    }
+
+    private static JsonElement ReadArray(JsonElement data, string property)
+    {
+        var element = data.GetProperty(property);
+        if (element.ValueKind != JsonValueKind.Array)
+            throw new InvalidDataException($"Validated property '{property}' must be an array.");
+        return element;
+    }
 
     private static EffectTargetSelector BuildTarget(TargetData? data)
     {
@@ -204,6 +276,13 @@ public sealed class ModLoader
             data.ExcludeSource ?? false,
             string.IsNullOrWhiteSpace(data.TypeId) ? null : new UnitTypeId(data.TypeId),
             string.IsNullOrWhiteSpace(data.TagId) ? null : new TagId(data.TagId));
+    }
+
+    private static EffectUnitQuery BuildQuery(JsonElement data)
+    {
+        var query = JsonSerializer.Deserialize<QueryData>(data.GetRawText(), JsonOptions)
+            ?? throw new InvalidDataException("Validated unit query contained no data.");
+        return BuildQuery(query);
     }
 
     private static T[] ReadDirectory<T>(string directory)
@@ -272,11 +351,11 @@ public sealed class ModLoader
     private sealed record EffectData(
         string Kind,
         TargetData? Target,
-        int? Attack,
-        int? Health,
-        int? Amount,
+        JsonElement? Attack,
+        JsonElement? Health,
+        JsonElement? Amount,
         string? UnitId,
-        int? Count,
+        JsonElement? Count,
         string? BehaviorId,
         string? Event,
         string? PowerId);
