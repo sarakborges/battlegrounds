@@ -183,12 +183,17 @@ public sealed class MatchEngine
                 var snapshot = eliminatedOpponent
                     ?? throw new InvalidOperationException("No eliminated-opponent snapshot is available for this round.");
                 var input = new CombatInput(
-                    CombatParticipant.FromField(player.Id, player.Field, player.Leader?.CurrentPowerId),
+                    CombatParticipant.FromField(
+                        player.Id,
+                        player.Field,
+                        player.Leader?.CurrentPowerId,
+                        player.EffectHistory.Snapshot()),
                     snapshot.Participant);
                 var combatResult = _combatEngine.Resolve(input, _combatRules, _randomSource);
 
                 AccumulateResourceDeltas(combatResult, resourceAdjustments, [player.Id]);
                 AccumulatePowerChanges(combatResult, powerChanges, [player.Id]);
+                ApplyHistoryDeltas(match, combatResult, [player.Id]);
 
                 var settlement = SettleAgainstEliminatedOpponent(player, snapshot, input, combatResult);
                 settlements.Add(settlement);
@@ -203,17 +208,22 @@ public sealed class MatchEngine
             var rightPlayerId = pairing.RightPlayerId!.Value;
             var left = GetActivePlayer(match, pairing.LeftPlayerId);
             var right = GetActivePlayer(match, rightPlayerId);
-            var liveInput = CombatInput.FromFields(
-                left.Id,
-                left.Field,
-                right.Id,
-                right.Field,
-                left.Leader?.CurrentPowerId,
-                right.Leader?.CurrentPowerId);
+            var liveInput = new CombatInput(
+                CombatParticipant.FromField(
+                    left.Id,
+                    left.Field,
+                    left.Leader?.CurrentPowerId,
+                    left.EffectHistory.Snapshot()),
+                CombatParticipant.FromField(
+                    right.Id,
+                    right.Field,
+                    right.Leader?.CurrentPowerId,
+                    right.EffectHistory.Snapshot()));
             var liveResult = _combatEngine.Resolve(liveInput, _combatRules, _randomSource);
 
             AccumulateResourceDeltas(liveResult, resourceAdjustments, [left.Id, right.Id]);
             AccumulatePowerChanges(liveResult, powerChanges, [left.Id, right.Id]);
+            ApplyHistoryDeltas(match, liveResult, [left.Id, right.Id]);
 
             settlements.Add(SettleLiveCombat(left, right, liveInput, liveResult));
             if (left.IsEliminated)
@@ -413,6 +423,26 @@ public sealed class MatchEngine
             {
                 changes[change.Key] = change.Value;
             }
+        }
+    }
+
+    private static void ApplyHistoryDeltas(
+        MatchState match,
+        CombatResult result,
+        IReadOnlyCollection<PlayerId> allowedPlayers)
+    {
+        var allowed = allowedPlayers.ToHashSet();
+        foreach (var delta in result.HistoryDeltas)
+        {
+            if (!allowed.Contains(delta.Key))
+            {
+                continue;
+            }
+            if (!match.TryGetPlayer(delta.Key, out var player))
+            {
+                throw new InvalidOperationException($"Cannot settle effect history for player '{delta.Key}'.");
+            }
+            player.EffectHistory.ApplyCombatDelta(delta.Value);
         }
     }
 
