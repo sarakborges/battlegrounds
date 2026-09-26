@@ -70,7 +70,7 @@ public sealed class PreparationEffectExecutionTests
             [
                 new TriggerDefinition(
                     NativeTriggerKeys.OnPlay,
-                    [new DealDamageEffectDefinition(new EffectTargetSelector(EffectTargetScope.AllFriendly), 1)]),
+                    [new DealDamageEffectDefinition(new EffectTargetSelector(EffectTargetScope.Friendly), 1)]),
             ]);
 
         var setup = CreateStartedMatch([victim, source, token], [victim, source], fieldCapacity: 2, startingResource: 10, acquireCost: 0);
@@ -117,7 +117,7 @@ public sealed class PreparationEffectExecutionTests
                     NativeTriggerKeys.OnPlay,
                     [
                         new TriggerEventEffectDefinition(
-                            new EffectTargetSelector(EffectTargetScope.AllFriendly),
+                            new EffectTargetSelector(EffectTargetScope.Friendly),
                             NativeTriggerKeys.OnDeath),
                     ]),
             ]);
@@ -164,7 +164,7 @@ public sealed class PreparationEffectExecutionTests
                     [
                         new DestroyUnitEffectDefinition(
                             new EffectTargetSelector(
-                                EffectTargetScope.AllFriendly,
+                                EffectTargetScope.Friendly,
                                 requiredTagId: sacrificeTag.Id)),
                     ]),
             ]);
