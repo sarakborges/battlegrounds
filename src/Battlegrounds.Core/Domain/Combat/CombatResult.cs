@@ -62,4 +62,7 @@ public readonly record struct CombatAttack(
     bool AttackerRevived,
     bool TargetRevived);
 
-public readonly record struct CombatSurvivor(UnitInstanceId InstanceId, int Health);
+public readonly record struct CombatSurvivor(
+    UnitInstanceId InstanceId,
+    int Health,
+    int Tier = 1);

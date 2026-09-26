@@ -126,12 +126,13 @@ public sealed class ModValidator
             root,
             file,
             "$",
-            ["minimumPlayers", "maximumPlayers"],
-            ["minimumPlayers", "maximumPlayers"],
+            ["minimumPlayers", "maximumPlayers", "startingHealth"],
+            ["minimumPlayers", "maximumPlayers", "startingHealth"],
             issues);
 
         var hasMinimum = TryInt(root, "minimumPlayers", file, "$.minimumPlayers", issues, out var minimum);
         var hasMaximum = TryInt(root, "maximumPlayers", file, "$.maximumPlayers", issues, out var maximum);
+        var hasHealth = TryInt(root, "startingHealth", file, "$.startingHealth", issues, out var startingHealth);
 
         if (hasMinimum && minimum <= 0)
             issues.Add(new("INVALID_VALUE", file, "$.minimumPlayers", "minimumPlayers must be positive."));
@@ -139,6 +140,8 @@ public sealed class ModValidator
             issues.Add(new("INVALID_VALUE", file, "$.maximumPlayers", "maximumPlayers must be positive."));
         if (hasMinimum && hasMaximum && maximum < minimum)
             issues.Add(new("INVALID_VALUE", file, "$.maximumPlayers", "maximumPlayers cannot be lower than minimumPlayers."));
+        if (hasHealth && startingHealth <= 0)
+            issues.Add(new("INVALID_VALUE", file, "$.startingHealth", "startingHealth must be positive."));
     }
 
     private static int? ValidatePreparation(JsonDocument? document, List<ModValidationIssue> issues)
@@ -209,11 +212,24 @@ public sealed class ModValidator
         const string file = "rules/combat.json";
         if (!TryObject(document, file, "$", issues, out var root)) return;
 
-        ValidateKeys(root, file, "$", ["startingSidePolicy"], ["startingSidePolicy"], issues);
-        if (RequireNonEmptyString(root, "startingSidePolicy", file, "$.startingSidePolicy", issues, out var value) &&
-            value is not ("random" or "largerFieldThenRandom"))
+        ValidateKeys(
+            root,
+            file,
+            "$",
+            ["startingSidePolicy", "postCombatDamagePolicy"],
+            ["startingSidePolicy", "postCombatDamagePolicy"],
+            issues);
+
+        if (RequireNonEmptyString(root, "startingSidePolicy", file, "$.startingSidePolicy", issues, out var sidePolicy) &&
+            sidePolicy is not ("random" or "largerFieldThenRandom"))
         {
-            issues.Add(new("INVALID_VALUE", file, "$.startingSidePolicy", $"Unknown startingSidePolicy '{value}'."));
+            issues.Add(new("INVALID_VALUE", file, "$.startingSidePolicy", $"Unknown startingSidePolicy '{sidePolicy}'."));
+        }
+
+        if (RequireNonEmptyString(root, "postCombatDamagePolicy", file, "$.postCombatDamagePolicy", issues, out var damagePolicy) &&
+            damagePolicy != "winnerTierPlusSurvivorTiers")
+        {
+            issues.Add(new("INVALID_VALUE", file, "$.postCombatDamagePolicy", $"Unknown postCombatDamagePolicy '{damagePolicy}'."));
         }
     }
 

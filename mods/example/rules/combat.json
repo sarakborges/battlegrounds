@@ -1,3 +1,4 @@
 {
-  "startingSidePolicy": "largerFieldThenRandom"
+  "startingSidePolicy": "largerFieldThenRandom",
+  "postCombatDamagePolicy": "winnerTierPlusSurvivorTiers"
 }

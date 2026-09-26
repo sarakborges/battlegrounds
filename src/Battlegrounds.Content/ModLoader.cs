@@ -47,7 +47,10 @@ public sealed class ModLoader
         var unitData = ReadRequired<UnitData[]>(Path.Combine(modDirectory, "content", "units.json"));
         var poolData = ReadRequired<UnitPoolData[]>(Path.Combine(modDirectory, "content", "pool.json"));
 
-        var matchRules = new MatchRules(matchRulesData.MinimumPlayers, matchRulesData.MaximumPlayers);
+        var matchRules = new MatchRules(
+            matchRulesData.MinimumPlayers,
+            matchRulesData.MaximumPlayers,
+            matchRulesData.StartingHealth);
         var preparationRules = new PreparationRules(
             preparationRulesData.StartingResource,
             preparationRulesData.ResourcePerRound,
@@ -60,7 +63,9 @@ public sealed class ModLoader
             preparationRulesData.MaximumTier,
             preparationRulesData.OfferSizesByTier,
             preparationRulesData.InitialUpgradeCostsByTier);
-        var combatRules = new CombatRules(combatRulesData.StartingSidePolicy);
+        var combatRules = new CombatRules(
+            combatRulesData.StartingSidePolicy,
+            combatRulesData.PostCombatDamagePolicy);
 
         var behaviorCatalog = new BehaviorCatalog(behaviorData.Select(data =>
             new BehaviorDefinition(new BehaviorId(data.Id), data.Name, new NativeBehaviorKey(data.Handler))));
@@ -150,7 +155,7 @@ public sealed class ModLoader
     }
 
     private sealed record ModManifest(int SchemaVersion, string Id, string Name, Dictionary<string, string> Terminology);
-    private sealed record MatchRulesData(int MinimumPlayers, int MaximumPlayers);
+    private sealed record MatchRulesData(int MinimumPlayers, int MaximumPlayers, int StartingHealth);
     private sealed record PreparationRulesData(
         int StartingResource,
         int ResourcePerRound,
@@ -163,7 +168,9 @@ public sealed class ModLoader
         int MaximumTier,
         int[] OfferSizesByTier,
         int[] InitialUpgradeCostsByTier);
-    private sealed record CombatRulesData(StartingSidePolicy StartingSidePolicy);
+    private sealed record CombatRulesData(
+        StartingSidePolicy StartingSidePolicy,
+        PostCombatDamagePolicy PostCombatDamagePolicy);
     private sealed record BehaviorData(string Id, string Name, string Handler);
     private sealed record NamedIdData(string Id, string Name);
     private sealed record UnitData(

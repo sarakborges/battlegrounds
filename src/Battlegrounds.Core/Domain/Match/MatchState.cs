@@ -16,6 +16,11 @@ public sealed class MatchState
     public int Round { get; private set; }
     public long Revision { get; private set; }
     public IReadOnlyList<PlayerState> Players => _playersView;
+    public int ActivePlayerCount => _players.Count(player => !player.IsEliminated);
+    public PlayerId? WinnerPlayerId =>
+        Phase == MatchPhase.Finished
+            ? _players.Where(player => !player.IsEliminated).Select(player => (PlayerId?)player.Id).SingleOrDefault()
+            : null;
 
     private MatchState(List<PlayerState> players)
     {
@@ -42,7 +47,7 @@ public sealed class MatchState
             throw new ArgumentException("Player ids must be unique.", nameof(playerIds));
         }
 
-        return new MatchState(ids.Select(id => new PlayerState(id)).ToList());
+        return new MatchState(ids.Select(id => new PlayerState(id, rules.StartingHealth)).ToList());
     }
 
     public bool TryGetPlayer(PlayerId playerId, out PlayerState player) =>
@@ -53,6 +58,11 @@ public sealed class MatchState
         if (Phase is not (MatchPhase.Setup or MatchPhase.Combat))
         {
             throw new InvalidOperationException($"Cannot begin preparation from {Phase}.");
+        }
+
+        if (ActivePlayerCount <= 1)
+        {
+            throw new InvalidOperationException("A finished match cannot begin another preparation round.");
         }
 
         Round++;
@@ -66,7 +76,27 @@ public sealed class MatchState
             throw new InvalidOperationException($"Cannot begin combat from {Phase}.");
         }
 
+        if (ActivePlayerCount <= 1)
+        {
+            throw new InvalidOperationException("A finished match cannot begin combat.");
+        }
+
         Phase = MatchPhase.Combat;
+    }
+
+    internal void Finish()
+    {
+        if (Phase != MatchPhase.Combat)
+        {
+            throw new InvalidOperationException($"Cannot finish match from {Phase}.");
+        }
+
+        if (ActivePlayerCount > 1)
+        {
+            throw new InvalidOperationException("Cannot finish while more than one player remains active.");
+        }
+
+        Phase = MatchPhase.Finished;
     }
 
     internal UnitInstance CreateUnit(
