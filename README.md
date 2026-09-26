@@ -11,6 +11,7 @@ Examples:
 | Core concept | A mod may display it as |
 | --- | --- |
 | `Unit` | Minion, Digimon, Fighter, Creature |
+| `Leader` | Hero, Tamer, Trainer, Commander |
 | `Resource` | Gold, Data, Credits, Energy |
 | `Offer` | Tavern, Market, Portal, Draft |
 | `Tier` | Tavern Tier, Level, Rank, Stage |
@@ -20,6 +21,53 @@ Examples:
 | `EliminatedOpponentSnapshot` | Ghost, Echo, Kel'Thuzad-like dummy, etc. |
 
 The Core must never encode fandom-specific display terminology into IDs, commands, rules or algorithms. There is intentionally no hardcoded `Standard` gameplay preset in Core.
+
+## One authored entity per file
+
+Mod content never uses giant catalog arrays such as `units.json`, `leaders.json`, `types.json` or `behaviors.json`.
+
+Every authored entity with its own ID lives in its own file:
+
+```text
+content/
+  leaders/
+    steady.json
+    vital.json
+  units/
+    scout.json
+    guard.json
+  types/
+    organic.json
+    construct.json
+  tags/
+    starter.json
+  behaviors/
+    protector.json
+    ward.json
+```
+
+The file name is part of the validation contract: `content/units/guard.json` must contain `"id": "guard"`. A mismatch rejects the whole mod.
+
+This rule applies to future ID-addressable content too: powers, artifacts, spells, quests, anomalies, or other authored entities should each have their own file rather than being accumulated into one array document.
+
+Aggregate files are reserved for genuinely package-global configuration, such as `mod.json`, `rules/*.json` and `content/pool.json`.
+
+## Leaders
+
+`Leader` is the neutral Core role for concepts such as a Battlegrounds Hero, Digimon Tamer, Pokémon Trainer, Commander, etc.
+
+Leaders are authored under `content/leaders/<id>.json` and currently define:
+
+- stable `LeaderId`;
+- display name;
+- `healthModifier` applied to generic starting Health;
+- starting `armor`.
+
+`PlayerState` owns a `LeaderState`. Armor is mutable runtime state and absorbs player damage before Health. A player is eliminated only when Health reaches zero.
+
+Match creation from a real mod uses explicit `PlayerSetup(PlayerId, LeaderId)` values. The Core resolves the selected ID through the mod's validated `LeaderCatalog`; callers cannot invent Health or Armor values outside the authored leader definition.
+
+Leader powers are intentionally not a separate effect language. When added, they will reuse the shared trigger/effect runtime described below.
 
 ## Native behaviors, mod-defined identities
 
@@ -81,11 +129,13 @@ Setup
   → Finished
 ```
 
-`PlayerState` owns generic `Health`; `rules/match.json` provides `startingHealth`. A player at zero Health is eliminated and stops entering Preparation.
+`PlayerState` owns generic `Health`; `rules/match.json` provides `startingHealth`, then the selected Leader may apply a `healthModifier`. A player at zero Health is eliminated and stops entering Preparation.
 
 Combat remains an isolated simulation. Settlement applies combat results back to persistent match state only after simulation completes.
 
 The current native post-combat damage policy is `winnerTierPlusSurvivorTiers`: winner Tier plus the Tiers of surviving units. Draws deal zero player damage. Generated/token survivors not present in the starting combat snapshot use their combat survivor Tier, currently Tier 1 by default.
+
+Player damage is applied to Leader Armor first and Health second. `CombatSettlement` reports incoming damage, Armor absorbed, Armor after and Health after so UI/replay consumers do not need to reconstruct the calculation.
 
 Combat `addResource` effects leave combat as result deltas and are applied after the next Preparation resource baseline and before `onTurnStart`.
 
@@ -116,14 +166,7 @@ An initially odd lobby has no eliminated-player snapshot yet and is therefore re
 
 `MatchState` owns authoritative placement/history data.
 
-`MatchElimination` records:
-
-- elimination sequence;
-- round;
-- `PlayerId`;
-- final placement;
-- Health before combat;
-- Health after settlement.
+`MatchElimination` records elimination sequence, round, `PlayerId`, final placement, Health before combat and Health after settlement.
 
 Players eliminated during the same combat round are ranked for displayed placement by their pre-combat Health, with `PlayerId` as a deterministic tie-breaker. Elimination sequence is stored separately, because it also determines which eliminated player becomes the next archived opponent snapshot.
 
@@ -133,9 +176,21 @@ When the match finishes, the remaining player receives placement 1. Consumers ca
 
 `ModLoader.Load(...)` validates the complete mod before creating a `ModPackage`. Invalid mods are rejected as a whole.
 
-`ModLoader.Validate(...)` returns a structured report suitable for UI, including file, JSON path, issue code, severity and message.
+`ModLoader.Validate(...)` and `ModValidator.Validate(...)` return a structured report suitable for UI, including the actual file, JSON path, issue code, severity and message.
 
-Validation covers required files/keys, unknown keys, JSON types/ranges, duplicate IDs/references, cross-file references, unsupported native handlers/triggers/effects/policies, taxonomy references and conditional required parameters.
+Validation covers:
+
+- required global files and content directories;
+- required and unknown keys;
+- JSON types and numeric ranges;
+- one-object-per-entity-file structure;
+- entity ID/file-name agreement;
+- duplicate IDs/references;
+- cross-file references;
+- unsupported native handlers/triggers/effects/policies;
+- taxonomy references;
+- leader starting values;
+- conditional effect/trigger parameters.
 
 Examples of required rules:
 
@@ -167,10 +222,16 @@ mods/
       preparation.json
       combat.json
     content/
-      behaviors.json
-      types.json
-      tags.json
-      units.json
+      leaders/
+        <leader-id>.json
+      behaviors/
+        <behavior-id>.json
+      types/
+        <type-id>.json
+      tags/
+        <tag-id>.json
+      units/
+        <unit-id>.json
       pool.json
     assets/                 # future
     localization/           # future
@@ -205,12 +266,15 @@ Read `ARCHITECTURE.md` before adding features. Its ownership, dependency, mutati
 ## Current foundation
 
 - authoritative `MatchState` lifecycle (`Setup → Preparation → Combat → Finished`), Health, elimination, placement and history;
+- neutral `LeaderDefinition`, `LeaderCatalog`, `LeaderState`, Health modifiers and Armor;
+- explicit player-to-leader setup through validated `LeaderId` values;
 - `MatchEngine` round orchestration, explicit pairings, post-combat settlement and odd-player eliminated-opponent combat;
 - immutable eliminated-player combat snapshots using the latest prior elimination;
-- mod-driven `startingHealth`, starting-side policy and post-combat damage policy;
+- mod-driven starting Health, starting-side policy and post-combat damage policy;
 - authoritative `PlayerState` with read-only `Reserve`, `Field` and `Offer` views;
 - immutable `UnitDefinition` separated from mutable `UnitInstance`;
-- deterministic catalogs for units, behaviors, types and tags;
+- deterministic catalogs for units, leaders, behaviors, types and tags;
+- one authored ID-addressable entity per JSON file;
 - authoritative shared `UnitPool`;
 - preparation commands for acquire, release, deploy, refresh, tier upgrade, freeze/unfreeze and end preparation;
 - deterministic injected RNG;
@@ -234,4 +298,4 @@ dotnet test tests/Battlegrounds.Content.Tests/Battlegrounds.Content.Tests.csproj
 
 ## Next architectural slice
 
-Introduce neutral leader definitions and leader-owned runtime state, then layer mod-defined leader terminology, starting modifiers such as armor/Health adjustments, and powers on top of the existing shared effect runtime. Matchmaking policy/history (including repeat-opponent restrictions) remains a separate concern from combat pairing execution.
+Add leader powers on top of the existing shared trigger/effect runtime without creating a leader-specific effect engine. After that, expand match setup around leader availability/selection rules and continue matchmaking policy/history separately from combat pairing execution.
