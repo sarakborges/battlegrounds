@@ -39,17 +39,27 @@ internal sealed class PreparationEffectEngine
         _powerCatalog = powerCatalog;
     }
 
+    public void ProcessGameEvent(
+        MatchState match,
+        PlayerState owner,
+        NativeGameEventKey @event,
+        UnitDefinition? unit = null)
+    {
+        var (_, runtime) = GetRuntime(match);
+        runtime.RecordGameEvent(owner.Id, @event, unit);
+    }
+
     public void ProcessPlayedUnit(MatchState match, PlayerState owner, UnitInstance unit)
     {
         var (world, runtime) = GetRuntime(match);
         var subject = world.Wrap(unit, owner.Id);
 
-        world.RecordEvent(owner.Id, NativeGameEventKeys.UnitPlayed, unit.Definition);
+        runtime.RecordGameEvent(owner.Id, NativeGameEventKeys.UnitPlayed, unit.Definition);
         runtime.Process(new GameEffectEvent(NativeTriggerKeys.OnPlay, subject));
 
         if (unit.IsAlive && owner.Field.Any(candidate => candidate.Id == unit.Id))
         {
-            world.RecordEvent(owner.Id, NativeGameEventKeys.UnitSummoned, unit.Definition);
+            runtime.RecordGameEvent(owner.Id, NativeGameEventKeys.UnitSummoned, unit.Definition);
             runtime.Process(new GameEffectEvent(NativeTriggerKeys.OnSummon, subject));
         }
     }
@@ -154,7 +164,12 @@ internal sealed class PreparationEffectEngine
         {
             _runtimeMatch = match;
             _runtimeRound = match.Round;
-            _runtimeWorld = new PreparationEffectWorld(match, _rules, _unitPool, _powerCatalog);
+            _runtimeWorld = new PreparationEffectWorld(
+                match,
+                _rules,
+                _unitPool,
+                _powerCatalog,
+                CreatePowerSource);
             _runtime = new GameEffectRuntime(
                 _runtimeWorld,
                 _randomSource,
@@ -171,6 +186,7 @@ internal sealed class PreparationEffectEngine
         private readonly PreparationRules _rules;
         private readonly IUnitPool _unitPool;
         private readonly PowerCatalog? _powerCatalog;
+        private readonly Func<PlayerState, PowerDefinition, PowerRuntimeUnit> _powerSourceFactory;
         private readonly Dictionary<UnitInstanceId, PreparationRuntimeUnit> _wrappers = [];
         private readonly Dictionary<UnitInstanceId, (PlayerId OwnerId, int Index)> _deathPositions = [];
         private readonly Dictionary<UnitInstanceId, int> _summonCursors = [];
@@ -179,12 +195,14 @@ internal sealed class PreparationEffectEngine
             MatchState match,
             PreparationRules rules,
             IUnitPool unitPool,
-            PowerCatalog? powerCatalog)
+            PowerCatalog? powerCatalog,
+            Func<PlayerState, PowerDefinition, PowerRuntimeUnit> powerSourceFactory)
         {
             _match = match ?? throw new ArgumentNullException(nameof(match));
             _rules = rules ?? throw new ArgumentNullException(nameof(rules));
             _unitPool = unitPool ?? throw new ArgumentNullException(nameof(unitPool));
             _powerCatalog = powerCatalog;
+            _powerSourceFactory = powerSourceFactory ?? throw new ArgumentNullException(nameof(powerSourceFactory));
         }
 
         public IReadOnlyList<IEffectRuntimeUnit> Units =>
@@ -217,6 +235,20 @@ internal sealed class PreparationEffectEngine
 
             unit = null!;
             return false;
+        }
+
+        public IReadOnlyList<IEffectRuntimeUnit> GetHistoryEventListeners(PlayerId playerId)
+        {
+            var player = GetPlayer(playerId);
+            var listeners = new List<IEffectRuntimeUnit>();
+            if (_powerCatalog is not null &&
+                player.Leader?.CurrentPowerId is PowerId powerId &&
+                _powerCatalog.TryGet(powerId, out var power))
+            {
+                listeners.Add(_powerSourceFactory(player, power));
+            }
+            listeners.AddRange(player.Field.Select(unit => (IEffectRuntimeUnit)Wrap(unit, player.Id)));
+            return listeners;
         }
 
         public void ModifyStats(IEffectRuntimeUnit unit, int attackDelta, int healthDelta) =>
@@ -269,12 +301,7 @@ internal sealed class PreparationEffectEngine
 
         public void AdjustResource(PlayerId playerId, int amount)
         {
-            if (!_match.TryGetPlayer(playerId, out var player))
-            {
-                throw new InvalidOperationException("Effect source owner is not part of the match.");
-            }
-
-            player.AdjustResource(amount, _rules.MaximumResource);
+            GetPlayer(playerId).AdjustResource(amount, _rules.MaximumResource);
         }
 
         public void SetPower(PlayerId playerId, PowerId powerId)
@@ -283,7 +310,8 @@ internal sealed class PreparationEffectEngine
             {
                 throw new InvalidOperationException($"Unknown power '{powerId}'.");
             }
-            if (!_match.TryGetPlayer(playerId, out var player) || player.Leader is null)
+            var player = GetPlayer(playerId);
+            if (player.Leader is null)
             {
                 throw new InvalidOperationException("Effect source owner has no leader state.");
             }
@@ -302,7 +330,9 @@ internal sealed class PreparationEffectEngine
             EffectSourceKey source,
             int triggerIndex,
             EffectHistoryScope scope) =>
-            GetPlayer(playerId).EffectHistory.GetTriggerActivationCount(source, triggerIndex, scope);
+            scope == EffectHistoryScope.Combat
+                ? int.MaxValue
+                : GetPlayer(playerId).EffectHistory.GetTriggerActivationCount(source, triggerIndex, scope);
 
         public void RecordTriggerActivation(
             PlayerId playerId,
@@ -312,7 +342,7 @@ internal sealed class PreparationEffectEngine
         {
             if (scope == EffectHistoryScope.Combat)
             {
-                throw new InvalidOperationException("combat activation limits cannot be evaluated during preparation.");
+                return;
             }
             GetPlayer(playerId).EffectHistory.RecordTriggerActivation(source, triggerIndex, scope);
         }
