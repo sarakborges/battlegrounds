@@ -13,6 +13,12 @@ internal sealed class DynamicEffectValueModValidator
     };
 
     private static readonly HashSet<string> Scopes = ["self", "selected", "friendly", "enemy"];
+    private static readonly HashSet<string> HistoryScopes = ["turn", "combat", "match"];
+    private static readonly HashSet<string> GameEvents =
+    [
+        "unitAcquired", "unitReleased", "unitPlayed", "unitSummoned", "unitDied",
+        "unitAttacked", "unitDamaged", "powerActivated", "offerRefreshed", "tierUpgraded",
+    ];
     private static readonly HashSet<string> Stats = ["attack", "health"];
     private static readonly HashSet<string> Operations = ["add", "multiply", "min", "max"];
 
@@ -56,6 +62,26 @@ internal sealed class DynamicEffectValueModValidator
                 : null;
             var allowSelected = powerMode && eventName == "onActivate";
 
+            if (trigger.TryGetProperty("conditions", out var conditions) && conditions.ValueKind == JsonValueKind.Array)
+            {
+                var conditionIndex = 0;
+                foreach (var condition in conditions.EnumerateArray())
+                {
+                    if (condition.ValueKind == JsonValueKind.Object &&
+                        condition.TryGetProperty("kind", out var kindElement) &&
+                        kindElement.ValueKind == JsonValueKind.String &&
+                        kindElement.GetString() == "value")
+                    {
+                        var conditionPath = $"{triggerPath}.conditions[{conditionIndex}]";
+                        if (condition.TryGetProperty("left", out var left))
+                            ValidateValue(file.Path, left, conditionPath + ".left", false, allowSelected, typeIds, tagIds, 0, issues);
+                        if (condition.TryGetProperty("right", out var right))
+                            ValidateValue(file.Path, right, conditionPath + ".right", false, allowSelected, typeIds, tagIds, 0, issues);
+                    }
+                    conditionIndex++;
+                }
+            }
+
             if (trigger.TryGetProperty("effects", out var effects) && effects.ValueKind == JsonValueKind.Array)
             {
                 var effectIndex = 0;
@@ -98,15 +124,12 @@ internal sealed class DynamicEffectValueModValidator
             {
                 var hasAttack = effect.TryGetProperty("attack", out var attack);
                 var hasHealth = effect.TryGetProperty("health", out var health);
-                if (!hasAttack && !hasHealth)
-                {
-                    return;
-                }
+                if (!hasAttack && !hasHealth) return;
 
                 if (hasAttack)
-                    ValidateValue(file, attack, path + ".attack", allowTargetStat: true, allowSelected, typeIds, tagIds, 0, issues);
+                    ValidateValue(file, attack, path + ".attack", true, allowSelected, typeIds, tagIds, 0, issues);
                 if (hasHealth)
-                    ValidateValue(file, health, path + ".health", allowTargetStat: true, allowSelected, typeIds, tagIds, 0, issues);
+                    ValidateValue(file, health, path + ".health", true, allowSelected, typeIds, tagIds, 0, issues);
 
                 if (IsLiteral(attack, hasAttack, out var attackValue) &&
                     IsLiteral(health, hasHealth, out var healthValue) &&
@@ -120,7 +143,7 @@ internal sealed class DynamicEffectValueModValidator
             case "dealDamage":
                 if (effect.TryGetProperty("amount", out var damage))
                 {
-                    ValidateValue(file, damage, path + ".amount", allowTargetStat: true, allowSelected, typeIds, tagIds, 0, issues);
+                    ValidateValue(file, damage, path + ".amount", true, allowSelected, typeIds, tagIds, 0, issues);
                     if (TryLiteral(damage, out var value) && value <= 0)
                         issues.Add(new("INVALID_VALUE", file, path + ".amount", "amount must be positive when it is a literal."));
                 }
@@ -129,7 +152,7 @@ internal sealed class DynamicEffectValueModValidator
             case "summonUnit":
                 if (effect.TryGetProperty("count", out var count))
                 {
-                    ValidateValue(file, count, path + ".count", allowTargetStat: false, allowSelected, typeIds, tagIds, 0, issues);
+                    ValidateValue(file, count, path + ".count", false, allowSelected, typeIds, tagIds, 0, issues);
                     if (TryLiteral(count, out var value) && value <= 0)
                         issues.Add(new("INVALID_VALUE", file, path + ".count", "count must be positive when it is a literal."));
                 }
@@ -138,7 +161,7 @@ internal sealed class DynamicEffectValueModValidator
             case "addResource":
                 if (effect.TryGetProperty("amount", out var resource))
                 {
-                    ValidateValue(file, resource, path + ".amount", allowTargetStat: false, allowSelected, typeIds, tagIds, 0, issues);
+                    ValidateValue(file, resource, path + ".amount", false, allowSelected, typeIds, tagIds, 0, issues);
                     if (TryLiteral(resource, out var value) && value == 0)
                         issues.Add(new("INVALID_VALUE", file, path + ".amount", "amount cannot be zero when it is a literal."));
                 }
@@ -204,6 +227,11 @@ internal sealed class DynamicEffectValueModValidator
                     ValidateQuery(file, query, path + ".query", allowSelected, typeIds, tagIds, issues);
                 break;
 
+            case "eventCount":
+                ValidateKeys(value, file, path, ["kind", "event", "scope", "typeId", "tagId"], ["kind", "event", "scope"], issues);
+                ValidateHistoryQuery(value, file, path, typeIds, tagIds, issues);
+                break;
+
             default:
                 if (kind is not null && Operations.Contains(kind))
                 {
@@ -215,23 +243,12 @@ internal sealed class DynamicEffectValueModValidator
                         break;
                     }
                     if (values.GetArrayLength() < 2)
-                    {
                         issues.Add(new("INVALID_VALUE", file, path + ".values", "Composite value expressions require at least two operands."));
-                    }
 
                     var index = 0;
                     foreach (var operand in values.EnumerateArray())
                     {
-                        ValidateValue(
-                            file,
-                            operand,
-                            $"{path}.values[{index}]",
-                            allowTargetStat,
-                            allowSelected,
-                            typeIds,
-                            tagIds,
-                            depth + 1,
-                            issues);
+                        ValidateValue(file, operand, $"{path}.values[{index}]", allowTargetStat, allowSelected, typeIds, tagIds, depth + 1, issues);
                         index++;
                     }
                 }
@@ -243,11 +260,30 @@ internal sealed class DynamicEffectValueModValidator
         }
     }
 
-    private static void ValidateStat(
+    private static void ValidateHistoryQuery(
         JsonElement expression,
         string file,
         string path,
+        IReadOnlySet<string> typeIds,
+        IReadOnlySet<string> tagIds,
         List<ModValidationIssue> issues)
+    {
+        if (TryRequiredString(expression, "event", file, path + ".event", issues, out var eventName) &&
+            !GameEvents.Contains(eventName!))
+        {
+            issues.Add(new("INVALID_VALUE", file, path + ".event", $"Unknown game event '{eventName}'."));
+        }
+
+        if (TryRequiredString(expression, "scope", file, path + ".scope", issues, out var scope) &&
+            !HistoryScopes.Contains(scope!))
+        {
+            issues.Add(new("INVALID_VALUE", file, path + ".scope", $"Unknown history scope '{scope}'."));
+        }
+
+        ValidateReferences(expression, file, path, typeIds, tagIds, issues);
+    }
+
+    private static void ValidateStat(JsonElement expression, string file, string path, List<ModValidationIssue> issues)
     {
         if (TryRequiredString(expression, "stat", file, path + ".stat", issues, out var stat) && !Stats.Contains(stat!))
             issues.Add(new("INVALID_VALUE", file, path + ".stat", $"Unknown stat '{stat}'."));
@@ -287,14 +323,25 @@ internal sealed class DynamicEffectValueModValidator
                 issues.Add(new("INVALID_PARAMETER", file, path + ".excludeSource", "excludeSource is only valid for friendly queries."));
         }
 
-        if (query.TryGetProperty("typeId", out _) &&
-            TryRequiredString(query, "typeId", file, path + ".typeId", issues, out var typeId) &&
+        ValidateReferences(query, file, path, typeIds, tagIds, issues);
+    }
+
+    private static void ValidateReferences(
+        JsonElement element,
+        string file,
+        string path,
+        IReadOnlySet<string> typeIds,
+        IReadOnlySet<string> tagIds,
+        List<ModValidationIssue> issues)
+    {
+        if (element.TryGetProperty("typeId", out _) &&
+            TryRequiredString(element, "typeId", file, path + ".typeId", issues, out var typeId) &&
             !typeIds.Contains(typeId!))
         {
             issues.Add(new("UNKNOWN_REFERENCE", file, path + ".typeId", $"Unknown unit type '{typeId}'."));
         }
-        if (query.TryGetProperty("tagId", out _) &&
-            TryRequiredString(query, "tagId", file, path + ".tagId", issues, out var tagId) &&
+        if (element.TryGetProperty("tagId", out _) &&
+            TryRequiredString(element, "tagId", file, path + ".tagId", issues, out var tagId) &&
             !tagIds.Contains(tagId!))
         {
             issues.Add(new("UNKNOWN_REFERENCE", file, path + ".tagId", $"Unknown tag '{tagId}'."));
@@ -330,9 +377,7 @@ internal sealed class DynamicEffectValueModValidator
                 using var document = JsonDocument.Parse(File.ReadAllText(fullPath), DocumentOptions);
                 if (document.RootElement.ValueKind == JsonValueKind.Object)
                 {
-                    result.Add(new EntityFile(
-                        relativeDirectory + "/" + Path.GetFileName(fullPath),
-                        document.RootElement.Clone()));
+                    result.Add(new EntityFile(relativeDirectory + "/" + Path.GetFileName(fullPath), document.RootElement.Clone()));
                 }
             }
             catch (JsonException)
