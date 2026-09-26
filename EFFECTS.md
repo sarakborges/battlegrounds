@@ -2,6 +2,50 @@
 
 Effects and triggers are game-domain mechanics. They are not owned by Preparation or Combat. Both phases execute authored mechanics through the shared `GameEffectRuntime` and provide only the state adapter appropriate to that phase.
 
+## Power lifecycle
+
+Powers are independent content entities under `content/powers/<id>.json`. A leader stores only its initial power id; the player's `LeaderState` owns the current power id and may change it during the match.
+
+A power is authored with the same trigger/effect vocabulary used elsewhere:
+
+```json
+{
+  "id": "steady-pulse",
+  "name": "Steady Pulse",
+  "activation": {
+    "cost": 1,
+    "maxUsesPerTurn": 1
+  },
+  "triggers": [
+    {
+      "event": "onActivate",
+      "effects": [
+        {
+          "kind": "modifyStats",
+          "target": { "scope": "selected" },
+          "attack": 1,
+          "health": 1
+        }
+      ]
+    },
+    {
+      "event": "onCombatStart",
+      "effects": [
+        { "kind": "addResource", "amount": 1 }
+      ]
+    }
+  ]
+}
+```
+
+`activation` is optional. A passive-only power omits it and cannot be invoked with `UsePowerCommand`. When `activation` exists, exactly one `onActivate` trigger is required. The supported power lifecycle events are `onMatchStart`, `onTurnStart`, `onTurnEnd`, `onCombatStart`, and `onCombatEnd`, in addition to `onActivate` for active use.
+
+`selected` targets are only valid inside `onActivate`, because lifecycle events do not involve a UI/AI target selection step.
+
+Preparation lifecycle effects mutate authoritative preparation state through its effect-world adapter. Combat lifecycle effects execute against the isolated combat snapshot. Persistent consequences such as `setPower` or resource deltas are returned explicitly in `CombatResult` and settled by `MatchEngine`; Combat never mutates `PlayerState` directly.
+
+When a power changes during an event, the event keeps the original source snapshot. The newly selected power becomes eligible starting with the next lifecycle event rather than being re-entered during the current one.
+
 ## Resolution phases
 
 A logical effect action resolves in this order:
