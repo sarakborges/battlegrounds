@@ -59,9 +59,7 @@ public sealed class ModLoader
             preparationRulesData.MaximumTier,
             preparationRulesData.OfferSizesByTier,
             preparationRulesData.InitialUpgradeCostsByTier);
-        var combatRules = new CombatRules(
-            combatRulesData.MaximumAttacks,
-            combatRulesData.StartingSidePolicy);
+        var combatRules = new CombatRules(combatRulesData.StartingSidePolicy);
 
         if (unitData.Length == 0)
         {
@@ -169,9 +167,7 @@ public sealed class ModLoader
         int[] OfferSizesByTier,
         int[] InitialUpgradeCostsByTier);
 
-    private sealed record CombatRulesData(
-        int MaximumAttacks,
-        StartingSidePolicy StartingSidePolicy);
+    private sealed record CombatRulesData(StartingSidePolicy StartingSidePolicy);
 
     private sealed record UnitData(
         string Id,
