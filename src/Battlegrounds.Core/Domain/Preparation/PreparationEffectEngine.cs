@@ -39,15 +39,27 @@ internal sealed class PreparationEffectEngine
         _powerCatalog = powerCatalog;
     }
 
+    public void ProcessGameEvent(
+        MatchState match,
+        PlayerState owner,
+        NativeGameEventKey @event,
+        UnitDefinition? unit = null)
+    {
+        var (_, runtime) = GetRuntime(match);
+        runtime.RecordGameEvent(owner.Id, @event, unit);
+    }
+
     public void ProcessPlayedUnit(MatchState match, PlayerState owner, UnitInstance unit)
     {
         var (world, runtime) = GetRuntime(match);
         var subject = world.Wrap(unit, owner.Id);
 
+        runtime.RecordGameEvent(owner.Id, NativeGameEventKeys.UnitPlayed, unit.Definition);
         runtime.Process(new GameEffectEvent(NativeTriggerKeys.OnPlay, subject));
 
         if (unit.IsAlive && owner.Field.Any(candidate => candidate.Id == unit.Id))
         {
+            runtime.RecordGameEvent(owner.Id, NativeGameEventKeys.UnitSummoned, unit.Definition);
             runtime.Process(new GameEffectEvent(NativeTriggerKeys.OnSummon, subject));
         }
     }
@@ -142,6 +154,7 @@ internal sealed class PreparationEffectEngine
         return new PowerRuntimeUnit(
             new UnitInstanceId(_nextSyntheticInstanceId--),
             owner.Id,
+            power.Id,
             definition);
     }
 
@@ -151,7 +164,12 @@ internal sealed class PreparationEffectEngine
         {
             _runtimeMatch = match;
             _runtimeRound = match.Round;
-            _runtimeWorld = new PreparationEffectWorld(match, _rules, _unitPool, _powerCatalog);
+            _runtimeWorld = new PreparationEffectWorld(
+                match,
+                _rules,
+                _unitPool,
+                _powerCatalog,
+                CreatePowerSource);
             _runtime = new GameEffectRuntime(
                 _runtimeWorld,
                 _randomSource,
@@ -168,6 +186,7 @@ internal sealed class PreparationEffectEngine
         private readonly PreparationRules _rules;
         private readonly IUnitPool _unitPool;
         private readonly PowerCatalog? _powerCatalog;
+        private readonly Func<PlayerState, PowerDefinition, PowerRuntimeUnit> _powerSourceFactory;
         private readonly Dictionary<UnitInstanceId, PreparationRuntimeUnit> _wrappers = [];
         private readonly Dictionary<UnitInstanceId, (PlayerId OwnerId, int Index)> _deathPositions = [];
         private readonly Dictionary<UnitInstanceId, int> _summonCursors = [];
@@ -176,12 +195,14 @@ internal sealed class PreparationEffectEngine
             MatchState match,
             PreparationRules rules,
             IUnitPool unitPool,
-            PowerCatalog? powerCatalog)
+            PowerCatalog? powerCatalog,
+            Func<PlayerState, PowerDefinition, PowerRuntimeUnit> powerSourceFactory)
         {
             _match = match ?? throw new ArgumentNullException(nameof(match));
             _rules = rules ?? throw new ArgumentNullException(nameof(rules));
             _unitPool = unitPool ?? throw new ArgumentNullException(nameof(unitPool));
             _powerCatalog = powerCatalog;
+            _powerSourceFactory = powerSourceFactory ?? throw new ArgumentNullException(nameof(powerSourceFactory));
         }
 
         public IReadOnlyList<IEffectRuntimeUnit> Units =>
@@ -214,6 +235,20 @@ internal sealed class PreparationEffectEngine
 
             unit = null!;
             return false;
+        }
+
+        public IReadOnlyList<IEffectRuntimeUnit> GetHistoryEventListeners(PlayerId playerId)
+        {
+            var player = GetPlayer(playerId);
+            var listeners = new List<IEffectRuntimeUnit>();
+            if (_powerCatalog is not null &&
+                player.Leader?.CurrentPowerId is PowerId powerId &&
+                _powerCatalog.TryGet(powerId, out var power))
+            {
+                listeners.Add(_powerSourceFactory(player, power));
+            }
+            listeners.AddRange(player.Field.Select(unit => (IEffectRuntimeUnit)Wrap(unit, player.Id)));
+            return listeners;
         }
 
         public void ModifyStats(IEffectRuntimeUnit unit, int attackDelta, int healthDelta) =>
@@ -266,12 +301,7 @@ internal sealed class PreparationEffectEngine
 
         public void AdjustResource(PlayerId playerId, int amount)
         {
-            if (!_match.TryGetPlayer(playerId, out var player))
-            {
-                throw new InvalidOperationException("Effect source owner is not part of the match.");
-            }
-
-            player.AdjustResource(amount, _rules.MaximumResource);
+            GetPlayer(playerId).AdjustResource(amount, _rules.MaximumResource);
         }
 
         public void SetPower(PlayerId playerId, PowerId powerId)
@@ -280,12 +310,41 @@ internal sealed class PreparationEffectEngine
             {
                 throw new InvalidOperationException($"Unknown power '{powerId}'.");
             }
-            if (!_match.TryGetPlayer(playerId, out var player) || player.Leader is null)
+            var player = GetPlayer(playerId);
+            if (player.Leader is null)
             {
                 throw new InvalidOperationException("Effect source owner has no leader state.");
             }
 
             player.Leader.SetPower(powerId);
+        }
+
+        public EffectHistorySnapshot GetHistory(PlayerId playerId) =>
+            GetPlayer(playerId).EffectHistory.Snapshot();
+
+        public void RecordEvent(PlayerId playerId, NativeGameEventKey @event, UnitDefinition? unit = null) =>
+            GetPlayer(playerId).EffectHistory.RecordEvent(@event, unit);
+
+        public int GetTriggerActivationCount(
+            PlayerId playerId,
+            EffectSourceKey source,
+            int triggerIndex,
+            EffectHistoryScope scope) =>
+            scope == EffectHistoryScope.Combat
+                ? int.MaxValue
+                : GetPlayer(playerId).EffectHistory.GetTriggerActivationCount(source, triggerIndex, scope);
+
+        public void RecordTriggerActivation(
+            PlayerId playerId,
+            EffectSourceKey source,
+            int triggerIndex,
+            EffectHistoryScope scope)
+        {
+            if (scope == EffectHistoryScope.Combat)
+            {
+                return;
+            }
+            GetPlayer(playerId).EffectHistory.RecordTriggerActivation(source, triggerIndex, scope);
         }
 
         public IReadOnlyList<IEffectRuntimeUnit> ExtractDeadUnits()
@@ -345,6 +404,11 @@ internal sealed class PreparationEffectEngine
             }
         }
 
+        private PlayerState GetPlayer(PlayerId playerId) =>
+            _match.TryGetPlayer(playerId, out var player)
+                ? player
+                : throw new InvalidOperationException($"Effect history owner '{playerId}' is not part of the match.");
+
         private int ResolveSummonIndex(IEffectRuntimeUnit source, PlayerState owner)
         {
             if (_summonCursors.TryGetValue(source.InstanceId, out var cursor))
@@ -395,7 +459,9 @@ internal sealed class PreparationEffectEngine
     {
         public UnitInstanceId InstanceId { get; }
         public PlayerId OwnerPlayerId { get; }
+        public PowerId PowerId { get; }
         public UnitDefinition Definition { get; }
+        public EffectSourceKey SourceKey => EffectSourceKey.ForPower(PowerId);
         public int Attack => 0;
         public int Health => 1;
         public bool IsAlive => true;
@@ -403,10 +469,12 @@ internal sealed class PreparationEffectEngine
         public PowerRuntimeUnit(
             UnitInstanceId instanceId,
             PlayerId ownerPlayerId,
+            PowerId powerId,
             UnitDefinition definition)
         {
             InstanceId = instanceId;
             OwnerPlayerId = ownerPlayerId;
+            PowerId = powerId;
             Definition = definition ?? throw new ArgumentNullException(nameof(definition));
         }
     }

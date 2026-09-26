@@ -1,5 +1,6 @@
 using System.Collections.ObjectModel;
 using Battlegrounds.Core.Domain.Behaviors;
+using Battlegrounds.Core.Domain.Effects;
 using Battlegrounds.Core.Domain.Ids;
 using Battlegrounds.Core.Domain.Units;
 
@@ -55,11 +56,21 @@ public sealed class CombatParticipant
     public PlayerId PlayerId { get; }
     public PowerId? CurrentPowerId { get; }
     public IReadOnlyList<CombatUnitSnapshot> Units => _units;
+    internal EffectHistorySnapshot History { get; }
 
     public CombatParticipant(
         PlayerId playerId,
         IEnumerable<CombatUnitSnapshot> units,
         PowerId? currentPowerId = null)
+        : this(playerId, units, currentPowerId, EffectHistorySnapshot.Empty)
+    {
+    }
+
+    internal CombatParticipant(
+        PlayerId playerId,
+        IEnumerable<CombatUnitSnapshot> units,
+        PowerId? currentPowerId,
+        EffectHistorySnapshot history)
     {
         ArgumentNullException.ThrowIfNull(units);
 
@@ -75,13 +86,15 @@ public sealed class CombatParticipant
 
         PlayerId = playerId;
         CurrentPowerId = currentPowerId;
+        History = history ?? throw new ArgumentNullException(nameof(history));
         _units = Array.AsReadOnly(materialized);
     }
 
     internal static CombatParticipant FromField(
         PlayerId playerId,
         IReadOnlyList<UnitInstance> field,
-        PowerId? currentPowerId = null) =>
+        PowerId? currentPowerId = null,
+        EffectHistorySnapshot? history = null) =>
         new(
             playerId,
             field.Select(unit => new CombatUnitSnapshot(
@@ -93,7 +106,8 @@ public sealed class CombatParticipant
                 unit.Behaviors.Select(behavior =>
                     new CombatBehaviorSnapshot(behavior.Id, behavior.Handler)),
                 unit.Definition)),
-            currentPowerId);
+            currentPowerId,
+            history ?? EffectHistorySnapshot.Empty);
 }
 
 public readonly record struct CombatUnitSnapshot

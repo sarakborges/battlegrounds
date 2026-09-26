@@ -20,6 +20,7 @@ public static class NativeTriggerKeys
     public static NativeTriggerKey OnPlay { get; } = new("onPlay");
     public static NativeTriggerKey OnDeath { get; } = new("onDeath");
     public static NativeTriggerKey AfterFriendlyDeaths { get; } = new("afterFriendlyDeaths");
+    public static NativeTriggerKey AfterEventCount { get; } = new("afterEventCount");
     public static NativeTriggerKey OnSummon { get; } = new("onSummon");
     public static NativeTriggerKey OnAttack { get; } = new("onAttack");
     public static NativeTriggerKey OnDamage { get; } = new("onDamage");
@@ -30,7 +31,7 @@ public static class NativeTriggerKeys
 
     private static readonly HashSet<NativeTriggerKey> Supported =
     [
-        OnActivate, OnMatchStart, OnPlay, OnDeath, AfterFriendlyDeaths, OnSummon, OnAttack, OnDamage,
+        OnActivate, OnMatchStart, OnPlay, OnDeath, AfterFriendlyDeaths, AfterEventCount, OnSummon, OnAttack, OnDamage,
         OnCombatStart, OnCombatEnd, OnTurnStart, OnTurnEnd,
     ];
 

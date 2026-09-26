@@ -20,6 +20,7 @@ public sealed class ModValidator
             .Concat(powerIssues)
             .Concat(new AdvancedEffectModValidator().Validate(modDirectory))
             .Concat(new DynamicEffectValueModValidator().Validate(modDirectory))
+            .Concat(new StatefulEffectModValidator().Validate(modDirectory))
             .ToArray();
 
         var preliminaryReport = new ModValidationReport(issues);
@@ -31,9 +32,24 @@ public sealed class ModValidator
     {
         if (issue.Code == "UNKNOWN_KEY" &&
             (issue.Path.EndsWith(".conditions", StringComparison.Ordinal) ||
+             issue.Path.EndsWith(".activationLimit", StringComparison.Ordinal) ||
+             issue.Path.EndsWith(".counter", StringComparison.Ordinal) ||
+             issue.Path.EndsWith(".count", StringComparison.Ordinal) ||
              issue.Path.EndsWith(".target.selection", StringComparison.Ordinal) ||
              issue.Path.EndsWith(".target.excludeSource", StringComparison.Ordinal) ||
              issue.Path.EndsWith(".target.limit", StringComparison.Ordinal)))
+        {
+            return true;
+        }
+
+        if (issue.Code == "INVALID_PARAMETER" &&
+            issue.Path.EndsWith(".count", StringComparison.Ordinal))
+        {
+            return true;
+        }
+
+        if (issue.Code == "UNSUPPORTED_TRIGGER" &&
+            issue.Message.Contains("afterEventCount", StringComparison.Ordinal))
         {
             return true;
         }

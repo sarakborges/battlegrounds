@@ -72,6 +72,10 @@ public sealed class CombatEngine
             for (var strike = 0; strike < strikeCount; strike++)
             {
                 var deathsBeforeAttackEvent = attacker.DeathCount;
+                runtime.RecordGameEvent(
+                    attacker.OwnerPlayerId,
+                    NativeGameEventKeys.UnitAttacked,
+                    attacker.Definition);
                 runtime.Process(new GameEffectEvent(NativeTriggerKeys.OnAttack, attacker));
 
                 if (attacker.DeathCount > deathsBeforeAttackEvent ||
@@ -104,10 +108,20 @@ public sealed class CombatEngine
                 var damageEvents = new List<GameEffectEvent>();
                 if (damageToTarget.DamageDealt > 0)
                 {
+                    runtime.RecordGameEvent(
+                        target.OwnerPlayerId,
+                        NativeGameEventKeys.UnitDamaged,
+                        target.Definition,
+                        resolveDeaths: false);
                     damageEvents.Add(new GameEffectEvent(NativeTriggerKeys.OnDamage, target));
                 }
                 if (damageToAttacker.DamageDealt > 0)
                 {
+                    runtime.RecordGameEvent(
+                        attacker.OwnerPlayerId,
+                        NativeGameEventKeys.UnitDamaged,
+                        attacker.Definition,
+                        resolveDeaths: false);
                     damageEvents.Add(new GameEffectEvent(NativeTriggerKeys.OnDamage, attacker));
                 }
                 if (damageEvents.Count > 0)
@@ -165,7 +179,8 @@ public sealed class CombatEngine
             world.Left.GetSurvivors(),
             world.Right.GetSurvivors(),
             world.ResourceDeltas,
-            world.PowerChanges);
+            world.PowerChanges,
+            world.HistoryDeltas);
     }
 
     private void ProcessPhaseEvent(
@@ -296,6 +311,7 @@ public sealed class CombatEngine
         private readonly Dictionary<UnitInstanceId, int> _summonCursors = [];
         private readonly Dictionary<PlayerId, int> _resourceDeltas = [];
         private readonly Dictionary<PlayerId, PowerId> _powerChanges = [];
+        private readonly Dictionary<PlayerId, CombatEffectHistoryState> _histories;
         private long _nextInstanceId;
         private long _nextSyntheticInstanceId = long.MaxValue;
 
@@ -303,6 +319,8 @@ public sealed class CombatEngine
         public SideState Right { get; }
         public IReadOnlyDictionary<PlayerId, int> ResourceDeltas => _resourceDeltas;
         public IReadOnlyDictionary<PlayerId, PowerId> PowerChanges => _powerChanges;
+        public IReadOnlyDictionary<PlayerId, EffectHistoryDelta> HistoryDeltas =>
+            _histories.ToDictionary(pair => pair.Key, pair => pair.Value.CreateDelta());
 
         public IReadOnlyList<IEffectRuntimeUnit> Units =>
             Left.Units.Cast<IEffectRuntimeUnit>()
@@ -315,6 +333,11 @@ public sealed class CombatEngine
             _powerCatalog = powerCatalog;
             Left = new SideState(input.Left);
             Right = new SideState(input.Right);
+            _histories = new Dictionary<PlayerId, CombatEffectHistoryState>
+            {
+                [input.Left.PlayerId] = new CombatEffectHistoryState(input.Left.History),
+                [input.Right.PlayerId] = new CombatEffectHistoryState(input.Right.History),
+            };
             var ids = input.Left.Units.Concat(input.Right.Units).Select(unit => unit.InstanceId.Value).ToArray();
             _nextInstanceId = ids.Length == 0 ? 1 : ids.Max() + 1;
         }
@@ -341,6 +364,7 @@ public sealed class CombatEngine
             return new CombatPowerRuntimeUnit(
                 new UnitInstanceId(_nextSyntheticInstanceId--),
                 side.PlayerId,
+                power.Id,
                 definition);
         }
 
@@ -359,6 +383,20 @@ public sealed class CombatEngine
 
             unit = null!;
             return false;
+        }
+
+        public IReadOnlyList<IEffectRuntimeUnit> GetHistoryEventListeners(PlayerId playerId)
+        {
+            var side = GetSide(playerId);
+            var listeners = new List<IEffectRuntimeUnit>();
+            if (_powerCatalog is not null &&
+                side.CurrentPowerId is PowerId powerId &&
+                _powerCatalog.TryGet(powerId, out var power))
+            {
+                listeners.Add(CreatePowerSource(side, power));
+            }
+            listeners.AddRange(side.Units.Where(unit => unit.IsAlive));
+            return listeners;
         }
 
         public void ModifyStats(IEffectRuntimeUnit unit, int attackDelta, int healthDelta) =>
@@ -423,6 +461,26 @@ public sealed class CombatEngine
             side.SetPower(powerId);
             _powerChanges[playerId] = powerId;
         }
+
+        public EffectHistorySnapshot GetHistory(PlayerId playerId) =>
+            GetHistoryState(playerId).Snapshot();
+
+        public void RecordEvent(PlayerId playerId, NativeGameEventKey @event, UnitDefinition? unit = null) =>
+            GetHistoryState(playerId).RecordEvent(@event, unit);
+
+        public int GetTriggerActivationCount(
+            PlayerId playerId,
+            EffectSourceKey source,
+            int triggerIndex,
+            EffectHistoryScope scope) =>
+            GetHistoryState(playerId).GetTriggerActivationCount(source, triggerIndex, scope);
+
+        public void RecordTriggerActivation(
+            PlayerId playerId,
+            EffectSourceKey source,
+            int triggerIndex,
+            EffectHistoryScope scope) =>
+            GetHistoryState(playerId).RecordTriggerActivation(source, triggerIndex, scope);
 
         public IReadOnlyList<IEffectRuntimeUnit> ExtractDeadUnits()
         {
@@ -505,6 +563,11 @@ public sealed class CombatEngine
             if (Right.PlayerId == playerId) return Right;
             throw new InvalidOperationException("Effect owner is not a combat participant.");
         }
+
+        private CombatEffectHistoryState GetHistoryState(PlayerId playerId) =>
+            _histories.TryGetValue(playerId, out var history)
+                ? history
+                : throw new InvalidOperationException("Effect history owner is not a combat participant.");
 
         private static CombatRuntimeUnit GetUnit(IEffectRuntimeUnit unit) =>
             unit as CombatRuntimeUnit
@@ -740,16 +803,20 @@ public sealed class CombatEngine
     {
         public UnitInstanceId InstanceId { get; }
         public PlayerId OwnerPlayerId { get; }
+        public PowerId PowerId { get; }
         public UnitDefinition Definition { get; }
+        public EffectSourceKey SourceKey => EffectSourceKey.ForPower(PowerId);
         public bool IsAlive => false;
 
         public CombatPowerRuntimeUnit(
             UnitInstanceId instanceId,
             PlayerId ownerPlayerId,
+            PowerId powerId,
             UnitDefinition definition)
         {
             InstanceId = instanceId;
             OwnerPlayerId = ownerPlayerId;
+            PowerId = powerId;
             Definition = definition ?? throw new ArgumentNullException(nameof(definition));
         }
     }

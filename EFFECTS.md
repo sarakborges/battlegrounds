@@ -42,7 +42,7 @@ A power is authored with the same trigger/effect vocabulary used elsewhere:
 
 `selected` targets are only valid inside `onActivate`, because lifecycle events do not involve a UI/AI target selection step.
 
-Preparation lifecycle effects mutate authoritative preparation state through its effect-world adapter. Combat lifecycle effects execute against the isolated combat snapshot. Persistent consequences such as `setPower` or resource deltas are returned explicitly in `CombatResult` and settled by `MatchEngine`; Combat never mutates `PlayerState` directly.
+Preparation lifecycle effects mutate authoritative preparation state through its effect-world adapter. Combat lifecycle effects execute against the isolated combat snapshot. Persistent consequences such as `setPower`, resource deltas, and persistent effect-history deltas are returned explicitly in `CombatResult` and settled by `MatchEngine`; Combat never mutates `PlayerState` directly.
 
 When a power changes during an event, the event keeps the original source snapshot. The newly selected power becomes eligible starting with the next lifecycle event rather than being re-entered during the current one.
 
@@ -113,6 +113,17 @@ A source-stat condition reads the source's current runtime stats, including buff
 }
 ```
 
+A generic `value` condition compares any two value expressions, including history expressions:
+
+```json
+{
+  "kind": "value",
+  "left": { "kind": "eventCount", "event": "unitAcquired", "scope": "turn" },
+  "comparison": "greaterThanOrEqual",
+  "right": 3
+}
+```
+
 Supported comparisons are `equal`, `notEqual`, `lessThan`, `lessThanOrEqual`, `greaterThan`, and `greaterThanOrEqual`.
 
 ## Dynamic effect values
@@ -128,6 +139,7 @@ Dynamic expressions currently support:
 - `sourceStat`: current source `attack` or `health`;
 - `targetStat`: current selected effect target `attack` or `health`;
 - `unitCount`: count from an `EffectUnitQuery` using the same `scope`, `excludeSource`, `typeId`, and `tagId` vocabulary as conditions;
+- `eventCount`: count of a mechanical game event in `turn`, `combat`, or `match` scope, optionally filtered by `typeId` and/or `tagId`;
 - `add`, `multiply`, `min`, and `max`: recursive composition over two or more value expressions.
 
 Example: gain Attack equal to twice the number of friendly Organic units:
@@ -173,27 +185,70 @@ Dynamic values are evaluated when their effect is applied, so an earlier effect 
 
 A dynamic `dealDamage` amount or `summonUnit` count that resolves to zero or below is a no-op. A dynamic `addResource` result of zero is also a no-op. Expression arithmetic uses checked integer operations so overflow fails explicitly instead of wrapping silently. Value-expression nesting is validator-bounded.
 
+## Stateful event history
+
+The engine records mechanical events separately from trigger names. Current event keys are `unitAcquired`, `unitReleased`, `unitPlayed`, `unitSummoned`, `unitDied`, `unitAttacked`, `unitDamaged`, `powerActivated`, `offerRefreshed`, and `tierUpgraded`.
+
+History has three scopes:
+
+- `turn`: cleared when the player begins the next Preparation turn;
+- `combat`: exists only inside one isolated combat simulation;
+- `match`: persists for the player's whole match.
+
+`turn` and `match` history enter combat through the immutable combat input snapshot. Combat maintains its own `combat` history and returns only persistent turn/match deltas for settlement. An eliminated-opponent snapshot never writes its generated history back to the eliminated player.
+
+A counted-event trigger is authored as:
+
+```json
+{
+  "event": "afterEventCount",
+  "counter": {
+    "event": "unitAcquired",
+    "scope": "turn",
+    "typeId": "organic"
+  },
+  "count": 3,
+  "effects": [
+    { "kind": "addResource", "amount": 1 }
+  ]
+}
+```
+
+It fires when the matching counter crosses each multiple of `count`: with `count: 3`, activations happen at 3, 6, 9, and so on. Unit and Power sources use the same mechanism. `typeId` and `tagId` filters refer to the unit associated with the recorded event when that event has a unit subject.
+
+A trigger may also declare a generic activation limit:
+
+```json
+"activationLimit": { "scope": "turn", "count": 1 }
+```
+
+This is the neutral representation of rules such as "once per turn". Limits are keyed by the stable runtime source (unit instance or Power ID) plus trigger index and are recorded before effects execute, preventing recursive re-entry from bypassing the limit.
+
+Recorded gameplay events are not aliases for authored triggers. For example, `triggerEvent` may explicitly execute an `onDeath` trigger without killing a unit; this does **not** increment `unitDied`. Only an actual death does. Likewise, `unitSummoned`, `unitDamaged`, and other counters are incremented by the corresponding real mechanical occurrence.
+
 ## Resolution phases
 
 A logical effect action resolves in this order:
 
-1. evaluate the trigger's conditions against the current effect-world snapshot;
-2. if all conditions pass, resolve authored effects in authored order;
-3. evaluate each effect's dynamic values against the current runtime state as that effect is applied;
-4. resolve directly-created follow-up events such as `onDamage`, `onSummon`, or `triggerEvent`;
-5. once that event phase is complete, identify all units that are dead;
-6. remove the complete simultaneous-death batch before resolving any death-related trigger;
-7. resolve each death deterministically;
-8. during that death batch, newly lethal units remain in play until the current batch finishes;
-9. after a unit's death-related triggers resolve, attempt its revive-once behavior;
-10. a successful revive is a summon and runs normal `onSummon` listeners;
-11. after the original batch is complete, create the next death batch if new deaths are pending.
+1. evaluate the trigger's activation limit and conditions against the current effect-world snapshot;
+2. if eligible, record its scoped activation before applying effects;
+3. resolve authored effects in authored order;
+4. evaluate each effect's dynamic values against the current runtime state as that effect is applied;
+5. record real mechanical history events and resolve any `afterEventCount` threshold crossings they cause;
+6. resolve directly-created follow-up triggers such as `onDamage`, `onSummon`, or `triggerEvent`;
+7. once that event phase is complete, identify all units that are dead;
+8. remove the complete simultaneous-death batch before resolving any death-related trigger;
+9. resolve each death deterministically;
+10. during that death batch, newly lethal units remain in play until the current batch finishes;
+11. after a unit's death-related triggers resolve, attempt its revive-once behavior;
+12. a successful revive is a real summon, increments `unitSummoned`, and runs normal `onSummon` listeners;
+13. after the original batch is complete, create the next death batch if new deaths are pending.
 
 This preserves the important Battlegrounds/Hearthstone invariants that simultaneous dead units cannot be targeted by each other's death effects, Deathrattle-like effects resolve before Reborn-like revival, and consequences of one death can affect listeners that observe a later death in the same batch.
 
 ## Counted friendly-death trigger
 
-The neutral trigger used for Avenge-like mechanics is:
+The neutral trigger used for Avenge-like mechanics remains available as a death-specific convenience:
 
 ```json
 {
@@ -205,14 +260,14 @@ The neutral trigger used for Avenge-like mechanics is:
 }
 ```
 
-`count` is mandatory and must be positive for `afterFriendlyDeaths`. It is invalid on other trigger kinds.
+`count` is mandatory and must be positive for both counted trigger kinds: `afterFriendlyDeaths` and `afterEventCount`. `afterEventCount` additionally requires `counter`.
 
-The counter advances once for each actual friendly death while the listener remains in play. When it reaches `count`, the authored effects resolve and the counter resets, allowing repeated activation after another `count` deaths.
+The `afterFriendlyDeaths` counter advances once for each actual friendly death while the listener remains in play. When it reaches `count`, the authored effects resolve and the counter resets, allowing repeated activation after another `count` deaths.
 
-The engine name is intentionally neutral. A mod may present this mechanic as `Avenge`, another keyword, or no visible keyword at all.
+The engine names are intentionally neutral. A mod may present these mechanics as `Avenge`, another keyword, or no visible keyword at all.
 
 ## Death-related listener ordering
 
 Actual deaths and their death-related listeners use deterministic runtime ordering. A dead unit's `onDeath` effects and living friendly `afterFriendlyDeaths` listeners are placed into the same ordered resolution set for that death. Reborn-like revival is always attempted after those triggers.
 
-The runtime does not use a global event bus. Event creation, listener discovery, effect application, death batches, and follow-up events are explicit and bounded by the internal recursion safety budget.
+The runtime does not use a global event bus. Event creation, listener discovery, history recording, effect application, death batches, and follow-up events are explicit and bounded by the internal recursion safety budget.
