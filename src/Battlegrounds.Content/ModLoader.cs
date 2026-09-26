@@ -21,16 +21,21 @@ public sealed class ModLoader
         Converters = { new JsonStringEnumConverter(JsonNamingPolicy.CamelCase, allowIntegerValues: false) },
     };
 
+    private readonly ModValidator _validator;
+
+    public ModLoader(ModValidator? validator = null)
+    {
+        _validator = validator ?? new ModValidator();
+    }
+
+    public ModValidationReport Validate(string modDirectory) => _validator.Validate(modDirectory);
+
     public ModPackage Load(string modDirectory)
     {
-        if (string.IsNullOrWhiteSpace(modDirectory))
+        var report = _validator.Validate(modDirectory);
+        if (!report.IsValid)
         {
-            throw new ArgumentException("Mod directory cannot be empty.", nameof(modDirectory));
-        }
-
-        if (!Directory.Exists(modDirectory))
-        {
-            throw new DirectoryNotFoundException($"Mod directory '{modDirectory}' does not exist.");
+            throw new ModValidationException(report);
         }
 
         var manifest = ReadRequired<ModManifest>(Path.Combine(modDirectory, "mod.json"));
@@ -40,8 +45,6 @@ public sealed class ModLoader
         var behaviorData = ReadRequired<BehaviorData[]>(Path.Combine(modDirectory, "content", "behaviors.json"));
         var unitData = ReadRequired<UnitData[]>(Path.Combine(modDirectory, "content", "units.json"));
         var poolData = ReadRequired<UnitPoolData[]>(Path.Combine(modDirectory, "content", "pool.json"));
-
-        ValidateManifest(manifest);
 
         var matchRules = new MatchRules(matchRulesData.MinimumPlayers, matchRulesData.MaximumPlayers);
         var preparationRules = new PreparationRules(
@@ -58,58 +61,22 @@ public sealed class ModLoader
             preparationRulesData.InitialUpgradeCostsByTier);
         var combatRules = new CombatRules(combatRulesData.StartingSidePolicy);
 
-        var behaviors = behaviorData.Select(data =>
-        {
-            try
-            {
-                return new BehaviorDefinition(
-                    new BehaviorId(data.Id),
-                    data.Name,
-                    new NativeBehaviorKey(data.Handler));
-            }
-            catch (ArgumentException exception)
-            {
-                throw new InvalidDataException($"Behavior '{data.Id}' is invalid.", exception);
-            }
-        }).ToArray();
-        var behaviorCatalog = new BehaviorCatalog(behaviors);
-
-        if (unitData.Length == 0)
-        {
-            throw new InvalidDataException("A mod must define at least one unit.");
-        }
+        var behaviorCatalog = new BehaviorCatalog(behaviorData.Select(data =>
+            new BehaviorDefinition(new BehaviorId(data.Id), data.Name, new NativeBehaviorKey(data.Handler))));
 
         var definitions = unitData.Select(unit =>
         {
             var attachedBehaviors = (unit.Behaviors ?? [])
-                .Select(id =>
-                {
-                    try
-                    {
-                        return behaviorCatalog.GetRequired(new BehaviorId(id));
-                    }
-                    catch (KeyNotFoundException exception)
-                    {
-                        throw new InvalidDataException($"Unit '{unit.Id}' references unknown behavior '{id}'.", exception);
-                    }
-                })
+                .Select(id => behaviorCatalog.GetRequired(new BehaviorId(id)))
                 .ToArray();
 
-            var definition = new UnitDefinition(
+            return new UnitDefinition(
                 new UnitId(unit.Id),
                 unit.Name,
                 unit.Tier,
                 unit.Attack,
                 unit.Health,
                 attachedBehaviors);
-
-            if (definition.Tier > preparationRules.MaximumTier)
-            {
-                throw new InvalidDataException(
-                    $"Unit '{definition.Id}' uses tier {definition.Tier}, above maximum tier {preparationRules.MaximumTier}.");
-            }
-
-            return definition;
         }).ToArray();
 
         var catalog = new UnitCatalog(definitions);
@@ -133,45 +100,9 @@ public sealed class ModLoader
 
     private static T ReadRequired<T>(string path)
     {
-        if (!File.Exists(path))
-        {
-            throw new FileNotFoundException($"Required mod file '{path}' was not found.", path);
-        }
-
-        try
-        {
-            var json = File.ReadAllText(path);
-            return JsonSerializer.Deserialize<T>(json, JsonOptions)
-                ?? throw new InvalidDataException($"Mod file '{path}' contained no data.");
-        }
-        catch (JsonException exception)
-        {
-            throw new InvalidDataException($"Mod file '{path}' contains invalid JSON.", exception);
-        }
-    }
-
-    private static void ValidateManifest(ModManifest manifest)
-    {
-        if (manifest.SchemaVersion != 1)
-        {
-            throw new InvalidDataException($"Unsupported mod schema version {manifest.SchemaVersion}.");
-        }
-
-        if (string.IsNullOrWhiteSpace(manifest.Id))
-        {
-            throw new InvalidDataException("Mod id cannot be empty.");
-        }
-
-        if (string.IsNullOrWhiteSpace(manifest.Name))
-        {
-            throw new InvalidDataException("Mod name cannot be empty.");
-        }
-
-        if (manifest.Terminology is null || manifest.Terminology.Count == 0 ||
-            manifest.Terminology.Any(pair => string.IsNullOrWhiteSpace(pair.Key) || string.IsNullOrWhiteSpace(pair.Value)))
-        {
-            throw new InvalidDataException("Mod terminology must contain non-empty keys and values.");
-        }
+        var json = File.ReadAllText(path);
+        return JsonSerializer.Deserialize<T>(json, JsonOptions)
+            ?? throw new InvalidDataException($"Validated mod file '{path}' contained no data.");
     }
 
     private sealed record ModManifest(
