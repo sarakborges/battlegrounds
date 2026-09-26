@@ -1,0 +1,5 @@
+{
+  "id": "fatal-touch",
+  "name": "Fatal Touch",
+  "handler": "lethalFirstDamagePerCombat"
+}

@@ -1,6 +1,7 @@
 using System.Collections.ObjectModel;
 using Battlegrounds.Core.Domain.Behaviors;
 using Battlegrounds.Core.Domain.Combat;
+using Battlegrounds.Core.Domain.Leaders;
 using Battlegrounds.Core.Domain.Match;
 using Battlegrounds.Core.Domain.Preparation;
 using Battlegrounds.Core.Domain.Taxonomy;
@@ -21,6 +22,7 @@ public sealed class ModPackage
     public PreparationRules PreparationRules { get; }
     public CombatRules CombatRules { get; }
     public BehaviorCatalog Behaviors { get; }
+    public LeaderCatalog Leaders { get; }
     public UnitTypeCatalog UnitTypes { get; }
     public TagCatalog Tags { get; }
     public UnitCatalog Units { get; }
@@ -34,6 +36,7 @@ public sealed class ModPackage
         PreparationRules preparationRules,
         CombatRules combatRules,
         BehaviorCatalog behaviors,
+        LeaderCatalog leaders,
         UnitTypeCatalog unitTypes,
         TagCatalog tags,
         UnitCatalog units,
@@ -45,6 +48,7 @@ public sealed class ModPackage
         PreparationRules = preparationRules;
         CombatRules = combatRules;
         Behaviors = behaviors ?? throw new ArgumentNullException(nameof(behaviors));
+        Leaders = leaders ?? throw new ArgumentNullException(nameof(leaders));
         UnitTypes = unitTypes ?? throw new ArgumentNullException(nameof(unitTypes));
         Tags = tags ?? throw new ArgumentNullException(nameof(tags));
         Units = units ?? throw new ArgumentNullException(nameof(units));
@@ -79,6 +83,7 @@ public sealed class ModPackage
             CreateUnitPool(),
             randomSource,
             Units,
-            Behaviors);
+            Behaviors,
+            Leaders);
     }
 }

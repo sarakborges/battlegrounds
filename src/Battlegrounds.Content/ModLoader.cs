@@ -4,6 +4,7 @@ using Battlegrounds.Core.Domain.Behaviors;
 using Battlegrounds.Core.Domain.Combat;
 using Battlegrounds.Core.Domain.Effects;
 using Battlegrounds.Core.Domain.Ids;
+using Battlegrounds.Core.Domain.Leaders;
 using Battlegrounds.Core.Domain.Match;
 using Battlegrounds.Core.Domain.Preparation;
 using Battlegrounds.Core.Domain.Taxonomy;
@@ -34,17 +35,18 @@ public sealed class ModLoader
 
     public ModPackage Load(string modDirectory)
     {
-        var report = _validator.Validate(modDirectory);
+        var report = Validate(modDirectory);
         if (!report.IsValid) throw new ModValidationException(report);
 
         var manifest = ReadRequired<ModManifest>(Path.Combine(modDirectory, "mod.json"));
         var matchRulesData = ReadRequired<MatchRulesData>(Path.Combine(modDirectory, "rules", "match.json"));
         var preparationRulesData = ReadRequired<PreparationRulesData>(Path.Combine(modDirectory, "rules", "preparation.json"));
         var combatRulesData = ReadRequired<CombatRulesData>(Path.Combine(modDirectory, "rules", "combat.json"));
-        var behaviorData = ReadRequired<BehaviorData[]>(Path.Combine(modDirectory, "content", "behaviors.json"));
-        var typeData = ReadRequired<NamedIdData[]>(Path.Combine(modDirectory, "content", "types.json"));
-        var tagData = ReadRequired<NamedIdData[]>(Path.Combine(modDirectory, "content", "tags.json"));
-        var unitData = ReadRequired<UnitData[]>(Path.Combine(modDirectory, "content", "units.json"));
+        var behaviorData = ReadDirectory<BehaviorData>(Path.Combine(modDirectory, "content", "behaviors"));
+        var leaderData = ReadDirectory<LeaderData>(Path.Combine(modDirectory, "content", "leaders"));
+        var typeData = ReadDirectory<NamedIdData>(Path.Combine(modDirectory, "content", "types"));
+        var tagData = ReadDirectory<NamedIdData>(Path.Combine(modDirectory, "content", "tags"));
+        var unitData = ReadDirectory<UnitData>(Path.Combine(modDirectory, "content", "units"));
         var poolData = ReadRequired<UnitPoolData[]>(Path.Combine(modDirectory, "content", "pool.json"));
 
         var matchRules = new MatchRules(
@@ -69,6 +71,12 @@ public sealed class ModLoader
 
         var behaviorCatalog = new BehaviorCatalog(behaviorData.Select(data =>
             new BehaviorDefinition(new BehaviorId(data.Id), data.Name, new NativeBehaviorKey(data.Handler))));
+        var leaderCatalog = new LeaderCatalog(leaderData.Select(data =>
+            new LeaderDefinition(
+                new LeaderId(data.Id),
+                data.Name,
+                data.HealthModifier,
+                data.Armor)));
         var unitTypeCatalog = new UnitTypeCatalog(typeData.Select(data =>
             new UnitTypeDefinition(new UnitTypeId(data.Id), data.Name)));
         var tagCatalog = new TagCatalog(tagData.Select(data =>
@@ -100,6 +108,7 @@ public sealed class ModLoader
             preparationRules,
             combatRules,
             behaviorCatalog,
+            leaderCatalog,
             unitTypeCatalog,
             tagCatalog,
             catalog,
@@ -147,6 +156,14 @@ public sealed class ModLoader
             string.IsNullOrWhiteSpace(data.TagId) ? null : new TagId(data.TagId));
     }
 
+    private static T[] ReadDirectory<T>(string directory)
+    {
+        return Directory.GetFiles(directory, "*.json", SearchOption.TopDirectoryOnly)
+            .OrderBy(path => Path.GetFileName(path), StringComparer.Ordinal)
+            .Select(ReadRequired<T>)
+            .ToArray();
+    }
+
     private static T ReadRequired<T>(string path)
     {
         var json = File.ReadAllText(path);
@@ -172,6 +189,7 @@ public sealed class ModLoader
         StartingSidePolicy StartingSidePolicy,
         PostCombatDamagePolicy PostCombatDamagePolicy);
     private sealed record BehaviorData(string Id, string Name, string Handler);
+    private sealed record LeaderData(string Id, string Name, int HealthModifier, int Armor);
     private sealed record NamedIdData(string Id, string Name);
     private sealed record UnitData(
         string Id,

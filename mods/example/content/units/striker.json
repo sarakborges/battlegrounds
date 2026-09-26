@@ -1,0 +1,22 @@
+{
+  "id": "striker",
+  "name": "Striker",
+  "tier": 1,
+  "attack": 2,
+  "health": 1,
+  "behaviors": ["ward"],
+  "types": ["organic"],
+  "tags": [],
+  "triggers": [
+    {
+      "event": "onAttack",
+      "effects": [
+        {
+          "kind": "dealDamage",
+          "target": { "scope": "randomEnemy", "tagId": "starter" },
+          "amount": 1
+        }
+      ]
+    }
+  ]
+}

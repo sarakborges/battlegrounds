@@ -9,7 +9,7 @@ namespace Battlegrounds.Content.Tests;
 public sealed class ModLoaderTests
 {
     [Fact]
-    public void Load_ReadsRulesTaxonomyBehaviorsTriggersUnitsAndPoolFromModDirectory()
+    public void Load_ReadsRulesLeadersTaxonomyBehaviorsTriggersUnitsAndPoolFromModDirectory()
     {
         var path = Path.Combine(AppContext.BaseDirectory, "mods", "example");
 
@@ -17,12 +17,22 @@ public sealed class ModLoaderTests
 
         Assert.Equal("example", mod.Id);
         Assert.Equal("Energy", mod.Terminology["resource"]);
+        Assert.Equal("Leader", mod.Terminology["leader"]);
         Assert.Equal(2, mod.MatchRules.MinimumPlayers);
         Assert.Equal(8, mod.MatchRules.MaximumPlayers);
         Assert.Equal(30, mod.MatchRules.StartingHealth);
         Assert.Equal(3, mod.PreparationRules.StartingResource);
         Assert.Equal(StartingSidePolicy.LargerFieldThenRandom, mod.CombatRules.StartingSidePolicy);
         Assert.Equal(PostCombatDamagePolicy.WinnerTierPlusSurvivorTiers, mod.CombatRules.PostCombatDamagePolicy);
+
+        var steady = mod.Leaders.GetRequired(new LeaderId("steady"));
+        Assert.Equal("Steady Leader", steady.Name);
+        Assert.Equal(0, steady.HealthModifier);
+        Assert.Equal(2, steady.StartingArmor);
+
+        var vital = mod.Leaders.GetRequired(new LeaderId("vital"));
+        Assert.Equal(5, vital.HealthModifier);
+        Assert.Equal(0, vital.StartingArmor);
 
         var protector = mod.Behaviors.GetRequired(new BehaviorId("protector"));
         Assert.Equal(NativeBehaviorKeys.TargetPriority, protector.Handler);

@@ -1,0 +1,5 @@
+{
+  "id": "ward",
+  "name": "Ward",
+  "handler": "damageBarrier"
+}
