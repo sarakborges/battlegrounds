@@ -100,7 +100,7 @@ internal sealed class DynamicEffectValueModValidator
                 var hasHealth = effect.TryGetProperty("health", out var health);
                 if (!hasAttack && !hasHealth)
                 {
-                    return; // Base validator owns missing effect parameters.
+                    return;
                 }
 
                 if (hasAttack)
@@ -311,8 +311,11 @@ internal sealed class DynamicEffectValueModValidator
         return TryLiteral(value, out literal);
     }
 
-    private static bool TryLiteral(JsonElement value, out int literal) =>
-        value.ValueKind == JsonValueKind.Number && value.TryGetInt32(out literal);
+    private static bool TryLiteral(JsonElement value, out int literal)
+    {
+        literal = default;
+        return value.ValueKind == JsonValueKind.Number && value.TryGetInt32(out literal);
+    }
 
     private static IReadOnlyList<EntityFile> ReadEntityDirectory(string root, string relativeDirectory)
     {
@@ -334,7 +337,6 @@ internal sealed class DynamicEffectValueModValidator
             }
             catch (JsonException)
             {
-                // Base validators own invalid JSON reporting.
             }
         }
         return result;
