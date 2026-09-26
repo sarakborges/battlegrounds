@@ -19,8 +19,10 @@ public sealed class ModLoaderTests
         Assert.Equal("Energy", mod.Terminology["resource"]);
         Assert.Equal(2, mod.MatchRules.MinimumPlayers);
         Assert.Equal(8, mod.MatchRules.MaximumPlayers);
+        Assert.Equal(30, mod.MatchRules.StartingHealth);
         Assert.Equal(3, mod.PreparationRules.StartingResource);
         Assert.Equal(StartingSidePolicy.LargerFieldThenRandom, mod.CombatRules.StartingSidePolicy);
+        Assert.Equal(PostCombatDamagePolicy.WinnerTierPlusSurvivorTiers, mod.CombatRules.PostCombatDamagePolicy);
 
         var protector = mod.Behaviors.GetRequired(new BehaviorId("protector"));
         Assert.Equal(NativeBehaviorKeys.TargetPriority, protector.Handler);

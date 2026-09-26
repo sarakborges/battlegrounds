@@ -1,5 +1,6 @@
 using Battlegrounds.Core.Domain.Behaviors;
 using Battlegrounds.Core.Domain.Effects;
+using Battlegrounds.Core.Domain.Ids;
 using Battlegrounds.Core.Domain.Match;
 using Battlegrounds.Core.Domain.Players;
 using Battlegrounds.Core.Domain.Units;
@@ -40,7 +41,9 @@ public sealed class PreparationEngine
             behaviorCatalog);
     }
 
-    public void BeginPreparation(MatchState match)
+    public void BeginPreparation(
+        MatchState match,
+        IReadOnlyDictionary<PlayerId, int>? resourceAdjustments = null)
     {
         ArgumentNullException.ThrowIfNull(match);
 
@@ -49,19 +52,24 @@ public sealed class PreparationEngine
             throw new InvalidOperationException($"Cannot begin preparation from {match.Phase}.");
         }
 
-        var offers = match.Players.ToDictionary(
+        var activePlayers = match.Players.Where(player => !player.IsEliminated).ToArray();
+        var offers = activePlayers.ToDictionary(
             player => player.Id,
             PrepareNextOffer);
 
         match.BeginPreparation();
 
-        foreach (var player in match.Players)
+        foreach (var player in activePlayers)
         {
             player.BeginPreparation(match.Round, _rules);
+            if (resourceAdjustments is not null && resourceAdjustments.TryGetValue(player.Id, out var adjustment))
+            {
+                player.AdjustResource(adjustment, _rules.MaximumResource);
+            }
             player.ReplaceOffer(offers[player.Id]);
         }
 
-        foreach (var player in match.Players)
+        foreach (var player in activePlayers)
         {
             _effectEngine.ProcessTurnEvent(match, player, NativeTriggerKeys.OnTurnStart);
         }
@@ -82,6 +90,11 @@ public sealed class PreparationEngine
         if (!match.TryGetPlayer(command.PlayerId, out var player))
         {
             return PreparationCommandResult.Failure(PreparationFailureCode.PlayerNotFound);
+        }
+
+        if (player.IsEliminated)
+        {
+            return PreparationCommandResult.Failure(PreparationFailureCode.PlayerEliminated);
         }
 
         if (player.IsReadyForCombat)
@@ -107,7 +120,7 @@ public sealed class PreparationEngine
             return result;
         }
 
-        if (match.Players.All(candidate => candidate.IsReadyForCombat))
+        if (match.Players.Where(candidate => !candidate.IsEliminated).All(candidate => candidate.IsReadyForCombat))
         {
             match.BeginCombat();
         }

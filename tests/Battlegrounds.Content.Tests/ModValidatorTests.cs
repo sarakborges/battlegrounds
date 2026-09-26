@@ -92,6 +92,34 @@ public sealed class ModValidatorTests
     }
 
     [Fact]
+    public void Validate_MatchHealthAndPostCombatDamagePolicyAreRequired()
+    {
+        var path = CreateTempMod();
+        try
+        {
+            File.WriteAllText(Path.Combine(path, "rules", "match.json"),
+                "{\"minimumPlayers\":2,\"maximumPlayers\":8}");
+            File.WriteAllText(Path.Combine(path, "rules", "combat.json"),
+                "{\"startingSidePolicy\":\"largerFieldThenRandom\"}");
+
+            var report = new ModValidator().Validate(path);
+
+            Assert.Contains(report.Issues, issue =>
+                issue.Code == "MISSING_REQUIRED_KEY" &&
+                issue.File == "rules/match.json" &&
+                issue.Path == "$.startingHealth");
+            Assert.Contains(report.Issues, issue =>
+                issue.Code == "MISSING_REQUIRED_KEY" &&
+                issue.File == "rules/combat.json" &&
+                issue.Path == "$.postCombatDamagePolicy");
+        }
+        finally
+        {
+            Directory.Delete(path, recursive: true);
+        }
+    }
+
+    [Fact]
     public void Load_InvalidMod_ThrowsReportAndDoesNotMaterializePackage()
     {
         var path = CreateTempMod();
@@ -102,9 +130,14 @@ public sealed class ModValidatorTests
             var exception = Assert.Throws<ModValidationException>(() => new ModLoader().Load(path));
 
             Assert.False(exception.Report.IsValid);
-            var issue = Assert.Single(exception.Report.Issues, issue => issue.Code == "MISSING_REQUIRED_KEY");
-            Assert.Equal("rules/combat.json", issue.File);
-            Assert.Equal("$.startingSidePolicy", issue.Path);
+            Assert.Contains(exception.Report.Issues, issue =>
+                issue.Code == "MISSING_REQUIRED_KEY" &&
+                issue.File == "rules/combat.json" &&
+                issue.Path == "$.startingSidePolicy");
+            Assert.Contains(exception.Report.Issues, issue =>
+                issue.Code == "MISSING_REQUIRED_KEY" &&
+                issue.File == "rules/combat.json" &&
+                issue.Path == "$.postCombatDamagePolicy");
         }
         finally
         {

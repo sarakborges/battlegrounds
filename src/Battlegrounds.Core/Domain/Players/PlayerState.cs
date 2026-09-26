@@ -15,6 +15,8 @@ public sealed class PlayerState
     private readonly ReadOnlyCollection<UnitDefinition> _offerView;
 
     public PlayerId Id { get; }
+    public int Health { get; private set; }
+    public bool IsEliminated => Health <= 0;
     public int Resource { get; private set; }
     public int Tier { get; private set; } = 1;
     public int? UpgradeCost { get; private set; }
@@ -24,9 +26,15 @@ public sealed class PlayerState
     public IReadOnlyList<UnitInstance> Field => _fieldView;
     public IReadOnlyList<UnitDefinition> Offer => _offerView;
 
-    internal PlayerState(PlayerId id)
+    internal PlayerState(PlayerId id, int startingHealth)
     {
+        if (startingHealth <= 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(startingHealth));
+        }
+
         Id = id;
+        Health = startingHealth;
         _reserveView = _reserve.AsReadOnly();
         _fieldView = _field.AsReadOnly();
         _offerView = _offer.AsReadOnly();
@@ -34,6 +42,11 @@ public sealed class PlayerState
 
     internal void BeginPreparation(int round, PreparationRules rules)
     {
+        if (IsEliminated)
+        {
+            throw new InvalidOperationException("Eliminated players cannot begin preparation.");
+        }
+
         Resource = rules.GetResourceForRound(round);
         IsReadyForCombat = false;
 
@@ -44,6 +57,25 @@ public sealed class PlayerState
         else if (round > 1)
         {
             UpgradeCost = Math.Max(0, UpgradeCost.Value - 1);
+        }
+    }
+
+    internal void TakeDamage(int amount)
+    {
+        if (amount < 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(amount));
+        }
+
+        if (amount == 0 || IsEliminated)
+        {
+            return;
+        }
+
+        Health = Math.Max(0, Health - amount);
+        if (IsEliminated)
+        {
+            IsReadyForCombat = false;
         }
     }
 

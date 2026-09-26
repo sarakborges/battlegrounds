@@ -68,4 +68,17 @@ public sealed class ModPackage
 
     public CombatEngine CreateCombatEngine() =>
         new(PreparationRules.FieldCapacity, Units, Behaviors);
+
+    public MatchEngine CreateMatchEngine(IRandomSource randomSource)
+    {
+        ArgumentNullException.ThrowIfNull(randomSource);
+        return new MatchEngine(
+            MatchRules,
+            PreparationRules,
+            CombatRules,
+            CreateUnitPool(),
+            randomSource,
+            Units,
+            Behaviors);
+    }
 }

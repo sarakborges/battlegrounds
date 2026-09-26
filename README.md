@@ -23,7 +23,7 @@ Examples:
 
 The Core must never encode fandom-specific terminology into IDs, state, commands, rules, or algorithms. Internal IDs describe stable mechanical roles (`UnitId`, `PlayerId`, `UnitInstanceId`, `BehaviorId`, `UnitTypeId`, `TagId`) rather than presentation names.
 
-There is intentionally no `Standard` gameplay preset in Core. Numeric rules are supplied by the selected mod.
+There is intentionally no `Standard` gameplay preset in Core. Numeric rules and selectable native policies are supplied by the selected mod.
 
 ## Native behaviors, mod-defined identities
 
@@ -41,8 +41,6 @@ The current native handlers are:
 
 Battlecry-like, Deathrattle-like, summon, damage, destroy, buffs and similar mechanics do **not** belong to Preparation or Combat. They belong to the shared game effect runtime. Preparation and Combat only provide different state adapters to that runtime.
 
-For example, `onDeath` can be caused by combat damage, a Preparation effect that destroys a friendly unit, or an authored effect that explicitly triggers another unit's `onDeath`. The trigger/effect semantics stay the same.
-
 Supported trigger keys currently are:
 
 - `onPlay`
@@ -54,6 +52,7 @@ Supported trigger keys currently are:
 - `onCombatEnd`
 - `onTurnStart`
 - `onTurnEnd`
+- `afterFriendlyDeaths` — counted listener used for Avenge-like mechanics; requires positive `count`.
 
 Supported effect kinds currently are:
 
@@ -66,40 +65,64 @@ Supported effect kinds currently are:
 - `removeBehavior`
 - `addResource`
 
-`triggerEvent` can explicitly activate a supported trigger on selected units without pretending the underlying event happened naturally. For example, a mod may activate a friendly unit's `onDeath` without destroying it. `destroyUnit` performs an actual destruction, which then enters the normal death lifecycle and resolves `onDeath`.
+The shared `GameEffectRuntime` owns event ordering and effect semantics. Consequences are explicit and deterministic rather than hidden behind a global event bus. Preparation supplies an authoritative persistent effect world; Combat supplies an isolated combat-local effect world.
 
-Targeted effects use neutral scopes (`self`, `randomFriendly`, `randomEnemy`, `allFriendly`, `allEnemy`) and can filter by mod-defined `typeId` and/or `tagId`.
+Real simultaneous deaths are removed as a death wave before death-related effects resolve. Each death then resolves deterministically; newly-created deaths wait for the next wave. Authored `onDeath` resolves before `reviveOnce`, and a successful revive is treated as a normal summon and runs `onSummon`.
 
-The shared `GameEffectRuntime` owns event ordering and effect semantics. Consequences are enqueued explicitly (`onPlay → damage/destroy → onDamage/onDeath → summon → onSummon`) rather than hidden behind a global event bus. Random target resolution uses injected deterministic RNG.
+Runtime unit behaviors are mutable instance state: `addBehavior`/`removeBehavior` persist into later combat snapshots without mutating immutable unit definitions. Unit origin is explicit: `Pooled` units return their copy to the shared pool when permanently removed; `Generated` units do not create pool copies when released or destroyed.
 
-Preparation supplies an authoritative persistent effect world. Combat supplies an isolated combat-local effect world. The same authored effect therefore behaves consistently without Combat mutating persistent Preparation state.
+See `EFFECTS.md` for the detailed trigger/death ordering contract.
 
-Played units execute `onPlay` and then participate in `onSummon`; generated units execute `onSummon` but not `onPlay`. `onSummon` is observable by living friendly field units. Real deaths remove the unit from the field before `onDeath` resolves so death effects can use the vacated slot. Manually triggering `onDeath` does not destroy the unit or invoke the real death/revive lifecycle.
+## Match lifecycle and player health
 
-Runtime unit behaviors are mutable instance state: `addBehavior`/`removeBehavior` persist into later combat snapshots without mutating immutable unit definitions.
+`PlayerState` owns generic `Health`; the mod provides `startingHealth` in `rules/match.json`. A player at zero Health is eliminated and no longer enters Preparation.
 
-Unit origin is explicit. `Pooled` units return their copy to the shared pool when permanently removed; `Generated` units do not create pool copies when released or destroyed.
+`MatchEngine` orchestrates the authoritative round loop while reusing the same Preparation and Combat engines:
+
+```text
+Setup
+  → Preparation
+  → Combat
+  → post-combat settlement
+  → Preparation
+  → ...
+  → Finished
+```
+
+Combat remains an isolated simulation. Settlement applies its result back to the authoritative match only after the simulation finishes.
+
+The current native post-combat damage policy is selected by the mod as `winnerTierPlusSurvivorTiers`: on a non-draw, damage is the winner's current Tier plus the tiers of surviving units. Generated survivors that were not present in the starting combat snapshot use their combat survivor tier; the current combat representation defaults such generated/token survivors to Tier 1. Draws deal zero player damage.
+
+Combat-authored `addResource` changes are returned as deltas by combat and applied after the next Preparation resource baseline is initialized, before `onTurnStart` effects.
+
+A combat round receives explicit `CombatPairing` values. Every active player must appear exactly once. Even-player rounds are supported now; odd-player Battlegrounds-style ghost opponents are intentionally deferred rather than modeled as an incorrect bye.
 
 ## Mod validation is mandatory
 
 `ModLoader.Load(...)` validates the complete mod before materializing a `ModPackage`. Invalid mods are rejected as a whole.
 
-`ModLoader.Validate(...)` returns a structured report suitable for the future UI. Validation covers:
+`ModLoader.Validate(...)` returns a structured report suitable for the future UI. Validation covers required files/keys, unknown keys, JSON types and ranges, duplicate IDs/references, cross-file references, unsupported handlers/triggers/effects/policies, taxonomy references, and effect-specific required parameters.
 
-- required files and keys;
-- unknown keys;
-- JSON types and value ranges;
-- duplicate IDs and references;
-- cross-file references;
-- unsupported native handlers/triggers/effects;
-- type/tag/unit/behavior references;
-- effect-specific required parameters.
+Current required lifecycle rules include:
 
-Conditional parameters are validated explicitly. For example, a trigger without `effects`, `dealDamage` without `amount`, `destroyUnit` without `target`, or `triggerEvent` without `event` produces `MISSING_REQUIRED_PARAMETER` at the exact JSON path.
+```json
+// rules/match.json
+{
+  "minimumPlayers": 2,
+  "maximumPlayers": 8,
+  "startingHealth": 30
+}
+```
+
+```json
+// rules/combat.json
+{
+  "startingSidePolicy": "largerFieldThenRandom",
+  "postCombatDamagePolicy": "winnerTierPlusSurvivorTiers"
+}
+```
 
 ## Mod layout
-
-User-facing content lives under `/mods`, with one directory per mod:
 
 ```text
 mods/
@@ -119,17 +142,13 @@ mods/
     localization/           # future
 ```
 
-`mod.json` owns package identity and display terminology. Rule files own numbers and policies. Content files own behavior identities, unit taxonomy, authored triggers/effects, unit definitions, and pool composition. Filesystem/JSON loading lives in `Battlegrounds.Content`; `Battlegrounds.Core` never reads files or JSON directly.
-
-The repository contains `mods/example` only as a schema/integration fixture. It is not a canonical gameplay ruleset.
+`Battlegrounds.Content` owns filesystem/JSON loading and validation. `Battlegrounds.Core` never reads files or JSON directly. The repository contains `mods/example` only as a schema/integration fixture; it is not a canonical gameplay ruleset.
 
 ## Stack
 
 - Godot 4.7.2 .NET
 - C# / .NET 8
 - xUnit v3
-
-The repository pins the .NET SDK through `global.json` so local builds and CI use the same major SDK.
 
 ## Structure
 
@@ -151,24 +170,20 @@ Read `ARCHITECTURE.md` before adding features. Its ownership, dependency, mutati
 
 ## Current foundation
 
-- authoritative `MatchState` lifecycle (`Setup → Preparation → Combat`), round, and revision;
+- authoritative `MatchState` lifecycle (`Setup → Preparation → Combat → Finished`), round, revision, player health and elimination;
+- `MatchEngine` orchestration for even-player combat rounds and post-combat settlement;
+- mod-driven `startingHealth` and native post-combat damage policy selection;
 - authoritative `PlayerState` with read-only `Reserve`, `Field`, and `Offer` views;
 - immutable `UnitDefinition` separated from mutable `UnitInstance` runtime state;
-- explicit `Pooled` versus `Generated` unit origin;
 - validated deterministic catalogs for units, behaviors, unit types, and tags;
 - shared authoritative `UnitPool` with per-unit copy counts;
 - explicit preparation commands for acquire, release, deploy, refresh, tier upgrade, freeze/unfreeze, and end preparation;
-- `PreparationEngine` as the mutation boundary shared by future UI and AI;
 - deterministic injected RNG;
 - fully data-driven match/preparation/combat rules;
-- data-driven terminology, behaviors, taxonomy, units, triggers/effects, and pool configuration;
 - shared phase-neutral `GameEffectRuntime` for authored effects and trigger chains;
-- Preparation execution for `onPlay`, `onSummon`, `onDamage`, `onDeath`, `onTurnStart`, and `onTurnEnd`;
-- Preparation support for destroying friendly units and explicitly triggering their authored events;
+- deterministic death waves, counted friendly-death listeners, Deathrattle-like effects, Reborn-like behavior and summons;
 - immutable combat snapshots isolated from persistent preparation state;
-- Combat execution for `onCombatStart`, `onAttack`, `onDamage`, `onDeath`, `onSummon`, and `onCombatEnd` through the same effect runtime;
-- deterministic combat starting-side selection, attacker rotation, target selection, simultaneous damage, deaths, and winner/draw resolution;
-- native neutral implementations for damage barrier, target priority, revive-once, first-damage lethal, and extra attack;
+- deterministic combat start, attacker rotation, targeting, simultaneous damage, deaths and winner/draw resolution;
 - whole-mod validation report before loading;
 - regression/invariant tests and CI.
 
@@ -185,4 +200,4 @@ dotnet test tests/Battlegrounds.Content.Tests/Battlegrounds.Content.Tests.csproj
 
 ## Next architectural slice
 
-Add player health and post-combat damage, then connect combat results back into the authoritative match lifecycle so a complete mod-driven `Preparation → Combat → Preparation` loop can run. After that, expand trigger conditions/counters such as Avenge-style mechanics on top of the shared effect runtime rather than adding phase-specific effect engines.
+Add explicit odd-player/ghost combat assignments and match placement/history, then introduce leader definitions (including leader-specific starting modifiers such as armor) without moving those concepts into the neutral Core vocabulary.

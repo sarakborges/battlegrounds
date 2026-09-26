@@ -4,6 +4,7 @@ public enum PreparationFailureCode
 {
     MatchNotInPreparation,
     PlayerNotFound,
+    PlayerEliminated,
     PlayerAlreadyReady,
     InsufficientResource,
     ReserveFull,
