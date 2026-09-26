@@ -28,7 +28,7 @@ public sealed class DeathResolutionSemanticsTests
                 NativeTriggerKeys.OnDeath,
                 [
                     new DealDamageEffectDefinition(
-                        new EffectTargetSelector(EffectTargetScope.AllEnemy),
+                        new EffectTargetSelector(EffectTargetScope.Enemy),
                         1),
                 ]));
 
@@ -147,7 +147,7 @@ public sealed class DeathResolutionSemanticsTests
                     NativeTriggerKeys.OnCombatStart,
                     [
                         new DealDamageEffectDefinition(
-                            new EffectTargetSelector(EffectTargetScope.AllFriendly),
+                            new EffectTargetSelector(EffectTargetScope.Friendly),
                             1),
                     ]),
             ]);
@@ -187,7 +187,7 @@ public sealed class DeathResolutionSemanticsTests
                     NativeTriggerKeys.OnDeath,
                     [
                         new DealDamageEffectDefinition(
-                            new EffectTargetSelector(EffectTargetScope.AllFriendly),
+                            new EffectTargetSelector(EffectTargetScope.Friendly),
                             1),
                     ]),
             ]);
@@ -205,7 +205,7 @@ public sealed class DeathResolutionSemanticsTests
                     NativeTriggerKeys.AfterFriendlyDeaths,
                     [
                         new ModifyStatsEffectDefinition(
-                            new EffectTargetSelector(EffectTargetScope.AllFriendly),
+                            new EffectTargetSelector(EffectTargetScope.Friendly),
                             0,
                             2),
                     ],
@@ -223,7 +223,7 @@ public sealed class DeathResolutionSemanticsTests
                     NativeTriggerKeys.OnCombatStart,
                     [
                         new DealDamageEffectDefinition(
-                            new EffectTargetSelector(EffectTargetScope.AllFriendly),
+                            new EffectTargetSelector(EffectTargetScope.Friendly),
                             1),
                     ]),
             ]);
