@@ -18,6 +18,16 @@ public sealed record UnitCountEffectValueExpression : EffectValueExpression
     }
 }
 
+public sealed record EventCountEffectValueExpression : EffectValueExpression
+{
+    public EffectHistoryQuery Query { get; }
+
+    public EventCountEffectValueExpression(EffectHistoryQuery query)
+    {
+        Query = query ?? throw new ArgumentNullException(nameof(query));
+    }
+}
+
 public enum EffectValueOperation
 {
     Add,
