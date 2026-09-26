@@ -12,4 +12,6 @@ public sealed record SellMinionCommand(PlayerId PlayerId, int BoardSlot) : IRecr
 public sealed record PlayMinionCommand(PlayerId PlayerId, int HandSlot) : IRecruitmentCommand;
 public sealed record RefreshTavernCommand(PlayerId PlayerId) : IRecruitmentCommand;
 public sealed record UpgradeTavernCommand(PlayerId PlayerId) : IRecruitmentCommand;
+public sealed record FreezeTavernCommand(PlayerId PlayerId) : IRecruitmentCommand;
+public sealed record UnfreezeTavernCommand(PlayerId PlayerId) : IRecruitmentCommand;
 public sealed record EndRecruitmentCommand(PlayerId PlayerId) : IRecruitmentCommand;
