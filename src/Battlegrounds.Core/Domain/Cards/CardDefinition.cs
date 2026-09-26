@@ -2,33 +2,40 @@ using Battlegrounds.Core.Domain.Ids;
 
 namespace Battlegrounds.Core.Domain.Cards;
 
-public sealed record CardDefinition(
-    CardId Id,
-    string Name,
-    int TavernTier,
-    int BaseAttack,
-    int BaseHealth)
+public sealed record CardDefinition
 {
-    public CardDefinition : this(Id, Name, TavernTier, BaseAttack, BaseHealth)
+    public CardId Id { get; }
+    public string Name { get; }
+    public int TavernTier { get; }
+    public int BaseAttack { get; }
+    public int BaseHealth { get; }
+
+    public CardDefinition(CardId id, string name, int tavernTier, int baseAttack, int baseHealth)
     {
-        if (string.IsNullOrWhiteSpace(Name))
+        if (string.IsNullOrWhiteSpace(name))
         {
-            throw new ArgumentException("Card name cannot be empty.", nameof(Name));
+            throw new ArgumentException("Card name cannot be empty.", nameof(name));
         }
 
-        if (TavernTier is < 1 or > 6)
+        if (tavernTier is < 1 or > 6)
         {
-            throw new ArgumentOutOfRangeException(nameof(TavernTier));
+            throw new ArgumentOutOfRangeException(nameof(tavernTier));
         }
 
-        if (BaseAttack < 0)
+        if (baseAttack < 0)
         {
-            throw new ArgumentOutOfRangeException(nameof(BaseAttack));
+            throw new ArgumentOutOfRangeException(nameof(baseAttack));
         }
 
-        if (BaseHealth <= 0)
+        if (baseHealth <= 0)
         {
-            throw new ArgumentOutOfRangeException(nameof(BaseHealth));
+            throw new ArgumentOutOfRangeException(nameof(baseHealth));
         }
+
+        Id = id;
+        Name = name;
+        TavernTier = tavernTier;
+        BaseAttack = baseAttack;
+        BaseHealth = baseHealth;
     }
 }
