@@ -81,7 +81,8 @@ public sealed class CombatParticipant
                 unit.Attack,
                 unit.Health,
                 unit.Behaviors.Select(behavior =>
-                    new CombatBehaviorSnapshot(behavior.Id, behavior.Handler)))));
+                    new CombatBehaviorSnapshot(behavior.Id, behavior.Handler)),
+                unit.Definition)));
 }
 
 public readonly record struct CombatUnitSnapshot
@@ -94,6 +95,7 @@ public readonly record struct CombatUnitSnapshot
     public int Attack { get; }
     public int Health { get; }
     public IReadOnlyList<CombatBehaviorSnapshot> Behaviors => _behaviors;
+    public UnitDefinition? Definition { get; }
 
     public CombatUnitSnapshot(
         UnitInstanceId instanceId,
@@ -101,11 +103,16 @@ public readonly record struct CombatUnitSnapshot
         int tier,
         int attack,
         int health,
-        IEnumerable<CombatBehaviorSnapshot>? behaviors = null)
+        IEnumerable<CombatBehaviorSnapshot>? behaviors = null,
+        UnitDefinition? definition = null)
     {
         if (tier <= 0) throw new ArgumentOutOfRangeException(nameof(tier));
         if (attack < 0) throw new ArgumentOutOfRangeException(nameof(attack));
         if (health <= 0) throw new ArgumentOutOfRangeException(nameof(health));
+        if (definition is not null && (definition.Id != unitId || definition.Tier != tier))
+        {
+            throw new ArgumentException("Combat snapshot definition must match its unit id and tier.", nameof(definition));
+        }
 
         var behaviorArray = behaviors?.ToArray() ?? [];
         var duplicateHandler = behaviorArray
@@ -124,6 +131,7 @@ public readonly record struct CombatUnitSnapshot
         Attack = attack;
         Health = health;
         _behaviors = Array.AsReadOnly(behaviorArray);
+        Definition = definition;
     }
 }
 

@@ -65,4 +65,7 @@ public sealed class ModPackage
             Units,
             Behaviors);
     }
+
+    public CombatEngine CreateCombatEngine() =>
+        new(PreparationRules.FieldCapacity, Units, Behaviors);
 }

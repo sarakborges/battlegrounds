@@ -336,6 +336,17 @@ public sealed class ModValidator
                 ValidateRequiredTarget(effect, path, typeIds, tagIds, issues);
                 ValidateRequiredPositiveInt(effect, "amount", path, issues);
                 break;
+            case "destroyUnit":
+                ValidateKeys(effect, file, path, ["kind", "target"], ["kind"], issues);
+                ValidateRequiredTarget(effect, path, typeIds, tagIds, issues);
+                break;
+            case "triggerEvent":
+                ValidateKeys(effect, file, path, ["kind", "target", "event"], ["kind"], issues);
+                ValidateRequiredTarget(effect, path, typeIds, tagIds, issues);
+                if (RequireParameterString(effect, "event", path, issues, out var triggeredEvent) &&
+                    !NativeTriggerKeys.IsSupported(new NativeTriggerKey(triggeredEvent!)))
+                    issues.Add(new("UNSUPPORTED_TRIGGER", file, path + ".event", $"Trigger event '{triggeredEvent}' is not supported."));
+                break;
             case "summonUnit":
                 ValidateKeys(effect, file, path, ["kind", "unitId", "count"], ["kind"], issues);
                 if (RequireParameterString(effect, "unitId", path, issues, out var unitId) && !unitIds.Contains(unitId!))

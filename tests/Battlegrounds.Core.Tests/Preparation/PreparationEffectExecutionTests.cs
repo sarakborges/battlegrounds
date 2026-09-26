@@ -4,6 +4,7 @@ using Battlegrounds.Core.Domain.Effects;
 using Battlegrounds.Core.Domain.Ids;
 using Battlegrounds.Core.Domain.Match;
 using Battlegrounds.Core.Domain.Preparation;
+using Battlegrounds.Core.Domain.Taxonomy;
 using Battlegrounds.Core.Domain.Units;
 using Battlegrounds.Core.Randomness;
 
@@ -85,6 +86,99 @@ public sealed class PreparationEffectExecutionTests
         Assert.DoesNotContain(player.Field, unit => unit.Definition.Id == victim.Id);
         var generated = Assert.Single(player.Field, unit => unit.Definition.Id == token.Id);
         Assert.Equal(UnitInstanceOrigin.Generated, generated.Origin);
+        Assert.Equal(1, setup.Pool.GetAvailableCopies(victim.Id));
+    }
+
+    [Fact]
+    public void TriggerEvent_CanActivateFriendlyOnDeathWithoutDestroyingItDuringPreparation()
+    {
+        var token = new UnitDefinition(new UnitId("token"), "Token", 1, 1, 1);
+        var victim = new UnitDefinition(
+            new UnitId("victim"),
+            "Victim",
+            1,
+            1,
+            3,
+            triggers:
+            [
+                new TriggerDefinition(
+                    NativeTriggerKeys.OnDeath,
+                    [new SummonUnitEffectDefinition(token.Id)]),
+            ]);
+        var source = new UnitDefinition(
+            new UnitId("source"),
+            "Source",
+            1,
+            1,
+            3,
+            triggers:
+            [
+                new TriggerDefinition(
+                    NativeTriggerKeys.OnPlay,
+                    [
+                        new TriggerEventEffectDefinition(
+                            new EffectTargetSelector(EffectTargetScope.AllFriendly),
+                            NativeTriggerKeys.OnDeath),
+                    ]),
+            ]);
+
+        var setup = CreateStartedMatch([victim, source, token], [victim, source], startingResource: 10, acquireCost: 0);
+        var player = setup.Match.Players[0];
+        AcquireById(setup.Engine, setup.Match, player.Id, victim.Id);
+        Assert.True(setup.Engine.Execute(setup.Match, new DeployUnitCommand(player.Id, 0)).Succeeded);
+        AcquireById(setup.Engine, setup.Match, player.Id, source.Id);
+        Assert.True(setup.Engine.Execute(setup.Match, new DeployUnitCommand(player.Id, 0)).Succeeded);
+
+        Assert.Contains(player.Field, unit => unit.Definition.Id == victim.Id);
+        Assert.Contains(player.Field, unit => unit.Definition.Id == token.Id);
+    }
+
+    [Fact]
+    public void DestroyUnit_CanKillFilteredFriendlyAndResolveOnDeathDuringPreparation()
+    {
+        var sacrificeTag = new TagDefinition(new TagId("sacrifice"), "Sacrifice");
+        var token = new UnitDefinition(new UnitId("token"), "Token", 1, 1, 1);
+        var victim = new UnitDefinition(
+            new UnitId("victim"),
+            "Victim",
+            1,
+            1,
+            3,
+            tags: [sacrificeTag],
+            triggers:
+            [
+                new TriggerDefinition(
+                    NativeTriggerKeys.OnDeath,
+                    [new SummonUnitEffectDefinition(token.Id)]),
+            ]);
+        var source = new UnitDefinition(
+            new UnitId("source"),
+            "Source",
+            1,
+            1,
+            3,
+            triggers:
+            [
+                new TriggerDefinition(
+                    NativeTriggerKeys.OnPlay,
+                    [
+                        new DestroyUnitEffectDefinition(
+                            new EffectTargetSelector(
+                                EffectTargetScope.AllFriendly,
+                                requiredTagId: sacrificeTag.Id)),
+                    ]),
+            ]);
+
+        var setup = CreateStartedMatch([victim, source, token], [victim, source], startingResource: 10, acquireCost: 0);
+        var player = setup.Match.Players[0];
+        AcquireById(setup.Engine, setup.Match, player.Id, victim.Id);
+        Assert.True(setup.Engine.Execute(setup.Match, new DeployUnitCommand(player.Id, 0)).Succeeded);
+        AcquireById(setup.Engine, setup.Match, player.Id, source.Id);
+        Assert.True(setup.Engine.Execute(setup.Match, new DeployUnitCommand(player.Id, 0)).Succeeded);
+
+        Assert.DoesNotContain(player.Field, unit => unit.Definition.Id == victim.Id);
+        Assert.Contains(player.Field, unit => unit.Definition.Id == source.Id);
+        Assert.Contains(player.Field, unit => unit.Definition.Id == token.Id);
         Assert.Equal(1, setup.Pool.GetAvailableCopies(victim.Id));
     }
 

@@ -66,6 +66,32 @@ public sealed record DealDamageEffectDefinition : EffectDefinition
     }
 }
 
+public sealed record DestroyUnitEffectDefinition : EffectDefinition
+{
+    public override NativeEffectKey Kind => NativeEffectKeys.DestroyUnit;
+    public EffectTargetSelector Target { get; }
+
+    public DestroyUnitEffectDefinition(EffectTargetSelector target)
+    {
+        Target = target ?? throw new ArgumentNullException(nameof(target));
+    }
+}
+
+public sealed record TriggerEventEffectDefinition : EffectDefinition
+{
+    public override NativeEffectKey Kind => NativeEffectKeys.TriggerEvent;
+    public EffectTargetSelector Target { get; }
+    public NativeTriggerKey Event { get; }
+
+    public TriggerEventEffectDefinition(EffectTargetSelector target, NativeTriggerKey @event)
+    {
+        Target = target ?? throw new ArgumentNullException(nameof(target));
+        if (!NativeTriggerKeys.IsSupported(@event))
+            throw new ArgumentException($"Unsupported trigger '{@event}'.", nameof(@event));
+        Event = @event;
+    }
+}
+
 public sealed record SummonUnitEffectDefinition : EffectDefinition
 {
     public override NativeEffectKey Kind => NativeEffectKeys.SummonUnit;

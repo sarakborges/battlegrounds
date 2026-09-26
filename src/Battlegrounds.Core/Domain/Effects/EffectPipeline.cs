@@ -107,6 +107,8 @@ public sealed class EffectPipeline
         {
             ModifyStatsEffectDefinition value => value.Target,
             DealDamageEffectDefinition value => value.Target,
+            DestroyUnitEffectDefinition value => value.Target,
+            TriggerEventEffectDefinition value => value.Target,
             AddBehaviorEffectDefinition value => value.Target,
             RemoveBehaviorEffectDefinition value => value.Target,
             _ => null,
