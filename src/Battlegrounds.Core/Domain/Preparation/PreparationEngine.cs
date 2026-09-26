@@ -52,7 +52,8 @@ public sealed class PreparationEngine
             _unitPool,
             _randomSource,
             unitCatalog,
-            behaviorCatalog);
+            behaviorCatalog,
+            powerCatalog);
     }
 
     public void BeginPreparation(
@@ -66,6 +67,7 @@ public sealed class PreparationEngine
             throw new InvalidOperationException($"Cannot begin preparation from {match.Phase}.");
         }
 
+        var isMatchStart = match.Phase == MatchPhase.Setup;
         var activePlayers = match.Players.Where(player => !player.IsEliminated).ToArray();
         var offers = activePlayers.ToDictionary(
             player => player.Id,
@@ -82,6 +84,14 @@ public sealed class PreparationEngine
                 player.AdjustResource(adjustment, _rules.MaximumResource);
             }
             player.ReplaceOffer(offers[player.Id]);
+        }
+
+        if (isMatchStart)
+        {
+            foreach (var player in activePlayers)
+            {
+                _effectEngine.ProcessPowerEvent(match, player, NativeTriggerKeys.OnMatchStart);
+            }
         }
 
         foreach (var player in activePlayers)
@@ -260,17 +270,25 @@ public sealed class PreparationEngine
             return PreparationCommandResult.Failure(PreparationFailureCode.PowerUnavailable);
         }
 
+        if (power.Activation is null)
+        {
+            return PreparationCommandResult.Failure(PreparationFailureCode.PowerNotActivatable);
+        }
+
         if (!leader.CanUse(power))
         {
             return PreparationCommandResult.Failure(PreparationFailureCode.PowerUsageLimitReached);
         }
 
-        if (!player.CanAfford(power.Cost))
+        var activation = power.Activation;
+        if (!player.CanAfford(activation.Cost))
         {
             return PreparationCommandResult.Failure(PreparationFailureCode.InsufficientResource);
         }
 
-        var selectedSelectors = power.Effects
+        var activationTrigger = power.FindTrigger(NativeTriggerKeys.OnActivate)
+            ?? throw new InvalidOperationException($"Power '{power.Id}' has no onActivate trigger.");
+        var selectedSelectors = activationTrigger.Effects
             .Select(GetTargetSelector)
             .Where(selector => selector?.Scope == EffectTargetScope.Selected)
             .Cast<EffectTargetSelector>()
@@ -290,7 +308,7 @@ public sealed class PreparationEngine
             return PreparationCommandResult.Failure(PreparationFailureCode.InvalidPowerTarget);
         }
 
-        player.SpendResource(power.Cost);
+        player.SpendResource(activation.Cost);
         _effectEngine.ProcessPower(match, player, power, command.TargetUnitInstanceId);
         leader.RecordUse(power.Id);
         return PreparationCommandResult.Success();
