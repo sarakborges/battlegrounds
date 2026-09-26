@@ -3,6 +3,7 @@ using Battlegrounds.Core.Domain.Behaviors;
 using Battlegrounds.Core.Domain.Combat;
 using Battlegrounds.Core.Domain.Match;
 using Battlegrounds.Core.Domain.Preparation;
+using Battlegrounds.Core.Domain.Taxonomy;
 using Battlegrounds.Core.Domain.Units;
 
 namespace Battlegrounds.Content;
@@ -19,6 +20,8 @@ public sealed class ModPackage
     public PreparationRules PreparationRules { get; }
     public CombatRules CombatRules { get; }
     public BehaviorCatalog Behaviors { get; }
+    public UnitTypeCatalog UnitTypes { get; }
+    public TagCatalog Tags { get; }
     public UnitCatalog Units { get; }
     public IReadOnlyList<UnitPoolEntry> PoolEntries => _poolEntries;
 
@@ -30,6 +33,8 @@ public sealed class ModPackage
         PreparationRules preparationRules,
         CombatRules combatRules,
         BehaviorCatalog behaviors,
+        UnitTypeCatalog unitTypes,
+        TagCatalog tags,
         UnitCatalog units,
         IEnumerable<UnitPoolEntry> poolEntries)
     {
@@ -39,7 +44,9 @@ public sealed class ModPackage
         PreparationRules = preparationRules;
         CombatRules = combatRules;
         Behaviors = behaviors ?? throw new ArgumentNullException(nameof(behaviors));
-        Units = units;
+        UnitTypes = unitTypes ?? throw new ArgumentNullException(nameof(unitTypes));
+        Tags = tags ?? throw new ArgumentNullException(nameof(tags));
+        Units = units ?? throw new ArgumentNullException(nameof(units));
         _terminology = new ReadOnlyDictionary<string, string>(
             new Dictionary<string, string>(terminology, StringComparer.Ordinal));
         _poolEntries = Array.AsReadOnly(poolEntries.ToArray());

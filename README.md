@@ -18,16 +18,16 @@ Examples:
 | `Tier` | Tavern Tier, Level, Rank, Stage, etc. |
 | `Reserve` | Hand, Bench, Roster, etc. |
 | `Field` | Board, Arena, Team, etc. |
+| `UnitType` | Beast, Demon, Vaccine, Machine, etc. |
+| `Tag` | any mod-defined selector or metadata |
 
-The Core must never encode fandom-specific terminology into IDs, state, commands, rules, or algorithms. Internal IDs describe stable mechanical roles (`UnitId`, `PlayerId`, `UnitInstanceId`, `BehaviorId`) rather than presentation names.
+The Core must never encode fandom-specific terminology into IDs, state, commands, rules, or algorithms. Internal IDs describe stable mechanical roles (`UnitId`, `PlayerId`, `UnitInstanceId`, `BehaviorId`, `UnitTypeId`, `TagId`) rather than presentation names.
 
 There is intentionally no `Standard` gameplay preset in Core. Numeric rules are supplied by the selected mod.
 
 ## Native behaviors, mod-defined identities
 
 Reusable mechanics are implemented once in Core under neutral native handler keys. Mods choose their own behavior IDs and display names and map them to those handlers.
-
-For example, a Warcraft-themed mod can map `divine-shield` to `damageBarrier`, while another mod can map `holy-barrier` to the same handler. Core only implements the mechanical contract.
 
 The current native combat handlers are:
 
@@ -37,7 +37,49 @@ The current native combat handlers are:
 - `lethalFirstDamagePerCombat` — the first unit actually damaged by this unit is destroyed, then the behavior is consumed for that life;
 - `extraAttack` — performs one additional consecutive strike during that unit's attack activation.
 
-Unit definitions reference mod behavior IDs. Unknown native handlers are rejected at the content boundary instead of silently degrading.
+## Triggers and authored effects
+
+Units can define ordered triggers directly in mod data. Supported trigger keys currently are:
+
+- `onPlay`
+- `onDeath`
+- `onSummon`
+- `onAttack`
+- `onDamage`
+- `onCombatStart`
+- `onCombatEnd`
+- `onTurnStart`
+- `onTurnEnd`
+
+Supported effect kinds currently are:
+
+- `modifyStats`
+- `dealDamage`
+- `summonUnit`
+- `addBehavior`
+- `removeBehavior`
+- `addResource`
+
+Targeted effects use neutral scopes (`self`, `randomFriendly`, `randomEnemy`, `allFriendly`, `allEnemy`) and can filter by mod-defined `typeId` and/or `tagId`.
+
+The Core effect pipeline resolves trigger order, effect order, deterministic random targets, filters, and effect payloads into explicit instructions. It does not hide mutation behind a global event bus. Preparation/combat owners apply those instructions and can enqueue resulting events in later slices.
+
+## Mod validation is mandatory
+
+`ModLoader.Load(...)` validates the complete mod before materializing a `ModPackage`. Invalid mods are rejected as a whole.
+
+`ModLoader.Validate(...)` returns a structured report suitable for the future UI. Validation covers:
+
+- required files and keys;
+- unknown keys;
+- JSON types and value ranges;
+- duplicate IDs and references;
+- cross-file references;
+- unsupported native handlers/triggers/effects;
+- type/tag/unit/behavior references;
+- effect-specific required parameters.
+
+Conditional parameters are validated explicitly. For example, a trigger without `effects`, `dealDamage` without `amount`, or `addBehavior` without `behaviorId` produces `MISSING_REQUIRED_PARAMETER` at the exact JSON path.
 
 ## Mod layout
 
@@ -53,13 +95,15 @@ mods/
       combat.json
     content/
       behaviors.json
+      types.json
+      tags.json
       units.json
       pool.json
     assets/                 # future
     localization/           # future
 ```
 
-`mod.json` owns package identity and display terminology. Rule files own numbers and policies. Content files own behavior identities, unit definitions, and pool composition. Filesystem/JSON loading lives in `Battlegrounds.Content`; `Battlegrounds.Core` never reads files or JSON directly.
+`mod.json` owns package identity and display terminology. Rule files own numbers and policies. Content files own behavior identities, unit taxonomy, authored triggers/effects, unit definitions, and pool composition. Filesystem/JSON loading lives in `Battlegrounds.Content`; `Battlegrounds.Core` never reads files or JSON directly.
 
 The repository contains `mods/example` only as a schema/integration fixture. It is not a canonical gameplay ruleset.
 
@@ -94,21 +138,18 @@ Read `ARCHITECTURE.md` before adding features. Its ownership, dependency, mutati
 - authoritative `MatchState` lifecycle (`Setup → Preparation → Combat`), round, and revision;
 - authoritative `PlayerState` with read-only `Reserve`, `Field`, and `Offer` views;
 - immutable `UnitDefinition` separated from mutable `UnitInstance` runtime state;
-- validated deterministic `UnitCatalog` and `BehaviorCatalog`;
+- validated deterministic catalogs for units, behaviors, unit types, and tags;
 - shared authoritative `UnitPool` with per-unit copy counts;
 - explicit preparation commands for acquire, release, deploy, refresh, tier upgrade, freeze/unfreeze, and end preparation;
 - `PreparationEngine` as the mutation boundary shared by future UI and AI;
-- unlimited offer freeze/unfreeze toggling;
 - deterministic injected RNG;
-- data-driven `MatchRules`, `PreparationRules`, and `CombatRules` loaded from the active mod;
-- data-driven terminology, behavior IDs/names, units, and pool configuration;
+- fully data-driven match/preparation/combat rules;
+- data-driven terminology, behaviors, taxonomy, units, triggers/effects, and pool configuration;
 - immutable combat snapshots isolated from persistent preparation state;
 - deterministic combat starting-side selection, attacker rotation, target selection, simultaneous damage, deaths, and winner/draw resolution;
 - native neutral implementations for damage barrier, target priority, revive-once, first-damage lethal, and extra attack;
-- zero-Attack units do not attack; a side with no attack power is skipped while the opponent can still act;
-- combat ends immediately as a draw when both sides have surviving units but neither side has attack power;
-- ordered combat attack log and survivor result for replay/UI/AI consumers;
-- mod schema validation outside Core;
+- ordered effect-resolution pipeline with type/tag target filtering;
+- whole-mod validation report before loading;
 - regression/invariant tests and CI.
 
 ## Local development
@@ -124,4 +165,4 @@ dotnet test tests/Battlegrounds.Content.Tests/Battlegrounds.Content.Tests.csproj
 
 ## Next architectural slice
 
-Add generic unit types/tags and the ordered effect/trigger pipeline required for attach/merge mechanics and authored effects such as on-play, on-death, avenge, summon, damage, and combat-start behavior. Keep mod IDs and presentation data outside the native mechanic names and do not introduce a global event bus.
+Integrate resolved effects into authoritative Preparation and Combat state through an explicit action/event queue: apply stat changes, damage, summons, behaviors and resources, then enqueue resulting triggers such as `onDamage`, `onSummon`, and `onDeath`. That integration unlocks Battlecry/Deathrattle/Avenge-style authored mechanics and attach/merge behavior without a global event bus.
