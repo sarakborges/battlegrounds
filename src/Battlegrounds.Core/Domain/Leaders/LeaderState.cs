@@ -36,10 +36,12 @@ public sealed class LeaderState
     internal bool CanUse(PowerDefinition power)
     {
         ArgumentNullException.ThrowIfNull(power);
-        if (CurrentPowerId != power.Id) return false;
-        if (_usesThisTurn.GetValueOrDefault(power.Id) >= power.MaxUsesPerTurn) return false;
-        if (power.MaxUsesPerMatch is not null &&
-            _usesThisMatch.GetValueOrDefault(power.Id) >= power.MaxUsesPerMatch.Value)
+        if (CurrentPowerId != power.Id || power.Activation is null) return false;
+
+        var activation = power.Activation;
+        if (_usesThisTurn.GetValueOrDefault(power.Id) >= activation.MaxUsesPerTurn) return false;
+        if (activation.MaxUsesPerMatch is not null &&
+            _usesThisMatch.GetValueOrDefault(power.Id) >= activation.MaxUsesPerMatch.Value)
         {
             return false;
         }
