@@ -1,6 +1,7 @@
 using System.Collections.ObjectModel;
 using Battlegrounds.Core.Domain.Combat;
 using Battlegrounds.Core.Domain.Ids;
+using Battlegrounds.Core.Domain.Leaders;
 using Battlegrounds.Core.Domain.Players;
 using Battlegrounds.Core.Domain.Units;
 
@@ -43,19 +44,30 @@ public sealed class MatchState
         ArgumentNullException.ThrowIfNull(rules);
 
         var ids = playerIds.ToArray();
-        if (ids.Length < rules.MinimumPlayers || ids.Length > rules.MaximumPlayers)
-        {
-            throw new ArgumentOutOfRangeException(
-                nameof(playerIds),
-                $"A match requires between {rules.MinimumPlayers} and {rules.MaximumPlayers} players.");
-        }
-
-        if (ids.Distinct().Count() != ids.Length)
-        {
-            throw new ArgumentException("Player ids must be unique.", nameof(playerIds));
-        }
-
+        ValidatePlayerIds(ids, rules);
         return new MatchState(ids.Select(id => new PlayerState(id, rules.StartingHealth)).ToList());
+    }
+
+    public static MatchState Create(
+        IEnumerable<PlayerSetup> playerSetups,
+        MatchRules rules,
+        LeaderCatalog leaderCatalog)
+    {
+        ArgumentNullException.ThrowIfNull(playerSetups);
+        ArgumentNullException.ThrowIfNull(rules);
+        ArgumentNullException.ThrowIfNull(leaderCatalog);
+
+        var setups = playerSetups.ToArray();
+        ValidatePlayerIds(setups.Select(setup => setup.PlayerId).ToArray(), rules);
+
+        var players = setups
+            .Select(setup => new PlayerState(
+                setup.PlayerId,
+                rules.StartingHealth,
+                leaderCatalog.GetRequired(setup.LeaderId)))
+            .ToList();
+
+        return new MatchState(players);
     }
 
     public bool TryGetPlayer(PlayerId playerId, out PlayerState player) =>
@@ -201,4 +213,19 @@ public sealed class MatchState
     }
 
     internal void MarkChanged() => Revision++;
+
+    private static void ValidatePlayerIds(IReadOnlyList<PlayerId> ids, MatchRules rules)
+    {
+        if (ids.Count < rules.MinimumPlayers || ids.Count > rules.MaximumPlayers)
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(ids),
+                $"A match requires between {rules.MinimumPlayers} and {rules.MaximumPlayers} players.");
+        }
+
+        if (ids.Distinct().Count() != ids.Count)
+        {
+            throw new ArgumentException("Player ids must be unique.", nameof(ids));
+        }
+    }
 }
