@@ -166,6 +166,7 @@ public sealed class EffectHistoryTests
             return instanceId == _unit.InstanceId;
         }
 
+        public IReadOnlyList<IEffectRuntimeUnit> GetHistoryEventListeners(PlayerId playerId) => [_unit];
         public void ModifyStats(IEffectRuntimeUnit unit, int attackDelta, int healthDelta) => throw new NotSupportedException();
         public bool TryConsumeBehavior(IEffectRuntimeUnit unit, NativeBehaviorKey handler) => false;
         public bool AddBehavior(IEffectRuntimeUnit unit, BehaviorDefinition behavior) => false;
