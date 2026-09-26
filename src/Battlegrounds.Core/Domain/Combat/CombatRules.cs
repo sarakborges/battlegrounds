@@ -8,17 +8,10 @@ public enum StartingSidePolicy
 
 public sealed class CombatRules
 {
-    public int MaximumAttacks { get; }
     public StartingSidePolicy StartingSidePolicy { get; }
 
-    public CombatRules(int maximumAttacks, StartingSidePolicy startingSidePolicy)
+    public CombatRules(StartingSidePolicy startingSidePolicy)
     {
-        if (maximumAttacks <= 0)
-        {
-            throw new ArgumentOutOfRangeException(nameof(maximumAttacks));
-        }
-
-        MaximumAttacks = maximumAttacks;
         StartingSidePolicy = startingSidePolicy;
     }
 }
