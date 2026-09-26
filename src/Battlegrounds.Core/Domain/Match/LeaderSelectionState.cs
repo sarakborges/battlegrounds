@@ -49,21 +49,23 @@ public sealed class LeaderSelectionState
 
     public static LeaderSelectionState Create(
         IEnumerable<PlayerId> playerIds,
-        MatchRules rules,
+        MatchRules matchRules,
+        LeaderSelectionRules selectionRules,
         LeaderCatalog leaderCatalog,
         IRandomSource randomSource)
     {
         ArgumentNullException.ThrowIfNull(playerIds);
-        ArgumentNullException.ThrowIfNull(rules);
+        ArgumentNullException.ThrowIfNull(matchRules);
+        ArgumentNullException.ThrowIfNull(selectionRules);
         ArgumentNullException.ThrowIfNull(leaderCatalog);
         ArgumentNullException.ThrowIfNull(randomSource);
 
         var players = playerIds.OrderBy(id => id.Value).ToArray();
-        if (players.Length < rules.MinimumPlayers || players.Length > rules.MaximumPlayers)
+        if (players.Length < matchRules.MinimumPlayers || players.Length > matchRules.MaximumPlayers)
         {
             throw new ArgumentOutOfRangeException(
                 nameof(playerIds),
-                $"Player count must be between {rules.MinimumPlayers} and {rules.MaximumPlayers}.");
+                $"Player count must be between {matchRules.MinimumPlayers} and {matchRules.MaximumPlayers}.");
         }
 
         var duplicate = players.GroupBy(id => id).FirstOrDefault(group => group.Count() > 1);
@@ -72,11 +74,11 @@ public sealed class LeaderSelectionState
             throw new ArgumentException($"Duplicate player id '{duplicate.Key}'.", nameof(playerIds));
         }
 
-        var offers = rules.LeaderOfferPolicy switch
+        var offers = selectionRules.OfferPolicy switch
         {
-            LeaderOfferPolicy.IndependentPerPlayer => CreateIndependentOffers(players, rules.LeaderOfferSize, leaderCatalog, randomSource),
-            LeaderOfferPolicy.UniqueAcrossMatch => CreateUniqueOffers(players, rules.LeaderOfferSize, leaderCatalog, randomSource),
-            _ => throw new ArgumentOutOfRangeException(nameof(rules.LeaderOfferPolicy), rules.LeaderOfferPolicy, "Unsupported leader offer policy."),
+            LeaderOfferPolicy.IndependentPerPlayer => CreateIndependentOffers(players, selectionRules.OfferSize, leaderCatalog, randomSource),
+            LeaderOfferPolicy.UniqueAcrossMatch => CreateUniqueOffers(players, selectionRules.OfferSize, leaderCatalog, randomSource),
+            _ => throw new ArgumentOutOfRangeException(nameof(selectionRules.OfferPolicy), selectionRules.OfferPolicy, "Unsupported leader offer policy."),
         };
 
         return new LeaderSelectionState(players, offers);
