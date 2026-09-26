@@ -14,6 +14,7 @@ public enum PreparationFailureCode
     InvalidFieldSlot,
     MaximumTier,
     PowerUnavailable,
+    PowerNotActivatable,
     PowerUsageLimitReached,
     InvalidPowerTarget,
     OfferAlreadyFrozen,
