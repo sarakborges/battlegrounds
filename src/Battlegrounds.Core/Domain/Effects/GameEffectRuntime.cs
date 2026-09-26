@@ -200,21 +200,36 @@ internal sealed class GameEffectRuntime
         switch (resolved.Definition)
         {
             case ModifyStatsEffectDefinition modifyStats:
+            {
+                var context = BuildContext(source);
                 foreach (var target in GetCurrentTargets(resolved.TargetInstanceIds))
                 {
-                    _world.ModifyStats(target, modifyStats.AttackDelta, modifyStats.HealthDelta);
+                    var attackDelta = _pipeline.EvaluateValue(modifyStats.AttackDelta, context, target.InstanceId);
+                    var healthDelta = _pipeline.EvaluateValue(modifyStats.HealthDelta, context, target.InstanceId);
+                    if (attackDelta != 0 || healthDelta != 0)
+                    {
+                        _world.ModifyStats(target, attackDelta, healthDelta);
+                    }
                 }
                 break;
+            }
 
             case DealDamageEffectDefinition dealDamage:
+            {
+                var context = BuildContext(source);
                 foreach (var target in GetCurrentTargets(resolved.TargetInstanceIds))
                 {
+                    var amount = _pipeline.EvaluateValue(dealDamage.Amount, context, target.InstanceId);
+                    if (amount <= 0)
+                    {
+                        continue;
+                    }
                     if (_world.TryConsumeBehavior(target, NativeBehaviorKeys.DamageBarrier))
                     {
                         continue;
                     }
 
-                    _world.TakeDamage(target, dealDamage.Amount);
+                    _world.TakeDamage(target, amount);
                     if (_world.TryConsumeBehavior(source, NativeBehaviorKeys.LethalFirstDamagePerCombat))
                     {
                         _world.Destroy(target);
@@ -223,6 +238,7 @@ internal sealed class GameEffectRuntime
                     queue.Enqueue(new GameEffectEvent(NativeTriggerKeys.OnDamage, target));
                 }
                 break;
+            }
 
             case DestroyUnitEffectDefinition:
                 foreach (var target in GetCurrentTargets(resolved.TargetInstanceIds))
@@ -239,16 +255,24 @@ internal sealed class GameEffectRuntime
                 break;
 
             case SummonUnitEffectDefinition summon:
+            {
                 var unitCatalog = _unitCatalog
                     ?? throw new InvalidOperationException("summonUnit requires a UnitCatalog in the effect runtime.");
+                var count = _pipeline.EvaluateValue(summon.Count, BuildContext(source));
+                if (count <= 0)
+                {
+                    break;
+                }
                 var definition = unitCatalog.GetRequired(summon.UnitId);
-                foreach (var summoned in _world.Summon(source, definition, summon.Count))
+                foreach (var summoned in _world.Summon(source, definition, count))
                 {
                     queue.Enqueue(new GameEffectEvent(NativeTriggerKeys.OnSummon, summoned));
                 }
                 break;
+            }
 
             case AddBehaviorEffectDefinition addBehavior:
+            {
                 var behaviorCatalog = _behaviorCatalog
                     ?? throw new InvalidOperationException("addBehavior requires a BehaviorCatalog in the effect runtime.");
                 var behavior = behaviorCatalog.GetRequired(addBehavior.BehaviorId);
@@ -257,6 +281,7 @@ internal sealed class GameEffectRuntime
                     _world.AddBehavior(target, behavior);
                 }
                 break;
+            }
 
             case RemoveBehaviorEffectDefinition removeBehavior:
                 foreach (var target in GetCurrentTargets(resolved.TargetInstanceIds))
@@ -266,8 +291,14 @@ internal sealed class GameEffectRuntime
                 break;
 
             case AddResourceEffectDefinition addResource:
-                _world.AdjustResource(source.OwnerPlayerId, addResource.Amount);
+            {
+                var amount = _pipeline.EvaluateValue(addResource.Amount, BuildContext(source));
+                if (amount != 0)
+                {
+                    _world.AdjustResource(source.OwnerPlayerId, amount);
+                }
                 break;
+            }
 
             case SetPowerEffectDefinition setPower:
                 _world.SetPower(source.OwnerPlayerId, setPower.PowerId);

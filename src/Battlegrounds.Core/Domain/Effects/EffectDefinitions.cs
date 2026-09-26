@@ -158,16 +158,29 @@ public sealed record ModifyStatsEffectDefinition : EffectDefinition
 {
     public override NativeEffectKey Kind => NativeEffectKeys.ModifyStats;
     public EffectTargetSelector Target { get; }
-    public int AttackDelta { get; }
-    public int HealthDelta { get; }
+    public EffectValueExpression AttackDelta { get; }
+    public EffectValueExpression HealthDelta { get; }
 
     public ModifyStatsEffectDefinition(EffectTargetSelector target, int attackDelta, int healthDelta)
+        : this(
+            target,
+            new ConstantEffectValueExpression(attackDelta),
+            new ConstantEffectValueExpression(healthDelta))
     {
-        Target = target ?? throw new ArgumentNullException(nameof(target));
         if (attackDelta == 0 && healthDelta == 0)
             throw new ArgumentException("modifyStats requires a non-zero attack or health delta.");
-        AttackDelta = attackDelta;
-        HealthDelta = healthDelta;
+    }
+
+    public ModifyStatsEffectDefinition(
+        EffectTargetSelector target,
+        EffectValueExpression? attackDelta,
+        EffectValueExpression? healthDelta)
+    {
+        Target = target ?? throw new ArgumentNullException(nameof(target));
+        if (attackDelta is null && healthDelta is null)
+            throw new ArgumentException("modifyStats requires an attack or health value expression.");
+        AttackDelta = attackDelta ?? new ConstantEffectValueExpression(0);
+        HealthDelta = healthDelta ?? new ConstantEffectValueExpression(0);
     }
 }
 
@@ -175,13 +188,18 @@ public sealed record DealDamageEffectDefinition : EffectDefinition
 {
     public override NativeEffectKey Kind => NativeEffectKeys.DealDamage;
     public EffectTargetSelector Target { get; }
-    public int Amount { get; }
+    public EffectValueExpression Amount { get; }
 
     public DealDamageEffectDefinition(EffectTargetSelector target, int amount)
+        : this(target, new ConstantEffectValueExpression(amount))
+    {
+        if (amount <= 0) throw new ArgumentOutOfRangeException(nameof(amount));
+    }
+
+    public DealDamageEffectDefinition(EffectTargetSelector target, EffectValueExpression amount)
     {
         Target = target ?? throw new ArgumentNullException(nameof(target));
-        if (amount <= 0) throw new ArgumentOutOfRangeException(nameof(amount));
-        Amount = amount;
+        Amount = amount ?? throw new ArgumentNullException(nameof(amount));
     }
 }
 
@@ -215,13 +233,18 @@ public sealed record SummonUnitEffectDefinition : EffectDefinition
 {
     public override NativeEffectKey Kind => NativeEffectKeys.SummonUnit;
     public UnitId UnitId { get; }
-    public int Count { get; }
+    public EffectValueExpression Count { get; }
 
     public SummonUnitEffectDefinition(UnitId unitId, int count = 1)
+        : this(unitId, new ConstantEffectValueExpression(count))
     {
         if (count <= 0) throw new ArgumentOutOfRangeException(nameof(count));
+    }
+
+    public SummonUnitEffectDefinition(UnitId unitId, EffectValueExpression count)
+    {
         UnitId = unitId;
-        Count = count;
+        Count = count ?? throw new ArgumentNullException(nameof(count));
     }
 }
 
@@ -254,12 +277,17 @@ public sealed record RemoveBehaviorEffectDefinition : EffectDefinition
 public sealed record AddResourceEffectDefinition : EffectDefinition
 {
     public override NativeEffectKey Kind => NativeEffectKeys.AddResource;
-    public int Amount { get; }
+    public EffectValueExpression Amount { get; }
 
     public AddResourceEffectDefinition(int amount)
+        : this(new ConstantEffectValueExpression(amount))
     {
         if (amount == 0) throw new ArgumentOutOfRangeException(nameof(amount));
-        Amount = amount;
+    }
+
+    public AddResourceEffectDefinition(EffectValueExpression amount)
+    {
+        Amount = amount ?? throw new ArgumentNullException(nameof(amount));
     }
 }
 
