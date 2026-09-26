@@ -149,6 +149,23 @@ public sealed record SourceStatConditionDefinition : EffectConditionDefinition
     }
 }
 
+public sealed record ValueConditionDefinition : EffectConditionDefinition
+{
+    public EffectValueExpression Left { get; }
+    public EffectComparison Comparison { get; }
+    public EffectValueExpression Right { get; }
+
+    public ValueConditionDefinition(
+        EffectValueExpression left,
+        EffectComparison comparison,
+        EffectValueExpression right)
+    {
+        Left = left ?? throw new ArgumentNullException(nameof(left));
+        Comparison = comparison;
+        Right = right ?? throw new ArgumentNullException(nameof(right));
+    }
+}
+
 public abstract record EffectDefinition
 {
     public abstract NativeEffectKey Kind { get; }
@@ -311,12 +328,14 @@ public sealed class TriggerDefinition
     public int? Count { get; }
     public IReadOnlyList<EffectConditionDefinition> Conditions => _conditions;
     public IReadOnlyList<EffectDefinition> Effects => _effects;
+    public TriggerActivationLimit? ActivationLimit { get; }
 
     public TriggerDefinition(
         NativeTriggerKey @event,
         IEnumerable<EffectDefinition> effects,
         int? count = null,
-        IEnumerable<EffectConditionDefinition>? conditions = null)
+        IEnumerable<EffectConditionDefinition>? conditions = null,
+        TriggerActivationLimit? activationLimit = null)
     {
         if (!NativeTriggerKeys.IsSupported(@event))
             throw new ArgumentException($"Unsupported trigger '{@event}'.", nameof(@event));
@@ -343,5 +362,6 @@ public sealed class TriggerDefinition
         Count = count;
         _effects = Array.AsReadOnly(materialized);
         _conditions = Array.AsReadOnly(conditionArray);
+        ActivationLimit = activationLimit;
     }
 }
