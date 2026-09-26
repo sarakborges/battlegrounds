@@ -93,7 +93,6 @@ internal sealed class PreparationEffectEngine
 
         var (world, runtime) = GetRuntime(match);
 
-        // Player-scoped power lifecycle resolves before field listeners.
         if (TryGetCurrentPower(owner, out var power) && power.FindTrigger(eventKey) is not null)
         {
             runtime.Process(new GameEffectEvent(eventKey, CreatePowerSource(owner, power)));
@@ -381,6 +380,8 @@ internal sealed class PreparationEffectEngine
         public UnitInstanceId InstanceId => Unit.Id;
         public PlayerId OwnerPlayerId { get; }
         public UnitDefinition Definition => Unit.Definition;
+        public int Attack => Unit.Attack;
+        public int Health => Unit.Health;
         public bool IsAlive => Unit.IsAlive;
 
         public PreparationRuntimeUnit(UnitInstance unit, PlayerId ownerPlayerId)
@@ -395,7 +396,9 @@ internal sealed class PreparationEffectEngine
         public UnitInstanceId InstanceId { get; }
         public PlayerId OwnerPlayerId { get; }
         public UnitDefinition Definition { get; }
-        public bool IsAlive => false;
+        public int Attack => 0;
+        public int Health => 1;
+        public bool IsAlive => true;
 
         public PowerRuntimeUnit(
             UnitInstanceId instanceId,
