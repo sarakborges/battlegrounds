@@ -20,6 +20,7 @@ public sealed class ModValidator
             .Concat(powerIssues)
             .Concat(new AdvancedEffectModValidator().Validate(modDirectory))
             .Concat(new DynamicEffectValueModValidator().Validate(modDirectory))
+            .Concat(new StatefulEffectModValidator().Validate(modDirectory))
             .ToArray();
 
         var preliminaryReport = new ModValidationReport(issues);
@@ -31,6 +32,7 @@ public sealed class ModValidator
     {
         if (issue.Code == "UNKNOWN_KEY" &&
             (issue.Path.EndsWith(".conditions", StringComparison.Ordinal) ||
+             issue.Path.EndsWith(".activationLimit", StringComparison.Ordinal) ||
              issue.Path.EndsWith(".target.selection", StringComparison.Ordinal) ||
              issue.Path.EndsWith(".target.excludeSource", StringComparison.Ordinal) ||
              issue.Path.EndsWith(".target.limit", StringComparison.Ordinal)))
