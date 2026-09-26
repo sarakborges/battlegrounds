@@ -44,6 +44,54 @@ public sealed class ModValidatorTests
     }
 
     [Fact]
+    public void Validate_TriggerAndEffectMissingParameters_AreReportedPrecisely()
+    {
+        var path = CreateTempMod();
+        try
+        {
+            File.WriteAllText(Path.Combine(path, "content", "units.json"),
+                "[" +
+                "{\"id\":\"scout\",\"name\":\"Scout\",\"tier\":1,\"attack\":1,\"health\":2,\"triggers\":[" +
+                "{\"event\":\"onPlay\"}," +
+                "{\"event\":\"onAttack\",\"effects\":[{\"kind\":\"dealDamage\",\"target\":{\"scope\":\"randomEnemy\"}}]}" +
+                "]}]" );
+
+            var report = new ModValidator().Validate(path);
+
+            Assert.Contains(report.Issues, issue =>
+                issue.Code == "MISSING_REQUIRED_PARAMETER" &&
+                issue.Path == "$[0].triggers[0].effects");
+            Assert.Contains(report.Issues, issue =>
+                issue.Code == "MISSING_REQUIRED_PARAMETER" &&
+                issue.Path == "$[0].triggers[1].effects[0].amount");
+        }
+        finally
+        {
+            Directory.Delete(path, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void Validate_UnknownTaxonomyReferences_AreReported()
+    {
+        var path = CreateTempMod();
+        try
+        {
+            File.WriteAllText(Path.Combine(path, "content", "units.json"),
+                "[{\"id\":\"scout\",\"name\":\"Scout\",\"tier\":1,\"attack\":1,\"health\":2,\"types\":[\"missing-type\"],\"tags\":[\"missing-tag\"]}]");
+
+            var report = new ModValidator().Validate(path);
+
+            Assert.Contains(report.Issues, issue => issue.Code == "UNKNOWN_REFERENCE" && issue.Path == "$[0].types[0]");
+            Assert.Contains(report.Issues, issue => issue.Code == "UNKNOWN_REFERENCE" && issue.Path == "$[0].tags[0]");
+        }
+        finally
+        {
+            Directory.Delete(path, recursive: true);
+        }
+    }
+
+    [Fact]
     public void Load_InvalidMod_ThrowsReportAndDoesNotMaterializePackage()
     {
         var path = CreateTempMod();
@@ -70,12 +118,12 @@ public sealed class ModValidatorTests
         var path = CreateTempMod();
         try
         {
-            File.Delete(Path.Combine(path, "content", "pool.json"));
+            File.Delete(Path.Combine(path, "content", "types.json"));
 
             var report = new ModValidator().Validate(path);
 
             var issue = Assert.Single(report.Issues, issue => issue.Code == "MISSING_REQUIRED_FILE");
-            Assert.Equal("content/pool.json", issue.File);
+            Assert.Equal("content/types.json", issue.File);
         }
         finally
         {
@@ -95,12 +143,8 @@ public sealed class ModValidatorTests
     {
         Directory.CreateDirectory(target);
         foreach (var directory in Directory.GetDirectories(source, "*", SearchOption.AllDirectories))
-        {
             Directory.CreateDirectory(directory.Replace(source, target, StringComparison.Ordinal));
-        }
         foreach (var file in Directory.GetFiles(source, "*", SearchOption.AllDirectories))
-        {
             File.Copy(file, file.Replace(source, target, StringComparison.Ordinal));
-        }
     }
 }
