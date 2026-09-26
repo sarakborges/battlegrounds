@@ -145,7 +145,8 @@ public sealed class ModLoader
                 ? null
                 : new TriggerActivationLimit(
                     data.ActivationLimit.Scope,
-                    data.ActivationLimit.Count));
+                    data.ActivationLimit.Count),
+            data.Counter is null ? null : BuildHistoryQuery(data.Counter));
 
     private static EffectConditionDefinition BuildCondition(ConditionData data) =>
         data.Kind switch
@@ -175,8 +176,7 @@ public sealed class ModLoader
             "dealDamage" => new DealDamageEffectDefinition(
                 BuildTarget(data.Target),
                 BuildRequiredValue(data.Amount, "dealDamage.amount")),
-            "destroyUnit" => new DestroyUnitEffectDefinition(
-                BuildTarget(data.Target)),
+            "destroyUnit" => new DestroyUnitEffectDefinition(BuildTarget(data.Target)),
             "triggerEvent" => new TriggerEventEffectDefinition(
                 BuildTarget(data.Target),
                 new NativeTriggerKey(data.Event ?? throw new InvalidDataException("Validated triggerEvent effect is missing event."))),
@@ -191,8 +191,7 @@ public sealed class ModLoader
             "removeBehavior" => new RemoveBehaviorEffectDefinition(
                 BuildTarget(data.Target),
                 new BehaviorId(data.BehaviorId ?? throw new InvalidDataException("Validated removeBehavior effect is missing behaviorId."))),
-            "addResource" => new AddResourceEffectDefinition(
-                BuildRequiredValue(data.Amount, "addResource.amount")),
+            "addResource" => new AddResourceEffectDefinition(BuildRequiredValue(data.Amount, "addResource.amount")),
             "setPower" => new SetPowerEffectDefinition(
                 new PowerId(data.PowerId ?? throw new InvalidDataException("Validated setPower effect is missing powerId."))),
             _ => throw new InvalidDataException($"Validated effect kind '{data.Kind}' is unsupported."),
@@ -209,16 +208,12 @@ public sealed class ModLoader
     private static EffectValueExpression BuildValue(JsonElement data)
     {
         if (data.ValueKind == JsonValueKind.Number && data.TryGetInt32(out var literal))
-        {
             return new ConstantEffectValueExpression(literal);
-        }
 
         if (data.ValueKind != JsonValueKind.Object ||
             !data.TryGetProperty("kind", out var kindElement) ||
             kindElement.ValueKind != JsonValueKind.String)
-        {
             throw new InvalidDataException("Validated effect value expression has an invalid shape.");
-        }
 
         var kind = kindElement.GetString();
         return kind switch
@@ -235,16 +230,19 @@ public sealed class ModLoader
         };
     }
 
+    private static EffectHistoryQuery BuildHistoryQuery(HistoryQueryData data) =>
+        new(
+            new NativeGameEventKey(data.Event),
+            data.Scope,
+            string.IsNullOrWhiteSpace(data.TypeId) ? null : new UnitTypeId(data.TypeId),
+            string.IsNullOrWhiteSpace(data.TagId) ? null : new TagId(data.TagId));
+
     private static EffectHistoryQuery BuildHistoryQuery(JsonElement data)
     {
         var eventName = data.GetProperty("event").GetString()
             ?? throw new InvalidDataException("Validated eventCount expression is missing event.");
-        var typeId = data.TryGetProperty("typeId", out var typeElement)
-            ? typeElement.GetString()
-            : null;
-        var tagId = data.TryGetProperty("tagId", out var tagElement)
-            ? tagElement.GetString()
-            : null;
+        var typeId = data.TryGetProperty("typeId", out var typeElement) ? typeElement.GetString() : null;
+        var tagId = data.TryGetProperty("tagId", out var tagElement) ? tagElement.GetString() : null;
 
         return new EffectHistoryQuery(
             new NativeGameEventKey(eventName),
@@ -253,23 +251,12 @@ public sealed class ModLoader
             string.IsNullOrWhiteSpace(tagId) ? null : new TagId(tagId));
     }
 
-    private static CompositeEffectValueExpression BuildComposite(
-        EffectValueOperation operation,
-        JsonElement data)
-    {
-        var values = ReadArray(data, "values")
-            .EnumerateArray()
-            .Select(BuildValue)
-            .ToArray();
-        return new CompositeEffectValueExpression(operation, values);
-    }
+    private static CompositeEffectValueExpression BuildComposite(EffectValueOperation operation, JsonElement data) =>
+        new(operation, ReadArray(data, "values").EnumerateArray().Select(BuildValue));
 
     private static TEnum ReadEnum<TEnum>(JsonElement data, string property)
-        where TEnum : struct, Enum
-    {
-        var element = data.GetProperty(property);
-        return JsonSerializer.Deserialize<TEnum>(element.GetRawText(), JsonOptions);
-    }
+        where TEnum : struct, Enum =>
+        JsonSerializer.Deserialize<TEnum>(data.GetProperty(property).GetRawText(), JsonOptions);
 
     private static JsonElement ReadObject(JsonElement data, string property)
     {
@@ -290,10 +277,7 @@ public sealed class ModLoader
     private static EffectTargetSelector BuildTarget(TargetData? data)
     {
         if (data is null) throw new InvalidDataException("Validated targeted effect is missing target.");
-        return new EffectTargetSelector(
-            BuildQuery(data),
-            data.Selection ?? EffectTargetSelection.All,
-            data.Limit);
+        return new EffectTargetSelector(BuildQuery(data), data.Selection ?? EffectTargetSelection.All, data.Limit);
     }
 
     private static EffectUnitQuery BuildQuery(QueryData? data)
@@ -313,13 +297,11 @@ public sealed class ModLoader
         return BuildQuery(query);
     }
 
-    private static T[] ReadDirectory<T>(string directory)
-    {
-        return Directory.GetFiles(directory, "*.json", SearchOption.TopDirectoryOnly)
+    private static T[] ReadDirectory<T>(string directory) =>
+        Directory.GetFiles(directory, "*.json", SearchOption.TopDirectoryOnly)
             .OrderBy(path => Path.GetFileName(path), StringComparer.Ordinal)
             .Select(ReadRequired<T>)
             .ToArray();
-    }
 
     private static T ReadRequired<T>(string path)
     {
@@ -332,48 +314,31 @@ public sealed class ModLoader
     private sealed record SetupRulesData(int LeaderOfferSize, LeaderOfferPolicy LeaderOfferPolicy);
     private sealed record MatchRulesData(int MinimumPlayers, int MaximumPlayers, int StartingHealth);
     private sealed record PreparationRulesData(
-        int StartingResource,
-        int ResourcePerRound,
-        int MaximumResource,
-        int AcquireCost,
-        int ReleaseValue,
-        int RefreshCost,
-        int FieldCapacity,
-        int ReserveCapacity,
-        int MaximumTier,
-        int[] OfferSizesByTier,
-        int[] InitialUpgradeCostsByTier);
-    private sealed record CombatRulesData(
-        StartingSidePolicy StartingSidePolicy,
-        PostCombatDamagePolicy PostCombatDamagePolicy);
+        int StartingResource, int ResourcePerRound, int MaximumResource, int AcquireCost, int ReleaseValue,
+        int RefreshCost, int FieldCapacity, int ReserveCapacity, int MaximumTier,
+        int[] OfferSizesByTier, int[] InitialUpgradeCostsByTier);
+    private sealed record CombatRulesData(StartingSidePolicy StartingSidePolicy, PostCombatDamagePolicy PostCombatDamagePolicy);
     private sealed record BehaviorData(string Id, string Name, string Handler);
     private sealed record PowerActivationData(int Cost, int MaxUsesPerTurn, int? MaxUsesPerMatch);
-    private sealed record PowerData(
-        string Id,
-        string Name,
-        PowerActivationData? Activation,
-        TriggerData[] Triggers);
+    private sealed record PowerData(string Id, string Name, PowerActivationData? Activation, TriggerData[] Triggers);
     private sealed record LeaderData(string Id, string Name, int HealthModifier, int Armor, string InitialPowerId);
     private sealed record NamedIdData(string Id, string Name);
     private sealed record UnitData(
-        string Id,
-        string Name,
-        int Tier,
-        int Attack,
-        int Health,
-        string[]? Behaviors,
-        string[]? Types,
-        string[]? Tags,
-        TriggerData[]? Triggers);
+        string Id, string Name, int Tier, int Attack, int Health, string[]? Behaviors,
+        string[]? Types, string[]? Tags, TriggerData[]? Triggers);
     private sealed record TriggerData(
         string Event,
         EffectData[] Effects,
         int? Count,
         ConditionData[]? Conditions,
-        TriggerActivationLimitData? ActivationLimit);
-    private sealed record TriggerActivationLimitData(
+        TriggerActivationLimitData? ActivationLimit,
+        HistoryQueryData? Counter);
+    private sealed record TriggerActivationLimitData(EffectHistoryScope Scope, int Count);
+    private sealed record HistoryQueryData(
+        string Event,
         EffectHistoryScope Scope,
-        int Count);
+        string? TypeId,
+        string? TagId);
     private sealed record ConditionData(
         string Kind,
         QueryData? Query,
@@ -393,11 +358,7 @@ public sealed class ModLoader
         string? BehaviorId,
         string? Event,
         string? PowerId);
-    private record QueryData(
-        EffectTargetScope Scope,
-        bool? ExcludeSource,
-        string? TypeId,
-        string? TagId);
+    private record QueryData(EffectTargetScope Scope, bool? ExcludeSource, string? TypeId, string? TagId);
     private sealed record TargetData(
         EffectTargetScope Scope,
         bool? ExcludeSource,
