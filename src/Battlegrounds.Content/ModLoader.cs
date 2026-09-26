@@ -102,7 +102,7 @@ public sealed class ModLoader
     }
 
     private static TriggerDefinition BuildTrigger(TriggerData data) =>
-        new(new NativeTriggerKey(data.Event), data.Effects.Select(BuildEffect));
+        new(new NativeTriggerKey(data.Event), data.Effects.Select(BuildEffect), data.Count);
 
     private static EffectDefinition BuildEffect(EffectData data) =>
         data.Kind switch
@@ -176,7 +176,7 @@ public sealed class ModLoader
         string[]? Types,
         string[]? Tags,
         TriggerData[]? Triggers);
-    private sealed record TriggerData(string Event, EffectData[] Effects);
+    private sealed record TriggerData(string Event, EffectData[] Effects, int? Count);
     private sealed record EffectData(
         string Kind,
         TargetData? Target,

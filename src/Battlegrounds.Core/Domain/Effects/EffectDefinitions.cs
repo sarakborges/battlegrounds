@@ -149,9 +149,13 @@ public sealed class TriggerDefinition
     private readonly ReadOnlyCollection<EffectDefinition> _effects;
 
     public NativeTriggerKey Event { get; }
+    public int? Count { get; }
     public IReadOnlyList<EffectDefinition> Effects => _effects;
 
-    public TriggerDefinition(NativeTriggerKey @event, IEnumerable<EffectDefinition> effects)
+    public TriggerDefinition(
+        NativeTriggerKey @event,
+        IEnumerable<EffectDefinition> effects,
+        int? count = null)
     {
         if (!NativeTriggerKeys.IsSupported(@event))
             throw new ArgumentException($"Unsupported trigger '{@event}'.", nameof(@event));
@@ -159,7 +163,19 @@ public sealed class TriggerDefinition
         var materialized = effects.ToArray();
         if (materialized.Length == 0) throw new ArgumentException("A trigger must contain at least one effect.", nameof(effects));
         if (materialized.Any(effect => effect is null)) throw new ArgumentException("Trigger effects cannot contain null values.", nameof(effects));
+
+        if (@event == NativeTriggerKeys.AfterFriendlyDeaths)
+        {
+            if (count is null || count.Value <= 0)
+                throw new ArgumentOutOfRangeException(nameof(count), "afterFriendlyDeaths requires a positive count.");
+        }
+        else if (count is not null)
+        {
+            throw new ArgumentException("count is only valid for afterFriendlyDeaths triggers.", nameof(count));
+        }
+
         Event = @event;
+        Count = count;
         _effects = Array.AsReadOnly(materialized);
     }
 }

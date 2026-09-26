@@ -36,8 +36,7 @@ internal interface IEffectRuntimeWorld
 
 internal sealed record GameEffectEvent(
     NativeTriggerKey Event,
-    IEffectRuntimeUnit Subject,
-    bool ResolveDeathLifecycle = false);
+    IEffectRuntimeUnit Subject);
 
 internal sealed class GameEffectRuntime
 {
@@ -48,6 +47,8 @@ internal sealed class GameEffectRuntime
     private readonly UnitCatalog? _unitCatalog;
     private readonly BehaviorCatalog? _behaviorCatalog;
     private readonly EffectPipeline _pipeline = new();
+    private readonly Dictionary<(UnitInstanceId InstanceId, int TriggerIndex), int> _triggerProgress = [];
+    private int _processedEvents;
 
     public GameEffectRuntime(
         IEffectRuntimeWorld world,
@@ -66,6 +67,7 @@ internal sealed class GameEffectRuntime
     public void Process(IEnumerable<GameEffectEvent> initialEvents)
     {
         ArgumentNullException.ThrowIfNull(initialEvents);
+        _processedEvents = 0;
 
         var queue = new Queue<GameEffectEvent>();
         foreach (var effectEvent in initialEvents)
@@ -74,36 +76,20 @@ internal sealed class GameEffectRuntime
             queue.Enqueue(effectEvent);
         }
 
-        var processed = 0;
+        DrainEventQueue(queue);
+        ResolveDeathWaves();
+    }
+
+    private void DrainEventQueue(Queue<GameEffectEvent> queue)
+    {
         while (queue.Count > 0)
         {
-            processed++;
-            if (processed > MaximumProcessedEvents)
-            {
-                throw new InvalidOperationException(
-                    "Effect runtime exceeded its internal safety budget. The mod likely contains a recursive effect loop.");
-            }
-
+            CountProcessedEvent();
             var effectEvent = queue.Dequeue();
             foreach (var listener in ResolveListeners(effectEvent))
             {
                 ResolveListener(effectEvent, listener, queue);
             }
-
-            if (effectEvent.ResolveDeathLifecycle)
-            {
-                var revived = _world.TryRevive(effectEvent.Subject);
-                if (revived is not null)
-                {
-                    queue.Enqueue(new GameEffectEvent(NativeTriggerKeys.OnSummon, revived));
-                }
-                else
-                {
-                    _world.FinalizeDeath(effectEvent.Subject);
-                }
-            }
-
-            QueueDeaths(queue);
         }
     }
 
@@ -112,7 +98,8 @@ internal sealed class GameEffectRuntime
         if (effectEvent.Event == NativeTriggerKeys.OnSummon)
         {
             return _world.Units
-                .Where(unit => unit.IsAlive && unit.OwnerPlayerId == effectEvent.Subject.OwnerPlayerId)
+                .Where(unit => unit.OwnerPlayerId == effectEvent.Subject.OwnerPlayerId)
+                .OrderBy(unit => unit.InstanceId.Value)
                 .ToArray();
         }
 
@@ -124,6 +111,12 @@ internal sealed class GameEffectRuntime
         IEffectRuntimeUnit listener,
         Queue<GameEffectEvent> queue)
     {
+        if (effectEvent.Event == NativeTriggerKeys.AfterFriendlyDeaths)
+        {
+            ResolveCountedDeathTriggers(listener, queue);
+            return;
+        }
+
         if (!listener.Definition.Triggers.Any(trigger => trigger.Event == effectEvent.Event))
         {
             return;
@@ -139,7 +132,43 @@ internal sealed class GameEffectRuntime
         foreach (var resolved in resolvedEffects)
         {
             ApplyEffect(listener, resolved, queue);
-            QueueDeaths(queue);
+        }
+    }
+
+    private void ResolveSpecificTrigger(
+        IEffectRuntimeUnit listener,
+        TriggerDefinition trigger,
+        Queue<GameEffectEvent> queue)
+    {
+        var context = BuildContext(listener);
+        var resolvedEffects = _pipeline.ResolveTrigger(
+            listener.Definition,
+            trigger,
+            context,
+            _randomSource);
+
+        foreach (var resolved in resolvedEffects)
+        {
+            ApplyEffect(listener, resolved, queue);
+        }
+    }
+
+    private void ResolveCountedDeathTriggers(
+        IEffectRuntimeUnit listener,
+        Queue<GameEffectEvent> queue)
+    {
+        for (var index = 0; index < listener.Definition.Triggers.Count; index++)
+        {
+            var trigger = listener.Definition.Triggers[index];
+            if (trigger.Event != NativeTriggerKeys.AfterFriendlyDeaths)
+            {
+                continue;
+            }
+
+            if (AdvanceTrigger(listener.InstanceId, index, trigger.Count!.Value))
+            {
+                ResolveSpecificTrigger(listener, trigger, queue);
+            }
         }
     }
 
@@ -233,33 +262,133 @@ internal sealed class GameEffectRuntime
     {
         foreach (var instanceId in targetInstanceIds)
         {
-            if (_world.TryGetUnit(instanceId, out var unit) && unit.IsAlive)
+            if (_world.TryGetUnit(instanceId, out var unit))
             {
                 yield return unit;
             }
         }
     }
 
-    private void QueueDeaths(Queue<GameEffectEvent> queue)
+    private void ResolveDeathWaves()
     {
-        foreach (var deadUnit in _world.ExtractDeadUnits())
+        while (true)
         {
-            queue.Enqueue(new GameEffectEvent(
-                NativeTriggerKeys.OnDeath,
-                deadUnit,
-                ResolveDeathLifecycle: true));
+            var deadUnits = _world.ExtractDeadUnits()
+                .OrderBy(unit => unit.InstanceId.Value)
+                .ToArray();
+
+            if (deadUnits.Length == 0)
+            {
+                return;
+            }
+
+            foreach (var deadUnit in deadUnits)
+            {
+                ResolveDeath(deadUnit);
+            }
+        }
+    }
+
+    private void ResolveDeath(IEffectRuntimeUnit deadUnit)
+    {
+        ClearTriggerProgress(deadUnit.InstanceId);
+
+        var activations = new List<DeathTriggerActivation>();
+        AddOwnDeathTriggers(deadUnit, activations);
+        AddFriendlyDeathTriggers(deadUnit, activations);
+
+        foreach (var activation in activations
+                     .OrderBy(value => value.Listener.InstanceId.Value)
+                     .ThenBy(value => value.TriggerIndex))
+        {
+            var queue = new Queue<GameEffectEvent>();
+            ResolveSpecificTrigger(activation.Listener, activation.Trigger, queue);
+            DrainEventQueue(queue);
+        }
+
+        var revived = _world.TryRevive(deadUnit);
+        if (revived is not null)
+        {
+            var queue = new Queue<GameEffectEvent>();
+            queue.Enqueue(new GameEffectEvent(NativeTriggerKeys.OnSummon, revived));
+            DrainEventQueue(queue);
+            return;
+        }
+
+        _world.FinalizeDeath(deadUnit);
+    }
+
+    private static void AddOwnDeathTriggers(
+        IEffectRuntimeUnit deadUnit,
+        ICollection<DeathTriggerActivation> activations)
+    {
+        for (var index = 0; index < deadUnit.Definition.Triggers.Count; index++)
+        {
+            var trigger = deadUnit.Definition.Triggers[index];
+            if (trigger.Event == NativeTriggerKeys.OnDeath)
+            {
+                activations.Add(new DeathTriggerActivation(deadUnit, index, trigger));
+            }
+        }
+    }
+
+    private void AddFriendlyDeathTriggers(
+        IEffectRuntimeUnit deadUnit,
+        ICollection<DeathTriggerActivation> activations)
+    {
+        foreach (var listener in _world.Units
+                     .Where(unit => unit.OwnerPlayerId == deadUnit.OwnerPlayerId)
+                     .OrderBy(unit => unit.InstanceId.Value))
+        {
+            for (var index = 0; index < listener.Definition.Triggers.Count; index++)
+            {
+                var trigger = listener.Definition.Triggers[index];
+                if (trigger.Event != NativeTriggerKeys.AfterFriendlyDeaths)
+                {
+                    continue;
+                }
+
+                if (AdvanceTrigger(listener.InstanceId, index, trigger.Count!.Value))
+                {
+                    activations.Add(new DeathTriggerActivation(listener, index, trigger));
+                }
+            }
+        }
+    }
+
+    private bool AdvanceTrigger(UnitInstanceId instanceId, int triggerIndex, int threshold)
+    {
+        var key = (instanceId, triggerIndex);
+        var progress = _triggerProgress.GetValueOrDefault(key) + 1;
+        if (progress < threshold)
+        {
+            _triggerProgress[key] = progress;
+            return false;
+        }
+
+        _triggerProgress[key] = 0;
+        return true;
+    }
+
+    private void ClearTriggerProgress(UnitInstanceId instanceId)
+    {
+        foreach (var key in _triggerProgress.Keys
+                     .Where(key => key.InstanceId == instanceId)
+                     .ToArray())
+        {
+            _triggerProgress.Remove(key);
         }
     }
 
     private EffectResolutionContext BuildContext(IEffectRuntimeUnit source)
     {
         var snapshots = _world.Units
-            .Select(CreateSnapshot)
+            .Select(unit => CreateSnapshot(unit, isSelectable: true))
             .ToList();
 
         if (snapshots.All(snapshot => snapshot.InstanceId != source.InstanceId))
         {
-            snapshots.Add(CreateSnapshot(source));
+            snapshots.Add(CreateSnapshot(source, isSelectable: false));
         }
 
         return new EffectResolutionContext(
@@ -268,13 +397,23 @@ internal sealed class GameEffectRuntime
             snapshots);
     }
 
-    private static EffectUnitSnapshot CreateSnapshot(IEffectRuntimeUnit unit) =>
+    private static EffectUnitSnapshot CreateSnapshot(IEffectRuntimeUnit unit, bool isSelectable) =>
         new(
             unit.InstanceId,
             unit.OwnerPlayerId,
-            unit.IsAlive,
+            isSelectable,
             unit.Definition.Types.Select(type => type.Id),
             unit.Definition.Tags.Select(tag => tag.Id));
+
+    private void CountProcessedEvent()
+    {
+        _processedEvents++;
+        if (_processedEvents > MaximumProcessedEvents)
+        {
+            throw new InvalidOperationException(
+                "Effect runtime exceeded its internal safety budget. The mod likely contains a recursive effect loop.");
+        }
+    }
 
     private static void ValidateEvent(GameEffectEvent effectEvent)
     {
@@ -284,4 +423,9 @@ internal sealed class GameEffectRuntime
             throw new ArgumentException($"Unsupported trigger '{effectEvent.Event}'.", nameof(effectEvent));
         }
     }
+
+    private sealed record DeathTriggerActivation(
+        IEffectRuntimeUnit Listener,
+        int TriggerIndex,
+        TriggerDefinition Trigger);
 }
