@@ -180,7 +180,10 @@ public sealed class MatchState
             latestPlayer.Id,
             latestPlayer.Tier,
             Round,
-            CombatParticipant.FromField(latestPlayer.Id, latestPlayer.Field));
+            CombatParticipant.FromField(
+                latestPlayer.Id,
+                latestPlayer.Field,
+                latestPlayer.Leader?.CurrentPowerId));
     }
 
     internal void Finish()
