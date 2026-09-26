@@ -3,6 +3,7 @@ using Battlegrounds.Core.Domain.Effects;
 using Battlegrounds.Core.Domain.Ids;
 using Battlegrounds.Core.Domain.Match;
 using Battlegrounds.Core.Domain.Players;
+using Battlegrounds.Core.Domain.Powers;
 using Battlegrounds.Core.Domain.Units;
 using Battlegrounds.Core.Randomness;
 
@@ -19,6 +20,7 @@ internal sealed class PreparationEffectEngine
     private int _runtimeRound = -1;
     private PreparationEffectWorld? _runtimeWorld;
     private GameEffectRuntime? _runtime;
+    private long _nextSyntheticInstanceId = long.MaxValue;
 
     public PreparationEffectEngine(
         PreparationRules rules,
@@ -45,6 +47,40 @@ internal sealed class PreparationEffectEngine
         {
             runtime.Process(new GameEffectEvent(NativeTriggerKeys.OnSummon, subject));
         }
+    }
+
+    public void ProcessPower(
+        MatchState match,
+        PlayerState owner,
+        PowerDefinition power,
+        UnitInstanceId? selectedTargetInstanceId)
+    {
+        ArgumentNullException.ThrowIfNull(power);
+        var (world, runtime) = GetRuntime(match);
+        var trigger = new TriggerDefinition(NativeTriggerKeys.OnPlay, power.Effects);
+        var definition = new UnitDefinition(
+            new UnitId("__power__" + power.Id.Value),
+            power.Name,
+            tier: 1,
+            baseAttack: 0,
+            baseHealth: 1,
+            triggers: [trigger]);
+
+        while (_nextSyntheticInstanceId > 0 &&
+               world.TryGetUnit(new UnitInstanceId(_nextSyntheticInstanceId), out _))
+        {
+            _nextSyntheticInstanceId--;
+        }
+        if (_nextSyntheticInstanceId <= 0)
+        {
+            throw new InvalidOperationException("Synthetic effect source id space was exhausted.");
+        }
+
+        var source = new PowerRuntimeUnit(
+            new UnitInstanceId(_nextSyntheticInstanceId--),
+            owner.Id,
+            definition);
+        runtime.ProcessTrigger(source, trigger, selectedTargetInstanceId);
     }
 
     public void ProcessTurnEvent(MatchState match, PlayerState owner, NativeTriggerKey eventKey)
@@ -140,7 +176,7 @@ internal sealed class PreparationEffectEngine
             GetUnit(unit).ModifyStats(attackDelta, healthDelta);
 
         public bool TryConsumeBehavior(IEffectRuntimeUnit unit, NativeBehaviorKey handler) =>
-            GetUnit(unit).RemoveBehavior(handler);
+            unit is PreparationRuntimeUnit ? GetUnit(unit).RemoveBehavior(handler) : false;
 
         public bool AddBehavior(IEffectRuntimeUnit unit, BehaviorDefinition behavior) =>
             GetUnit(unit).AddBehavior(behavior);
@@ -164,7 +200,9 @@ internal sealed class PreparationEffectEngine
             }
 
             var summoned = new List<IEffectRuntimeUnit>();
-            var insertionIndex = ResolveSummonIndex(source, owner);
+            var insertionIndex = source is PowerRuntimeUnit
+                ? owner.Field.Count
+                : ResolveSummonIndex(source, owner);
 
             for (var index = 0; index < count && owner.Field.Count < _rules.FieldCapacity; index++)
             {
@@ -172,7 +210,10 @@ internal sealed class PreparationEffectEngine
                 insertionIndex = Math.Clamp(insertionIndex, 0, owner.Field.Count);
                 owner.InsertIntoField(insertionIndex, instance);
                 insertionIndex++;
-                _summonCursors[source.InstanceId] = insertionIndex;
+                if (source is not PowerRuntimeUnit)
+                {
+                    _summonCursors[source.InstanceId] = insertionIndex;
+                }
                 summoned.Add(Wrap(instance, owner.Id));
             }
 
@@ -187,6 +228,16 @@ internal sealed class PreparationEffectEngine
             }
 
             player.AdjustResource(amount, _rules.MaximumResource);
+        }
+
+        public void SetPower(PlayerId playerId, PowerId powerId)
+        {
+            if (!_match.TryGetPlayer(playerId, out var player) || player.Leader is null)
+            {
+                throw new InvalidOperationException("Effect source owner has no leader state.");
+            }
+
+            player.Leader.SetPower(powerId);
         }
 
         public IReadOnlyList<IEffectRuntimeUnit> ExtractDeadUnits()
@@ -287,6 +338,24 @@ internal sealed class PreparationEffectEngine
         {
             Unit = unit ?? throw new ArgumentNullException(nameof(unit));
             OwnerPlayerId = ownerPlayerId;
+        }
+    }
+
+    private sealed class PowerRuntimeUnit : IEffectRuntimeUnit
+    {
+        public UnitInstanceId InstanceId { get; }
+        public PlayerId OwnerPlayerId { get; }
+        public UnitDefinition Definition { get; }
+        public bool IsAlive => false;
+
+        public PowerRuntimeUnit(
+            UnitInstanceId instanceId,
+            PlayerId ownerPlayerId,
+            UnitDefinition definition)
+        {
+            InstanceId = instanceId;
+            OwnerPlayerId = ownerPlayerId;
+            Definition = definition ?? throw new ArgumentNullException(nameof(definition));
         }
     }
 }
