@@ -6,6 +6,7 @@ using Battlegrounds.Core.Domain.Effects;
 using Battlegrounds.Core.Domain.Ids;
 using Battlegrounds.Core.Domain.Leaders;
 using Battlegrounds.Core.Domain.Match;
+using Battlegrounds.Core.Domain.Powers;
 using Battlegrounds.Core.Domain.Preparation;
 using Battlegrounds.Core.Domain.Taxonomy;
 using Battlegrounds.Core.Domain.Units;
@@ -43,6 +44,7 @@ public sealed class ModLoader
         var preparationRulesData = ReadRequired<PreparationRulesData>(Path.Combine(modDirectory, "rules", "preparation.json"));
         var combatRulesData = ReadRequired<CombatRulesData>(Path.Combine(modDirectory, "rules", "combat.json"));
         var behaviorData = ReadDirectory<BehaviorData>(Path.Combine(modDirectory, "content", "behaviors"));
+        var powerData = ReadDirectory<PowerData>(Path.Combine(modDirectory, "content", "powers"));
         var leaderData = ReadDirectory<LeaderData>(Path.Combine(modDirectory, "content", "leaders"));
         var typeData = ReadDirectory<NamedIdData>(Path.Combine(modDirectory, "content", "types"));
         var tagData = ReadDirectory<NamedIdData>(Path.Combine(modDirectory, "content", "tags"));
@@ -71,12 +73,21 @@ public sealed class ModLoader
 
         var behaviorCatalog = new BehaviorCatalog(behaviorData.Select(data =>
             new BehaviorDefinition(new BehaviorId(data.Id), data.Name, new NativeBehaviorKey(data.Handler))));
+        var powerCatalog = new PowerCatalog(powerData.Select(data =>
+            new PowerDefinition(
+                new PowerId(data.Id),
+                data.Name,
+                data.Cost,
+                data.MaxUsesPerTurn,
+                data.Effects.Select(BuildEffect),
+                data.MaxUsesPerMatch)));
         var leaderCatalog = new LeaderCatalog(leaderData.Select(data =>
             new LeaderDefinition(
                 new LeaderId(data.Id),
                 data.Name,
                 data.HealthModifier,
-                data.Armor)));
+                data.Armor,
+                new PowerId(data.InitialPowerId))));
         var unitTypeCatalog = new UnitTypeCatalog(typeData.Select(data =>
             new UnitTypeDefinition(new UnitTypeId(data.Id), data.Name)));
         var tagCatalog = new TagCatalog(tagData.Select(data =>
@@ -109,6 +120,7 @@ public sealed class ModLoader
             combatRules,
             behaviorCatalog,
             leaderCatalog,
+            powerCatalog,
             unitTypeCatalog,
             tagCatalog,
             catalog,
@@ -144,6 +156,8 @@ public sealed class ModLoader
                 new BehaviorId(data.BehaviorId ?? throw new InvalidDataException("Validated removeBehavior effect is missing behaviorId."))),
             "addResource" => new AddResourceEffectDefinition(
                 data.Amount ?? throw new InvalidDataException("Validated addResource effect is missing amount.")),
+            "setPower" => new SetPowerEffectDefinition(
+                new PowerId(data.PowerId ?? throw new InvalidDataException("Validated setPower effect is missing powerId."))),
             _ => throw new InvalidDataException($"Validated effect kind '{data.Kind}' is unsupported."),
         };
 
@@ -189,7 +203,14 @@ public sealed class ModLoader
         StartingSidePolicy StartingSidePolicy,
         PostCombatDamagePolicy PostCombatDamagePolicy);
     private sealed record BehaviorData(string Id, string Name, string Handler);
-    private sealed record LeaderData(string Id, string Name, int HealthModifier, int Armor);
+    private sealed record PowerData(
+        string Id,
+        string Name,
+        int Cost,
+        int MaxUsesPerTurn,
+        EffectData[] Effects,
+        int? MaxUsesPerMatch);
+    private sealed record LeaderData(string Id, string Name, int HealthModifier, int Armor, string InitialPowerId);
     private sealed record NamedIdData(string Id, string Name);
     private sealed record UnitData(
         string Id,
@@ -211,7 +232,8 @@ public sealed class ModLoader
         string? UnitId,
         int? Count,
         string? BehaviorId,
-        string? Event);
+        string? Event,
+        string? PowerId);
     private sealed record TargetData(EffectTargetScope Scope, string? TypeId, string? TagId);
     private sealed record UnitPoolData(string UnitId, int Copies);
 }
