@@ -10,6 +10,7 @@ internal interface IEffectRuntimeUnit
     UnitInstanceId InstanceId { get; }
     PlayerId OwnerPlayerId { get; }
     UnitDefinition Definition { get; }
+    EffectSourceKey SourceKey => EffectSourceKey.ForUnit(InstanceId);
     int Attack => Definition.BaseAttack;
     int Health => Definition.BaseHealth;
     bool IsAlive { get; }
@@ -33,6 +34,18 @@ internal interface IEffectRuntimeWorld
     void AdjustResource(PlayerId playerId, int amount);
     void SetPower(PlayerId playerId, PowerId powerId) =>
         throw new InvalidOperationException("This effect world does not support persistent power changes.");
+    EffectHistorySnapshot GetHistory(PlayerId playerId);
+    void RecordEvent(PlayerId playerId, NativeGameEventKey @event, UnitDefinition? unit = null);
+    int GetTriggerActivationCount(
+        PlayerId playerId,
+        EffectSourceKey source,
+        int triggerIndex,
+        EffectHistoryScope scope);
+    void RecordTriggerActivation(
+        PlayerId playerId,
+        EffectSourceKey source,
+        int triggerIndex,
+        EffectHistoryScope scope);
     IReadOnlyList<IEffectRuntimeUnit> ExtractDeadUnits();
     IEffectRuntimeUnit? TryRevive(IEffectRuntimeUnit deadUnit);
     void FinalizeDeath(IEffectRuntimeUnit deadUnit);
@@ -93,8 +106,9 @@ internal sealed class GameEffectRuntime
         ArgumentNullException.ThrowIfNull(trigger);
         _processedEvents = 0;
 
+        var triggerIndex = FindTriggerIndex(source.Definition, trigger);
         var queue = new Queue<GameEffectEvent>();
-        ResolveSpecificTrigger(source, trigger, queue, selectedTargetInstanceId);
+        ResolveSpecificTrigger(source, triggerIndex, trigger, queue, selectedTargetInstanceId);
         DrainEventQueue(queue);
         ResolveDeathWaves();
     }
@@ -136,36 +150,53 @@ internal sealed class GameEffectRuntime
             return;
         }
 
-        if (!listener.Definition.Triggers.Any(trigger => trigger.Event == effectEvent.Event))
+        for (var index = 0; index < listener.Definition.Triggers.Count; index++)
         {
-            return;
-        }
-
-        var context = BuildContext(listener);
-        var resolvedEffects = _pipeline.ResolveEvent(
-            listener.Definition,
-            effectEvent.Event,
-            context,
-            _randomSource);
-
-        foreach (var resolved in resolvedEffects)
-        {
-            ApplyEffect(listener, resolved, queue);
+            var trigger = listener.Definition.Triggers[index];
+            if (trigger.Event == effectEvent.Event)
+            {
+                ResolveSpecificTrigger(listener, index, trigger, queue);
+            }
         }
     }
 
     private void ResolveSpecificTrigger(
         IEffectRuntimeUnit listener,
+        int triggerIndex,
         TriggerDefinition trigger,
         Queue<GameEffectEvent> queue,
         UnitInstanceId? selectedTargetInstanceId = null)
     {
+        if (trigger.ActivationLimit is TriggerActivationLimit activationLimit &&
+            _world.GetTriggerActivationCount(
+                listener.OwnerPlayerId,
+                listener.SourceKey,
+                triggerIndex,
+                activationLimit.Scope) >= activationLimit.Maximum)
+        {
+            return;
+        }
+
         var context = BuildContext(listener, selectedTargetInstanceId);
         var resolvedEffects = _pipeline.ResolveTrigger(
             listener.Definition,
             trigger,
             context,
             _randomSource);
+
+        if (resolvedEffects.Count == 0)
+        {
+            return;
+        }
+
+        if (trigger.ActivationLimit is TriggerActivationLimit limit)
+        {
+            _world.RecordTriggerActivation(
+                listener.OwnerPlayerId,
+                listener.SourceKey,
+                triggerIndex,
+                limit.Scope);
+        }
 
         foreach (var resolved in resolvedEffects)
         {
@@ -187,7 +218,7 @@ internal sealed class GameEffectRuntime
 
             if (AdvanceTrigger(listener.InstanceId, index, trigger.Count!.Value))
             {
-                ResolveSpecificTrigger(listener, trigger, queue);
+                ResolveSpecificTrigger(listener, index, trigger, queue);
             }
         }
     }
@@ -230,6 +261,7 @@ internal sealed class GameEffectRuntime
                     }
 
                     _world.TakeDamage(target, amount);
+                    _world.RecordEvent(target.OwnerPlayerId, NativeGameEventKeys.UnitDamaged, target.Definition);
                     if (_world.TryConsumeBehavior(source, NativeBehaviorKeys.LethalFirstDamagePerCombat))
                     {
                         _world.Destroy(target);
@@ -266,6 +298,7 @@ internal sealed class GameEffectRuntime
                 var definition = unitCatalog.GetRequired(summon.UnitId);
                 foreach (var summoned in _world.Summon(source, definition, count))
                 {
+                    _world.RecordEvent(summoned.OwnerPlayerId, NativeGameEventKeys.UnitSummoned, summoned.Definition);
                     queue.Enqueue(new GameEffectEvent(NativeTriggerKeys.OnSummon, summoned));
                 }
                 break;
@@ -347,6 +380,7 @@ internal sealed class GameEffectRuntime
     private void ResolveDeath(IEffectRuntimeUnit deadUnit)
     {
         ClearTriggerProgress(deadUnit.InstanceId);
+        _world.RecordEvent(deadUnit.OwnerPlayerId, NativeGameEventKeys.UnitDied, deadUnit.Definition);
 
         var activations = new List<DeathTriggerActivation>();
         AddOwnDeathTriggers(deadUnit, activations);
@@ -357,7 +391,11 @@ internal sealed class GameEffectRuntime
                      .ThenBy(value => value.TriggerIndex))
         {
             var queue = new Queue<GameEffectEvent>();
-            ResolveSpecificTrigger(activation.Listener, activation.Trigger, queue);
+            ResolveSpecificTrigger(
+                activation.Listener,
+                activation.TriggerIndex,
+                activation.Trigger,
+                queue);
             DrainEventQueue(queue);
         }
 
@@ -365,6 +403,7 @@ internal sealed class GameEffectRuntime
         if (revived is not null)
         {
             var queue = new Queue<GameEffectEvent>();
+            _world.RecordEvent(revived.OwnerPlayerId, NativeGameEventKeys.UnitSummoned, revived.Definition);
             queue.Enqueue(new GameEffectEvent(NativeTriggerKeys.OnSummon, revived));
             DrainEventQueue(queue);
             return;
@@ -457,7 +496,8 @@ internal sealed class GameEffectRuntime
             source.InstanceId,
             source.OwnerPlayerId,
             snapshots,
-            selectedTargetInstanceId);
+            selectedTargetInstanceId,
+            _world.GetHistory(source.OwnerPlayerId));
     }
 
     private static EffectUnitSnapshot CreateSnapshot(
@@ -474,6 +514,19 @@ internal sealed class GameEffectRuntime
             isSelectable,
             unit.Definition.Types.Select(type => type.Id),
             unit.Definition.Tags.Select(tag => tag.Id));
+
+    private static int FindTriggerIndex(UnitDefinition definition, TriggerDefinition trigger)
+    {
+        for (var index = 0; index < definition.Triggers.Count; index++)
+        {
+            if (ReferenceEquals(definition.Triggers[index], trigger) || definition.Triggers[index] == trigger)
+            {
+                return index;
+            }
+        }
+
+        throw new ArgumentException("Trigger does not belong to the source definition.", nameof(trigger));
+    }
 
     private void CountProcessedEvent()
     {
