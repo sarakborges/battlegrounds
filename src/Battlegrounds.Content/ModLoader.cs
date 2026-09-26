@@ -25,19 +25,13 @@ public sealed class ModLoader
     };
 
     private readonly ModValidator _validator;
-    private readonly LeaderModValidator _leaderValidator = new();
 
     public ModLoader(ModValidator? validator = null)
     {
         _validator = validator ?? new ModValidator();
     }
 
-    public ModValidationReport Validate(string modDirectory)
-    {
-        var baseReport = _validator.Validate(modDirectory);
-        var leaderIssues = _leaderValidator.Validate(modDirectory);
-        return new ModValidationReport(baseReport.Issues.Concat(leaderIssues));
-    }
+    public ModValidationReport Validate(string modDirectory) => _validator.Validate(modDirectory);
 
     public ModPackage Load(string modDirectory)
     {
@@ -48,11 +42,11 @@ public sealed class ModLoader
         var matchRulesData = ReadRequired<MatchRulesData>(Path.Combine(modDirectory, "rules", "match.json"));
         var preparationRulesData = ReadRequired<PreparationRulesData>(Path.Combine(modDirectory, "rules", "preparation.json"));
         var combatRulesData = ReadRequired<CombatRulesData>(Path.Combine(modDirectory, "rules", "combat.json"));
-        var behaviorData = ReadRequired<BehaviorData[]>(Path.Combine(modDirectory, "content", "behaviors.json"));
-        var leaderData = ReadRequired<LeaderData[]>(Path.Combine(modDirectory, "content", "leaders.json"));
-        var typeData = ReadRequired<NamedIdData[]>(Path.Combine(modDirectory, "content", "types.json"));
-        var tagData = ReadRequired<NamedIdData[]>(Path.Combine(modDirectory, "content", "tags.json"));
-        var unitData = ReadRequired<UnitData[]>(Path.Combine(modDirectory, "content", "units.json"));
+        var behaviorData = ReadDirectory<BehaviorData>(Path.Combine(modDirectory, "content", "behaviors"));
+        var leaderData = ReadDirectory<LeaderData>(Path.Combine(modDirectory, "content", "leaders"));
+        var typeData = ReadDirectory<NamedIdData>(Path.Combine(modDirectory, "content", "types"));
+        var tagData = ReadDirectory<NamedIdData>(Path.Combine(modDirectory, "content", "tags"));
+        var unitData = ReadDirectory<UnitData>(Path.Combine(modDirectory, "content", "units"));
         var poolData = ReadRequired<UnitPoolData[]>(Path.Combine(modDirectory, "content", "pool.json"));
 
         var matchRules = new MatchRules(
@@ -160,6 +154,14 @@ public sealed class ModLoader
             data.Scope,
             string.IsNullOrWhiteSpace(data.TypeId) ? null : new UnitTypeId(data.TypeId),
             string.IsNullOrWhiteSpace(data.TagId) ? null : new TagId(data.TagId));
+    }
+
+    private static T[] ReadDirectory<T>(string directory)
+    {
+        return Directory.GetFiles(directory, "*.json", SearchOption.TopDirectoryOnly)
+            .OrderBy(path => Path.GetFileName(path), StringComparer.Ordinal)
+            .Select(ReadRequired<T>)
+            .ToArray();
     }
 
     private static T ReadRequired<T>(string path)
