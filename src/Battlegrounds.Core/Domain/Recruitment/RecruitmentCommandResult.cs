@@ -12,6 +12,9 @@ public enum RecruitmentFailureCode
     InvalidHandSlot,
     InvalidBoardSlot,
     MaximumTavernTier,
+    TavernAlreadyFrozen,
+    TavernNotFrozen,
+    FreezeToggleLimitReached,
 }
 
 public readonly record struct RecruitmentCommandResult
