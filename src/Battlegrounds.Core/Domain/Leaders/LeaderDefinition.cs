@@ -8,12 +8,14 @@ public sealed class LeaderDefinition
     public string Name { get; }
     public int HealthModifier { get; }
     public int StartingArmor { get; }
+    public PowerId? InitialPowerId { get; }
 
     public LeaderDefinition(
         LeaderId id,
         string name,
         int healthModifier,
-        int startingArmor)
+        int startingArmor,
+        PowerId? initialPowerId = null)
     {
         if (string.IsNullOrWhiteSpace(name))
         {
@@ -29,5 +31,6 @@ public sealed class LeaderDefinition
         Name = name;
         HealthModifier = healthModifier;
         StartingArmor = startingArmor;
+        InitialPowerId = initialPowerId;
     }
 }
