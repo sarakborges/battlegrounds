@@ -1,0 +1,16 @@
+{
+  "schemaVersion": 1,
+  "id": "example",
+  "name": "Example Mod",
+  "terminology": {
+    "unit": "Unit",
+    "units": "Units",
+    "resource": "Energy",
+    "offer": "Exchange",
+    "tier": "Level",
+    "reserve": "Reserve",
+    "field": "Field",
+    "acquire": "Acquire",
+    "release": "Release"
+  }
+}

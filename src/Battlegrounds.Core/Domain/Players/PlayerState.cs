@@ -1,45 +1,45 @@
 using System.Collections.ObjectModel;
-using Battlegrounds.Core.Domain.Cards;
 using Battlegrounds.Core.Domain.Ids;
-using Battlegrounds.Core.Domain.Recruitment;
+using Battlegrounds.Core.Domain.Preparation;
+using Battlegrounds.Core.Domain.Units;
 
 namespace Battlegrounds.Core.Domain.Players;
 
 public sealed class PlayerState
 {
-    private readonly List<MinionInstance> _hand = [];
-    private readonly List<MinionInstance> _board = [];
-    private readonly List<CardDefinition> _tavernOffer = [];
-    private readonly ReadOnlyCollection<MinionInstance> _handView;
-    private readonly ReadOnlyCollection<MinionInstance> _boardView;
-    private readonly ReadOnlyCollection<CardDefinition> _tavernOfferView;
+    private readonly List<UnitInstance> _reserve = [];
+    private readonly List<UnitInstance> _field = [];
+    private readonly List<UnitDefinition> _offer = [];
+    private readonly ReadOnlyCollection<UnitInstance> _reserveView;
+    private readonly ReadOnlyCollection<UnitInstance> _fieldView;
+    private readonly ReadOnlyCollection<UnitDefinition> _offerView;
 
     public PlayerId Id { get; }
-    public int Gold { get; private set; }
-    public int TavernTier { get; private set; } = 1;
+    public int Resource { get; private set; }
+    public int Tier { get; private set; } = 1;
     public int? UpgradeCost { get; private set; }
     public bool IsReadyForCombat { get; private set; }
-    public bool IsTavernFrozen { get; private set; }
-    public IReadOnlyList<MinionInstance> Hand => _handView;
-    public IReadOnlyList<MinionInstance> Board => _boardView;
-    public IReadOnlyList<CardDefinition> TavernOffer => _tavernOfferView;
+    public bool IsOfferFrozen { get; private set; }
+    public IReadOnlyList<UnitInstance> Reserve => _reserveView;
+    public IReadOnlyList<UnitInstance> Field => _fieldView;
+    public IReadOnlyList<UnitDefinition> Offer => _offerView;
 
     internal PlayerState(PlayerId id)
     {
         Id = id;
-        _handView = _hand.AsReadOnly();
-        _boardView = _board.AsReadOnly();
-        _tavernOfferView = _tavernOffer.AsReadOnly();
+        _reserveView = _reserve.AsReadOnly();
+        _fieldView = _field.AsReadOnly();
+        _offerView = _offer.AsReadOnly();
     }
 
-    internal void BeginRecruitment(int round, RecruitmentRules rules)
+    internal void BeginPreparation(int round, PreparationRules rules)
     {
-        Gold = rules.GetGoldForRound(round);
+        Resource = rules.GetResourceForRound(round);
         IsReadyForCombat = false;
 
         if (UpgradeCost is null)
         {
-            UpgradeCost = rules.GetInitialUpgradeCost(TavernTier);
+            UpgradeCost = rules.GetInitialUpgradeCost(Tier);
         }
         else if (round > 1)
         {
@@ -47,84 +47,81 @@ public sealed class PlayerState
         }
     }
 
-    internal bool CanAfford(int amount) => Gold >= amount;
+    internal bool CanAfford(int amount) => Resource >= amount;
 
-    internal void SpendGold(int amount)
+    internal void SpendResource(int amount)
     {
-        if (amount < 0 || amount > Gold)
+        if (amount < 0 || amount > Resource)
         {
-            throw new InvalidOperationException("Gold spend violates player state invariants.");
+            throw new InvalidOperationException("Resource spend violates player state invariants.");
         }
 
-        Gold -= amount;
+        Resource -= amount;
     }
 
-    internal void GainGold(int amount, int maximumGold)
+    internal void GainResource(int amount, int maximumResource)
     {
         if (amount < 0)
         {
             throw new ArgumentOutOfRangeException(nameof(amount));
         }
 
-        Gold = Math.Min(maximumGold, Gold + amount);
+        Resource = Math.Min(maximumResource, Resource + amount);
     }
 
-    internal CardDefinition TakeTavernCard(int slot)
+    internal UnitDefinition TakeOfferedUnit(int slot)
     {
-        var card = _tavernOffer[slot];
-        _tavernOffer.RemoveAt(slot);
-        return card;
+        var unit = _offer[slot];
+        _offer.RemoveAt(slot);
+        return unit;
     }
 
-    internal void ReplaceTavernOffer(IEnumerable<CardDefinition> cards)
+    internal void ReplaceOffer(IEnumerable<UnitDefinition> units)
     {
-        _tavernOffer.Clear();
-        _tavernOffer.AddRange(cards);
+        _offer.Clear();
+        _offer.AddRange(units);
     }
 
-    internal void AppendTavernOffer(IEnumerable<CardDefinition> cards) =>
-        _tavernOffer.AddRange(cards);
+    internal void AddToReserve(UnitInstance unit) => _reserve.Add(unit);
 
-    internal void AddToHand(MinionInstance minion) => _hand.Add(minion);
-
-    internal MinionInstance MoveHandMinionToBoard(int handSlot)
+    internal UnitInstance DeployFromReserve(int reserveSlot)
     {
-        var minion = _hand[handSlot];
-        _hand.RemoveAt(handSlot);
-        _board.Add(minion);
-        return minion;
+        var unit = _reserve[reserveSlot];
+        _reserve.RemoveAt(reserveSlot);
+        _field.Add(unit);
+        return unit;
     }
 
-    internal MinionInstance RemoveBoardMinion(int boardSlot)
+    internal UnitInstance RemoveFromField(int fieldSlot)
     {
-        var minion = _board[boardSlot];
-        _board.RemoveAt(boardSlot);
-        return minion;
+        var unit = _field[fieldSlot];
+        _field.RemoveAt(fieldSlot);
+        return unit;
     }
 
-    internal void UpgradeTavern(RecruitmentRules rules)
+    internal void UpgradeTier(PreparationRules rules)
     {
-        if (TavernTier >= rules.MaximumTavernTier || UpgradeCost is null)
+        if (Tier >= rules.MaximumTier || UpgradeCost is null)
         {
-            throw new InvalidOperationException("Cannot upgrade beyond the maximum tavern tier.");
+            throw new InvalidOperationException("Cannot upgrade beyond the maximum tier.");
         }
 
-        SpendGold(UpgradeCost.Value);
-        TavernTier++;
-        UpgradeCost = rules.GetInitialUpgradeCost(TavernTier);
+        SpendResource(UpgradeCost.Value);
+        Tier++;
+        UpgradeCost = rules.GetInitialUpgradeCost(Tier);
     }
 
-    internal void SetTavernFrozen(bool isFrozen)
+    internal void SetOfferFrozen(bool isFrozen)
     {
-        if (IsTavernFrozen == isFrozen)
+        if (IsOfferFrozen == isFrozen)
         {
-            throw new InvalidOperationException("Tavern freeze state must actually change.");
+            throw new InvalidOperationException("Offer freeze state must actually change.");
         }
 
-        IsTavernFrozen = isFrozen;
+        IsOfferFrozen = isFrozen;
     }
 
-    internal void ClearTavernFrozen() => IsTavernFrozen = false;
+    internal void ClearOfferFrozen() => IsOfferFrozen = false;
 
     internal void MarkReadyForCombat() => IsReadyForCombat = true;
 }

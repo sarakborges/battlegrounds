@@ -1,4 +1,4 @@
-name: Core CI
+name: CI
 
 on:
   push:
@@ -6,12 +6,14 @@ on:
   pull_request:
 
 jobs:
-  core:
+  test:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '8.0.x'
-      - name: Restore and test core
+      - name: Test core
         run: dotnet test tests/Battlegrounds.Core.Tests/Battlegrounds.Core.Tests.csproj --configuration Release
+      - name: Test mod content boundary
+        run: dotnet test tests/Battlegrounds.Content.Tests/Battlegrounds.Content.Tests.csproj --configuration Release

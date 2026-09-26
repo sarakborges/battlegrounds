@@ -1,0 +1,5 @@
+[
+  { "id": "scout", "name": "Scout", "tier": 1, "attack": 1, "health": 2 },
+  { "id": "guard", "name": "Guard", "tier": 1, "attack": 2, "health": 2 },
+  { "id": "striker", "name": "Striker", "tier": 1, "attack": 2, "health": 1 }
+]

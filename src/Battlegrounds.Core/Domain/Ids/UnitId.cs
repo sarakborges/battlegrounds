@@ -1,14 +1,14 @@
 namespace Battlegrounds.Core.Domain.Ids;
 
-public readonly record struct CardId
+public readonly record struct UnitId
 {
     public string Value { get; }
 
-    public CardId(string value)
+    public UnitId(string value)
     {
         if (string.IsNullOrWhiteSpace(value))
         {
-            throw new ArgumentException("Card id cannot be empty.", nameof(value));
+            throw new ArgumentException("Unit id cannot be empty.", nameof(value));
         }
 
         Value = value;
