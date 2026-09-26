@@ -35,22 +35,19 @@ public sealed class LeaderSelectionState
     private readonly Dictionary<PlayerId, ReadOnlyCollection<LeaderId>> _offers;
     private readonly Dictionary<PlayerId, LeaderId> _selections = [];
 
-    internal LeaderCatalog LeaderCatalog { get; }
     public IReadOnlyList<PlayerId> Players => _players;
     public int SelectedCount => _selections.Count;
     public bool IsComplete => SelectedCount == _players.Count;
 
     private LeaderSelectionState(
         IEnumerable<PlayerId> players,
-        Dictionary<PlayerId, ReadOnlyCollection<LeaderId>> offers,
-        LeaderCatalog leaderCatalog)
+        Dictionary<PlayerId, ReadOnlyCollection<LeaderId>> offers)
     {
         _players = Array.AsReadOnly(players.ToArray());
         _offers = offers;
-        LeaderCatalog = leaderCatalog;
     }
 
-    internal static LeaderSelectionState Create(
+    public static LeaderSelectionState Create(
         IEnumerable<PlayerId> playerIds,
         MatchRules rules,
         LeaderCatalog leaderCatalog,
@@ -82,7 +79,7 @@ public sealed class LeaderSelectionState
             _ => throw new ArgumentOutOfRangeException(nameof(rules.LeaderOfferPolicy), rules.LeaderOfferPolicy, "Unsupported leader offer policy."),
         };
 
-        return new LeaderSelectionState(players, offers, leaderCatalog);
+        return new LeaderSelectionState(players, offers);
     }
 
     public IReadOnlyList<LeaderId> GetOffer(PlayerId playerId)
@@ -119,7 +116,7 @@ public sealed class LeaderSelectionState
         return LeaderSelectionResult.Success();
     }
 
-    internal IReadOnlyList<PlayerSetup> GetCompletedPlayerSetups()
+    public IReadOnlyList<PlayerSetup> GetCompletedPlayerSetups()
     {
         if (!IsComplete)
         {
