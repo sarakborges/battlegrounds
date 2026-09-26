@@ -4,6 +4,7 @@ using Battlegrounds.Core.Domain.Combat;
 using Battlegrounds.Core.Domain.Ids;
 using Battlegrounds.Core.Domain.Leaders;
 using Battlegrounds.Core.Domain.Players;
+using Battlegrounds.Core.Domain.Powers;
 using Battlegrounds.Core.Domain.Preparation;
 using Battlegrounds.Core.Domain.Units;
 using Battlegrounds.Core.Randomness;
@@ -88,7 +89,8 @@ public sealed class MatchEngine
         IRandomSource randomSource,
         UnitCatalog? unitCatalog = null,
         BehaviorCatalog? behaviorCatalog = null,
-        LeaderCatalog? leaderCatalog = null)
+        LeaderCatalog? leaderCatalog = null,
+        PowerCatalog? powerCatalog = null)
     {
         _matchRules = matchRules ?? throw new ArgumentNullException(nameof(matchRules));
         ArgumentNullException.ThrowIfNull(preparationRules);
@@ -102,7 +104,8 @@ public sealed class MatchEngine
             unitPool,
             randomSource,
             unitCatalog,
-            behaviorCatalog);
+            behaviorCatalog,
+            powerCatalog);
 
         _combatEngine = unitCatalog is not null && behaviorCatalog is not null
             ? new CombatEngine(preparationRules.FieldCapacity, unitCatalog, behaviorCatalog)
