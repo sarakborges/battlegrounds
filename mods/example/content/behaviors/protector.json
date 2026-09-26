@@ -1,0 +1,5 @@
+{
+  "id": "protector",
+  "name": "Protector",
+  "handler": "targetPriority"
+}
