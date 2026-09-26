@@ -29,7 +29,8 @@ internal interface IEffectRuntimeWorld
         UnitDefinition definition,
         int count);
     void AdjustResource(PlayerId playerId, int amount);
-    void SetPower(PlayerId playerId, PowerId powerId);
+    void SetPower(PlayerId playerId, PowerId powerId) =>
+        throw new InvalidOperationException("This effect world does not support persistent power changes.");
     IReadOnlyList<IEffectRuntimeUnit> ExtractDeadUnits();
     IEffectRuntimeUnit? TryRevive(IEffectRuntimeUnit deadUnit);
     void FinalizeDeath(IEffectRuntimeUnit deadUnit);
