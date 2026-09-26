@@ -179,6 +179,7 @@ public sealed class PreparationEngine
         var unit = match.CreateUnit(definition, UnitInstanceOrigin.Pooled);
         player.AddToReserve(unit);
         player.SpendResource(_rules.AcquireCost);
+        player.EffectHistory.RecordEvent(NativeGameEventKeys.UnitAcquired, definition);
 
         return PreparationCommandResult.Success();
     }
@@ -198,6 +199,7 @@ public sealed class PreparationEngine
 
         player.RemoveFromField(command.FieldSlot);
         player.GainResource(_rules.ReleaseValue, _rules.MaximumResource);
+        player.EffectHistory.RecordEvent(NativeGameEventKeys.UnitReleased, unit.Definition);
 
         return PreparationCommandResult.Success();
     }
@@ -238,6 +240,7 @@ public sealed class PreparationEngine
         player.SpendResource(_rules.RefreshCost);
         player.ReplaceOffer(ValidateOffer(offer, player.Tier));
         player.ClearOfferFrozen();
+        player.EffectHistory.RecordEvent(NativeGameEventKeys.OfferRefreshed);
 
         return PreparationCommandResult.Success();
     }
@@ -255,6 +258,7 @@ public sealed class PreparationEngine
         }
 
         player.UpgradeTier(_rules);
+        player.EffectHistory.RecordEvent(NativeGameEventKeys.TierUpgraded);
         return PreparationCommandResult.Success();
     }
 
@@ -309,6 +313,7 @@ public sealed class PreparationEngine
         }
 
         player.SpendResource(activation.Cost);
+        player.EffectHistory.RecordEvent(NativeGameEventKeys.PowerActivated);
         _effectEngine.ProcessPower(match, player, power, command.TargetUnitInstanceId);
         leader.RecordUse(power.Id);
         return PreparationCommandResult.Success();
