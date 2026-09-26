@@ -57,7 +57,7 @@ public sealed class CombatEffectExecutionTests
                     NativeTriggerKeys.OnCombatStart,
                     [
                         new DestroyUnitEffectDefinition(
-                            new EffectTargetSelector(EffectTargetScope.AllEnemy)),
+                            new EffectTargetSelector(EffectTargetScope.Enemy)),
                     ]),
             ]);
         var catalog = new UnitCatalog([opener, enemy]);

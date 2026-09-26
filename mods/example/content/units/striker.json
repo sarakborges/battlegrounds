@@ -13,7 +13,11 @@
       "effects": [
         {
           "kind": "dealDamage",
-          "target": { "scope": "randomEnemy", "tagId": "starter" },
+          "target": {
+            "scope": "enemy",
+            "selection": "random",
+            "tagId": "starter"
+          },
           "amount": 1
         }
       ]

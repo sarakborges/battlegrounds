@@ -10,6 +10,8 @@ internal interface IEffectRuntimeUnit
     UnitInstanceId InstanceId { get; }
     PlayerId OwnerPlayerId { get; }
     UnitDefinition Definition { get; }
+    int Attack => Definition.BaseAttack;
+    int Health => Definition.BaseHealth;
     bool IsAlive { get; }
 }
 
@@ -406,13 +408,18 @@ internal sealed class GameEffectRuntime
         IEffectRuntimeUnit source,
         UnitInstanceId? selectedTargetInstanceId = null)
     {
-        var snapshots = _world.Units
-            .Select(unit => CreateSnapshot(unit, isSelectable: true))
-            .ToList();
+        var positions = new Dictionary<PlayerId, int>();
+        var snapshots = new List<EffectUnitSnapshot>();
+        foreach (var unit in _world.Units)
+        {
+            var position = positions.GetValueOrDefault(unit.OwnerPlayerId);
+            positions[unit.OwnerPlayerId] = position + 1;
+            snapshots.Add(CreateSnapshot(unit, isSelectable: true, position));
+        }
 
         if (snapshots.All(snapshot => snapshot.InstanceId != source.InstanceId))
         {
-            snapshots.Add(CreateSnapshot(source, isSelectable: false));
+            snapshots.Add(CreateSnapshot(source, isSelectable: false, position: -1));
         }
 
         return new EffectResolutionContext(
@@ -422,10 +429,17 @@ internal sealed class GameEffectRuntime
             selectedTargetInstanceId);
     }
 
-    private static EffectUnitSnapshot CreateSnapshot(IEffectRuntimeUnit unit, bool isSelectable) =>
+    private static EffectUnitSnapshot CreateSnapshot(
+        IEffectRuntimeUnit unit,
+        bool isSelectable,
+        int position) =>
         new(
             unit.InstanceId,
             unit.OwnerPlayerId,
+            unit.IsAlive,
+            unit.Attack,
+            unit.Health,
+            position,
             isSelectable,
             unit.Definition.Types.Select(type => type.Id),
             unit.Definition.Tags.Select(tag => tag.Id));

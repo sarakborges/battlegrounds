@@ -136,7 +136,25 @@ public sealed class ModLoader
     }
 
     private static TriggerDefinition BuildTrigger(TriggerData data) =>
-        new(new NativeTriggerKey(data.Event), data.Effects.Select(BuildEffect), data.Count);
+        new(
+            new NativeTriggerKey(data.Event),
+            data.Effects.Select(BuildEffect),
+            data.Count,
+            (data.Conditions ?? []).Select(BuildCondition));
+
+    private static EffectConditionDefinition BuildCondition(ConditionData data) =>
+        data.Kind switch
+        {
+            "unitCount" => new UnitCountConditionDefinition(
+                BuildQuery(data.Query),
+                data.Comparison ?? throw new InvalidDataException("Validated unitCount condition is missing comparison."),
+                data.Value ?? throw new InvalidDataException("Validated unitCount condition is missing value.")),
+            "sourceStat" => new SourceStatConditionDefinition(
+                data.Stat ?? throw new InvalidDataException("Validated sourceStat condition is missing stat."),
+                data.Comparison ?? throw new InvalidDataException("Validated sourceStat condition is missing comparison."),
+                data.Value ?? throw new InvalidDataException("Validated sourceStat condition is missing value.")),
+            _ => throw new InvalidDataException($"Validated condition kind '{data.Kind}' is unsupported."),
+        };
 
     private static EffectDefinition BuildEffect(EffectData data) =>
         data.Kind switch
@@ -173,7 +191,17 @@ public sealed class ModLoader
     {
         if (data is null) throw new InvalidDataException("Validated targeted effect is missing target.");
         return new EffectTargetSelector(
+            BuildQuery(data),
+            data.Selection ?? EffectTargetSelection.All,
+            data.Limit);
+    }
+
+    private static EffectUnitQuery BuildQuery(QueryData? data)
+    {
+        if (data is null) throw new InvalidDataException("Validated unit query is missing.");
+        return new EffectUnitQuery(
             data.Scope,
+            data.ExcludeSource ?? false,
             string.IsNullOrWhiteSpace(data.TypeId) ? null : new UnitTypeId(data.TypeId),
             string.IsNullOrWhiteSpace(data.TagId) ? null : new TagId(data.TagId));
     }
@@ -230,7 +258,17 @@ public sealed class ModLoader
         string[]? Types,
         string[]? Tags,
         TriggerData[]? Triggers);
-    private sealed record TriggerData(string Event, EffectData[] Effects, int? Count);
+    private sealed record TriggerData(
+        string Event,
+        EffectData[] Effects,
+        int? Count,
+        ConditionData[]? Conditions);
+    private sealed record ConditionData(
+        string Kind,
+        QueryData? Query,
+        EffectComparison? Comparison,
+        int? Value,
+        EffectStat? Stat);
     private sealed record EffectData(
         string Kind,
         TargetData? Target,
@@ -242,6 +280,18 @@ public sealed class ModLoader
         string? BehaviorId,
         string? Event,
         string? PowerId);
-    private sealed record TargetData(EffectTargetScope Scope, string? TypeId, string? TagId);
+    private record QueryData(
+        EffectTargetScope Scope,
+        bool? ExcludeSource,
+        string? TypeId,
+        string? TagId);
+    private sealed record TargetData(
+        EffectTargetScope Scope,
+        bool? ExcludeSource,
+        string? TypeId,
+        string? TagId,
+        EffectTargetSelection? Selection,
+        int? Limit)
+        : QueryData(Scope, ExcludeSource, TypeId, TagId);
     private sealed record UnitPoolData(string UnitId, int Copies);
 }
