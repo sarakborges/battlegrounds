@@ -9,16 +9,45 @@ using Battlegrounds.Core.Randomness;
 
 namespace Battlegrounds.Core.Domain.Match;
 
-public readonly record struct CombatPairing(PlayerId LeftPlayerId, PlayerId RightPlayerId);
+public readonly record struct CombatPairing
+{
+    public PlayerId LeftPlayerId { get; }
+    public PlayerId? RightPlayerId { get; }
+    public bool UsesEliminatedOpponent => RightPlayerId is null;
+
+    public CombatPairing(PlayerId leftPlayerId, PlayerId rightPlayerId)
+    {
+        if (leftPlayerId == rightPlayerId)
+        {
+            throw new ArgumentException("A player cannot be paired against itself.", nameof(rightPlayerId));
+        }
+
+        LeftPlayerId = leftPlayerId;
+        RightPlayerId = rightPlayerId;
+    }
+
+    private CombatPairing(PlayerId playerId)
+    {
+        LeftPlayerId = playerId;
+        RightPlayerId = null;
+    }
+
+    public static CombatPairing VersusEliminatedOpponent(PlayerId playerId) => new(playerId);
+}
 
 public sealed record CombatSettlement(
     PlayerId LeftPlayerId,
-    PlayerId RightPlayerId,
+    PlayerId? RightPlayerId,
+    PlayerId? EliminatedOpponentSourcePlayerId,
     CombatResult CombatResult,
     PlayerId? WinnerPlayerId,
+    bool EliminatedOpponentWon,
     PlayerId? DamagedPlayerId,
     int PlayerDamage,
-    int? DamagedPlayerHealthAfter);
+    int? DamagedPlayerHealthAfter)
+{
+    public bool UsesEliminatedOpponent => EliminatedOpponentSourcePlayerId is not null;
+}
 
 public sealed class CombatRoundResult
 {
@@ -106,26 +135,68 @@ public sealed class MatchEngine
         }
 
         var activePlayers = match.Players.Where(player => !player.IsEliminated).ToArray();
+        var healthBeforeCombat = activePlayers.ToDictionary(player => player.Id, player => player.Health);
+        var eliminatedOpponent = match.LatestEliminatedOpponent;
         var materializedPairings = pairings.ToArray();
-        ValidatePairings(activePlayers.Select(player => player.Id).ToArray(), materializedPairings);
+        ValidatePairings(
+            activePlayers.Select(player => player.Id).ToArray(),
+            materializedPairings,
+            eliminatedOpponent);
 
         var resourceAdjustments = new Dictionary<PlayerId, int>();
         var settlements = new List<CombatSettlement>(materializedPairings.Length);
+        var newlyEliminated = new List<PlayerId>();
 
         foreach (var pairing in materializedPairings)
         {
-            var left = GetActivePlayer(match, pairing.LeftPlayerId);
-            var right = GetActivePlayer(match, pairing.RightPlayerId);
-            var input = CombatInput.FromFields(left.Id, left.Field, right.Id, right.Field);
-            var combatResult = _combatEngine.Resolve(input, _combatRules, _randomSource);
-
-            foreach (var delta in combatResult.ResourceDeltas)
+            if (pairing.UsesEliminatedOpponent)
             {
-                resourceAdjustments[delta.Key] = resourceAdjustments.GetValueOrDefault(delta.Key) + delta.Value;
+                var player = GetActivePlayer(match, pairing.LeftPlayerId);
+                var snapshot = eliminatedOpponent
+                    ?? throw new InvalidOperationException("No eliminated-opponent snapshot is available for this round.");
+                var input = new CombatInput(
+                    CombatParticipant.FromField(player.Id, player.Field),
+                    snapshot.Participant);
+                var combatResult = _combatEngine.Resolve(input, _combatRules, _randomSource);
+
+                AccumulateResourceDeltas(
+                    combatResult,
+                    resourceAdjustments,
+                    [player.Id]);
+
+                var settlement = SettleAgainstEliminatedOpponent(player, snapshot, input, combatResult);
+                settlements.Add(settlement);
+                if (player.IsEliminated)
+                {
+                    newlyEliminated.Add(player.Id);
+                }
+
+                continue;
             }
 
-            settlements.Add(SettleCombat(left, right, input, combatResult));
+            var rightPlayerId = pairing.RightPlayerId!.Value;
+            var left = GetActivePlayer(match, pairing.LeftPlayerId);
+            var right = GetActivePlayer(match, rightPlayerId);
+            var liveInput = CombatInput.FromFields(left.Id, left.Field, right.Id, right.Field);
+            var liveResult = _combatEngine.Resolve(liveInput, _combatRules, _randomSource);
+
+            AccumulateResourceDeltas(
+                liveResult,
+                resourceAdjustments,
+                [left.Id, right.Id]);
+
+            settlements.Add(SettleLiveCombat(left, right, liveInput, liveResult));
+            if (left.IsEliminated)
+            {
+                newlyEliminated.Add(left.Id);
+            }
+            if (right.IsEliminated)
+            {
+                newlyEliminated.Add(right.Id);
+            }
         }
+
+        match.RecordEliminations(newlyEliminated, healthBeforeCombat);
 
         if (match.ActivePlayerCount <= 1)
         {
@@ -138,7 +209,7 @@ public sealed class MatchEngine
         return new CombatRoundResult(settlements, matchFinished: false, winnerPlayerId: null);
     }
 
-    private CombatSettlement SettleCombat(
+    private CombatSettlement SettleLiveCombat(
         PlayerState left,
         PlayerState right,
         CombatInput input,
@@ -149,8 +220,10 @@ public sealed class MatchEngine
             return new CombatSettlement(
                 left.Id,
                 right.Id,
+                EliminatedOpponentSourcePlayerId: null,
                 result,
                 WinnerPlayerId: null,
+                EliminatedOpponentWon: false,
                 DamagedPlayerId: null,
                 PlayerDamage: 0,
                 DamagedPlayerHealthAfter: null);
@@ -163,28 +236,86 @@ public sealed class MatchEngine
                 ? right
                 : throw new InvalidOperationException("Combat winner is not one of the paired players.");
         var loser = winner.Id == left.Id ? right : left;
-        var damage = CalculatePostCombatDamage(winner, input, result);
+        var damage = CalculatePostCombatDamage(winner.Tier, winner.Id, input, result);
         loser.TakeDamage(damage);
 
         return new CombatSettlement(
             left.Id,
             right.Id,
+            EliminatedOpponentSourcePlayerId: null,
             result,
             winner.Id,
+            EliminatedOpponentWon: false,
             loser.Id,
             damage,
             loser.Health);
     }
 
+    private CombatSettlement SettleAgainstEliminatedOpponent(
+        PlayerState player,
+        EliminatedOpponentSnapshot opponent,
+        CombatInput input,
+        CombatResult result)
+    {
+        if (result.IsDraw)
+        {
+            return new CombatSettlement(
+                player.Id,
+                RightPlayerId: null,
+                opponent.SourcePlayerId,
+                result,
+                WinnerPlayerId: null,
+                EliminatedOpponentWon: false,
+                DamagedPlayerId: null,
+                PlayerDamage: 0,
+                DamagedPlayerHealthAfter: null);
+        }
+
+        var winnerId = result.WinnerPlayerId!.Value;
+        if (winnerId == player.Id)
+        {
+            return new CombatSettlement(
+                player.Id,
+                RightPlayerId: null,
+                opponent.SourcePlayerId,
+                result,
+                player.Id,
+                EliminatedOpponentWon: false,
+                DamagedPlayerId: null,
+                PlayerDamage: 0,
+                DamagedPlayerHealthAfter: null);
+        }
+
+        if (winnerId != opponent.SourcePlayerId)
+        {
+            throw new InvalidOperationException("Combat winner is not part of the eliminated-opponent combat.");
+        }
+
+        var damage = CalculatePostCombatDamage(opponent.Tier, opponent.SourcePlayerId, input, result);
+        player.TakeDamage(damage);
+
+        return new CombatSettlement(
+            player.Id,
+            RightPlayerId: null,
+            opponent.SourcePlayerId,
+            result,
+            WinnerPlayerId: null,
+            EliminatedOpponentWon: true,
+            player.Id,
+            damage,
+            player.Health);
+    }
+
     private int CalculatePostCombatDamage(
-        PlayerState winner,
+        int winnerTier,
+        PlayerId winnerParticipantId,
         CombatInput input,
         CombatResult result)
     {
         return _combatRules.PostCombatDamagePolicy switch
         {
             PostCombatDamagePolicy.WinnerTierPlusSurvivorTiers =>
-                winner.Tier + SumSurvivorTiers(winner.Id, input, result),
+                winnerTier + SumSurvivorTiers(winnerParticipantId, input, result),
             _ => throw new ArgumentOutOfRangeException(
                 nameof(_combatRules.PostCombatDamagePolicy),
                 _combatRules.PostCombatDamagePolicy,
@@ -213,6 +344,23 @@ public sealed class MatchEngine
                 : survivor.Tier);
     }
 
+    private static void AccumulateResourceDeltas(
+        CombatResult result,
+        Dictionary<PlayerId, int> adjustments,
+        IReadOnlyCollection<PlayerId> allowedPlayers)
+    {
+        var allowed = allowedPlayers.ToHashSet();
+        foreach (var delta in result.ResourceDeltas)
+        {
+            if (!allowed.Contains(delta.Key))
+            {
+                continue;
+            }
+
+            adjustments[delta.Key] = adjustments.GetValueOrDefault(delta.Key) + delta.Value;
+        }
+    }
+
     private static PlayerState GetActivePlayer(MatchState match, PlayerId playerId)
     {
         if (!match.TryGetPlayer(playerId, out var player))
@@ -230,15 +378,30 @@ public sealed class MatchEngine
 
     private static void ValidatePairings(
         IReadOnlyList<PlayerId> activePlayerIds,
-        IReadOnlyList<CombatPairing> pairings)
+        IReadOnlyList<CombatPairing> pairings,
+        EliminatedOpponentSnapshot? eliminatedOpponent)
     {
-        if (activePlayerIds.Count % 2 != 0)
+        var requiresEliminatedOpponent = activePlayerIds.Count % 2 != 0;
+        var eliminatedOpponentPairingCount = pairings.Count(pairing => pairing.UsesEliminatedOpponent);
+
+        if (requiresEliminatedOpponent && eliminatedOpponent is null)
         {
             throw new InvalidOperationException(
-                "An odd active-player count requires a ghost-opponent assignment, which is not implemented yet.");
+                "An odd active-player count requires a snapshot from a previously eliminated player.");
         }
 
-        if (pairings.Count * 2 != activePlayerIds.Count)
+        var expectedEliminatedOpponentPairings = requiresEliminatedOpponent ? 1 : 0;
+        if (eliminatedOpponentPairingCount != expectedEliminatedOpponentPairings)
+        {
+            throw new ArgumentException(
+                requiresEliminatedOpponent
+                    ? "Odd-player combat requires exactly one eliminated-opponent pairing."
+                    : "Eliminated-opponent pairing is only valid when the active-player count is odd.",
+                nameof(pairings));
+        }
+
+        var expectedPairingCount = (activePlayerIds.Count / 2) + expectedEliminatedOpponentPairings;
+        if (pairings.Count != expectedPairingCount)
         {
             throw new ArgumentException("Combat pairings must cover every active player exactly once.", nameof(pairings));
         }
@@ -247,20 +410,36 @@ public sealed class MatchEngine
         var paired = new HashSet<PlayerId>();
         foreach (var pairing in pairings)
         {
-            if (pairing.LeftPlayerId == pairing.RightPlayerId)
-            {
-                throw new ArgumentException("A player cannot be paired against itself.", nameof(pairings));
-            }
-
-            if (!active.Contains(pairing.LeftPlayerId) || !active.Contains(pairing.RightPlayerId))
+            if (!active.Contains(pairing.LeftPlayerId))
             {
                 throw new ArgumentException("Combat pairings may only contain active match players.", nameof(pairings));
             }
 
-            if (!paired.Add(pairing.LeftPlayerId) || !paired.Add(pairing.RightPlayerId))
+            if (!paired.Add(pairing.LeftPlayerId))
             {
                 throw new ArgumentException("An active player cannot appear in more than one combat pairing.", nameof(pairings));
             }
+
+            if (pairing.UsesEliminatedOpponent)
+            {
+                continue;
+            }
+
+            var rightPlayerId = pairing.RightPlayerId!.Value;
+            if (!active.Contains(rightPlayerId))
+            {
+                throw new ArgumentException("Combat pairings may only contain active match players.", nameof(pairings));
+            }
+
+            if (!paired.Add(rightPlayerId))
+            {
+                throw new ArgumentException("An active player cannot appear in more than one combat pairing.", nameof(pairings));
+            }
+        }
+
+        if (paired.Count != active.Count)
+        {
+            throw new ArgumentException("Combat pairings must cover every active player exactly once.", nameof(pairings));
         }
     }
 }

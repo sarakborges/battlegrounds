@@ -21,7 +21,7 @@ public sealed class MatchEngineTests
         AddUnit(engine, match, new PlayerId(0));
         AddUnit(engine, match, new PlayerId(0));
         AddUnit(engine, match, new PlayerId(1));
-        ReadyBoth(engine, match);
+        ReadyActive(engine, match);
 
         var round = engine.ResolveCombatRound(
             match,
@@ -42,7 +42,7 @@ public sealed class MatchEngineTests
     }
 
     [Fact]
-    public void ResolveCombatRound_WhenLastOpponentReachesZero_FinishesMatch()
+    public void ResolveCombatRound_WhenLastOpponentReachesZero_FinishesMatchAndAssignsPlacements()
     {
         var engine = CreateEngine(startingHealth: 2);
         var match = engine.CreateMatch([new PlayerId(0), new PlayerId(1)]);
@@ -51,7 +51,7 @@ public sealed class MatchEngineTests
         AddUnit(engine, match, new PlayerId(0));
         AddUnit(engine, match, new PlayerId(0));
         AddUnit(engine, match, new PlayerId(1));
-        ReadyBoth(engine, match);
+        ReadyActive(engine, match);
 
         var round = engine.ResolveCombatRound(
             match,
@@ -63,6 +63,10 @@ public sealed class MatchEngineTests
         Assert.Equal(new PlayerId(0), match.WinnerPlayerId);
         Assert.True(match.Players[1].IsEliminated);
         Assert.Equal(0, match.Players[1].Health);
+        Assert.True(match.TryGetPlacement(new PlayerId(0), out var winnerPlacement));
+        Assert.Equal(1, winnerPlacement);
+        Assert.True(match.TryGetPlacement(new PlayerId(1), out var loserPlacement));
+        Assert.Equal(2, loserPlacement);
     }
 
     [Fact]
@@ -74,7 +78,7 @@ public sealed class MatchEngineTests
 
         AddUnit(engine, match, new PlayerId(0));
         AddUnit(engine, match, new PlayerId(1));
-        ReadyBoth(engine, match);
+        ReadyActive(engine, match);
 
         var round = engine.ResolveCombatRound(
             match,
@@ -90,21 +94,81 @@ public sealed class MatchEngineTests
     }
 
     [Fact]
-    public void ResolveCombatRound_OddActivePlayerCountRequiresGhostAssignmentSupport()
+    public void ResolveCombatRound_InitialOddPlayerCountWithoutEliminationSnapshot_IsRejected()
     {
         var engine = CreateEngine(startingHealth: 10, minimumPlayers: 2, maximumPlayers: 3);
         var match = engine.CreateMatch([new PlayerId(0), new PlayerId(1), new PlayerId(2)]);
         engine.BeginMatch(match);
-
-        foreach (var player in match.Players)
-        {
-            Assert.True(engine.ExecutePreparation(match, new EndPreparationCommand(player.Id)).Succeeded);
-        }
+        ReadyActive(engine, match);
 
         Assert.Equal(MatchPhase.Combat, match.Phase);
         Assert.Throws<InvalidOperationException>(() => engine.ResolveCombatRound(
             match,
-            [new CombatPairing(new PlayerId(0), new PlayerId(1))]));
+            [
+                new CombatPairing(new PlayerId(0), new PlayerId(1)),
+                CombatPairing.VersusEliminatedOpponent(new PlayerId(2)),
+            ]));
+    }
+
+    [Fact]
+    public void ResolveCombatRound_OddPlayersUseLatestEliminatedSnapshotAndRecordDeterministicPlacements()
+    {
+        var engine = CreateEngine(startingHealth: 2, minimumPlayers: 2, maximumPlayers: 4);
+        var match = engine.CreateMatch(
+            [new PlayerId(0), new PlayerId(1), new PlayerId(2), new PlayerId(3)]);
+        engine.BeginMatch(match);
+
+        AddUnit(engine, match, new PlayerId(0));
+        AddUnit(engine, match, new PlayerId(0));
+        AddUnit(engine, match, new PlayerId(1));
+        ReadyActive(engine, match);
+
+        var firstRound = engine.ResolveCombatRound(
+            match,
+            [
+                new CombatPairing(new PlayerId(0), new PlayerId(1)),
+                new CombatPairing(new PlayerId(2), new PlayerId(3)),
+            ]);
+
+        Assert.False(firstRound.MatchFinished);
+        Assert.True(match.Players.Single(player => player.Id == new PlayerId(1)).IsEliminated);
+        Assert.NotNull(match.LatestEliminatedOpponent);
+        Assert.Equal(new PlayerId(1), match.LatestEliminatedOpponent!.SourcePlayerId);
+        Assert.Equal(1, match.LatestEliminatedOpponent.Tier);
+        Assert.Single(match.LatestEliminatedOpponent.Participant.Units);
+        Assert.True(match.TryGetPlacement(new PlayerId(1), out var fourth));
+        Assert.Equal(4, fourth);
+
+        ReadyActive(engine, match);
+        var secondRound = engine.ResolveCombatRound(
+            match,
+            [
+                new CombatPairing(new PlayerId(0), new PlayerId(3)),
+                CombatPairing.VersusEliminatedOpponent(new PlayerId(2)),
+            ]);
+
+        var archivedSettlement = Assert.Single(
+            secondRound.Settlements,
+            settlement => settlement.UsesEliminatedOpponent);
+        Assert.Equal(new PlayerId(1), archivedSettlement.EliminatedOpponentSourcePlayerId);
+        Assert.True(archivedSettlement.EliminatedOpponentWon);
+        Assert.Null(archivedSettlement.WinnerPlayerId);
+        Assert.Equal(new PlayerId(2), archivedSettlement.DamagedPlayerId);
+        Assert.Equal(2, archivedSettlement.PlayerDamage);
+
+        Assert.True(secondRound.MatchFinished);
+        Assert.Equal(new PlayerId(0), match.WinnerPlayerId);
+        Assert.Equal(new PlayerId(2), match.LatestEliminatedOpponent!.SourcePlayerId);
+        Assert.Equal(
+            [new PlayerId(1), new PlayerId(3), new PlayerId(2)],
+            match.Eliminations.Select(record => record.PlayerId));
+        Assert.Equal([4, 3, 2], match.Eliminations.Select(record => record.Placement));
+        Assert.True(match.TryGetPlacement(new PlayerId(0), out var first));
+        Assert.True(match.TryGetPlacement(new PlayerId(2), out var second));
+        Assert.True(match.TryGetPlacement(new PlayerId(3), out var third));
+        Assert.Equal(1, first);
+        Assert.Equal(2, second);
+        Assert.Equal(3, third);
     }
 
     private static MatchEngine CreateEngine(
@@ -166,10 +230,13 @@ public sealed class MatchEngineTests
         Assert.True(engine.ExecutePreparation(match, new DeployUnitCommand(playerId, player.Reserve.Count - 1)).Succeeded);
     }
 
-    private static void ReadyBoth(MatchEngine engine, MatchState match)
+    private static void ReadyActive(MatchEngine engine, MatchState match)
     {
-        Assert.True(engine.ExecutePreparation(match, new EndPreparationCommand(new PlayerId(0))).Succeeded);
-        Assert.True(engine.ExecutePreparation(match, new EndPreparationCommand(new PlayerId(1))).Succeeded);
+        foreach (var player in match.Players.Where(player => !player.IsEliminated))
+        {
+            Assert.True(engine.ExecutePreparation(match, new EndPreparationCommand(player.Id)).Succeeded);
+        }
+
         Assert.Equal(MatchPhase.Combat, match.Phase);
     }
 
