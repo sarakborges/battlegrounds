@@ -47,6 +47,7 @@ public sealed class EffectUnitSnapshot
 public sealed class EffectResolutionContext
 {
     private readonly ReadOnlyCollection<EffectUnitSnapshot> _units;
+    private readonly EffectHistorySnapshot _history;
 
     public UnitInstanceId SourceInstanceId { get; }
     public PlayerId SourcePlayerId { get; }
@@ -58,6 +59,21 @@ public sealed class EffectResolutionContext
         PlayerId sourcePlayerId,
         IEnumerable<EffectUnitSnapshot> units,
         UnitInstanceId? selectedTargetInstanceId = null)
+        : this(
+            sourceInstanceId,
+            sourcePlayerId,
+            units,
+            selectedTargetInstanceId,
+            EffectHistorySnapshot.Empty)
+    {
+    }
+
+    internal EffectResolutionContext(
+        UnitInstanceId sourceInstanceId,
+        PlayerId sourcePlayerId,
+        IEnumerable<EffectUnitSnapshot> units,
+        UnitInstanceId? selectedTargetInstanceId,
+        EffectHistorySnapshot history)
     {
         ArgumentNullException.ThrowIfNull(units);
         var materialized = units.ToArray();
@@ -76,7 +92,10 @@ public sealed class EffectResolutionContext
         SourcePlayerId = sourcePlayerId;
         SelectedTargetInstanceId = selectedTargetInstanceId;
         _units = Array.AsReadOnly(materialized);
+        _history = history ?? throw new ArgumentNullException(nameof(history));
     }
+
+    internal int GetEventCount(EffectHistoryQuery query) => _history.GetEventCount(query);
 }
 
 public sealed record ResolvedEffect(
@@ -163,6 +182,7 @@ public sealed class EffectPipeline
             SourceStatEffectValueExpression sourceStat => GetSourceStat(context, sourceStat.Stat),
             TargetStatEffectValueExpression targetStat => GetTargetStat(context, targetInstanceId, targetStat.Stat),
             UnitCountEffectValueExpression unitCount => QueryUnits(unitCount.Query, context).Count,
+            EventCountEffectValueExpression eventCount => context.GetEventCount(eventCount.Query),
             CompositeEffectValueExpression composite => EvaluateComposite(composite, context, targetInstanceId),
             _ => throw new ArgumentOutOfRangeException(nameof(expression), expression.GetType().Name, "Unsupported effect value expression."),
         };
@@ -187,7 +207,7 @@ public sealed class EffectPipeline
         };
     }
 
-    private static bool ConditionsMatch(TriggerDefinition trigger, EffectResolutionContext context)
+    private bool ConditionsMatch(TriggerDefinition trigger, EffectResolutionContext context)
     {
         foreach (var condition in trigger.Conditions)
         {
@@ -201,6 +221,10 @@ public sealed class EffectPipeline
                     GetSourceStat(context, sourceStat.Stat),
                     sourceStat.Comparison,
                     sourceStat.Value),
+                ValueConditionDefinition value => Compare(
+                    EvaluateValue(value.Left, context),
+                    value.Comparison,
+                    EvaluateValue(value.Right, context)),
                 _ => throw new ArgumentOutOfRangeException(nameof(condition), condition.GetType().Name, "Unsupported effect condition."),
             };
 
