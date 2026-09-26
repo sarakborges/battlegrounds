@@ -46,19 +46,89 @@ Preparation lifecycle effects mutate authoritative preparation state through its
 
 When a power changes during an event, the event keeps the original source snapshot. The newly selected power becomes eligible starting with the next lifecycle event rather than being re-entered during the current one.
 
+## Target selectors
+
+Targeting is composed instead of encoded as one enum value per combination. A targeted effect may define:
+
+- `scope`: `self`, `selected`, `friendly`, or `enemy`;
+- `selection`: `all`, `random`, `lowestAttack`, `highestAttack`, `lowestHealth`, `highestHealth`, `leftmost`, `rightmost`, `adjacent`, `leftAdjacent`, or `rightAdjacent`;
+- `excludeSource`: valid for `friendly` selectors;
+- `limit`: positive maximum number of selected units;
+- `typeId` and `tagId`: optional mod-defined filters.
+
+For example:
+
+```json
+{
+  "kind": "modifyStats",
+  "target": {
+    "scope": "friendly",
+    "selection": "lowestAttack",
+    "excludeSource": true,
+    "limit": 1,
+    "typeId": "organic"
+  },
+  "attack": 2,
+  "health": 2
+}
+```
+
+`self` and `selected` are already singular, so they cannot add another selection mode or a limit. Adjacent selections are only meaningful for friendly units because adjacency is resolved from the source unit's current field position. Random selection samples without replacement and uses the injected deterministic RNG.
+
+## Trigger conditions
+
+Conditions belong to a trigger and gate its entire ordered effect list. Every condition must pass before any effect from that trigger resolves.
+
+A count condition queries units without consuming RNG:
+
+```json
+{
+  "event": "onPlay",
+  "conditions": [
+    {
+      "kind": "unitCount",
+      "query": {
+        "scope": "friendly",
+        "excludeSource": true,
+        "typeId": "organic"
+      },
+      "comparison": "greaterThanOrEqual",
+      "value": 2
+    }
+  ],
+  "effects": [
+    { "kind": "addResource", "amount": 1 }
+  ]
+}
+```
+
+A source-stat condition reads the source's current runtime stats, including buffs already applied in that phase:
+
+```json
+{
+  "kind": "sourceStat",
+  "stat": "attack",
+  "comparison": "greaterThan",
+  "value": 5
+}
+```
+
+Supported comparisons are `equal`, `notEqual`, `lessThan`, `lessThanOrEqual`, `greaterThan`, and `greaterThanOrEqual`.
+
 ## Resolution phases
 
 A logical effect action resolves in this order:
 
-1. resolve the authored trigger and its effects in authored order;
-2. resolve directly-created follow-up events such as `onDamage`, `onSummon`, or `triggerEvent`;
-3. once that event phase is complete, identify all units that are dead;
-4. remove the complete simultaneous-death batch before resolving any death-related trigger;
-5. resolve each death deterministically;
-6. during that death batch, newly lethal units remain in play until the current batch finishes;
-7. after a unit's death-related triggers resolve, attempt its revive-once behavior;
-8. a successful revive is a summon and runs normal `onSummon` listeners;
-9. after the original batch is complete, create the next death batch if new deaths are pending.
+1. evaluate the trigger's conditions against the current effect-world snapshot;
+2. if all conditions pass, resolve authored effects in authored order;
+3. resolve directly-created follow-up events such as `onDamage`, `onSummon`, or `triggerEvent`;
+4. once that event phase is complete, identify all units that are dead;
+5. remove the complete simultaneous-death batch before resolving any death-related trigger;
+6. resolve each death deterministically;
+7. during that death batch, newly lethal units remain in play until the current batch finishes;
+8. after a unit's death-related triggers resolve, attempt its revive-once behavior;
+9. a successful revive is a summon and runs normal `onSummon` listeners;
+10. after the original batch is complete, create the next death batch if new deaths are pending.
 
 This preserves the important Battlegrounds/Hearthstone invariants that simultaneous dead units cannot be targeted by each other's death effects, Deathrattle-like effects resolve before Reborn-like revival, and consequences of one death can affect listeners that observe a later death in the same batch.
 
