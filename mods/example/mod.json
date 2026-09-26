@@ -5,6 +5,9 @@
   "terminology": {
     "unit": "Unit",
     "units": "Units",
+    "leader": "Leader",
+    "leaders": "Leaders",
+    "armor": "Armor",
     "resource": "Energy",
     "offer": "Exchange",
     "tier": "Level",
