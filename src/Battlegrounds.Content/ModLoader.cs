@@ -140,7 +140,12 @@ public sealed class ModLoader
             new NativeTriggerKey(data.Event),
             data.Effects.Select(BuildEffect),
             data.Count,
-            (data.Conditions ?? []).Select(BuildCondition));
+            (data.Conditions ?? []).Select(BuildCondition),
+            data.ActivationLimit is null
+                ? null
+                : new TriggerActivationLimit(
+                    data.ActivationLimit.Scope,
+                    data.ActivationLimit.Count));
 
     private static EffectConditionDefinition BuildCondition(ConditionData data) =>
         data.Kind switch
@@ -153,6 +158,10 @@ public sealed class ModLoader
                 data.Stat ?? throw new InvalidDataException("Validated sourceStat condition is missing stat."),
                 data.Comparison ?? throw new InvalidDataException("Validated sourceStat condition is missing comparison."),
                 data.Value ?? throw new InvalidDataException("Validated sourceStat condition is missing value.")),
+            "value" => new ValueConditionDefinition(
+                BuildRequiredValue(data.Left, "condition.left"),
+                data.Comparison ?? throw new InvalidDataException("Validated value condition is missing comparison."),
+                BuildRequiredValue(data.Right, "condition.right")),
             _ => throw new InvalidDataException($"Validated condition kind '{data.Kind}' is unsupported."),
         };
 
@@ -217,12 +226,31 @@ public sealed class ModLoader
             "sourceStat" => new SourceStatEffectValueExpression(ReadEnum<EffectStat>(data, "stat")),
             "targetStat" => new TargetStatEffectValueExpression(ReadEnum<EffectStat>(data, "stat")),
             "unitCount" => new UnitCountEffectValueExpression(BuildQuery(ReadObject(data, "query"))),
+            "eventCount" => new EventCountEffectValueExpression(BuildHistoryQuery(data)),
             "add" => BuildComposite(EffectValueOperation.Add, data),
             "multiply" => BuildComposite(EffectValueOperation.Multiply, data),
             "min" => BuildComposite(EffectValueOperation.Min, data),
             "max" => BuildComposite(EffectValueOperation.Max, data),
             _ => throw new InvalidDataException($"Validated effect value kind '{kind}' is unsupported."),
         };
+    }
+
+    private static EffectHistoryQuery BuildHistoryQuery(JsonElement data)
+    {
+        var eventName = data.GetProperty("event").GetString()
+            ?? throw new InvalidDataException("Validated eventCount expression is missing event.");
+        var typeId = data.TryGetProperty("typeId", out var typeElement)
+            ? typeElement.GetString()
+            : null;
+        var tagId = data.TryGetProperty("tagId", out var tagElement)
+            ? tagElement.GetString()
+            : null;
+
+        return new EffectHistoryQuery(
+            new NativeGameEventKey(eventName),
+            ReadEnum<EffectHistoryScope>(data, "scope"),
+            string.IsNullOrWhiteSpace(typeId) ? null : new UnitTypeId(typeId),
+            string.IsNullOrWhiteSpace(tagId) ? null : new TagId(tagId));
     }
 
     private static CompositeEffectValueExpression BuildComposite(
@@ -341,13 +369,19 @@ public sealed class ModLoader
         string Event,
         EffectData[] Effects,
         int? Count,
-        ConditionData[]? Conditions);
+        ConditionData[]? Conditions,
+        TriggerActivationLimitData? ActivationLimit);
+    private sealed record TriggerActivationLimitData(
+        EffectHistoryScope Scope,
+        int Count);
     private sealed record ConditionData(
         string Kind,
         QueryData? Query,
         EffectComparison? Comparison,
         int? Value,
-        EffectStat? Stat);
+        EffectStat? Stat,
+        JsonElement? Left,
+        JsonElement? Right);
     private sealed record EffectData(
         string Kind,
         TargetData? Target,
