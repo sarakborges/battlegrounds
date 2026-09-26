@@ -3,6 +3,7 @@ using Battlegrounds.Core.Domain.Behaviors;
 using Battlegrounds.Core.Domain.Combat;
 using Battlegrounds.Core.Domain.Leaders;
 using Battlegrounds.Core.Domain.Match;
+using Battlegrounds.Core.Domain.Powers;
 using Battlegrounds.Core.Domain.Preparation;
 using Battlegrounds.Core.Domain.Taxonomy;
 using Battlegrounds.Core.Domain.Units;
@@ -23,6 +24,7 @@ public sealed class ModPackage
     public CombatRules CombatRules { get; }
     public BehaviorCatalog Behaviors { get; }
     public LeaderCatalog Leaders { get; }
+    public PowerCatalog Powers { get; }
     public UnitTypeCatalog UnitTypes { get; }
     public TagCatalog Tags { get; }
     public UnitCatalog Units { get; }
@@ -37,6 +39,7 @@ public sealed class ModPackage
         CombatRules combatRules,
         BehaviorCatalog behaviors,
         LeaderCatalog leaders,
+        PowerCatalog powers,
         UnitTypeCatalog unitTypes,
         TagCatalog tags,
         UnitCatalog units,
@@ -49,6 +52,7 @@ public sealed class ModPackage
         CombatRules = combatRules;
         Behaviors = behaviors ?? throw new ArgumentNullException(nameof(behaviors));
         Leaders = leaders ?? throw new ArgumentNullException(nameof(leaders));
+        Powers = powers ?? throw new ArgumentNullException(nameof(powers));
         UnitTypes = unitTypes ?? throw new ArgumentNullException(nameof(unitTypes));
         Tags = tags ?? throw new ArgumentNullException(nameof(tags));
         Units = units ?? throw new ArgumentNullException(nameof(units));
@@ -67,7 +71,8 @@ public sealed class ModPackage
             CreateUnitPool(),
             randomSource,
             Units,
-            Behaviors);
+            Behaviors,
+            Powers);
     }
 
     public CombatEngine CreateCombatEngine() =>
@@ -84,6 +89,7 @@ public sealed class ModPackage
             randomSource,
             Units,
             Behaviors,
-            Leaders);
+            Leaders,
+            Powers);
     }
 }
