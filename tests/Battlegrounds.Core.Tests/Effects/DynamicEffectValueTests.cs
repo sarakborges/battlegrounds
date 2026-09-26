@@ -79,7 +79,7 @@ public sealed class DynamicEffectValueTests
             health,
             position: (int)id - 1,
             isSelectable: true,
-            (types ?? []).Select(value => new UnitTypeId(value)));
+            types: (types ?? []).Select(value => new UnitTypeId(value)));
 }
 
 internal static class DynamicEffectValueTestExtensions
