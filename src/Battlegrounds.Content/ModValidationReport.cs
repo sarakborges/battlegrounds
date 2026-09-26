@@ -33,7 +33,7 @@ public sealed class ModValidationReport
     }
 }
 
-public sealed class ModValidationException : InvalidDataException
+public sealed class ModValidationException : Exception
 {
     public ModValidationReport Report { get; }
 
