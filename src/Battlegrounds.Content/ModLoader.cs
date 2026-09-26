@@ -4,6 +4,7 @@ using Battlegrounds.Core.Domain.Behaviors;
 using Battlegrounds.Core.Domain.Combat;
 using Battlegrounds.Core.Domain.Effects;
 using Battlegrounds.Core.Domain.Ids;
+using Battlegrounds.Core.Domain.Leaders;
 using Battlegrounds.Core.Domain.Match;
 using Battlegrounds.Core.Domain.Preparation;
 using Battlegrounds.Core.Domain.Taxonomy;
@@ -42,6 +43,7 @@ public sealed class ModLoader
         var preparationRulesData = ReadRequired<PreparationRulesData>(Path.Combine(modDirectory, "rules", "preparation.json"));
         var combatRulesData = ReadRequired<CombatRulesData>(Path.Combine(modDirectory, "rules", "combat.json"));
         var behaviorData = ReadRequired<BehaviorData[]>(Path.Combine(modDirectory, "content", "behaviors.json"));
+        var leaderData = ReadRequired<LeaderData[]>(Path.Combine(modDirectory, "content", "leaders.json"));
         var typeData = ReadRequired<NamedIdData[]>(Path.Combine(modDirectory, "content", "types.json"));
         var tagData = ReadRequired<NamedIdData[]>(Path.Combine(modDirectory, "content", "tags.json"));
         var unitData = ReadRequired<UnitData[]>(Path.Combine(modDirectory, "content", "units.json"));
@@ -69,6 +71,12 @@ public sealed class ModLoader
 
         var behaviorCatalog = new BehaviorCatalog(behaviorData.Select(data =>
             new BehaviorDefinition(new BehaviorId(data.Id), data.Name, new NativeBehaviorKey(data.Handler))));
+        var leaderCatalog = new LeaderCatalog(leaderData.Select(data =>
+            new LeaderDefinition(
+                new LeaderId(data.Id),
+                data.Name,
+                data.HealthModifier,
+                data.Armor)));
         var unitTypeCatalog = new UnitTypeCatalog(typeData.Select(data =>
             new UnitTypeDefinition(new UnitTypeId(data.Id), data.Name)));
         var tagCatalog = new TagCatalog(tagData.Select(data =>
@@ -100,6 +108,7 @@ public sealed class ModLoader
             preparationRules,
             combatRules,
             behaviorCatalog,
+            leaderCatalog,
             unitTypeCatalog,
             tagCatalog,
             catalog,
@@ -172,6 +181,7 @@ public sealed class ModLoader
         StartingSidePolicy StartingSidePolicy,
         PostCombatDamagePolicy PostCombatDamagePolicy);
     private sealed record BehaviorData(string Id, string Name, string Handler);
+    private sealed record LeaderData(string Id, string Name, int HealthModifier, int Armor);
     private sealed record NamedIdData(string Id, string Name);
     private sealed record UnitData(
         string Id,
