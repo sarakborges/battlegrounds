@@ -14,7 +14,6 @@ public enum RecruitmentFailureCode
     MaximumTavernTier,
     TavernAlreadyFrozen,
     TavernNotFrozen,
-    FreezeToggleLimitReached,
 }
 
 public readonly record struct RecruitmentCommandResult
