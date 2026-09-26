@@ -1,0 +1,15 @@
+{
+  "id": "quiet-aura",
+  "name": "Quiet Aura",
+  "triggers": [
+    {
+      "event": "onTurnStart",
+      "effects": [
+        {
+          "kind": "addResource",
+          "amount": 1
+        }
+      ]
+    }
+  ]
+}
