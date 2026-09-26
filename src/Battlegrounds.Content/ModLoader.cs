@@ -1,5 +1,6 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using Battlegrounds.Core.Domain.Combat;
 using Battlegrounds.Core.Domain.Ids;
 using Battlegrounds.Core.Domain.Match;
 using Battlegrounds.Core.Domain.Preparation;
@@ -16,6 +17,7 @@ public sealed class ModLoader
         ReadCommentHandling = JsonCommentHandling.Skip,
         AllowTrailingCommas = true,
         UnmappedMemberHandling = JsonUnmappedMemberHandling.Disallow,
+        Converters = { new JsonStringEnumConverter(JsonNamingPolicy.CamelCase, allowIntegerValues: false) },
     };
 
     public ModPackage Load(string modDirectory)
@@ -33,8 +35,10 @@ public sealed class ModLoader
         var manifest = ReadRequired<ModManifest>(Path.Combine(modDirectory, "mod.json"));
         var matchRulesData = ReadRequired<MatchRulesData>(
             Path.Combine(modDirectory, "rules", "match.json"));
-        var rulesData = ReadRequired<PreparationRulesData>(
+        var preparationRulesData = ReadRequired<PreparationRulesData>(
             Path.Combine(modDirectory, "rules", "preparation.json"));
+        var combatRulesData = ReadRequired<CombatRulesData>(
+            Path.Combine(modDirectory, "rules", "combat.json"));
         var unitData = ReadRequired<UnitData[]>(
             Path.Combine(modDirectory, "content", "units.json"));
         var poolData = ReadRequired<UnitPoolData[]>(
@@ -43,18 +47,21 @@ public sealed class ModLoader
         ValidateManifest(manifest);
 
         var matchRules = new MatchRules(matchRulesData.MinimumPlayers, matchRulesData.MaximumPlayers);
-        var rules = new PreparationRules(
-            rulesData.StartingResource,
-            rulesData.ResourcePerRound,
-            rulesData.MaximumResource,
-            rulesData.AcquireCost,
-            rulesData.ReleaseValue,
-            rulesData.RefreshCost,
-            rulesData.FieldCapacity,
-            rulesData.ReserveCapacity,
-            rulesData.MaximumTier,
-            rulesData.OfferSizesByTier,
-            rulesData.InitialUpgradeCostsByTier);
+        var preparationRules = new PreparationRules(
+            preparationRulesData.StartingResource,
+            preparationRulesData.ResourcePerRound,
+            preparationRulesData.MaximumResource,
+            preparationRulesData.AcquireCost,
+            preparationRulesData.ReleaseValue,
+            preparationRulesData.RefreshCost,
+            preparationRulesData.FieldCapacity,
+            preparationRulesData.ReserveCapacity,
+            preparationRulesData.MaximumTier,
+            preparationRulesData.OfferSizesByTier,
+            preparationRulesData.InitialUpgradeCostsByTier);
+        var combatRules = new CombatRules(
+            combatRulesData.MaximumAttacks,
+            combatRulesData.StartingSidePolicy);
 
         if (unitData.Length == 0)
         {
@@ -70,10 +77,10 @@ public sealed class ModLoader
                 unit.Attack,
                 unit.Health);
 
-            if (definition.Tier > rules.MaximumTier)
+            if (definition.Tier > preparationRules.MaximumTier)
             {
                 throw new InvalidDataException(
-                    $"Unit '{definition.Id}' uses tier {definition.Tier}, above maximum tier {rules.MaximumTier}.");
+                    $"Unit '{definition.Id}' uses tier {definition.Tier}, above maximum tier {preparationRules.MaximumTier}.");
             }
 
             return definition;
@@ -91,7 +98,8 @@ public sealed class ModLoader
             manifest.Name,
             manifest.Terminology,
             matchRules,
-            rules,
+            preparationRules,
+            combatRules,
             catalog,
             poolEntries);
     }
@@ -160,6 +168,10 @@ public sealed class ModLoader
         int MaximumTier,
         int[] OfferSizesByTier,
         int[] InitialUpgradeCostsByTier);
+
+    private sealed record CombatRulesData(
+        int MaximumAttacks,
+        StartingSidePolicy StartingSidePolicy);
 
     private sealed record UnitData(
         string Id,
