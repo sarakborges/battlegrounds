@@ -267,7 +267,7 @@ public sealed class CombatEngine
             winner = world.Left.UnitCount > 0
                 ? world.Left.PlayerId
                 : world.Right.UnitCount > 0
-                    ? false ? null : world.Right.PlayerId
+                    ? world.Right.PlayerId
                     : null;
             return true;
         }
