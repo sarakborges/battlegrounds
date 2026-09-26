@@ -1,3 +1,4 @@
+using System.Collections.ObjectModel;
 using Battlegrounds.Core.Domain.Cards;
 using Battlegrounds.Core.Domain.Ids;
 using Battlegrounds.Core.Domain.Players;
@@ -7,17 +8,19 @@ namespace Battlegrounds.Core.Domain.Match;
 public sealed class MatchState
 {
     private readonly List<PlayerState> _players;
+    private readonly ReadOnlyCollection<PlayerState> _playersView;
     private readonly Dictionary<PlayerId, PlayerState> _playersById;
     private long _nextMinionInstanceId = 1;
 
     public MatchPhase Phase { get; private set; } = MatchPhase.Setup;
     public int Round { get; private set; }
     public long Revision { get; private set; }
-    public IReadOnlyList<PlayerState> Players => _players;
+    public IReadOnlyList<PlayerState> Players => _playersView;
 
     private MatchState(List<PlayerState> players)
     {
         _players = players;
+        _playersView = _players.AsReadOnly();
         _playersById = players.ToDictionary(player => player.Id);
     }
 
