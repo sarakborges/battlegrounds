@@ -329,13 +329,15 @@ public sealed class TriggerDefinition
     public IReadOnlyList<EffectConditionDefinition> Conditions => _conditions;
     public IReadOnlyList<EffectDefinition> Effects => _effects;
     public TriggerActivationLimit? ActivationLimit { get; }
+    public EffectHistoryQuery? Counter { get; }
 
     public TriggerDefinition(
         NativeTriggerKey @event,
         IEnumerable<EffectDefinition> effects,
         int? count = null,
         IEnumerable<EffectConditionDefinition>? conditions = null,
-        TriggerActivationLimit? activationLimit = null)
+        TriggerActivationLimit? activationLimit = null,
+        EffectHistoryQuery? counter = null)
     {
         if (!NativeTriggerKeys.IsSupported(@event))
             throw new ArgumentException($"Unsupported trigger '{@event}'.", nameof(@event));
@@ -348,14 +350,25 @@ public sealed class TriggerDefinition
         if (conditionArray.Any(condition => condition is null))
             throw new ArgumentException("Trigger conditions cannot contain null values.", nameof(conditions));
 
-        if (@event == NativeTriggerKeys.AfterFriendlyDeaths)
+        if (@event is NativeTriggerKey triggerKey &&
+            (triggerKey == NativeTriggerKeys.AfterFriendlyDeaths || triggerKey == NativeTriggerKeys.AfterEventCount))
         {
             if (count is null || count.Value <= 0)
-                throw new ArgumentOutOfRangeException(nameof(count), "afterFriendlyDeaths requires a positive count.");
+                throw new ArgumentOutOfRangeException(nameof(count), $"{@event} requires a positive count.");
         }
         else if (count is not null)
         {
-            throw new ArgumentException("count is only valid for afterFriendlyDeaths triggers.", nameof(count));
+            throw new ArgumentException("count is only valid for counted triggers.", nameof(count));
+        }
+
+        if (@event == NativeTriggerKeys.AfterEventCount)
+        {
+            if (counter is null)
+                throw new ArgumentNullException(nameof(counter), "afterEventCount requires a counter query.");
+        }
+        else if (counter is not null)
+        {
+            throw new ArgumentException("counter is only valid for afterEventCount triggers.", nameof(counter));
         }
 
         Event = @event;
@@ -363,5 +376,6 @@ public sealed class TriggerDefinition
         _effects = Array.AsReadOnly(materialized);
         _conditions = Array.AsReadOnly(conditionArray);
         ActivationLimit = activationLimit;
+        Counter = counter;
     }
 }
