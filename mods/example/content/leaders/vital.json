@@ -2,5 +2,6 @@
   "id": "vital",
   "name": "Vital Leader",
   "healthModifier": 5,
-  "armor": 0
+  "armor": 0,
+  "initialPowerId": "vital-shift"
 }
