@@ -6,7 +6,7 @@ namespace Battlegrounds.Core.Domain.Combat;
 public enum CombatEndReason
 {
     Elimination,
-    AttackLimit,
+    NoAttackPower,
 }
 
 public sealed class CombatResult
