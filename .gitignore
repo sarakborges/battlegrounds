@@ -1,0 +1,25 @@
+# Godot
+.godot/
+.import/
+export.cfg
+export_presets.cfg
+
+# .NET
+**/bin/
+**/obj/
+*.user
+*.suo
+*.userprefs
+
+# IDE
+.vscode/
+.idea/
+.vs/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Local artifacts
+artifacts/
+coverage/
