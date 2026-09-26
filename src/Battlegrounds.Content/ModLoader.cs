@@ -54,7 +54,9 @@ public sealed class ModLoader
         var matchRules = new MatchRules(
             matchRulesData.MinimumPlayers,
             matchRulesData.MaximumPlayers,
-            matchRulesData.StartingHealth);
+            matchRulesData.StartingHealth,
+            matchRulesData.LeaderOfferSize,
+            matchRulesData.LeaderOfferPolicy);
         var preparationRules = new PreparationRules(
             preparationRulesData.StartingResource,
             preparationRulesData.ResourcePerRound,
@@ -186,7 +188,12 @@ public sealed class ModLoader
     }
 
     private sealed record ModManifest(int SchemaVersion, string Id, string Name, Dictionary<string, string> Terminology);
-    private sealed record MatchRulesData(int MinimumPlayers, int MaximumPlayers, int StartingHealth);
+    private sealed record MatchRulesData(
+        int MinimumPlayers,
+        int MaximumPlayers,
+        int StartingHealth,
+        int LeaderOfferSize,
+        LeaderOfferPolicy LeaderOfferPolicy);
     private sealed record PreparationRulesData(
         int StartingResource,
         int ResourcePerRound,
