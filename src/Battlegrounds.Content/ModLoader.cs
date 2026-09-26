@@ -114,6 +114,11 @@ public sealed class ModLoader
             "dealDamage" => new DealDamageEffectDefinition(
                 BuildTarget(data.Target),
                 data.Amount ?? throw new InvalidDataException("Validated dealDamage effect is missing amount.")),
+            "destroyUnit" => new DestroyUnitEffectDefinition(
+                BuildTarget(data.Target)),
+            "triggerEvent" => new TriggerEventEffectDefinition(
+                BuildTarget(data.Target),
+                new NativeTriggerKey(data.Event ?? throw new InvalidDataException("Validated triggerEvent effect is missing event."))),
             "summonUnit" => new SummonUnitEffectDefinition(
                 new UnitId(data.UnitId ?? throw new InvalidDataException("Validated summonUnit effect is missing unitId.")),
                 data.Count ?? 1),
@@ -180,7 +185,8 @@ public sealed class ModLoader
         int? Amount,
         string? UnitId,
         int? Count,
-        string? BehaviorId);
+        string? BehaviorId,
+        string? Event);
     private sealed record TargetData(EffectTargetScope Scope, string? TypeId, string? TagId);
     private sealed record UnitPoolData(string UnitId, int Copies);
 }

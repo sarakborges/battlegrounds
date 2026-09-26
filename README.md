@@ -29,17 +29,21 @@ There is intentionally no `Standard` gameplay preset in Core. Numeric rules are 
 
 Reusable mechanics are implemented once in Core under neutral native handler keys. Mods choose their own behavior IDs and display names and map them to those handlers.
 
-The current native combat handlers are:
+The current native handlers are:
 
 - `damageBarrier` — blocks the first positive damage event for that life;
-- `targetPriority` — restricts enemy target selection while any living unit has it;
-- `reviveOnce` — returns after death with 1 Health once, without the revive behavior;
+- `targetPriority` — restricts target selection while an eligible priority target exists;
+- `reviveOnce` — returns after a real death with 1 Health once, without the revive behavior;
 - `lethalFirstDamagePerCombat` — the first unit actually damaged by this unit is destroyed, then the behavior is consumed for that life;
 - `extraAttack` — performs one additional consecutive strike during that unit's attack activation.
 
-## Triggers and authored effects
+## Triggers and authored effects are game mechanics, not phase mechanics
 
-Units can define ordered triggers directly in mod data. Supported trigger keys currently are:
+Battlecry-like, Deathrattle-like, summon, damage, destroy, buffs and similar mechanics do **not** belong to Preparation or Combat. They belong to the shared game effect runtime. Preparation and Combat only provide different state adapters to that runtime.
+
+For example, `onDeath` can be caused by combat damage, a Preparation effect that destroys a friendly unit, or an authored effect that explicitly triggers another unit's `onDeath`. The trigger/effect semantics stay the same.
+
+Supported trigger keys currently are:
 
 - `onPlay`
 - `onDeath`
@@ -55,16 +59,22 @@ Supported effect kinds currently are:
 
 - `modifyStats`
 - `dealDamage`
+- `destroyUnit`
+- `triggerEvent`
 - `summonUnit`
 - `addBehavior`
 - `removeBehavior`
 - `addResource`
 
+`triggerEvent` can explicitly activate a supported trigger on selected units without pretending the underlying event happened naturally. For example, a mod may activate a friendly unit's `onDeath` without destroying it. `destroyUnit` performs an actual destruction, which then enters the normal death lifecycle and resolves `onDeath`.
+
 Targeted effects use neutral scopes (`self`, `randomFriendly`, `randomEnemy`, `allFriendly`, `allEnemy`) and can filter by mod-defined `typeId` and/or `tagId`.
 
-The Core resolves authored triggers into explicit effects and applies preparation effects through a FIFO action/event queue. Consequences are enqueued explicitly (`onPlay → onDamage → onDeath → onSummon`) rather than hidden behind a global event bus. Random target resolution still uses the match RNG, so identical state and seed produce identical effect ordering and targets.
+The shared `GameEffectRuntime` owns event ordering and effect semantics. Consequences are enqueued explicitly (`onPlay → damage/destroy → onDamage/onDeath → summon → onSummon`) rather than hidden behind a global event bus. Random target resolution uses injected deterministic RNG.
 
-Played units execute `onPlay` and then participate in `onSummon`; generated units execute `onSummon` but not `onPlay`. `onSummon` is observable by living friendly field units. `onTurnStart` and `onTurnEnd` run in stable field order. Units killed by preparation effects free their field slot before `onDeath` resolves, allowing death effects to summon into that slot.
+Preparation supplies an authoritative persistent effect world. Combat supplies an isolated combat-local effect world. The same authored effect therefore behaves consistently without Combat mutating persistent Preparation state.
+
+Played units execute `onPlay` and then participate in `onSummon`; generated units execute `onSummon` but not `onPlay`. `onSummon` is observable by living friendly field units. Real deaths remove the unit from the field before `onDeath` resolves so death effects can use the vacated slot. Manually triggering `onDeath` does not destroy the unit or invoke the real death/revive lifecycle.
 
 Runtime unit behaviors are mutable instance state: `addBehavior`/`removeBehavior` persist into later combat snapshots without mutating immutable unit definitions.
 
@@ -85,7 +95,7 @@ Unit origin is explicit. `Pooled` units return their copy to the shared pool whe
 - type/tag/unit/behavior references;
 - effect-specific required parameters.
 
-Conditional parameters are validated explicitly. For example, a trigger without `effects`, `dealDamage` without `amount`, or `addBehavior` without `behaviorId` produces `MISSING_REQUIRED_PARAMETER` at the exact JSON path.
+Conditional parameters are validated explicitly. For example, a trigger without `effects`, `dealDamage` without `amount`, `destroyUnit` without `target`, or `triggerEvent` without `event` produces `MISSING_REQUIRED_PARAMETER` at the exact JSON path.
 
 ## Mod layout
 
@@ -152,12 +162,13 @@ Read `ARCHITECTURE.md` before adding features. Its ownership, dependency, mutati
 - deterministic injected RNG;
 - fully data-driven match/preparation/combat rules;
 - data-driven terminology, behaviors, taxonomy, units, triggers/effects, and pool configuration;
-- FIFO preparation action/event queue applying stat, damage, summon, behavior and resource effects;
-- preparation `onPlay`, `onSummon`, `onDamage`, `onDeath`, `onTurnStart`, and `onTurnEnd` execution;
+- shared phase-neutral `GameEffectRuntime` for authored effects and trigger chains;
+- Preparation execution for `onPlay`, `onSummon`, `onDamage`, `onDeath`, `onTurnStart`, and `onTurnEnd`;
+- Preparation support for destroying friendly units and explicitly triggering their authored events;
 - immutable combat snapshots isolated from persistent preparation state;
+- Combat execution for `onCombatStart`, `onAttack`, `onDamage`, `onDeath`, `onSummon`, and `onCombatEnd` through the same effect runtime;
 - deterministic combat starting-side selection, attacker rotation, target selection, simultaneous damage, deaths, and winner/draw resolution;
 - native neutral implementations for damage barrier, target priority, revive-once, first-damage lethal, and extra attack;
-- ordered effect-resolution pipeline with type/tag target filtering;
 - whole-mod validation report before loading;
 - regression/invariant tests and CI.
 
@@ -174,4 +185,4 @@ dotnet test tests/Battlegrounds.Content.Tests/Battlegrounds.Content.Tests.csproj
 
 ## Next architectural slice
 
-Integrate the same explicit event/action semantics into combat-local state, including authored `onCombatStart`, `onAttack`, `onDamage`, `onDeath`, `onSummon`, and `onCombatEnd` effects while preserving combat ordering, Reborn, barriers, target priority, and simultaneous damage. After that, add player health and post-combat damage so the complete Preparation → Combat → Preparation loop can run from the selected mod.
+Add player health and post-combat damage, then connect combat results back into the authoritative match lifecycle so a complete mod-driven `Preparation → Combat → Preparation` loop can run. After that, expand trigger conditions/counters such as Avenge-style mechanics on top of the shared effect runtime rather than adding phase-specific effect engines.

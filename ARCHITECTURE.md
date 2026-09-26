@@ -16,6 +16,7 @@ Architecture exists to make invalid ownership, mutation, theme coupling, and non
 10. Domain collections expose read-only views. Mutation stays beside the invariant it protects.
 11. Read models/snapshots may be shaped for UI or AI but are never authoritative mutation owners.
 12. New abstractions must correspond to an observed invariant or real boundary; no speculative frameworks.
+13. Trigger/effect semantics belong to the game domain, not to Preparation or Combat. Phases provide state adapters to one shared effect runtime.
 
 ## Mod boundary
 
@@ -85,9 +86,17 @@ Owns immutable `UnitDefinition` lookup by stable `UnitId`. Definitions are disti
 
 Owns shared availability/copy counts and deterministic offer selection. Pool composition is supplied by mod data.
 
+### Effects
+
+`GameEffectRuntime` owns trigger dispatch, effect semantics, deterministic target resolution, explicit consequence ordering, and the death/trigger chain. It is phase-neutral.
+
+Preparation and Combat must not implement their own copies of `dealDamage`, `destroyUnit`, `summonUnit`, `triggerEvent`, behavior mutation, or death-trigger semantics. They expose only the state operations required by the shared runtime.
+
+A real death and an explicitly triggered `onDeath` are different operations: real death enters the death/revive lifecycle; `triggerEvent(onDeath)` only executes authored `onDeath` effects on the selected living unit.
+
 ### Preparation
 
-Owns pre-combat actions and economy mechanics. `PreparationRules` are supplied by mod data. Commands describe mechanical intent:
+Owns pre-combat actions, economy mechanics, and the persistent authoritative state adapter used by `GameEffectRuntime`. `PreparationRules` are supplied by mod data. Commands describe mechanical intent:
 
 - `AcquireUnit`
 - `ReleaseUnit`
@@ -100,7 +109,7 @@ Owns pre-combat actions and economy mechanics. `PreparationRules` are supplied b
 
 ### Combat
 
-Owns combat resolution. Given the same validated combat input and seed, it must produce the same ordered result.
+Owns combat-local simulation state, attack selection/rotation, simultaneous attack damage, and the isolated state adapter used by `GameEffectRuntime`. Given the same validated combat input and seed, it must produce the same ordered result. Combat-local effects must never mutate persistent Preparation state directly.
 
 ## Data-driven rule
 
@@ -130,7 +139,9 @@ Do not add a themed hardcoded default to Core merely because one mod currently n
 
 ## Mutation model
 
-All meaningful mutations enter through intent-revealing commands validated by the domain owner. UI and AI use the same command path.
+All meaningful authoritative mutations enter through intent-revealing commands validated by the domain owner. UI and AI use the same command path.
+
+Effect-driven mutations enter through the shared `GameEffectRuntime`; phase adapters expose narrow mutation capabilities but do not duplicate effect algorithms.
 
 Public setters on authoritative runtime state are forbidden unless a type is explicitly a DTO/read model.
 
@@ -154,22 +165,23 @@ Rules:
 
 ## Effects
 
-Effects are composable domain behaviors. Prefer narrow effects/triggers over deep unit-class inheritance.
+Effects are composable game-domain behaviors. Prefer narrow effects/triggers over deep unit-class inheritance.
 
-Potential trigger vocabulary includes:
+Current trigger vocabulary includes:
 
-- `OnDeploy`
-- `OnRelease`
-- `OnSummon`
-- `OnAttack`
-- `OnDamage`
-- `OnDeath`
-- `OnCombatStart`
-- `OnCombatEnd`
-- `OnRoundStart`
-- `OnRoundEnd`
+- `onPlay`
+- `onSummon`
+- `onAttack`
+- `onDamage`
+- `onDeath`
+- `onCombatStart`
+- `onCombatEnd`
+- `onTurnStart`
+- `onTurnEnd`
 
-Display names for these mechanics may differ by mod. Do not introduce a global event bus; dispatch belongs to an explicit owner with defined ordering and failure semantics.
+Current generic effects include stat modification, damage, destruction, explicit trigger activation, summon, behavior add/remove, and resource adjustment.
+
+Display names such as Battlecry or Deathrattle belong to mod presentation/content. The underlying `onPlay` / `onDeath` mechanics are not owned by a specific phase. Do not introduce a global event bus; dispatch belongs to `GameEffectRuntime` with defined ordering and failure semantics.
 
 ## Testing contract
 
@@ -185,6 +197,7 @@ Priority coverage:
 - preparation economy rules;
 - pool copy invariants;
 - mod validation/mapping;
+- cross-phase effect semantics;
 - combat resolution;
 - bug regressions.
 
@@ -206,6 +219,7 @@ Reject or refactor changes that introduce without a strong reason:
 
 - fandom/theme terminology into Core mechanics;
 - hardcoded gameplay presets that belong to mods;
+- phase-specific copies of shared effect mechanics;
 - multiple mutable owners for one fact;
 - Godot/filesystem/JSON types inside Core;
 - UI/AI direct mutation;

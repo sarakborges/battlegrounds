@@ -51,13 +51,24 @@ public static class NativeEffectKeys
 {
     public static NativeEffectKey ModifyStats { get; } = new("modifyStats");
     public static NativeEffectKey DealDamage { get; } = new("dealDamage");
+    public static NativeEffectKey DestroyUnit { get; } = new("destroyUnit");
+    public static NativeEffectKey TriggerEvent { get; } = new("triggerEvent");
     public static NativeEffectKey SummonUnit { get; } = new("summonUnit");
     public static NativeEffectKey AddBehavior { get; } = new("addBehavior");
     public static NativeEffectKey RemoveBehavior { get; } = new("removeBehavior");
     public static NativeEffectKey AddResource { get; } = new("addResource");
 
     private static readonly HashSet<NativeEffectKey> Supported =
-    [ModifyStats, DealDamage, SummonUnit, AddBehavior, RemoveBehavior, AddResource];
+    [
+        ModifyStats,
+        DealDamage,
+        DestroyUnit,
+        TriggerEvent,
+        SummonUnit,
+        AddBehavior,
+        RemoveBehavior,
+        AddResource,
+    ];
 
     public static bool IsSupported(NativeEffectKey key) => Supported.Contains(key);
 }

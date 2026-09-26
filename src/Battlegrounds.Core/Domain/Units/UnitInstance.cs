@@ -59,6 +59,17 @@ public sealed class UnitInstance
         Health -= amount;
     }
 
+    internal void Destroy() => Health = Math.Min(Health, 0);
+
+    internal void ResetForReborn()
+    {
+        Attack = Definition.BaseAttack;
+        Health = 1;
+        _behaviors.Clear();
+        _behaviors.AddRange(
+            Definition.Behaviors.Where(behavior => behavior.Handler != NativeBehaviorKeys.ReviveOnce));
+    }
+
     internal bool AddBehavior(BehaviorDefinition behavior)
     {
         ArgumentNullException.ThrowIfNull(behavior);

@@ -100,6 +100,19 @@ public sealed class PlayerState
 
     internal void AddToField(UnitInstance unit) => _field.Add(unit);
 
+    internal void InsertIntoField(int fieldSlot, UnitInstance unit)
+    {
+        if (fieldSlot < 0 || fieldSlot > _field.Count)
+        {
+            throw new ArgumentOutOfRangeException(nameof(fieldSlot));
+        }
+
+        _field.Insert(fieldSlot, unit);
+    }
+
+    internal int IndexOfFieldUnit(UnitInstanceId instanceId) =>
+        _field.FindIndex(unit => unit.Id == instanceId);
+
     internal UnitInstance RemoveFromField(int fieldSlot)
     {
         var unit = _field[fieldSlot];
