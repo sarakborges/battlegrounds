@@ -98,6 +98,35 @@ public sealed class EffectPipeline
         return resolved;
     }
 
+    public IReadOnlyList<ResolvedEffect> ResolveTrigger(
+        UnitDefinition sourceDefinition,
+        TriggerDefinition trigger,
+        EffectResolutionContext context,
+        IRandomSource randomSource)
+    {
+        ArgumentNullException.ThrowIfNull(sourceDefinition);
+        ArgumentNullException.ThrowIfNull(trigger);
+        ArgumentNullException.ThrowIfNull(context);
+        ArgumentNullException.ThrowIfNull(randomSource);
+
+        if (!sourceDefinition.Triggers.Contains(trigger))
+            throw new ArgumentException("Trigger does not belong to the source definition.", nameof(trigger));
+
+        var resolved = new List<ResolvedEffect>(trigger.Effects.Count);
+        var sequence = 0;
+        foreach (var effect in trigger.Effects)
+        {
+            sequence++;
+            resolved.Add(new ResolvedEffect(
+                sequence,
+                context.SourceInstanceId,
+                trigger.Event,
+                effect,
+                ResolveTargets(effect, context, randomSource)));
+        }
+        return resolved;
+    }
+
     private static IReadOnlyList<UnitInstanceId> ResolveTargets(
         EffectDefinition effect,
         EffectResolutionContext context,

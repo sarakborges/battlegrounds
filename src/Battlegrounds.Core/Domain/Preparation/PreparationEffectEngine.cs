@@ -15,6 +15,10 @@ internal sealed class PreparationEffectEngine
     private readonly IRandomSource _randomSource;
     private readonly UnitCatalog? _unitCatalog;
     private readonly BehaviorCatalog? _behaviorCatalog;
+    private MatchState? _runtimeMatch;
+    private int _runtimeRound = -1;
+    private PreparationEffectWorld? _runtimeWorld;
+    private GameEffectRuntime? _runtime;
 
     public PreparationEffectEngine(
         PreparationRules rules,
@@ -32,8 +36,7 @@ internal sealed class PreparationEffectEngine
 
     public void ProcessPlayedUnit(MatchState match, PlayerState owner, UnitInstance unit)
     {
-        var world = CreateWorld(match);
-        var runtime = CreateRuntime(world);
+        var (world, runtime) = GetRuntime(match);
         var subject = world.Wrap(unit, owner.Id);
 
         runtime.Process(new GameEffectEvent(NativeTriggerKeys.OnPlay, subject));
@@ -51,8 +54,7 @@ internal sealed class PreparationEffectEngine
             throw new ArgumentException("Preparation turn events must be onTurnStart or onTurnEnd.", nameof(eventKey));
         }
 
-        var world = CreateWorld(match);
-        var runtime = CreateRuntime(world);
+        var (world, runtime) = GetRuntime(match);
         var initialUnits = owner.Field.ToArray();
 
         foreach (var unit in initialUnits)
@@ -66,11 +68,22 @@ internal sealed class PreparationEffectEngine
         }
     }
 
-    private PreparationEffectWorld CreateWorld(MatchState match) =>
-        new(match, _rules, _unitPool);
+    private (PreparationEffectWorld World, GameEffectRuntime Runtime) GetRuntime(MatchState match)
+    {
+        if (!ReferenceEquals(_runtimeMatch, match) || _runtimeRound != match.Round)
+        {
+            _runtimeMatch = match;
+            _runtimeRound = match.Round;
+            _runtimeWorld = new PreparationEffectWorld(match, _rules, _unitPool);
+            _runtime = new GameEffectRuntime(
+                _runtimeWorld,
+                _randomSource,
+                _unitCatalog,
+                _behaviorCatalog);
+        }
 
-    private GameEffectRuntime CreateRuntime(PreparationEffectWorld world) =>
-        new(world, _randomSource, _unitCatalog, _behaviorCatalog);
+        return (_runtimeWorld!, _runtime!);
+    }
 
     private sealed class PreparationEffectWorld : IEffectRuntimeWorld
     {
