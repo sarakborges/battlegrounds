@@ -1,14 +1,21 @@
 {
   "id": "steady-pulse",
   "name": "Steady Pulse",
-  "cost": 1,
-  "maxUsesPerTurn": 1,
-  "effects": [
+  "activation": {
+    "cost": 1,
+    "maxUsesPerTurn": 1
+  },
+  "triggers": [
     {
-      "kind": "modifyStats",
-      "target": { "scope": "selected" },
-      "attack": 1,
-      "health": 1
+      "event": "onActivate",
+      "effects": [
+        {
+          "kind": "modifyStats",
+          "target": { "scope": "selected" },
+          "attack": 1,
+          "health": 1
+        }
+      ]
     }
   ]
 }
