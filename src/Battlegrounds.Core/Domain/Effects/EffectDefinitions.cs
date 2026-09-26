@@ -8,26 +8,144 @@ public enum EffectTargetScope
 {
     Self,
     Selected,
-    RandomFriendly,
-    RandomEnemy,
-    AllFriendly,
-    AllEnemy,
+    Friendly,
+    Enemy,
+}
+
+public enum EffectTargetSelection
+{
+    All,
+    Random,
+    LowestAttack,
+    HighestAttack,
+    LowestHealth,
+    HighestHealth,
+    Leftmost,
+    Rightmost,
+    Adjacent,
+    LeftAdjacent,
+    RightAdjacent,
+}
+
+public sealed record EffectUnitQuery
+{
+    public EffectTargetScope Scope { get; }
+    public bool ExcludeSource { get; }
+    public UnitTypeId? RequiredTypeId { get; }
+    public TagId? RequiredTagId { get; }
+
+    public EffectUnitQuery(
+        EffectTargetScope scope,
+        bool excludeSource = false,
+        UnitTypeId? requiredTypeId = null,
+        TagId? requiredTagId = null)
+    {
+        if (excludeSource && scope is EffectTargetScope.Self or EffectTargetScope.Selected or EffectTargetScope.Enemy)
+            throw new ArgumentException("excludeSource is only valid for friendly queries.", nameof(excludeSource));
+
+        Scope = scope;
+        ExcludeSource = excludeSource;
+        RequiredTypeId = requiredTypeId;
+        RequiredTagId = requiredTagId;
+    }
 }
 
 public sealed record EffectTargetSelector
 {
-    public EffectTargetScope Scope { get; }
-    public UnitTypeId? RequiredTypeId { get; }
-    public TagId? RequiredTagId { get; }
+    public EffectUnitQuery Query { get; }
+    public EffectTargetSelection Selection { get; }
+    public int? Limit { get; }
+
+    public EffectTargetScope Scope => Query.Scope;
+    public bool ExcludeSource => Query.ExcludeSource;
+    public UnitTypeId? RequiredTypeId => Query.RequiredTypeId;
+    public TagId? RequiredTagId => Query.RequiredTagId;
 
     public EffectTargetSelector(
         EffectTargetScope scope,
+        EffectTargetSelection selection = EffectTargetSelection.All,
+        bool excludeSource = false,
+        int? limit = null,
         UnitTypeId? requiredTypeId = null,
         TagId? requiredTagId = null)
+        : this(new EffectUnitQuery(scope, excludeSource, requiredTypeId, requiredTagId), selection, limit)
     {
-        Scope = scope;
-        RequiredTypeId = requiredTypeId;
-        RequiredTagId = requiredTagId;
+    }
+
+    public EffectTargetSelector(
+        EffectUnitQuery query,
+        EffectTargetSelection selection = EffectTargetSelection.All,
+        int? limit = null)
+    {
+        Query = query ?? throw new ArgumentNullException(nameof(query));
+        if (limit is not null && limit.Value <= 0)
+            throw new ArgumentOutOfRangeException(nameof(limit), "Target limit must be positive.");
+        if (query.Scope is EffectTargetScope.Self or EffectTargetScope.Selected &&
+            (selection != EffectTargetSelection.All || limit is not null))
+        {
+            throw new ArgumentException("Self and selected targets cannot use selection or limit.");
+        }
+        if (selection is EffectTargetSelection.Adjacent or EffectTargetSelection.LeftAdjacent or EffectTargetSelection.RightAdjacent &&
+            query.Scope != EffectTargetScope.Friendly)
+        {
+            throw new ArgumentException("Adjacent target selection is only valid for friendly targets.", nameof(selection));
+        }
+
+        Selection = selection;
+        Limit = limit;
+    }
+}
+
+public enum EffectComparison
+{
+    Equal,
+    NotEqual,
+    LessThan,
+    LessThanOrEqual,
+    GreaterThan,
+    GreaterThanOrEqual,
+}
+
+public enum EffectStat
+{
+    Attack,
+    Health,
+}
+
+public abstract record EffectConditionDefinition;
+
+public sealed record UnitCountConditionDefinition : EffectConditionDefinition
+{
+    public EffectUnitQuery Query { get; }
+    public EffectComparison Comparison { get; }
+    public int Value { get; }
+
+    public UnitCountConditionDefinition(
+        EffectUnitQuery query,
+        EffectComparison comparison,
+        int value)
+    {
+        Query = query ?? throw new ArgumentNullException(nameof(query));
+        if (value < 0) throw new ArgumentOutOfRangeException(nameof(value));
+        Comparison = comparison;
+        Value = value;
+    }
+}
+
+public sealed record SourceStatConditionDefinition : EffectConditionDefinition
+{
+    public EffectStat Stat { get; }
+    public EffectComparison Comparison { get; }
+    public int Value { get; }
+
+    public SourceStatConditionDefinition(
+        EffectStat stat,
+        EffectComparison comparison,
+        int value)
+    {
+        Stat = stat;
+        Comparison = comparison;
+        Value = value;
     }
 }
 
@@ -159,15 +277,18 @@ public sealed record SetPowerEffectDefinition : EffectDefinition
 public sealed class TriggerDefinition
 {
     private readonly ReadOnlyCollection<EffectDefinition> _effects;
+    private readonly ReadOnlyCollection<EffectConditionDefinition> _conditions;
 
     public NativeTriggerKey Event { get; }
     public int? Count { get; }
+    public IReadOnlyList<EffectConditionDefinition> Conditions => _conditions;
     public IReadOnlyList<EffectDefinition> Effects => _effects;
 
     public TriggerDefinition(
         NativeTriggerKey @event,
         IEnumerable<EffectDefinition> effects,
-        int? count = null)
+        int? count = null,
+        IEnumerable<EffectConditionDefinition>? conditions = null)
     {
         if (!NativeTriggerKeys.IsSupported(@event))
             throw new ArgumentException($"Unsupported trigger '{@event}'.", nameof(@event));
@@ -175,6 +296,10 @@ public sealed class TriggerDefinition
         var materialized = effects.ToArray();
         if (materialized.Length == 0) throw new ArgumentException("A trigger must contain at least one effect.", nameof(effects));
         if (materialized.Any(effect => effect is null)) throw new ArgumentException("Trigger effects cannot contain null values.", nameof(effects));
+
+        var conditionArray = conditions?.ToArray() ?? [];
+        if (conditionArray.Any(condition => condition is null))
+            throw new ArgumentException("Trigger conditions cannot contain null values.", nameof(conditions));
 
         if (@event == NativeTriggerKeys.AfterFriendlyDeaths)
         {
@@ -189,5 +314,6 @@ public sealed class TriggerDefinition
         Event = @event;
         Count = count;
         _effects = Array.AsReadOnly(materialized);
+        _conditions = Array.AsReadOnly(conditionArray);
     }
 }
