@@ -15,6 +15,7 @@ public sealed class CombatResult
     private readonly ReadOnlyCollection<CombatSurvivor> _leftSurvivors;
     private readonly ReadOnlyCollection<CombatSurvivor> _rightSurvivors;
     private readonly ReadOnlyDictionary<PlayerId, int> _resourceDeltas;
+    private readonly ReadOnlyDictionary<PlayerId, PowerId> _powerChanges;
 
     public PlayerId? WinnerPlayerId { get; }
     public bool IsDraw => WinnerPlayerId is null;
@@ -24,6 +25,7 @@ public sealed class CombatResult
     public IReadOnlyList<CombatSurvivor> LeftSurvivors => _leftSurvivors;
     public IReadOnlyList<CombatSurvivor> RightSurvivors => _rightSurvivors;
     public IReadOnlyDictionary<PlayerId, int> ResourceDeltas => _resourceDeltas;
+    public IReadOnlyDictionary<PlayerId, PowerId> PowerChanges => _powerChanges;
 
     internal CombatResult(
         PlayerId? winnerPlayerId,
@@ -31,7 +33,8 @@ public sealed class CombatResult
         IEnumerable<CombatAttack> attacks,
         IEnumerable<CombatSurvivor> leftSurvivors,
         IEnumerable<CombatSurvivor> rightSurvivors,
-        IReadOnlyDictionary<PlayerId, int>? resourceDeltas = null)
+        IReadOnlyDictionary<PlayerId, int>? resourceDeltas = null,
+        IReadOnlyDictionary<PlayerId, PowerId>? powerChanges = null)
     {
         WinnerPlayerId = winnerPlayerId;
         EndReason = endReason;
@@ -40,6 +43,8 @@ public sealed class CombatResult
         _rightSurvivors = Array.AsReadOnly(rightSurvivors.ToArray());
         _resourceDeltas = new ReadOnlyDictionary<PlayerId, int>(
             new Dictionary<PlayerId, int>(resourceDeltas ?? new Dictionary<PlayerId, int>()));
+        _powerChanges = new ReadOnlyDictionary<PlayerId, PowerId>(
+            new Dictionary<PlayerId, PowerId>(powerChanges ?? new Dictionary<PlayerId, PowerId>()));
     }
 }
 
