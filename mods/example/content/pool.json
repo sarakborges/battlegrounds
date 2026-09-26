@@ -1,0 +1,5 @@
+[
+  { "unitId": "scout", "copies": 15 },
+  { "unitId": "guard", "copies": 15 },
+  { "unitId": "striker", "copies": 15 }
+]

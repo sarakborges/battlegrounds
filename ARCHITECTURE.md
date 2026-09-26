@@ -1,66 +1,136 @@
 # Battlegrounds Architecture
 
-This repository follows the engineering rules defined in the project's Code Best Practices guide. Architecture exists to make invalid ownership and mutation paths difficult to introduce.
+Architecture exists to make invalid ownership, mutation, theme coupling, and nondeterminism difficult to introduce.
 
 ## Core rules
 
-1. `Battlegrounds.Core` is framework-free. It must not reference Godot APIs.
-2. Authoritative game state has one owner: the match aggregate.
-3. UI and AI never mutate domain state directly. They issue explicit commands.
-4. Card definitions are immutable authored data; card/minion instances contain runtime state only.
-5. Randomness is injected through an explicit deterministic RNG abstraction and seeded per match.
-6. Lifecycle logic is modeled with explicit state/phase types, not loosely related booleans.
-7. Domain collections expose read-only views. Mutation stays beside the invariant it protects.
-8. Serialization, Godot resources, filesystem access, rendering, audio, input and diagnostics live outside the core.
-9. Read models/snapshots may be shaped for UI or AI but are never authoritative mutation owners.
-10. New abstractions must correspond to an observed invariant or real boundary; no speculative frameworks.
+1. `Battlegrounds.Core` is framework-free and must not reference Godot, JSON, filesystem, or presentation APIs.
+2. The engine is mod-first. Core owns mechanics; the active mod owns theme, terminology, content, assets, and configurable numbers.
+3. Core public vocabulary must be fandom-neutral. Prefer mechanical roles such as `Unit`, `Resource`, `Offer`, `Tier`, `Reserve`, `Field`, and `Preparation`.
+4. Theme words such as Gold, Tavern, Minion, Hero, or fandom-specific names must not become Core domain types, property names, commands, rule names, or IDs.
+5. Authoritative mutable game state has one owner: the match aggregate and its owned aggregates.
+6. UI and AI never mutate domain state directly. They issue explicit commands through the same domain boundary.
+7. Unit definitions are immutable authored data; unit instances contain runtime state only.
+8. Randomness is injected through an explicit deterministic RNG abstraction and seeded per match.
+9. Lifecycle logic is modeled with explicit state/phase types, not loosely related booleans.
+10. Domain collections expose read-only views. Mutation stays beside the invariant it protects.
+11. Read models/snapshots may be shaped for UI or AI but are never authoritative mutation owners.
+12. New abstractions must correspond to an observed invariant or real boundary; no speculative frameworks.
+
+## Mod boundary
+
+Mods live under:
+
+```text
+mods/<mod-id>/
+```
+
+A mod package may provide:
+
+- package metadata and schema version;
+- display terminology;
+- match/preparation/combat rules;
+- unit definitions;
+- pool composition;
+- effects and tags;
+- localization;
+- art/audio and other presentation assets.
+
+`Battlegrounds.Content` is the adapter that reads and validates untrusted mod files and maps them into validated Core models. Core never knows which directory, JSON document, fandom, localization, or asset produced those models.
+
+There is no canonical `Standard` rules object in Core. Defaults that define gameplay belong to a mod package.
+
+## Neutral identifiers
+
+IDs identify stable mechanical/content entities, not themed labels. Examples:
+
+- `PlayerId`
+- `UnitId`
+- `UnitInstanceId`
+
+Display names are data. Renaming a displayed resource from "Gold" to "Data" must not require changing Core code or persisted mechanical IDs.
+
+If cross-mod qualification becomes necessary, qualification belongs at the content/package boundary rather than by baking fandom names into Core types.
 
 ## Dependency direction
 
 ```text
-Battlegrounds.Game (Godot UI / presentation)
+Battlegrounds.Game (Godot presentation)
           |
-          v
-Battlegrounds.Application (orchestration / use cases)
-          |
-          v
-Battlegrounds.Core (domain / simulation)
+          +-------------------+
+          v                   v
+Battlegrounds.Content      Battlegrounds.Core
+(mod loading/validation)       ^
+          |                     |
+          +---------------------+
 ```
 
-`Battlegrounds.Core` depends only on the .NET base class library.
-
-Infrastructure adapters may depend inward on Core/Application. Core never depends outward on them.
+A future `Battlegrounds.Application` layer may orchestrate use cases between Game, Content, and Core. Dependencies still point inward toward stable mechanical concepts.
 
 ## Domain ownership
 
 ### Match
-Owns the authoritative lifecycle and player collection for one local game.
+
+Owns authoritative lifecycle, round/revision, and player collection. Player-count constraints are injected as `MatchRules` from the active mod.
 
 ### Player
-Owns health, gold, tavern tier, hand, board and player-scoped runtime facts. External consumers cannot mutate those collections directly.
 
-### Tavern
-Owns shop-generation and refresh rules. It receives explicit randomness instead of using ambient/global random state.
+Owns player-scoped runtime facts: generic resource amount, tier, reserve, field, current offer, upgrade cost, and readiness. External consumers cannot mutate these collections directly.
+
+### Unit catalog
+
+Owns immutable `UnitDefinition` lookup by stable `UnitId`. Definitions are distinct from runtime `UnitInstance` state.
+
+### Unit pool
+
+Owns shared availability/copy counts and deterministic offer selection. Pool composition is supplied by mod data.
+
+### Preparation
+
+Owns pre-combat actions and economy mechanics. `PreparationRules` are supplied by mod data. Commands describe mechanical intent:
+
+- `AcquireUnit`
+- `ReleaseUnit`
+- `DeployUnit`
+- `RefreshOffer`
+- `UpgradeTier`
+- `FreezeOffer`
+- `UnfreezeOffer`
+- `EndPreparation`
 
 ### Combat
-Owns combat resolution. Given the same combat input and seed, it must produce the same ordered result.
 
-### Catalog
-Owns immutable hero/card/minion definitions and ID lookups. Definitions are distinct from runtime instances.
+Owns combat resolution. Given the same validated combat input and seed, it must produce the same ordered result.
+
+## Data-driven rule
+
+Prefer data for repeated/configurable variants and code for algorithms/invariants.
+
+Data should own, when representable:
+
+- terminology and display names;
+- numeric costs/rewards/capacities;
+- player-count constraints;
+- tier limits and offer sizes;
+- unit stats/tags/types;
+- pool copy counts;
+- effect parameters;
+- presentation metadata.
+
+Core code should own:
+
+- command validation;
+- state transitions;
+- ownership invariants;
+- deterministic selection/order;
+- damage/combat algorithms;
+- trigger ordering and effect execution semantics.
+
+Do not add a themed hardcoded default to Core merely because one mod currently needs it.
 
 ## Mutation model
 
-All meaningful mutations enter through intent-revealing commands, for example:
-
-- `BuyMinion`
-- `SellMinion`
-- `PlayMinion`
-- `MoveMinion`
-- `RefreshTavern`
-- `UpgradeTavern`
-- `EndRecruitment`
-
-Commands are validated by the domain owner. UI and AI use the same command path.
+All meaningful mutations enter through intent-revealing commands validated by the domain owner. UI and AI use the same command path.
 
 Public setters on authoritative runtime state are forbidden unless a type is explicitly a DTO/read model.
 
@@ -78,43 +148,43 @@ Rules:
 
 - random source is injected;
 - match seed is explicit;
-- order-sensitive candidates are ordered with deterministic tie-breakers;
-- simulation time is logical (turn/phase/sequence), not frame time;
+- order-sensitive candidates use deterministic tie-breakers;
+- simulation time is logical, not frame time;
 - replay/debug state records enough information to reproduce behavior.
 
 ## Effects
 
-Effects are composable domain behaviors. Prefer narrow effects/triggers over deep card-class inheritance.
+Effects are composable domain behaviors. Prefer narrow effects/triggers over deep unit-class inheritance.
 
-Initial trigger vocabulary may include:
+Potential trigger vocabulary includes:
 
-- `OnPlay`
-- `OnSell`
+- `OnDeploy`
+- `OnRelease`
 - `OnSummon`
 - `OnAttack`
 - `OnDamage`
 - `OnDeath`
-- `OnDeathrattle`
 - `OnCombatStart`
 - `OnCombatEnd`
-- `OnTurnStart`
-- `OnTurnEnd`
+- `OnRoundStart`
+- `OnRoundEnd`
 
-Do not introduce a global event bus. Dispatch belongs to an explicit owner with defined ordering and failure semantics.
+Display names for these mechanics may differ by mod. Do not introduce a global event bus; dispatch belongs to an explicit owner with defined ordering and failure semantics.
 
 ## Testing contract
 
-Core tests must run without starting Godot.
+Core tests must run without Godot or mod filesystem access. Content tests protect the mod boundary separately.
 
-Tests protect invariants rather than private implementation details. Priority coverage:
+Priority coverage:
 
 - allowed/invalid phase transitions;
 - legal command validation;
 - state ownership;
-- deterministic ordering;
-- deterministic RNG/replay;
-- board/hand capacity rules;
-- tavern economy rules;
+- deterministic ordering/RNG;
+- reserve/field capacity rules;
+- preparation economy rules;
+- pool copy invariants;
+- mod validation/mapping;
 - combat resolution;
 - bug regressions.
 
@@ -122,9 +192,9 @@ Tests protect invariants rather than private implementation details. Priority co
 
 Correctness and clarity first; optimize from measurements.
 
-For simulations and AI search specifically:
+For simulations and AI search:
 
-- avoid rendering dependencies;
+- avoid rendering/content-loader dependencies in hot simulation paths;
 - avoid repeated derived work when source revision is unchanged;
 - use compact/data-oriented representations only after profiling justifies them;
 - bound parallel AI work;
@@ -132,19 +202,21 @@ For simulations and AI search specifically:
 
 ## Review gate
 
-A change should be rejected or refactored when it introduces any of the following without a strong reason:
+Reject or refactor changes that introduce without a strong reason:
 
+- fandom/theme terminology into Core mechanics;
+- hardcoded gameplay presets that belong to mods;
 - multiple mutable owners for one fact;
-- Godot types inside Core;
+- Godot/filesystem/JSON types inside Core;
 - UI/AI direct mutation;
 - static mutable state;
 - ambient/global randomness;
-- unordered behavior where ordering affects results;
+- unstable ordering where ordering affects results;
 - `Manager`/`Utils` dumping grounds;
-- deep inheritance for card behavior;
-- hidden mutation or hidden control flow;
+- deep inheritance for unit behavior;
+- hidden mutation/control flow;
 - unbounded queues/tasks/caches;
-- serialization models used as the domain model;
-- business rules duplicated across consumers.
+- serialization models used directly as domain models;
+- duplicated business rules.
 
-When adding a component, answer: what invariant does it own, why does it exist, which direction do dependencies point, and what test protects it?
+When adding a component, answer: what invariant does it own, why does it exist, which direction do dependencies point, which parts are mod data, and what test protects it?

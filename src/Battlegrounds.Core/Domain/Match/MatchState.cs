@@ -1,7 +1,7 @@
 using System.Collections.ObjectModel;
-using Battlegrounds.Core.Domain.Cards;
 using Battlegrounds.Core.Domain.Ids;
 using Battlegrounds.Core.Domain.Players;
+using Battlegrounds.Core.Domain.Units;
 
 namespace Battlegrounds.Core.Domain.Match;
 
@@ -10,7 +10,7 @@ public sealed class MatchState
     private readonly List<PlayerState> _players;
     private readonly ReadOnlyCollection<PlayerState> _playersView;
     private readonly Dictionary<PlayerId, PlayerState> _playersById;
-    private long _nextMinionInstanceId = 1;
+    private long _nextUnitInstanceId = 1;
 
     public MatchPhase Phase { get; private set; } = MatchPhase.Setup;
     public int Round { get; private set; }
@@ -24,17 +24,17 @@ public sealed class MatchState
         _playersById = players.ToDictionary(player => player.Id);
     }
 
-    public static MatchState Create(IEnumerable<PlayerId> playerIds)
+    public static MatchState Create(IEnumerable<PlayerId> playerIds, MatchRules rules)
     {
-        if (playerIds is null)
-        {
-            throw new ArgumentNullException(nameof(playerIds));
-        }
+        ArgumentNullException.ThrowIfNull(playerIds);
+        ArgumentNullException.ThrowIfNull(rules);
 
         var ids = playerIds.ToArray();
-        if (ids.Length is < 2 or > 8)
+        if (ids.Length < rules.MinimumPlayers || ids.Length > rules.MaximumPlayers)
         {
-            throw new ArgumentOutOfRangeException(nameof(playerIds), "A match requires between 2 and 8 players.");
+            throw new ArgumentOutOfRangeException(
+                nameof(playerIds),
+                $"A match requires between {rules.MinimumPlayers} and {rules.MaximumPlayers} players.");
         }
 
         if (ids.Distinct().Count() != ids.Length)
@@ -48,20 +48,20 @@ public sealed class MatchState
     public bool TryGetPlayer(PlayerId playerId, out PlayerState player) =>
         _playersById.TryGetValue(playerId, out player!);
 
-    internal void BeginRecruitment()
+    internal void BeginPreparation()
     {
         if (Phase is not (MatchPhase.Setup or MatchPhase.Combat))
         {
-            throw new InvalidOperationException($"Cannot begin recruitment from {Phase}.");
+            throw new InvalidOperationException($"Cannot begin preparation from {Phase}.");
         }
 
         Round++;
-        Phase = MatchPhase.Recruitment;
+        Phase = MatchPhase.Preparation;
     }
 
     internal void BeginCombat()
     {
-        if (Phase != MatchPhase.Recruitment)
+        if (Phase != MatchPhase.Preparation)
         {
             throw new InvalidOperationException($"Cannot begin combat from {Phase}.");
         }
@@ -69,10 +69,10 @@ public sealed class MatchState
         Phase = MatchPhase.Combat;
     }
 
-    internal MinionInstance CreateMinion(CardDefinition definition)
+    internal UnitInstance CreateUnit(UnitDefinition definition)
     {
-        var id = new MinionInstanceId(_nextMinionInstanceId++);
-        return new MinionInstance(id, definition);
+        var id = new UnitInstanceId(_nextUnitInstanceId++);
+        return new UnitInstance(id, definition);
     }
 
     internal void MarkChanged() => Revision++;

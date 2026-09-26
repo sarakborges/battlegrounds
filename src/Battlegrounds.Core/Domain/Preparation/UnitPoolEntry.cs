@@ -1,20 +1,20 @@
 using Battlegrounds.Core.Domain.Ids;
 
-namespace Battlegrounds.Core.Domain.Recruitment;
+namespace Battlegrounds.Core.Domain.Preparation;
 
-public readonly record struct TavernPoolEntry
+public readonly record struct UnitPoolEntry
 {
-    public CardId CardId { get; }
+    public UnitId UnitId { get; }
     public int Copies { get; }
 
-    public TavernPoolEntry(CardId cardId, int copies)
+    public UnitPoolEntry(UnitId unitId, int copies)
     {
         if (copies <= 0)
         {
             throw new ArgumentOutOfRangeException(nameof(copies), "Pool copies must be positive.");
         }
 
-        CardId = cardId;
+        UnitId = unitId;
         Copies = copies;
     }
 }

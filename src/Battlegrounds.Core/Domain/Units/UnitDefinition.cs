@@ -1,25 +1,25 @@
 using Battlegrounds.Core.Domain.Ids;
 
-namespace Battlegrounds.Core.Domain.Cards;
+namespace Battlegrounds.Core.Domain.Units;
 
-public sealed record CardDefinition
+public sealed record UnitDefinition
 {
-    public CardId Id { get; }
+    public UnitId Id { get; }
     public string Name { get; }
-    public int TavernTier { get; }
+    public int Tier { get; }
     public int BaseAttack { get; }
     public int BaseHealth { get; }
 
-    public CardDefinition(CardId id, string name, int tavernTier, int baseAttack, int baseHealth)
+    public UnitDefinition(UnitId id, string name, int tier, int baseAttack, int baseHealth)
     {
         if (string.IsNullOrWhiteSpace(name))
         {
-            throw new ArgumentException("Card name cannot be empty.", nameof(name));
+            throw new ArgumentException("Unit name cannot be empty.", nameof(name));
         }
 
-        if (tavernTier is < 1 or > 6)
+        if (tier <= 0)
         {
-            throw new ArgumentOutOfRangeException(nameof(tavernTier));
+            throw new ArgumentOutOfRangeException(nameof(tier));
         }
 
         if (baseAttack < 0)
@@ -34,7 +34,7 @@ public sealed record CardDefinition
 
         Id = id;
         Name = name;
-        TavernTier = tavernTier;
+        Tier = tier;
         BaseAttack = baseAttack;
         BaseHealth = baseHealth;
     }
