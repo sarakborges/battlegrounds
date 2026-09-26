@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using Battlegrounds.Core.Domain.Effects;
 using Battlegrounds.Core.Domain.Ids;
 using Battlegrounds.Core.Domain.Leaders;
 using Battlegrounds.Core.Domain.Preparation;
@@ -27,6 +28,7 @@ public sealed class PlayerState
     public IReadOnlyList<UnitInstance> Reserve => _reserveView;
     public IReadOnlyList<UnitInstance> Field => _fieldView;
     public IReadOnlyList<UnitDefinition> Offer => _offerView;
+    internal EffectHistoryState EffectHistory { get; } = new();
 
     internal PlayerState(PlayerId id, int startingHealth, LeaderDefinition? leaderDefinition = null)
     {
@@ -58,6 +60,7 @@ public sealed class PlayerState
             throw new InvalidOperationException("Eliminated players cannot begin preparation.");
         }
 
+        EffectHistory.BeginTurn();
         Resource = rules.GetResourceForRound(round);
         IsReadyForCombat = false;
 
