@@ -69,6 +69,12 @@ public sealed class PlayerState
         Resource = Math.Min(maximumResource, Resource + amount);
     }
 
+    internal void AdjustResource(int amount, int maximumResource)
+    {
+        var next = (long)Resource + amount;
+        Resource = (int)Math.Clamp(next, 0, maximumResource);
+    }
+
     internal UnitDefinition TakeOfferedUnit(int slot)
     {
         var unit = _offer[slot];
@@ -92,11 +98,39 @@ public sealed class PlayerState
         return unit;
     }
 
+    internal void AddToField(UnitInstance unit) => _field.Add(unit);
+
     internal UnitInstance RemoveFromField(int fieldSlot)
     {
         var unit = _field[fieldSlot];
         _field.RemoveAt(fieldSlot);
         return unit;
+    }
+
+    internal UnitInstance? RemoveFromField(UnitInstanceId instanceId)
+    {
+        var index = _field.FindIndex(unit => unit.Id == instanceId);
+        if (index < 0)
+        {
+            return null;
+        }
+
+        var unit = _field[index];
+        _field.RemoveAt(index);
+        return unit;
+    }
+
+    internal bool TryGetFieldUnit(UnitInstanceId instanceId, out UnitInstance unit)
+    {
+        var found = _field.FirstOrDefault(candidate => candidate.Id == instanceId);
+        if (found is null)
+        {
+            unit = null!;
+            return false;
+        }
+
+        unit = found;
+        return true;
     }
 
     internal void UpgradeTier(PreparationRules rules)

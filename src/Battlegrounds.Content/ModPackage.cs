@@ -5,6 +5,7 @@ using Battlegrounds.Core.Domain.Match;
 using Battlegrounds.Core.Domain.Preparation;
 using Battlegrounds.Core.Domain.Taxonomy;
 using Battlegrounds.Core.Domain.Units;
+using Battlegrounds.Core.Randomness;
 
 namespace Battlegrounds.Content;
 
@@ -53,4 +54,15 @@ public sealed class ModPackage
     }
 
     public UnitPool CreateUnitPool() => new(Units, _poolEntries);
+
+    public PreparationEngine CreatePreparationEngine(IRandomSource randomSource)
+    {
+        ArgumentNullException.ThrowIfNull(randomSource);
+        return new PreparationEngine(
+            PreparationRules,
+            CreateUnitPool(),
+            randomSource,
+            Units,
+            Behaviors);
+    }
 }
