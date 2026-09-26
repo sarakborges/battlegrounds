@@ -15,7 +15,6 @@ public sealed class RecruitmentRules
         boardCapacity: 7,
         handCapacity: 10,
         maximumTavernTier: 6,
-        maximumFreezeTogglesPerRecruitment: 5,
         offerSizesByTier: [3, 4, 4, 5, 5, 6],
         initialUpgradeCostsByTier: [5, 7, 8, 11, 11]);
 
@@ -28,7 +27,6 @@ public sealed class RecruitmentRules
     public int BoardCapacity { get; }
     public int HandCapacity { get; }
     public int MaximumTavernTier { get; }
-    public int MaximumFreezeTogglesPerRecruitment { get; }
 
     public RecruitmentRules(
         int startingGold,
@@ -40,7 +38,6 @@ public sealed class RecruitmentRules
         int boardCapacity,
         int handCapacity,
         int maximumTavernTier,
-        int maximumFreezeTogglesPerRecruitment,
         IReadOnlyList<int> offerSizesByTier,
         IReadOnlyList<int> initialUpgradeCostsByTier)
     {
@@ -53,11 +50,6 @@ public sealed class RecruitmentRules
         if (boardCapacity <= 0) throw new ArgumentOutOfRangeException(nameof(boardCapacity));
         if (handCapacity <= 0) throw new ArgumentOutOfRangeException(nameof(handCapacity));
         if (maximumTavernTier <= 1) throw new ArgumentOutOfRangeException(nameof(maximumTavernTier));
-        if (maximumFreezeTogglesPerRecruitment <= 0)
-        {
-            throw new ArgumentOutOfRangeException(nameof(maximumFreezeTogglesPerRecruitment));
-        }
-
         if (offerSizesByTier is null) throw new ArgumentNullException(nameof(offerSizesByTier));
         if (initialUpgradeCostsByTier is null) throw new ArgumentNullException(nameof(initialUpgradeCostsByTier));
         if (offerSizesByTier.Count != maximumTavernTier)
@@ -99,7 +91,6 @@ public sealed class RecruitmentRules
         BoardCapacity = boardCapacity;
         HandCapacity = handCapacity;
         MaximumTavernTier = maximumTavernTier;
-        MaximumFreezeTogglesPerRecruitment = maximumFreezeTogglesPerRecruitment;
         _offerSizesByTier = offerSizesByTier.ToArray();
         _initialUpgradeCostsByTier = initialUpgradeCostsByTier.ToArray();
     }
