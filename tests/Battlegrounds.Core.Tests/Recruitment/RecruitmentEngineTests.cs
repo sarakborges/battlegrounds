@@ -11,7 +11,7 @@ public sealed class RecruitmentEngineTests
     [Fact]
     public void BeginRecruitment_InitializesRoundState()
     {
-        var (match, engine) = CreateMatch();
+        var (match, engine, _) = CreateMatch();
 
         engine.BeginRecruitment(match);
 
@@ -25,14 +25,17 @@ public sealed class RecruitmentEngineTests
             Assert.Equal(5, player.UpgradeCost);
             Assert.Equal(3, player.TavernOffer.Count);
             Assert.False(player.IsReadyForCombat);
+            Assert.False(player.IsTavernFrozen);
+            Assert.Equal(0, player.FreezeTogglesThisRecruitment);
         });
     }
 
     [Fact]
     public void BuyMinion_MovesDefinitionIntoRuntimeHandAndSpendsGold()
     {
-        var (match, engine) = CreateStartedMatch();
+        var (match, engine, _) = CreateStartedMatch();
         var player = match.Players[0];
+        var boughtDefinition = player.TavernOffer[0];
 
         var result = engine.Execute(match, new BuyMinionCommand(player.Id, 0));
 
@@ -40,16 +43,16 @@ public sealed class RecruitmentEngineTests
         Assert.Equal(0, player.Gold);
         Assert.Equal(2, player.TavernOffer.Count);
         var minion = Assert.Single(player.Hand);
-        Assert.Equal(new CardId("alleycat"), minion.Definition.Id);
-        Assert.Equal(1, minion.Attack);
-        Assert.Equal(1, minion.Health);
+        Assert.Same(boughtDefinition, minion.Definition);
+        Assert.Equal(boughtDefinition.BaseAttack, minion.Attack);
+        Assert.Equal(boughtDefinition.BaseHealth, minion.Health);
         Assert.Equal(2, match.Revision);
     }
 
     [Fact]
     public void FailedCommand_DoesNotMutateStateOrRevision()
     {
-        var (match, engine) = CreateStartedMatch();
+        var (match, engine, _) = CreateStartedMatch();
         var player = match.Players[0];
         Assert.True(engine.Execute(match, new BuyMinionCommand(player.Id, 0)).Succeeded);
         var revisionBeforeFailure = match.Revision;
@@ -64,11 +67,15 @@ public sealed class RecruitmentEngineTests
     }
 
     [Fact]
-    public void PlayThenSell_UsesControlledMutationPaths()
+    public void PlayThenSell_ReturnsMinionCopyToSharedPool()
     {
-        var (match, engine) = CreateStartedMatch();
+        var (match, engine, pool) = CreateStartedMatch();
         var player = match.Players[0];
+        var boughtCard = player.TavernOffer[0];
+        var copiesBeforeBuy = pool.GetAvailableCopies(boughtCard.Id);
+
         Assert.True(engine.Execute(match, new BuyMinionCommand(player.Id, 0)).Succeeded);
+        Assert.Equal(copiesBeforeBuy, pool.GetAvailableCopies(boughtCard.Id));
 
         Assert.True(engine.Execute(match, new PlayMinionCommand(player.Id, 0)).Succeeded);
         Assert.Empty(player.Hand);
@@ -77,12 +84,72 @@ public sealed class RecruitmentEngineTests
         Assert.True(engine.Execute(match, new SellMinionCommand(player.Id, 0)).Succeeded);
         Assert.Empty(player.Board);
         Assert.Equal(1, player.Gold);
+        Assert.Equal(copiesBeforeBuy + 1, pool.GetAvailableCopies(boughtCard.Id));
+    }
+
+    [Fact]
+    public void FreezeTavern_PreservesRemainingOfferAndFillsMissingSlotsNextRound()
+    {
+        var (match, engine, _) = CreateStartedMatch();
+        var player = match.Players[0];
+
+        Assert.True(engine.Execute(match, new BuyMinionCommand(player.Id, 0)).Succeeded);
+        var frozenCards = player.TavernOffer.ToArray();
+        Assert.True(engine.Execute(match, new FreezeTavernCommand(player.Id)).Succeeded);
+
+        Assert.True(engine.Execute(match, new EndRecruitmentCommand(player.Id)).Succeeded);
+        Assert.True(engine.Execute(match, new EndRecruitmentCommand(match.Players[1].Id)).Succeeded);
+
+        engine.BeginRecruitment(match);
+
+        Assert.True(player.IsTavernFrozen);
+        Assert.Equal(3, player.TavernOffer.Count);
+        Assert.Same(frozenCards[0], player.TavernOffer[0]);
+        Assert.Same(frozenCards[1], player.TavernOffer[1]);
+        Assert.Equal(0, player.FreezeTogglesThisRecruitment);
+    }
+
+    [Fact]
+    public void FreezeToggleLimit_RejectsSixthToggleWithoutMutation()
+    {
+        var (match, engine, _) = CreateStartedMatch();
+        var player = match.Players[0];
+
+        Assert.True(engine.Execute(match, new FreezeTavernCommand(player.Id)).Succeeded);
+        Assert.True(engine.Execute(match, new UnfreezeTavernCommand(player.Id)).Succeeded);
+        Assert.True(engine.Execute(match, new FreezeTavernCommand(player.Id)).Succeeded);
+        Assert.True(engine.Execute(match, new UnfreezeTavernCommand(player.Id)).Succeeded);
+        Assert.True(engine.Execute(match, new FreezeTavernCommand(player.Id)).Succeeded);
+
+        var revisionBeforeFailure = match.Revision;
+        var result = engine.Execute(match, new UnfreezeTavernCommand(player.Id));
+
+        Assert.False(result.Succeeded);
+        Assert.Equal(RecruitmentFailureCode.FreezeToggleLimitReached, result.FailureCode);
+        Assert.True(player.IsTavernFrozen);
+        Assert.Equal(5, player.FreezeTogglesThisRecruitment);
+        Assert.Equal(revisionBeforeFailure, match.Revision);
+    }
+
+    [Fact]
+    public void RefreshTavern_ReplacesOfferAndClearsFreeze()
+    {
+        var (match, engine, _) = CreateStartedMatch();
+        var player = match.Players[0];
+        Assert.True(engine.Execute(match, new FreezeTavernCommand(player.Id)).Succeeded);
+
+        var result = engine.Execute(match, new RefreshTavernCommand(player.Id));
+
+        Assert.True(result.Succeeded);
+        Assert.False(player.IsTavernFrozen);
+        Assert.Equal(2, player.Gold);
+        Assert.Equal(3, player.TavernOffer.Count);
     }
 
     [Fact]
     public void EndRecruitment_TransitionsToCombatOnlyWhenEveryPlayerIsReady()
     {
-        var (match, engine) = CreateStartedMatch();
+        var (match, engine, _) = CreateStartedMatch();
 
         Assert.True(engine.Execute(match, new EndRecruitmentCommand(match.Players[0].Id)).Succeeded);
         Assert.Equal(MatchPhase.Recruitment, match.Phase);
@@ -94,7 +161,7 @@ public sealed class RecruitmentEngineTests
     [Fact]
     public void NextRecruitmentRound_ResetsGoldAndReducesPendingUpgradeCost()
     {
-        var (match, engine) = CreateStartedMatch();
+        var (match, engine, _) = CreateStartedMatch();
         Assert.True(engine.Execute(match, new EndRecruitmentCommand(match.Players[0].Id)).Succeeded);
         Assert.True(engine.Execute(match, new EndRecruitmentCommand(match.Players[1].Id)).Succeeded);
 
@@ -112,39 +179,32 @@ public sealed class RecruitmentEngineTests
         Assert.Equal(7, player.UpgradeCost);
     }
 
-    private static (MatchState Match, RecruitmentEngine Engine) CreateStartedMatch()
+    private static (MatchState Match, RecruitmentEngine Engine, TavernPool Pool) CreateStartedMatch()
     {
-        var pair = CreateMatch();
-        pair.Engine.BeginRecruitment(pair.Match);
-        return pair;
+        var setup = CreateMatch();
+        setup.Engine.BeginRecruitment(setup.Match);
+        return setup;
     }
 
-    private static (MatchState Match, RecruitmentEngine Engine) CreateMatch()
+    private static (MatchState Match, RecruitmentEngine Engine, TavernPool Pool) CreateMatch()
     {
+        var definitions = new[]
+        {
+            new CardDefinition(new CardId("alleycat"), "Alleycat", 1, 1, 1),
+            new CardDefinition(new CardId("deck-swabbie"), "Deck Swabbie", 1, 2, 2),
+            new CardDefinition(new CardId("scallywag"), "Scallywag", 1, 2, 1),
+        };
+
+        var catalog = new CardCatalog(definitions);
+        var pool = new TavernPool(
+            catalog,
+            definitions.Select(definition => new TavernPoolEntry(definition.Id, 15)));
         var match = MatchState.Create([new PlayerId(0), new PlayerId(1)]);
         var engine = new RecruitmentEngine(
             RecruitmentRules.Standard,
-            new RepeatingOfferSource(),
+            pool,
             new SeededRandomSource(1337));
 
-        return (match, engine);
-    }
-
-    private sealed class RepeatingOfferSource : ITavernOfferSource
-    {
-        private static readonly CardDefinition Card = new(
-            new CardId("alleycat"),
-            "Alleycat",
-            tavernTier: 1,
-            baseAttack: 1,
-            baseHealth: 1);
-
-        public IReadOnlyList<CardDefinition> DrawOffer(
-            int tavernTier,
-            int count,
-            IRandomSource randomSource)
-        {
-            return Enumerable.Repeat(Card, count).ToArray();
-        }
+        return (match, engine, pool);
     }
 }
