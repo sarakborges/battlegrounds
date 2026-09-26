@@ -183,7 +183,8 @@ public sealed class MatchState
             CombatParticipant.FromField(
                 latestPlayer.Id,
                 latestPlayer.Field,
-                latestPlayer.Leader?.CurrentPowerId));
+                latestPlayer.Leader?.CurrentPowerId,
+                latestPlayer.EffectHistory.Snapshot()));
     }
 
     internal void Finish()
