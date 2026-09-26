@@ -187,32 +187,22 @@ public sealed class RecruitmentEngine
         return RecruitmentCommandResult.Success();
     }
 
-    private RecruitmentCommandResult FreezeTavern(PlayerState player)
+    private static RecruitmentCommandResult FreezeTavern(PlayerState player)
     {
         if (player.IsTavernFrozen)
         {
             return RecruitmentCommandResult.Failure(RecruitmentFailureCode.TavernAlreadyFrozen);
         }
 
-        if (player.FreezeTogglesThisRecruitment >= _rules.MaximumFreezeTogglesPerRecruitment)
-        {
-            return RecruitmentCommandResult.Failure(RecruitmentFailureCode.FreezeToggleLimitReached);
-        }
-
         player.SetTavernFrozen(true);
         return RecruitmentCommandResult.Success();
     }
 
-    private RecruitmentCommandResult UnfreezeTavern(PlayerState player)
+    private static RecruitmentCommandResult UnfreezeTavern(PlayerState player)
     {
         if (!player.IsTavernFrozen)
         {
             return RecruitmentCommandResult.Failure(RecruitmentFailureCode.TavernNotFrozen);
-        }
-
-        if (player.FreezeTogglesThisRecruitment >= _rules.MaximumFreezeTogglesPerRecruitment)
-        {
-            return RecruitmentCommandResult.Failure(RecruitmentFailureCode.FreezeToggleLimitReached);
         }
 
         player.SetTavernFrozen(false);
