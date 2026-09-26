@@ -1,0 +1,4 @@
+{
+  "maximumAttacks": 200,
+  "startingSidePolicy": "largerFieldThenRandom"
+}
