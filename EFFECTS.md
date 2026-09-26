@@ -115,20 +115,79 @@ A source-stat condition reads the source's current runtime stats, including buff
 
 Supported comparisons are `equal`, `notEqual`, `lessThan`, `lessThanOrEqual`, `greaterThan`, and `greaterThanOrEqual`.
 
+## Dynamic effect values
+
+Numeric effect parameters may be authored as ordinary integers or as value-expression objects. Integer literals remain the shorthand for fixed values:
+
+```json
+{ "kind": "dealDamage", "target": { "scope": "enemy", "selection": "random" }, "amount": 3 }
+```
+
+Dynamic expressions currently support:
+
+- `sourceStat`: current source `attack` or `health`;
+- `targetStat`: current selected effect target `attack` or `health`;
+- `unitCount`: count from an `EffectUnitQuery` using the same `scope`, `excludeSource`, `typeId`, and `tagId` vocabulary as conditions;
+- `add`, `multiply`, `min`, and `max`: recursive composition over two or more value expressions.
+
+Example: gain Attack equal to twice the number of friendly Organic units:
+
+```json
+{
+  "kind": "modifyStats",
+  "target": { "scope": "self" },
+  "attack": {
+    "kind": "multiply",
+    "values": [
+      2,
+      {
+        "kind": "unitCount",
+        "query": { "scope": "friendly", "typeId": "organic" }
+      }
+    ]
+  }
+}
+```
+
+Example: deal damage equal to the source's current Attack:
+
+```json
+{
+  "kind": "dealDamage",
+  "target": { "scope": "enemy", "selection": "random" },
+  "amount": { "kind": "sourceStat", "stat": "attack" }
+}
+```
+
+Example: give each target Health equal to its own current Health:
+
+```json
+{
+  "kind": "modifyStats",
+  "target": { "scope": "friendly", "selection": "all" },
+  "health": { "kind": "targetStat", "stat": "health" }
+}
+```
+
+Dynamic values are evaluated when their effect is applied, so an earlier effect may change the value read by a later effect in the same trigger. `targetStat` is evaluated separately for every resolved target. It is invalid on effects without unit targets such as `addResource` or `summonUnit`.
+
+A dynamic `dealDamage` amount or `summonUnit` count that resolves to zero or below is a no-op. A dynamic `addResource` result of zero is also a no-op. Expression arithmetic uses checked integer operations so overflow fails explicitly instead of wrapping silently. Value-expression nesting is validator-bounded.
+
 ## Resolution phases
 
 A logical effect action resolves in this order:
 
 1. evaluate the trigger's conditions against the current effect-world snapshot;
 2. if all conditions pass, resolve authored effects in authored order;
-3. resolve directly-created follow-up events such as `onDamage`, `onSummon`, or `triggerEvent`;
-4. once that event phase is complete, identify all units that are dead;
-5. remove the complete simultaneous-death batch before resolving any death-related trigger;
-6. resolve each death deterministically;
-7. during that death batch, newly lethal units remain in play until the current batch finishes;
-8. after a unit's death-related triggers resolve, attempt its revive-once behavior;
-9. a successful revive is a summon and runs normal `onSummon` listeners;
-10. after the original batch is complete, create the next death batch if new deaths are pending.
+3. evaluate each effect's dynamic values against the current runtime state as that effect is applied;
+4. resolve directly-created follow-up events such as `onDamage`, `onSummon`, or `triggerEvent`;
+5. once that event phase is complete, identify all units that are dead;
+6. remove the complete simultaneous-death batch before resolving any death-related trigger;
+7. resolve each death deterministically;
+8. during that death batch, newly lethal units remain in play until the current batch finishes;
+9. after a unit's death-related triggers resolve, attempt its revive-once behavior;
+10. a successful revive is a summon and runs normal `onSummon` listeners;
+11. after the original batch is complete, create the next death batch if new deaths are pending.
 
 This preserves the important Battlegrounds/Hearthstone invariants that simultaneous dead units cannot be targeted by each other's death effects, Deathrattle-like effects resolve before Reborn-like revival, and consequences of one death can affect listeners that observe a later death in the same batch.
 
