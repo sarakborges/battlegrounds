@@ -1,6 +1,7 @@
 using System.Collections.ObjectModel;
 using Battlegrounds.Core.Domain.Behaviors;
 using Battlegrounds.Core.Domain.Combat;
+using Battlegrounds.Core.Domain.Ids;
 using Battlegrounds.Core.Domain.Leaders;
 using Battlegrounds.Core.Domain.Match;
 using Battlegrounds.Core.Domain.Powers;
@@ -19,6 +20,7 @@ public sealed class ModPackage
     public string Id { get; }
     public string Name { get; }
     public IReadOnlyDictionary<string, string> Terminology => _terminology;
+    public LeaderSelectionRules LeaderSelectionRules { get; }
     public MatchRules MatchRules { get; }
     public PreparationRules PreparationRules { get; }
     public CombatRules CombatRules { get; }
@@ -34,6 +36,7 @@ public sealed class ModPackage
         string id,
         string name,
         IReadOnlyDictionary<string, string> terminology,
+        LeaderSelectionRules leaderSelectionRules,
         MatchRules matchRules,
         PreparationRules preparationRules,
         CombatRules combatRules,
@@ -47,6 +50,7 @@ public sealed class ModPackage
     {
         Id = id;
         Name = name;
+        LeaderSelectionRules = leaderSelectionRules ?? throw new ArgumentNullException(nameof(leaderSelectionRules));
         MatchRules = matchRules;
         PreparationRules = preparationRules;
         CombatRules = combatRules;
@@ -62,6 +66,20 @@ public sealed class ModPackage
     }
 
     public UnitPool CreateUnitPool() => new(Units, _poolEntries);
+
+    public LeaderSelectionState CreateLeaderSelection(
+        IEnumerable<PlayerId> playerIds,
+        IRandomSource randomSource)
+    {
+        ArgumentNullException.ThrowIfNull(playerIds);
+        ArgumentNullException.ThrowIfNull(randomSource);
+        return LeaderSelectionState.Create(
+            playerIds,
+            MatchRules,
+            LeaderSelectionRules,
+            Leaders,
+            randomSource);
+    }
 
     public PreparationEngine CreatePreparationEngine(IRandomSource randomSource)
     {
