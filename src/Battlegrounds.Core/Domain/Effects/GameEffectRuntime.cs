@@ -10,8 +10,8 @@ internal interface IEffectRuntimeUnit
     UnitInstanceId InstanceId { get; }
     PlayerId OwnerPlayerId { get; }
     UnitDefinition Definition { get; }
-    int Attack { get; }
-    int Health { get; }
+    int Attack => Definition.BaseAttack;
+    int Health => Definition.BaseHealth;
     bool IsAlive { get; }
 }
 
