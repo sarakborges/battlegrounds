@@ -1,0 +1,5 @@
+{
+  "id": "return",
+  "name": "Return",
+  "handler": "reviveOnce"
+}
