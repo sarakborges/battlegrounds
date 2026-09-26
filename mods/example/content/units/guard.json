@@ -1,0 +1,22 @@
+{
+  "id": "guard",
+  "name": "Guard",
+  "tier": 1,
+  "attack": 2,
+  "health": 2,
+  "behaviors": ["protector"],
+  "types": ["construct"],
+  "tags": ["starter"],
+  "triggers": [
+    {
+      "event": "onCombatStart",
+      "effects": [
+        {
+          "kind": "modifyStats",
+          "target": { "scope": "self" },
+          "health": 1
+        }
+      ]
+    }
+  ]
+}
