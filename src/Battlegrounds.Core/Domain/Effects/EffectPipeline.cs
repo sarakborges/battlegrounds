@@ -149,6 +149,44 @@ public sealed class EffectPipeline
         return resolved;
     }
 
+    public int EvaluateValue(
+        EffectValueExpression expression,
+        EffectResolutionContext context,
+        UnitInstanceId? targetInstanceId = null)
+    {
+        ArgumentNullException.ThrowIfNull(expression);
+        ArgumentNullException.ThrowIfNull(context);
+
+        return expression switch
+        {
+            ConstantEffectValueExpression constant => constant.Value,
+            SourceStatEffectValueExpression sourceStat => GetSourceStat(context, sourceStat.Stat),
+            TargetStatEffectValueExpression targetStat => GetTargetStat(context, targetInstanceId, targetStat.Stat),
+            UnitCountEffectValueExpression unitCount => QueryUnits(unitCount.Query, context).Count,
+            CompositeEffectValueExpression composite => EvaluateComposite(composite, context, targetInstanceId),
+            _ => throw new ArgumentOutOfRangeException(nameof(expression), expression.GetType().Name, "Unsupported effect value expression."),
+        };
+    }
+
+    private int EvaluateComposite(
+        CompositeEffectValueExpression expression,
+        EffectResolutionContext context,
+        UnitInstanceId? targetInstanceId)
+    {
+        var values = expression.Values
+            .Select(value => EvaluateValue(value, context, targetInstanceId))
+            .ToArray();
+
+        return expression.Operation switch
+        {
+            EffectValueOperation.Add => values.Aggregate(0, (left, right) => checked(left + right)),
+            EffectValueOperation.Multiply => values.Aggregate(1, (left, right) => checked(left * right)),
+            EffectValueOperation.Min => values.Min(),
+            EffectValueOperation.Max => values.Max(),
+            _ => throw new ArgumentOutOfRangeException(nameof(expression.Operation), expression.Operation, "Unsupported effect value operation."),
+        };
+    }
+
     private static bool ConditionsMatch(TriggerDefinition trigger, EffectResolutionContext context)
     {
         foreach (var condition in trigger.Conditions)
@@ -175,13 +213,28 @@ public sealed class EffectPipeline
     private static int GetSourceStat(EffectResolutionContext context, EffectStat stat)
     {
         var source = context.Units.Single(unit => unit.InstanceId == context.SourceInstanceId);
-        return stat switch
-        {
-            EffectStat.Attack => source.Attack,
-            EffectStat.Health => source.Health,
-            _ => throw new ArgumentOutOfRangeException(nameof(stat), stat, "Unsupported source stat."),
-        };
+        return GetStat(source, stat);
     }
+
+    private static int GetTargetStat(
+        EffectResolutionContext context,
+        UnitInstanceId? targetInstanceId,
+        EffectStat stat)
+    {
+        if (targetInstanceId is null)
+            throw new InvalidOperationException("targetStat value expressions require an effect target.");
+        var target = context.Units.SingleOrDefault(unit => unit.InstanceId == targetInstanceId.Value)
+            ?? throw new InvalidOperationException($"Effect target '{targetInstanceId.Value}' is not present in the value context.");
+        return GetStat(target, stat);
+    }
+
+    private static int GetStat(EffectUnitSnapshot unit, EffectStat stat) =>
+        stat switch
+        {
+            EffectStat.Attack => unit.Attack,
+            EffectStat.Health => unit.Health,
+            _ => throw new ArgumentOutOfRangeException(nameof(stat), stat, "Unsupported effect stat."),
+        };
 
     private static bool Compare(int left, EffectComparison comparison, int right) =>
         comparison switch
