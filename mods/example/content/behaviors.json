@@ -1,7 +1,0 @@
-[
-  { "id": "ward", "name": "Ward", "handler": "damageBarrier" },
-  { "id": "protector", "name": "Protector", "handler": "targetPriority" },
-  { "id": "return", "name": "Return", "handler": "reviveOnce" },
-  { "id": "fatal-touch", "name": "Fatal Touch", "handler": "lethalFirstDamagePerCombat" },
-  { "id": "double-strike", "name": "Double Strike", "handler": "extraAttack" }
-]
