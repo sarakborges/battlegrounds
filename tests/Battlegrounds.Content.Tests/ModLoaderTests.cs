@@ -57,7 +57,8 @@ public sealed class ModLoaderTests
         var trigger = Assert.Single(guard.Triggers);
         Assert.Equal(NativeTriggerKeys.OnCombatStart, trigger.Event);
         var effect = Assert.IsType<ModifyStatsEffectDefinition>(Assert.Single(trigger.Effects));
-        Assert.Equal(1, effect.HealthDelta);
+        var healthDelta = Assert.IsType<ConstantEffectValueExpression>(effect.HealthDelta);
+        Assert.Equal(1, healthDelta.Value);
 
         var pool = mod.CreateUnitPool();
         Assert.Equal(15, pool.GetAvailableCopies(new UnitId("scout")));
