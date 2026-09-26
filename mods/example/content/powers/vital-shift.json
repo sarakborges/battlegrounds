@@ -1,0 +1,13 @@
+{
+  "id": "vital-shift",
+  "name": "Vital Shift",
+  "cost": 0,
+  "maxUsesPerTurn": 1,
+  "maxUsesPerMatch": 1,
+  "effects": [
+    {
+      "kind": "setPower",
+      "powerId": "steady-pulse"
+    }
+  ]
+}
