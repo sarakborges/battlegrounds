@@ -7,6 +7,7 @@ namespace Battlegrounds.Core.Domain.Effects;
 public enum EffectTargetScope
 {
     Self,
+    Selected,
     RandomFriendly,
     RandomEnemy,
     AllFriendly,
@@ -141,6 +142,17 @@ public sealed record AddResourceEffectDefinition : EffectDefinition
     {
         if (amount == 0) throw new ArgumentOutOfRangeException(nameof(amount));
         Amount = amount;
+    }
+}
+
+public sealed record SetPowerEffectDefinition : EffectDefinition
+{
+    public override NativeEffectKey Kind => NativeEffectKeys.SetPower;
+    public PowerId PowerId { get; }
+
+    public SetPowerEffectDefinition(PowerId powerId)
+    {
+        PowerId = powerId;
     }
 }
 
