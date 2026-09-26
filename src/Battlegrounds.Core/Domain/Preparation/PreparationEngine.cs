@@ -3,6 +3,7 @@ using Battlegrounds.Core.Domain.Effects;
 using Battlegrounds.Core.Domain.Ids;
 using Battlegrounds.Core.Domain.Match;
 using Battlegrounds.Core.Domain.Players;
+using Battlegrounds.Core.Domain.Powers;
 using Battlegrounds.Core.Domain.Units;
 using Battlegrounds.Core.Randomness;
 
@@ -14,12 +15,13 @@ public sealed class PreparationEngine
     private readonly IUnitPool _unitPool;
     private readonly IRandomSource _randomSource;
     private readonly PreparationEffectEngine _effectEngine;
+    private readonly PowerCatalog? _powerCatalog;
 
     public PreparationEngine(
         PreparationRules rules,
         IUnitPool unitPool,
         IRandomSource randomSource)
-        : this(rules, unitPool, randomSource, unitCatalog: null, behaviorCatalog: null)
+        : this(rules, unitPool, randomSource, unitCatalog: null, behaviorCatalog: null, powerCatalog: null)
     {
     }
 
@@ -29,10 +31,22 @@ public sealed class PreparationEngine
         IRandomSource randomSource,
         UnitCatalog? unitCatalog,
         BehaviorCatalog? behaviorCatalog)
+        : this(rules, unitPool, randomSource, unitCatalog, behaviorCatalog, powerCatalog: null)
+    {
+    }
+
+    public PreparationEngine(
+        PreparationRules rules,
+        IUnitPool unitPool,
+        IRandomSource randomSource,
+        UnitCatalog? unitCatalog,
+        BehaviorCatalog? behaviorCatalog,
+        PowerCatalog? powerCatalog)
     {
         _rules = rules ?? throw new ArgumentNullException(nameof(rules));
         _unitPool = unitPool ?? throw new ArgumentNullException(nameof(unitPool));
         _randomSource = randomSource ?? throw new ArgumentNullException(nameof(randomSource));
+        _powerCatalog = powerCatalog;
         _effectEngine = new PreparationEffectEngine(
             _rules,
             _unitPool,
@@ -61,6 +75,7 @@ public sealed class PreparationEngine
 
         foreach (var player in activePlayers)
         {
+            player.Leader?.BeginTurn();
             player.BeginPreparation(match.Round, _rules);
             if (resourceAdjustments is not null && resourceAdjustments.TryGetValue(player.Id, out var adjustment))
             {
@@ -109,6 +124,7 @@ public sealed class PreparationEngine
             DeployUnitCommand deploy => DeployUnit(match, player, deploy),
             RefreshOfferCommand => RefreshOffer(player),
             UpgradeTierCommand => UpgradeTier(player),
+            UsePowerCommand usePower => UsePower(match, player, usePower),
             FreezeOfferCommand => FreezeOffer(player),
             UnfreezeOfferCommand => UnfreezeOffer(player),
             EndPreparationCommand => EndPreparation(match, player),
@@ -231,6 +247,87 @@ public sealed class PreparationEngine
         player.UpgradeTier(_rules);
         return PreparationCommandResult.Success();
     }
+
+    private PreparationCommandResult UsePower(
+        MatchState match,
+        PlayerState player,
+        UsePowerCommand command)
+    {
+        var leader = player.Leader;
+        if (_powerCatalog is null || leader?.CurrentPowerId is not PowerId powerId ||
+            !_powerCatalog.TryGet(powerId, out var power))
+        {
+            return PreparationCommandResult.Failure(PreparationFailureCode.PowerUnavailable);
+        }
+
+        if (!leader.CanUse(power))
+        {
+            return PreparationCommandResult.Failure(PreparationFailureCode.PowerUsageLimitReached);
+        }
+
+        if (!player.CanAfford(power.Cost))
+        {
+            return PreparationCommandResult.Failure(PreparationFailureCode.InsufficientResource);
+        }
+
+        var selectedSelectors = power.Effects
+            .Select(GetTargetSelector)
+            .Where(selector => selector?.Scope == EffectTargetScope.Selected)
+            .Cast<EffectTargetSelector>()
+            .ToArray();
+
+        if (selectedSelectors.Length > 0)
+        {
+            if (command.TargetUnitInstanceId is null ||
+                !TryGetFieldUnit(match, command.TargetUnitInstanceId.Value, out var selected) ||
+                selectedSelectors.Any(selector => !MatchesSelector(selected, selector)))
+            {
+                return PreparationCommandResult.Failure(PreparationFailureCode.InvalidPowerTarget);
+            }
+        }
+        else if (command.TargetUnitInstanceId is not null)
+        {
+            return PreparationCommandResult.Failure(PreparationFailureCode.InvalidPowerTarget);
+        }
+
+        player.SpendResource(power.Cost);
+        _effectEngine.ProcessPower(match, player, power, command.TargetUnitInstanceId);
+        leader.RecordUse(power.Id);
+        return PreparationCommandResult.Success();
+    }
+
+    private static EffectTargetSelector? GetTargetSelector(EffectDefinition effect) =>
+        effect switch
+        {
+            ModifyStatsEffectDefinition value => value.Target,
+            DealDamageEffectDefinition value => value.Target,
+            DestroyUnitEffectDefinition value => value.Target,
+            TriggerEventEffectDefinition value => value.Target,
+            AddBehaviorEffectDefinition value => value.Target,
+            RemoveBehaviorEffectDefinition value => value.Target,
+            _ => null,
+        };
+
+    private static bool TryGetFieldUnit(
+        MatchState match,
+        UnitInstanceId instanceId,
+        out UnitInstance unit)
+    {
+        foreach (var player in match.Players)
+        {
+            if (player.TryGetFieldUnit(instanceId, out unit))
+            {
+                return unit.IsAlive;
+            }
+        }
+
+        unit = null!;
+        return false;
+    }
+
+    private static bool MatchesSelector(UnitInstance unit, EffectTargetSelector selector) =>
+        (selector.RequiredTypeId is null || unit.Definition.Types.Any(type => type.Id == selector.RequiredTypeId.Value)) &&
+        (selector.RequiredTagId is null || unit.Definition.Tags.Any(tag => tag.Id == selector.RequiredTagId.Value));
 
     private static PreparationCommandResult FreezeOffer(PlayerState player)
     {
