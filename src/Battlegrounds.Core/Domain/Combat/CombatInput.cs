@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using Battlegrounds.Core.Domain.Behaviors;
 using Battlegrounds.Core.Domain.Ids;
 using Battlegrounds.Core.Domain.Units;
 
@@ -78,27 +79,52 @@ public sealed class CombatParticipant
                 unit.Definition.Id,
                 unit.Definition.Tier,
                 unit.Attack,
-                unit.Health)));
+                unit.Health,
+                unit.Definition.Behaviors.Select(behavior =>
+                    new CombatBehaviorSnapshot(behavior.Id, behavior.Handler)))));
 }
 
 public readonly record struct CombatUnitSnapshot
 {
+    private readonly ReadOnlyCollection<CombatBehaviorSnapshot> _behaviors;
+
     public UnitInstanceId InstanceId { get; }
     public UnitId UnitId { get; }
     public int Tier { get; }
     public int Attack { get; }
     public int Health { get; }
+    public IReadOnlyList<CombatBehaviorSnapshot> Behaviors => _behaviors;
 
-    public CombatUnitSnapshot(UnitInstanceId instanceId, UnitId unitId, int tier, int attack, int health)
+    public CombatUnitSnapshot(
+        UnitInstanceId instanceId,
+        UnitId unitId,
+        int tier,
+        int attack,
+        int health,
+        IEnumerable<CombatBehaviorSnapshot>? behaviors = null)
     {
         if (tier <= 0) throw new ArgumentOutOfRangeException(nameof(tier));
         if (attack < 0) throw new ArgumentOutOfRangeException(nameof(attack));
         if (health <= 0) throw new ArgumentOutOfRangeException(nameof(health));
+
+        var behaviorArray = behaviors?.ToArray() ?? [];
+        var duplicateHandler = behaviorArray
+            .GroupBy(behavior => behavior.Handler)
+            .FirstOrDefault(group => group.Count() > 1);
+        if (duplicateHandler is not null)
+        {
+            throw new ArgumentException(
+                $"Combat unit cannot attach native behavior '{duplicateHandler.Key}' more than once.",
+                nameof(behaviors));
+        }
 
         InstanceId = instanceId;
         UnitId = unitId;
         Tier = tier;
         Attack = attack;
         Health = health;
+        _behaviors = Array.AsReadOnly(behaviorArray);
     }
 }
+
+public readonly record struct CombatBehaviorSnapshot(BehaviorId Id, NativeBehaviorKey Handler);

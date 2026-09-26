@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using Battlegrounds.Core.Domain.Behaviors;
 using Battlegrounds.Core.Domain.Combat;
 using Battlegrounds.Core.Domain.Match;
 using Battlegrounds.Core.Domain.Preparation;
@@ -17,6 +18,7 @@ public sealed class ModPackage
     public MatchRules MatchRules { get; }
     public PreparationRules PreparationRules { get; }
     public CombatRules CombatRules { get; }
+    public BehaviorCatalog Behaviors { get; }
     public UnitCatalog Units { get; }
     public IReadOnlyList<UnitPoolEntry> PoolEntries => _poolEntries;
 
@@ -27,6 +29,7 @@ public sealed class ModPackage
         MatchRules matchRules,
         PreparationRules preparationRules,
         CombatRules combatRules,
+        BehaviorCatalog behaviors,
         UnitCatalog units,
         IEnumerable<UnitPoolEntry> poolEntries)
     {
@@ -35,6 +38,7 @@ public sealed class ModPackage
         MatchRules = matchRules;
         PreparationRules = preparationRules;
         CombatRules = combatRules;
+        Behaviors = behaviors ?? throw new ArgumentNullException(nameof(behaviors));
         Units = units;
         _terminology = new ReadOnlyDictionary<string, string>(
             new Dictionary<string, string>(terminology, StringComparer.Ordinal));

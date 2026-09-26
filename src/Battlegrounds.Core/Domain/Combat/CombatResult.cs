@@ -44,9 +44,17 @@ public readonly record struct CombatAttack(
     UnitInstanceId AttackerInstanceId,
     PlayerId TargetPlayerId,
     UnitInstanceId TargetInstanceId,
+    int DamageToAttacker,
+    int DamageToTarget,
+    bool AttackerBarrierLost,
+    bool TargetBarrierLost,
+    bool AttackerLethalTriggered,
+    bool TargetLethalTriggered,
     int AttackerHealthAfter,
     int TargetHealthAfter,
     bool AttackerDied,
-    bool TargetDied);
+    bool TargetDied,
+    bool AttackerRevived,
+    bool TargetRevived);
 
 public readonly record struct CombatSurvivor(UnitInstanceId InstanceId, int Health);

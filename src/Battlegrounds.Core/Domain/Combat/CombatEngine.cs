@@ -1,3 +1,4 @@
+using Battlegrounds.Core.Domain.Behaviors;
 using Battlegrounds.Core.Domain.Ids;
 using Battlegrounds.Core.Randomness;
 
@@ -26,50 +27,92 @@ public sealed class CombatEngine
 
         while (true)
         {
-            sequence++;
-
             var attackerSide = attackingLeft ? left : right;
             var targetSide = attackingLeft ? right : left;
-
             var attacker = attackerSide.TakeNextAttacker();
+
             if (attacker is null)
             {
-                return BuildResult(left, right, CombatEndReason.Elimination, attacks);
+                attackingLeft = !attackingLeft;
+                continue;
             }
 
-            var targets = targetSide.GetLivingUnits();
-            if (targets.Count == 0)
+            var strikeCount = attacker.Has(NativeBehaviorKeys.ExtraAttack) ? 2 : 1;
+
+            for (var strike = 0; strike < strikeCount; strike++)
             {
-                return BuildResult(left, right, CombatEndReason.Elimination, attacks);
-            }
+                var targets = targetSide.GetValidTargets();
+                if (targets.Count == 0)
+                {
+                    return BuildResult(left, right, CombatEndReason.Elimination, attacks);
+                }
 
-            var target = targets[randomSource.NextInt(0, targets.Count)];
+                sequence++;
+                var target = targets[randomSource.NextInt(0, targets.Count)];
+                var damageToAttacker = ApplyDamage(target, attacker);
+                var damageToTarget = ApplyDamage(attacker, target);
 
-            var attackerDamage = target.Attack;
-            var targetDamage = attacker.Attack;
+                var attackerDied = attacker.Health <= 0;
+                var targetDied = target.Health <= 0;
+                var attackerRevived = attackerDied && attacker.TryRevive();
+                var targetRevived = targetDied && target.TryRevive();
 
-            attacker.Health -= attackerDamage;
-            target.Health -= targetDamage;
+                attacks.Add(new CombatAttack(
+                    sequence,
+                    attackerSide.PlayerId,
+                    attacker.InstanceId,
+                    targetSide.PlayerId,
+                    target.InstanceId,
+                    damageToAttacker.DamageDealt,
+                    damageToTarget.DamageDealt,
+                    damageToAttacker.BarrierLost,
+                    damageToTarget.BarrierLost,
+                    damageToTarget.LethalTriggered,
+                    damageToAttacker.LethalTriggered,
+                    attacker.Health,
+                    target.Health,
+                    attackerDied,
+                    targetDied,
+                    attackerRevived,
+                    targetRevived));
 
-            attacks.Add(new CombatAttack(
-                sequence,
-                attackerSide.PlayerId,
-                attacker.InstanceId,
-                targetSide.PlayerId,
-                target.InstanceId,
-                attacker.Health,
-                target.Health,
-                attacker.Health <= 0,
-                target.Health <= 0));
+                var terminal = CreateResultIfTerminal(left, right, attacks);
+                if (terminal is not null)
+                {
+                    return terminal;
+                }
 
-            var terminal = CreateResultIfTerminal(left, right, attacks);
-            if (terminal is not null)
-            {
-                return terminal;
+                if (attackerDied)
+                {
+                    break;
+                }
             }
 
             attackingLeft = !attackingLeft;
         }
+    }
+
+    private static DamageResult ApplyDamage(UnitState source, UnitState target)
+    {
+        if (source.Attack <= 0)
+        {
+            return default;
+        }
+
+        if (target.Remove(NativeBehaviorKeys.DamageBarrier))
+        {
+            return new DamageResult(0, true, false);
+        }
+
+        target.Health -= source.Attack;
+
+        var lethalTriggered = source.Remove(NativeBehaviorKeys.LethalFirstDamagePerCombat);
+        if (lethalTriggered)
+        {
+            target.Health = Math.Min(target.Health, 0);
+        }
+
+        return new DamageResult(source.Attack, false, lethalTriggered);
     }
 
     private static bool ChooseStartingSide(
@@ -145,9 +188,7 @@ public sealed class CombatEngine
         public SideState(CombatParticipant participant)
         {
             PlayerId = participant.PlayerId;
-            _units = participant.Units
-                .Select(unit => new UnitState(unit.InstanceId, unit.Attack, unit.Health))
-                .ToList();
+            _units = participant.Units.Select(unit => new UnitState(unit)).ToList();
         }
 
         public UnitState? TakeNextAttacker()
@@ -161,7 +202,7 @@ public sealed class CombatEngine
             {
                 var index = (_nextAttackerIndex + offset) % _units.Count;
                 var candidate = _units[index];
-                if (candidate.Health <= 0)
+                if (candidate.Health <= 0 || candidate.Attack <= 0)
                 {
                     continue;
                 }
@@ -173,8 +214,15 @@ public sealed class CombatEngine
             return null;
         }
 
-        public IReadOnlyList<UnitState> GetLivingUnits() =>
-            _units.Where(unit => unit.Health > 0).ToArray();
+        public IReadOnlyList<UnitState> GetValidTargets()
+        {
+            var living = _units.Where(unit => unit.Health > 0).ToArray();
+            var priority = living
+                .Where(unit => unit.Has(NativeBehaviorKeys.TargetPriority))
+                .ToArray();
+
+            return priority.Length > 0 ? priority : living;
+        }
 
         public IReadOnlyList<CombatSurvivor> GetSurvivors() =>
             _units
@@ -185,15 +233,41 @@ public sealed class CombatEngine
 
     private sealed class UnitState
     {
+        private readonly Dictionary<NativeBehaviorKey, BehaviorId> _baseBehaviors;
+        private Dictionary<NativeBehaviorKey, BehaviorId> _activeBehaviors;
+        private bool _reviveUsed;
+
         public UnitInstanceId InstanceId { get; }
         public int Attack { get; }
         public int Health { get; set; }
 
-        public UnitState(UnitInstanceId instanceId, int attack, int health)
+        public UnitState(CombatUnitSnapshot snapshot)
         {
-            InstanceId = instanceId;
-            Attack = attack;
-            Health = health;
+            InstanceId = snapshot.InstanceId;
+            Attack = snapshot.Attack;
+            Health = snapshot.Health;
+            _baseBehaviors = snapshot.Behaviors.ToDictionary(behavior => behavior.Handler, behavior => behavior.Id);
+            _activeBehaviors = new Dictionary<NativeBehaviorKey, BehaviorId>(_baseBehaviors);
+        }
+
+        public bool Has(NativeBehaviorKey behavior) => _activeBehaviors.ContainsKey(behavior);
+
+        public bool Remove(NativeBehaviorKey behavior) => _activeBehaviors.Remove(behavior);
+
+        public bool TryRevive()
+        {
+            if (_reviveUsed || !_baseBehaviors.ContainsKey(NativeBehaviorKeys.ReviveOnce))
+            {
+                return false;
+            }
+
+            _reviveUsed = true;
+            Health = 1;
+            _activeBehaviors = new Dictionary<NativeBehaviorKey, BehaviorId>(_baseBehaviors);
+            _activeBehaviors.Remove(NativeBehaviorKeys.ReviveOnce);
+            return true;
         }
     }
+
+    private readonly record struct DamageResult(int DamageDealt, bool BarrierLost, bool LethalTriggered);
 }
