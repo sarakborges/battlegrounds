@@ -2,6 +2,7 @@ using System.Collections.ObjectModel;
 using Battlegrounds.Core.Domain.Behaviors;
 using Battlegrounds.Core.Domain.Combat;
 using Battlegrounds.Core.Domain.Ids;
+using Battlegrounds.Core.Domain.Leaders;
 using Battlegrounds.Core.Domain.Players;
 using Battlegrounds.Core.Domain.Preparation;
 using Battlegrounds.Core.Domain.Units;
@@ -44,6 +45,8 @@ public sealed record CombatSettlement(
     bool EliminatedOpponentWon,
     PlayerId? DamagedPlayerId,
     int PlayerDamage,
+    int ArmorAbsorbed,
+    int? DamagedPlayerArmorAfter,
     int? DamagedPlayerHealthAfter)
 {
     public bool UsesEliminatedOpponent => EliminatedOpponentSourcePlayerId is not null;
@@ -75,6 +78,7 @@ public sealed class MatchEngine
     private readonly IRandomSource _randomSource;
     private readonly PreparationEngine _preparationEngine;
     private readonly CombatEngine _combatEngine;
+    private readonly LeaderCatalog? _leaderCatalog;
 
     public MatchEngine(
         MatchRules matchRules,
@@ -83,13 +87,15 @@ public sealed class MatchEngine
         IUnitPool unitPool,
         IRandomSource randomSource,
         UnitCatalog? unitCatalog = null,
-        BehaviorCatalog? behaviorCatalog = null)
+        BehaviorCatalog? behaviorCatalog = null,
+        LeaderCatalog? leaderCatalog = null)
     {
         _matchRules = matchRules ?? throw new ArgumentNullException(nameof(matchRules));
         ArgumentNullException.ThrowIfNull(preparationRules);
         _combatRules = combatRules ?? throw new ArgumentNullException(nameof(combatRules));
         ArgumentNullException.ThrowIfNull(unitPool);
         _randomSource = randomSource ?? throw new ArgumentNullException(nameof(randomSource));
+        _leaderCatalog = leaderCatalog;
 
         _preparationEngine = new PreparationEngine(
             preparationRules,
@@ -103,8 +109,26 @@ public sealed class MatchEngine
             : new CombatEngine();
     }
 
-    public MatchState CreateMatch(IEnumerable<PlayerId> playerIds) =>
-        MatchState.Create(playerIds, _matchRules);
+    public MatchState CreateMatch(IEnumerable<PlayerId> playerIds)
+    {
+        if (_leaderCatalog is not null)
+        {
+            throw new InvalidOperationException(
+                "This match engine has a leader catalog; create the match with PlayerSetup values so every player selects a leader.");
+        }
+
+        return MatchState.Create(playerIds, _matchRules);
+    }
+
+    public MatchState CreateMatch(IEnumerable<PlayerSetup> playerSetups)
+    {
+        if (_leaderCatalog is null)
+        {
+            throw new InvalidOperationException("This match engine has no leader catalog.");
+        }
+
+        return MatchState.Create(playerSetups, _matchRules, _leaderCatalog);
+    }
 
     public void BeginMatch(MatchState match)
     {
@@ -217,16 +241,7 @@ public sealed class MatchEngine
     {
         if (result.IsDraw)
         {
-            return new CombatSettlement(
-                left.Id,
-                right.Id,
-                EliminatedOpponentSourcePlayerId: null,
-                result,
-                WinnerPlayerId: null,
-                EliminatedOpponentWon: false,
-                DamagedPlayerId: null,
-                PlayerDamage: 0,
-                DamagedPlayerHealthAfter: null);
+            return NoDamageSettlement(left.Id, right.Id, null, result, eliminatedOpponentWon: false, winnerPlayerId: null);
         }
 
         var winnerId = result.WinnerPlayerId!.Value;
@@ -237,7 +252,7 @@ public sealed class MatchEngine
                 : throw new InvalidOperationException("Combat winner is not one of the paired players.");
         var loser = winner.Id == left.Id ? right : left;
         var damage = CalculatePostCombatDamage(winner.Tier, winner.Id, input, result);
-        loser.TakeDamage(damage);
+        var applied = loser.TakeDamage(damage);
 
         return new CombatSettlement(
             left.Id,
@@ -248,7 +263,9 @@ public sealed class MatchEngine
             EliminatedOpponentWon: false,
             loser.Id,
             damage,
-            loser.Health);
+            applied.ArmorAbsorbed,
+            applied.ArmorAfter,
+            applied.HealthAfter);
     }
 
     private CombatSettlement SettleAgainstEliminatedOpponent(
@@ -259,31 +276,25 @@ public sealed class MatchEngine
     {
         if (result.IsDraw)
         {
-            return new CombatSettlement(
+            return NoDamageSettlement(
                 player.Id,
-                RightPlayerId: null,
+                rightPlayerId: null,
                 opponent.SourcePlayerId,
                 result,
-                WinnerPlayerId: null,
-                EliminatedOpponentWon: false,
-                DamagedPlayerId: null,
-                PlayerDamage: 0,
-                DamagedPlayerHealthAfter: null);
+                eliminatedOpponentWon: false,
+                winnerPlayerId: null);
         }
 
         var winnerId = result.WinnerPlayerId!.Value;
         if (winnerId == player.Id)
         {
-            return new CombatSettlement(
+            return NoDamageSettlement(
                 player.Id,
-                RightPlayerId: null,
+                rightPlayerId: null,
                 opponent.SourcePlayerId,
                 result,
-                player.Id,
-                EliminatedOpponentWon: false,
-                DamagedPlayerId: null,
-                PlayerDamage: 0,
-                DamagedPlayerHealthAfter: null);
+                eliminatedOpponentWon: false,
+                winnerPlayerId: player.Id);
         }
 
         if (winnerId != opponent.SourcePlayerId)
@@ -292,7 +303,7 @@ public sealed class MatchEngine
         }
 
         var damage = CalculatePostCombatDamage(opponent.Tier, opponent.SourcePlayerId, input, result);
-        player.TakeDamage(damage);
+        var applied = player.TakeDamage(damage);
 
         return new CombatSettlement(
             player.Id,
@@ -303,8 +314,30 @@ public sealed class MatchEngine
             EliminatedOpponentWon: true,
             player.Id,
             damage,
-            player.Health);
+            applied.ArmorAbsorbed,
+            applied.ArmorAfter,
+            applied.HealthAfter);
     }
+
+    private static CombatSettlement NoDamageSettlement(
+        PlayerId leftPlayerId,
+        PlayerId? rightPlayerId,
+        PlayerId? eliminatedOpponentSourcePlayerId,
+        CombatResult result,
+        bool eliminatedOpponentWon,
+        PlayerId? winnerPlayerId) =>
+        new(
+            leftPlayerId,
+            rightPlayerId,
+            eliminatedOpponentSourcePlayerId,
+            result,
+            winnerPlayerId,
+            eliminatedOpponentWon,
+            DamagedPlayerId: null,
+            PlayerDamage: 0,
+            ArmorAbsorbed: 0,
+            DamagedPlayerArmorAfter: null,
+            DamagedPlayerHealthAfter: null);
 
     private int CalculatePostCombatDamage(
         int winnerTier,
