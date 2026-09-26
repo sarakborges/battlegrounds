@@ -1,13 +1,20 @@
 {
   "id": "vital-shift",
   "name": "Vital Shift",
-  "cost": 0,
-  "maxUsesPerTurn": 1,
-  "maxUsesPerMatch": 1,
-  "effects": [
+  "activation": {
+    "cost": 0,
+    "maxUsesPerTurn": 1,
+    "maxUsesPerMatch": 1
+  },
+  "triggers": [
     {
-      "kind": "setPower",
-      "powerId": "steady-pulse"
+      "event": "onActivate",
+      "effects": [
+        {
+          "kind": "setPower",
+          "powerId": "steady-pulse"
+        }
+      ]
     }
   ]
 }
