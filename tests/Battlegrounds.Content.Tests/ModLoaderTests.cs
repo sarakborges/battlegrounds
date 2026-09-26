@@ -1,4 +1,5 @@
 using Battlegrounds.Content;
+using Battlegrounds.Core.Domain.Behaviors;
 using Battlegrounds.Core.Domain.Combat;
 using Battlegrounds.Core.Domain.Ids;
 
@@ -7,7 +8,7 @@ namespace Battlegrounds.Content.Tests;
 public sealed class ModLoaderTests
 {
     [Fact]
-    public void Load_ReadsRulesTerminologyUnitsAndPoolFromModDirectory()
+    public void Load_ReadsRulesTerminologyBehaviorsUnitsAndPoolFromModDirectory()
     {
         var path = Path.Combine(AppContext.BaseDirectory, "mods", "example");
 
@@ -21,7 +22,13 @@ public sealed class ModLoaderTests
         Assert.Equal(3, mod.PreparationRules.AcquireCost);
         Assert.Equal(7, mod.PreparationRules.FieldCapacity);
         Assert.Equal(StartingSidePolicy.LargerFieldThenRandom, mod.CombatRules.StartingSidePolicy);
-        Assert.Equal("Scout", mod.Units.GetRequired(new UnitId("scout")).Name);
+
+        var protector = mod.Behaviors.GetRequired(new BehaviorId("protector"));
+        Assert.Equal(NativeBehaviorKeys.TargetPriority, protector.Handler);
+
+        var guard = mod.Units.GetRequired(new UnitId("guard"));
+        Assert.Equal("Guard", guard.Name);
+        Assert.Equal(new BehaviorId("protector"), Assert.Single(guard.Behaviors).Id);
 
         var pool = mod.CreateUnitPool();
         Assert.Equal(15, pool.GetAvailableCopies(new UnitId("scout")));

@@ -1,5 +1,6 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using Battlegrounds.Core.Domain.Behaviors;
 using Battlegrounds.Core.Domain.Combat;
 using Battlegrounds.Core.Domain.Ids;
 using Battlegrounds.Core.Domain.Match;
@@ -33,16 +34,12 @@ public sealed class ModLoader
         }
 
         var manifest = ReadRequired<ModManifest>(Path.Combine(modDirectory, "mod.json"));
-        var matchRulesData = ReadRequired<MatchRulesData>(
-            Path.Combine(modDirectory, "rules", "match.json"));
-        var preparationRulesData = ReadRequired<PreparationRulesData>(
-            Path.Combine(modDirectory, "rules", "preparation.json"));
-        var combatRulesData = ReadRequired<CombatRulesData>(
-            Path.Combine(modDirectory, "rules", "combat.json"));
-        var unitData = ReadRequired<UnitData[]>(
-            Path.Combine(modDirectory, "content", "units.json"));
-        var poolData = ReadRequired<UnitPoolData[]>(
-            Path.Combine(modDirectory, "content", "pool.json"));
+        var matchRulesData = ReadRequired<MatchRulesData>(Path.Combine(modDirectory, "rules", "match.json"));
+        var preparationRulesData = ReadRequired<PreparationRulesData>(Path.Combine(modDirectory, "rules", "preparation.json"));
+        var combatRulesData = ReadRequired<CombatRulesData>(Path.Combine(modDirectory, "rules", "combat.json"));
+        var behaviorData = ReadRequired<BehaviorData[]>(Path.Combine(modDirectory, "content", "behaviors.json"));
+        var unitData = ReadRequired<UnitData[]>(Path.Combine(modDirectory, "content", "units.json"));
+        var poolData = ReadRequired<UnitPoolData[]>(Path.Combine(modDirectory, "content", "pool.json"));
 
         ValidateManifest(manifest);
 
@@ -61,6 +58,22 @@ public sealed class ModLoader
             preparationRulesData.InitialUpgradeCostsByTier);
         var combatRules = new CombatRules(combatRulesData.StartingSidePolicy);
 
+        var behaviors = behaviorData.Select(data =>
+        {
+            try
+            {
+                return new BehaviorDefinition(
+                    new BehaviorId(data.Id),
+                    data.Name,
+                    new NativeBehaviorKey(data.Handler));
+            }
+            catch (ArgumentException exception)
+            {
+                throw new InvalidDataException($"Behavior '{data.Id}' is invalid.", exception);
+            }
+        }).ToArray();
+        var behaviorCatalog = new BehaviorCatalog(behaviors);
+
         if (unitData.Length == 0)
         {
             throw new InvalidDataException("A mod must define at least one unit.");
@@ -68,12 +81,27 @@ public sealed class ModLoader
 
         var definitions = unitData.Select(unit =>
         {
+            var attachedBehaviors = (unit.Behaviors ?? [])
+                .Select(id =>
+                {
+                    try
+                    {
+                        return behaviorCatalog.GetRequired(new BehaviorId(id));
+                    }
+                    catch (KeyNotFoundException exception)
+                    {
+                        throw new InvalidDataException($"Unit '{unit.Id}' references unknown behavior '{id}'.", exception);
+                    }
+                })
+                .ToArray();
+
             var definition = new UnitDefinition(
                 new UnitId(unit.Id),
                 unit.Name,
                 unit.Tier,
                 unit.Attack,
-                unit.Health);
+                unit.Health,
+                attachedBehaviors);
 
             if (definition.Tier > preparationRules.MaximumTier)
             {
@@ -98,6 +126,7 @@ public sealed class ModLoader
             matchRules,
             preparationRules,
             combatRules,
+            behaviorCatalog,
             catalog,
             poolEntries);
     }
@@ -139,8 +168,7 @@ public sealed class ModLoader
         }
 
         if (manifest.Terminology is null || manifest.Terminology.Count == 0 ||
-            manifest.Terminology.Any(pair =>
-                string.IsNullOrWhiteSpace(pair.Key) || string.IsNullOrWhiteSpace(pair.Value)))
+            manifest.Terminology.Any(pair => string.IsNullOrWhiteSpace(pair.Key) || string.IsNullOrWhiteSpace(pair.Value)))
         {
             throw new InvalidDataException("Mod terminology must contain non-empty keys and values.");
         }
@@ -169,12 +197,15 @@ public sealed class ModLoader
 
     private sealed record CombatRulesData(StartingSidePolicy StartingSidePolicy);
 
+    private sealed record BehaviorData(string Id, string Name, string Handler);
+
     private sealed record UnitData(
         string Id,
         string Name,
         int Tier,
         int Attack,
-        int Health);
+        int Health,
+        string[]? Behaviors);
 
     private sealed record UnitPoolData(string UnitId, int Copies);
 }
