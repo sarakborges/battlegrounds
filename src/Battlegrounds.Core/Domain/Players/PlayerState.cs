@@ -20,7 +20,6 @@ public sealed class PlayerState
     public int? UpgradeCost { get; private set; }
     public bool IsReadyForCombat { get; private set; }
     public bool IsTavernFrozen { get; private set; }
-    public int FreezeTogglesThisRecruitment { get; private set; }
     public IReadOnlyList<MinionInstance> Hand => _handView;
     public IReadOnlyList<MinionInstance> Board => _boardView;
     public IReadOnlyList<CardDefinition> TavernOffer => _tavernOfferView;
@@ -37,7 +36,6 @@ public sealed class PlayerState
     {
         Gold = rules.GetGoldForRound(round);
         IsReadyForCombat = false;
-        FreezeTogglesThisRecruitment = 0;
 
         if (UpgradeCost is null)
         {
@@ -124,7 +122,6 @@ public sealed class PlayerState
         }
 
         IsTavernFrozen = isFrozen;
-        FreezeTogglesThisRecruitment++;
     }
 
     internal void ClearTavernFrozen() => IsTavernFrozen = false;
