@@ -129,6 +129,79 @@ public sealed class EffectHistoryTests
         Assert.Equal(2, world.Resource);
     }
 
+    [Fact]
+    public void AfterEventCount_FiresAtEachThresholdAndResetsWithTurnScope()
+    {
+        var counter = new EffectHistoryQuery(
+            NativeGameEventKeys.UnitAcquired,
+            EffectHistoryScope.Turn);
+        var definition = new UnitDefinition(
+            new UnitId("listener"),
+            "Listener",
+            1,
+            1,
+            1,
+            triggers:
+            [
+                new TriggerDefinition(
+                    NativeTriggerKeys.AfterEventCount,
+                    [new AddResourceEffectDefinition(1)],
+                    count: 2,
+                    counter: counter),
+            ]);
+        var unit = new FakeUnit(new UnitInstanceId(1), new PlayerId(0), definition);
+        var world = new FakeWorld(unit);
+        var runtime = new GameEffectRuntime(world, new MinimumRandomSource(), null, null);
+
+        runtime.RecordGameEvent(unit.OwnerPlayerId, NativeGameEventKeys.UnitAcquired);
+        Assert.Equal(0, world.Resource);
+        runtime.RecordGameEvent(unit.OwnerPlayerId, NativeGameEventKeys.UnitAcquired);
+        Assert.Equal(1, world.Resource);
+        runtime.RecordGameEvent(unit.OwnerPlayerId, NativeGameEventKeys.UnitAcquired);
+        Assert.Equal(1, world.Resource);
+        runtime.RecordGameEvent(unit.OwnerPlayerId, NativeGameEventKeys.UnitAcquired);
+        Assert.Equal(2, world.Resource);
+
+        world.History.BeginTurn();
+        runtime.RecordGameEvent(unit.OwnerPlayerId, NativeGameEventKeys.UnitAcquired);
+        runtime.RecordGameEvent(unit.OwnerPlayerId, NativeGameEventKeys.UnitAcquired);
+        Assert.Equal(3, world.Resource);
+    }
+
+    [Fact]
+    public void TriggerEvent_OnDeath_DoesNotCountAsAnActualUnitDeath()
+    {
+        var definition = new UnitDefinition(
+            new UnitId("source"),
+            "Source",
+            1,
+            1,
+            1,
+            triggers:
+            [
+                new TriggerDefinition(
+                    NativeTriggerKeys.OnPlay,
+                    [
+                        new TriggerEventEffectDefinition(
+                            new EffectTargetSelector(EffectTargetScope.Self),
+                            NativeTriggerKeys.OnDeath),
+                    ]),
+                new TriggerDefinition(
+                    NativeTriggerKeys.OnDeath,
+                    [new AddResourceEffectDefinition(1)]),
+            ]);
+        var unit = new FakeUnit(new UnitInstanceId(1), new PlayerId(0), definition);
+        var world = new FakeWorld(unit);
+        var runtime = new GameEffectRuntime(world, new MinimumRandomSource(), null, null);
+
+        runtime.Process(new GameEffectEvent(NativeTriggerKeys.OnPlay, unit));
+
+        Assert.Equal(1, world.Resource);
+        Assert.Equal(0, world.History.Snapshot().GetEventCount(new EffectHistoryQuery(
+            NativeGameEventKeys.UnitDied,
+            EffectHistoryScope.Match)));
+    }
+
     private static UnitDefinition Unit(string id) =>
         new(new UnitId(id), id, 1, 1, 1);
 
