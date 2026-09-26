@@ -8,16 +8,16 @@ namespace Battlegrounds.Core.Domain.Recruitment;
 public sealed class RecruitmentEngine
 {
     private readonly RecruitmentRules _rules;
-    private readonly ITavernOfferSource _offerSource;
+    private readonly ITavernPool _tavernPool;
     private readonly IRandomSource _randomSource;
 
     public RecruitmentEngine(
         RecruitmentRules rules,
-        ITavernOfferSource offerSource,
+        ITavernPool tavernPool,
         IRandomSource randomSource)
     {
         _rules = rules ?? throw new ArgumentNullException(nameof(rules));
-        _offerSource = offerSource ?? throw new ArgumentNullException(nameof(offerSource));
+        _tavernPool = tavernPool ?? throw new ArgumentNullException(nameof(tavernPool));
         _randomSource = randomSource ?? throw new ArgumentNullException(nameof(randomSource));
     }
 
@@ -32,7 +32,7 @@ public sealed class RecruitmentEngine
 
         var offers = match.Players.ToDictionary(
             player => player.Id,
-            player => DrawValidatedOffer(player.TavernTier));
+            PrepareNextOffer);
 
         match.BeginRecruitment();
 
@@ -72,6 +72,8 @@ public sealed class RecruitmentEngine
             PlayMinionCommand play => PlayMinion(player, play),
             RefreshTavernCommand => RefreshTavern(player),
             UpgradeTavernCommand => UpgradeTavern(player),
+            FreezeTavernCommand => FreezeTavern(player),
+            UnfreezeTavernCommand => UnfreezeTavern(player),
             EndRecruitmentCommand => EndRecruitment(player),
             _ => throw new ArgumentOutOfRangeException(nameof(command), command.GetType().Name, "Unsupported recruitment command."),
         };
@@ -125,6 +127,8 @@ public sealed class RecruitmentEngine
             return RecruitmentCommandResult.Failure(RecruitmentFailureCode.InvalidBoardSlot);
         }
 
+        var minion = player.Board[command.BoardSlot];
+        _tavernPool.ReturnMinion(minion.Definition);
         player.RemoveBoardMinion(command.BoardSlot);
         player.GainGold(_rules.SellReward, _rules.MaximumGold);
 
@@ -154,9 +158,15 @@ public sealed class RecruitmentEngine
             return RecruitmentCommandResult.Failure(RecruitmentFailureCode.InsufficientGold);
         }
 
-        var offer = DrawValidatedOffer(player.TavernTier);
+        var offer = _tavernPool.ExchangeOffer(
+            player.TavernOffer.ToArray(),
+            player.TavernTier,
+            _rules.GetOfferSize(player.TavernTier),
+            _randomSource);
+
         player.SpendGold(_rules.RefreshCost);
-        player.ReplaceTavernOffer(offer);
+        player.ReplaceTavernOffer(ValidateOffer(offer, player.TavernTier));
+        player.ClearTavernFrozen();
 
         return RecruitmentCommandResult.Success();
     }
@@ -177,29 +187,83 @@ public sealed class RecruitmentEngine
         return RecruitmentCommandResult.Success();
     }
 
+    private static RecruitmentCommandResult FreezeTavern(PlayerState player)
+    {
+        if (player.IsTavernFrozen)
+        {
+            return RecruitmentCommandResult.Failure(RecruitmentFailureCode.TavernAlreadyFrozen);
+        }
+
+        player.SetTavernFrozen(true);
+        return RecruitmentCommandResult.Success();
+    }
+
+    private static RecruitmentCommandResult UnfreezeTavern(PlayerState player)
+    {
+        if (!player.IsTavernFrozen)
+        {
+            return RecruitmentCommandResult.Failure(RecruitmentFailureCode.TavernNotFrozen);
+        }
+
+        player.SetTavernFrozen(false);
+        return RecruitmentCommandResult.Success();
+    }
+
     private static RecruitmentCommandResult EndRecruitment(PlayerState player)
     {
         player.MarkReadyForCombat();
         return RecruitmentCommandResult.Success();
     }
 
-    private IReadOnlyList<CardDefinition> DrawValidatedOffer(int tavernTier)
+    private IReadOnlyList<CardDefinition> PrepareNextOffer(PlayerState player)
     {
-        var expectedCount = _rules.GetOfferSize(tavernTier);
-        var offer = _offerSource.DrawOffer(tavernTier, expectedCount, _randomSource)
-            ?? throw new InvalidOperationException("Tavern offer source returned null.");
+        var expectedCount = _rules.GetOfferSize(player.TavernTier);
 
+        if (!player.IsTavernFrozen)
+        {
+            var replacement = _tavernPool.ExchangeOffer(
+                player.TavernOffer.ToArray(),
+                player.TavernTier,
+                expectedCount,
+                _randomSource);
+
+            return ValidateOffer(replacement, player.TavernTier);
+        }
+
+        if (player.TavernOffer.Count > expectedCount)
+        {
+            throw new InvalidOperationException("Frozen tavern offer exceeds the configured offer size.");
+        }
+
+        var missingCount = expectedCount - player.TavernOffer.Count;
+        if (missingCount == 0)
+        {
+            return player.TavernOffer.ToArray();
+        }
+
+        var additions = _tavernPool.DrawOffer(player.TavernTier, missingCount, _randomSource);
+        var combined = player.TavernOffer.Concat(additions).ToArray();
+        return ValidateOffer(combined, player.TavernTier);
+    }
+
+    private IReadOnlyList<CardDefinition> ValidateOffer(
+        IReadOnlyList<CardDefinition> offer,
+        int tavernTier)
+    {
+        ArgumentNullException.ThrowIfNull(offer);
+
+        var expectedCount = _rules.GetOfferSize(tavernTier);
         if (offer.Count != expectedCount)
         {
             throw new InvalidOperationException(
-                $"Tavern offer source returned {offer.Count} cards; expected {expectedCount}.");
+                $"Tavern pool returned {offer.Count} cards; expected {expectedCount}.");
         }
 
         if (offer.Any(card => card is null || card.TavernTier > tavernTier))
         {
-            throw new InvalidOperationException("Tavern offer source returned an ineligible card.");
+            throw new InvalidOperationException("Tavern pool returned an ineligible card.");
         }
 
-        return offer.ToArray();
+        return offer;
     }
 }

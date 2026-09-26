@@ -16,7 +16,7 @@ public sealed class RecruitmentRules
         handCapacity: 10,
         maximumTavernTier: 6,
         offerSizesByTier: [3, 4, 4, 5, 5, 6],
-        initialUpgradeCostsByTier: [5, 7, 8, 9, 10]);
+        initialUpgradeCostsByTier: [5, 7, 8, 11, 11]);
 
     public int StartingGold { get; }
     public int GoldPerRound { get; }
@@ -65,6 +65,16 @@ public sealed class RecruitmentRules
         if (offerSizesByTier.Any(size => size <= 0))
         {
             throw new ArgumentException("Offer sizes must be positive.", nameof(offerSizesByTier));
+        }
+
+        for (var index = 1; index < offerSizesByTier.Count; index++)
+        {
+            if (offerSizesByTier[index] < offerSizesByTier[index - 1])
+            {
+                throw new ArgumentException(
+                    "Offer sizes cannot decrease at higher tavern tiers.",
+                    nameof(offerSizesByTier));
+            }
         }
 
         if (initialUpgradeCostsByTier.Any(cost => cost < 0))

@@ -19,6 +19,7 @@ public sealed class PlayerState
     public int TavernTier { get; private set; } = 1;
     public int? UpgradeCost { get; private set; }
     public bool IsReadyForCombat { get; private set; }
+    public bool IsTavernFrozen { get; private set; }
     public IReadOnlyList<MinionInstance> Hand => _handView;
     public IReadOnlyList<MinionInstance> Board => _boardView;
     public IReadOnlyList<CardDefinition> TavernOffer => _tavernOfferView;
@@ -81,6 +82,9 @@ public sealed class PlayerState
         _tavernOffer.AddRange(cards);
     }
 
+    internal void AppendTavernOffer(IEnumerable<CardDefinition> cards) =>
+        _tavernOffer.AddRange(cards);
+
     internal void AddToHand(MinionInstance minion) => _hand.Add(minion);
 
     internal MinionInstance MoveHandMinionToBoard(int handSlot)
@@ -109,6 +113,18 @@ public sealed class PlayerState
         TavernTier++;
         UpgradeCost = rules.GetInitialUpgradeCost(TavernTier);
     }
+
+    internal void SetTavernFrozen(bool isFrozen)
+    {
+        if (IsTavernFrozen == isFrozen)
+        {
+            throw new InvalidOperationException("Tavern freeze state must actually change.");
+        }
+
+        IsTavernFrozen = isFrozen;
+    }
+
+    internal void ClearTavernFrozen() => IsTavernFrozen = false;
 
     internal void MarkReadyForCombat() => IsReadyForCombat = true;
 }
