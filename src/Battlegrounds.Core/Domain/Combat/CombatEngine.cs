@@ -72,7 +72,10 @@ public sealed class CombatEngine
             for (var strike = 0; strike < strikeCount; strike++)
             {
                 var deathsBeforeAttackEvent = attacker.DeathCount;
-                world.RecordEvent(attacker.OwnerPlayerId, NativeGameEventKeys.UnitAttacked, attacker.Definition);
+                runtime.RecordGameEvent(
+                    attacker.OwnerPlayerId,
+                    NativeGameEventKeys.UnitAttacked,
+                    attacker.Definition);
                 runtime.Process(new GameEffectEvent(NativeTriggerKeys.OnAttack, attacker));
 
                 if (attacker.DeathCount > deathsBeforeAttackEvent ||
@@ -105,12 +108,20 @@ public sealed class CombatEngine
                 var damageEvents = new List<GameEffectEvent>();
                 if (damageToTarget.DamageDealt > 0)
                 {
-                    world.RecordEvent(target.OwnerPlayerId, NativeGameEventKeys.UnitDamaged, target.Definition);
+                    runtime.RecordGameEvent(
+                        target.OwnerPlayerId,
+                        NativeGameEventKeys.UnitDamaged,
+                        target.Definition,
+                        resolveDeaths: false);
                     damageEvents.Add(new GameEffectEvent(NativeTriggerKeys.OnDamage, target));
                 }
                 if (damageToAttacker.DamageDealt > 0)
                 {
-                    world.RecordEvent(attacker.OwnerPlayerId, NativeGameEventKeys.UnitDamaged, attacker.Definition);
+                    runtime.RecordGameEvent(
+                        attacker.OwnerPlayerId,
+                        NativeGameEventKeys.UnitDamaged,
+                        attacker.Definition,
+                        resolveDeaths: false);
                     damageEvents.Add(new GameEffectEvent(NativeTriggerKeys.OnDamage, attacker));
                 }
                 if (damageEvents.Count > 0)
@@ -256,7 +267,7 @@ public sealed class CombatEngine
             winner = world.Left.UnitCount > 0
                 ? world.Left.PlayerId
                 : world.Right.UnitCount > 0
-                    ? world.Right.PlayerId
+                    ? false ? null : world.Right.PlayerId
                     : null;
             return true;
         }
@@ -372,6 +383,20 @@ public sealed class CombatEngine
 
             unit = null!;
             return false;
+        }
+
+        public IReadOnlyList<IEffectRuntimeUnit> GetHistoryEventListeners(PlayerId playerId)
+        {
+            var side = GetSide(playerId);
+            var listeners = new List<IEffectRuntimeUnit>();
+            if (_powerCatalog is not null &&
+                side.CurrentPowerId is PowerId powerId &&
+                _powerCatalog.TryGet(powerId, out var power))
+            {
+                listeners.Add(CreatePowerSource(side, power));
+            }
+            listeners.AddRange(side.Units.Where(unit => unit.IsAlive));
+            return listeners;
         }
 
         public void ModifyStats(IEffectRuntimeUnit unit, int attackDelta, int healthDelta) =>
