@@ -80,7 +80,7 @@ public sealed class CombatParticipant
                 unit.Definition.Tier,
                 unit.Attack,
                 unit.Health,
-                unit.Definition.Behaviors.Select(behavior =>
+                unit.Behaviors.Select(behavior =>
                     new CombatBehaviorSnapshot(behavior.Id, behavior.Handler)))));
 }
 

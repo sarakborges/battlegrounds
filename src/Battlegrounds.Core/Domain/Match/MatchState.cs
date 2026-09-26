@@ -69,10 +69,12 @@ public sealed class MatchState
         Phase = MatchPhase.Combat;
     }
 
-    internal UnitInstance CreateUnit(UnitDefinition definition)
+    internal UnitInstance CreateUnit(
+        UnitDefinition definition,
+        UnitInstanceOrigin origin = UnitInstanceOrigin.Pooled)
     {
         var id = new UnitInstanceId(_nextUnitInstanceId++);
-        return new UnitInstance(id, definition);
+        return new UnitInstance(id, definition, origin);
     }
 
     internal void MarkChanged() => Revision++;

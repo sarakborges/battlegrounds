@@ -1,3 +1,5 @@
+using Battlegrounds.Core.Domain.Behaviors;
+using Battlegrounds.Core.Domain.Effects;
 using Battlegrounds.Core.Domain.Match;
 using Battlegrounds.Core.Domain.Players;
 using Battlegrounds.Core.Domain.Units;
@@ -10,15 +12,32 @@ public sealed class PreparationEngine
     private readonly PreparationRules _rules;
     private readonly IUnitPool _unitPool;
     private readonly IRandomSource _randomSource;
+    private readonly PreparationEffectEngine _effectEngine;
 
     public PreparationEngine(
         PreparationRules rules,
         IUnitPool unitPool,
         IRandomSource randomSource)
+        : this(rules, unitPool, randomSource, unitCatalog: null, behaviorCatalog: null)
+    {
+    }
+
+    public PreparationEngine(
+        PreparationRules rules,
+        IUnitPool unitPool,
+        IRandomSource randomSource,
+        UnitCatalog? unitCatalog,
+        BehaviorCatalog? behaviorCatalog)
     {
         _rules = rules ?? throw new ArgumentNullException(nameof(rules));
         _unitPool = unitPool ?? throw new ArgumentNullException(nameof(unitPool));
         _randomSource = randomSource ?? throw new ArgumentNullException(nameof(randomSource));
+        _effectEngine = new PreparationEffectEngine(
+            _rules,
+            _unitPool,
+            _randomSource,
+            unitCatalog,
+            behaviorCatalog);
     }
 
     public void BeginPreparation(MatchState match)
@@ -40,6 +59,11 @@ public sealed class PreparationEngine
         {
             player.BeginPreparation(match.Round, _rules);
             player.ReplaceOffer(offers[player.Id]);
+        }
+
+        foreach (var player in match.Players)
+        {
+            _effectEngine.ProcessTurnEvent(match, player, NativeTriggerKeys.OnTurnStart);
         }
 
         match.MarkChanged();
@@ -69,12 +93,12 @@ public sealed class PreparationEngine
         {
             AcquireUnitCommand acquire => AcquireUnit(match, player, acquire),
             ReleaseUnitCommand release => ReleaseUnit(player, release),
-            DeployUnitCommand deploy => DeployUnit(player, deploy),
+            DeployUnitCommand deploy => DeployUnit(match, player, deploy),
             RefreshOfferCommand => RefreshOffer(player),
             UpgradeTierCommand => UpgradeTier(player),
             FreezeOfferCommand => FreezeOffer(player),
             UnfreezeOfferCommand => UnfreezeOffer(player),
-            EndPreparationCommand => EndPreparation(player),
+            EndPreparationCommand => EndPreparation(match, player),
             _ => throw new ArgumentOutOfRangeException(nameof(command), command.GetType().Name, "Unsupported preparation command."),
         };
 
@@ -113,7 +137,7 @@ public sealed class PreparationEngine
         }
 
         var definition = player.TakeOfferedUnit(command.OfferSlot);
-        var unit = match.CreateUnit(definition);
+        var unit = match.CreateUnit(definition, UnitInstanceOrigin.Pooled);
         player.AddToReserve(unit);
         player.SpendResource(_rules.AcquireCost);
 
@@ -128,14 +152,21 @@ public sealed class PreparationEngine
         }
 
         var unit = player.Field[command.FieldSlot];
-        _unitPool.ReturnUnit(unit.Definition);
+        if (unit.Origin == UnitInstanceOrigin.Pooled)
+        {
+            _unitPool.ReturnUnit(unit.Definition);
+        }
+
         player.RemoveFromField(command.FieldSlot);
         player.GainResource(_rules.ReleaseValue, _rules.MaximumResource);
 
         return PreparationCommandResult.Success();
     }
 
-    private PreparationCommandResult DeployUnit(PlayerState player, DeployUnitCommand command)
+    private PreparationCommandResult DeployUnit(
+        MatchState match,
+        PlayerState player,
+        DeployUnitCommand command)
     {
         if (command.ReserveSlot < 0 || command.ReserveSlot >= player.Reserve.Count)
         {
@@ -147,7 +178,8 @@ public sealed class PreparationEngine
             return PreparationCommandResult.Failure(PreparationFailureCode.FieldFull);
         }
 
-        player.DeployFromReserve(command.ReserveSlot);
+        var unit = player.DeployFromReserve(command.ReserveSlot);
+        _effectEngine.ProcessPlayedUnit(match, player, unit);
         return PreparationCommandResult.Success();
     }
 
@@ -209,8 +241,9 @@ public sealed class PreparationEngine
         return PreparationCommandResult.Success();
     }
 
-    private static PreparationCommandResult EndPreparation(PlayerState player)
+    private PreparationCommandResult EndPreparation(MatchState match, PlayerState player)
     {
+        _effectEngine.ProcessTurnEvent(match, player, NativeTriggerKeys.OnTurnEnd);
         player.MarkReadyForCombat();
         return PreparationCommandResult.Success();
     }

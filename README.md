@@ -62,7 +62,13 @@ Supported effect kinds currently are:
 
 Targeted effects use neutral scopes (`self`, `randomFriendly`, `randomEnemy`, `allFriendly`, `allEnemy`) and can filter by mod-defined `typeId` and/or `tagId`.
 
-The Core effect pipeline resolves trigger order, effect order, deterministic random targets, filters, and effect payloads into explicit instructions. It does not hide mutation behind a global event bus. Preparation/combat owners apply those instructions and can enqueue resulting events in later slices.
+The Core resolves authored triggers into explicit effects and applies preparation effects through a FIFO action/event queue. Consequences are enqueued explicitly (`onPlay → onDamage → onDeath → onSummon`) rather than hidden behind a global event bus. Random target resolution still uses the match RNG, so identical state and seed produce identical effect ordering and targets.
+
+Played units execute `onPlay` and then participate in `onSummon`; generated units execute `onSummon` but not `onPlay`. `onSummon` is observable by living friendly field units. `onTurnStart` and `onTurnEnd` run in stable field order. Units killed by preparation effects free their field slot before `onDeath` resolves, allowing death effects to summon into that slot.
+
+Runtime unit behaviors are mutable instance state: `addBehavior`/`removeBehavior` persist into later combat snapshots without mutating immutable unit definitions.
+
+Unit origin is explicit. `Pooled` units return their copy to the shared pool when permanently removed; `Generated` units do not create pool copies when released or destroyed.
 
 ## Mod validation is mandatory
 
@@ -138,6 +144,7 @@ Read `ARCHITECTURE.md` before adding features. Its ownership, dependency, mutati
 - authoritative `MatchState` lifecycle (`Setup → Preparation → Combat`), round, and revision;
 - authoritative `PlayerState` with read-only `Reserve`, `Field`, and `Offer` views;
 - immutable `UnitDefinition` separated from mutable `UnitInstance` runtime state;
+- explicit `Pooled` versus `Generated` unit origin;
 - validated deterministic catalogs for units, behaviors, unit types, and tags;
 - shared authoritative `UnitPool` with per-unit copy counts;
 - explicit preparation commands for acquire, release, deploy, refresh, tier upgrade, freeze/unfreeze, and end preparation;
@@ -145,6 +152,8 @@ Read `ARCHITECTURE.md` before adding features. Its ownership, dependency, mutati
 - deterministic injected RNG;
 - fully data-driven match/preparation/combat rules;
 - data-driven terminology, behaviors, taxonomy, units, triggers/effects, and pool configuration;
+- FIFO preparation action/event queue applying stat, damage, summon, behavior and resource effects;
+- preparation `onPlay`, `onSummon`, `onDamage`, `onDeath`, `onTurnStart`, and `onTurnEnd` execution;
 - immutable combat snapshots isolated from persistent preparation state;
 - deterministic combat starting-side selection, attacker rotation, target selection, simultaneous damage, deaths, and winner/draw resolution;
 - native neutral implementations for damage barrier, target priority, revive-once, first-damage lethal, and extra attack;
@@ -165,4 +174,4 @@ dotnet test tests/Battlegrounds.Content.Tests/Battlegrounds.Content.Tests.csproj
 
 ## Next architectural slice
 
-Integrate resolved effects into authoritative Preparation and Combat state through an explicit action/event queue: apply stat changes, damage, summons, behaviors and resources, then enqueue resulting triggers such as `onDamage`, `onSummon`, and `onDeath`. That integration unlocks Battlecry/Deathrattle/Avenge-style authored mechanics and attach/merge behavior without a global event bus.
+Integrate the same explicit event/action semantics into combat-local state, including authored `onCombatStart`, `onAttack`, `onDamage`, `onDeath`, `onSummon`, and `onCombatEnd` effects while preserving combat ordering, Reborn, barriers, target priority, and simultaneous damage. After that, add player health and post-combat damage so the complete Preparation → Combat → Preparation loop can run from the selected mod.
