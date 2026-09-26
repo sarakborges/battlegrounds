@@ -40,6 +40,7 @@ public sealed class ModLoader
         if (!report.IsValid) throw new ModValidationException(report);
 
         var manifest = ReadRequired<ModManifest>(Path.Combine(modDirectory, "mod.json"));
+        var setupRulesData = ReadRequired<SetupRulesData>(Path.Combine(modDirectory, "rules", "setup.json"));
         var matchRulesData = ReadRequired<MatchRulesData>(Path.Combine(modDirectory, "rules", "match.json"));
         var preparationRulesData = ReadRequired<PreparationRulesData>(Path.Combine(modDirectory, "rules", "preparation.json"));
         var combatRulesData = ReadRequired<CombatRulesData>(Path.Combine(modDirectory, "rules", "combat.json"));
@@ -51,12 +52,13 @@ public sealed class ModLoader
         var unitData = ReadDirectory<UnitData>(Path.Combine(modDirectory, "content", "units"));
         var poolData = ReadRequired<UnitPoolData[]>(Path.Combine(modDirectory, "content", "pool.json"));
 
+        var leaderSelectionRules = new LeaderSelectionRules(
+            setupRulesData.LeaderOfferSize,
+            setupRulesData.LeaderOfferPolicy);
         var matchRules = new MatchRules(
             matchRulesData.MinimumPlayers,
             matchRulesData.MaximumPlayers,
-            matchRulesData.StartingHealth,
-            matchRulesData.LeaderOfferSize,
-            matchRulesData.LeaderOfferPolicy);
+            matchRulesData.StartingHealth);
         var preparationRules = new PreparationRules(
             preparationRulesData.StartingResource,
             preparationRulesData.ResourcePerRound,
@@ -117,6 +119,7 @@ public sealed class ModLoader
             manifest.Id,
             manifest.Name,
             manifest.Terminology,
+            leaderSelectionRules,
             matchRules,
             preparationRules,
             combatRules,
@@ -188,12 +191,8 @@ public sealed class ModLoader
     }
 
     private sealed record ModManifest(int SchemaVersion, string Id, string Name, Dictionary<string, string> Terminology);
-    private sealed record MatchRulesData(
-        int MinimumPlayers,
-        int MaximumPlayers,
-        int StartingHealth,
-        int LeaderOfferSize,
-        LeaderOfferPolicy LeaderOfferPolicy);
+    private sealed record SetupRulesData(int LeaderOfferSize, LeaderOfferPolicy LeaderOfferPolicy);
+    private sealed record MatchRulesData(int MinimumPlayers, int MaximumPlayers, int StartingHealth);
     private sealed record PreparationRulesData(
         int StartingResource,
         int ResourcePerRound,
