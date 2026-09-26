@@ -145,6 +145,11 @@ internal sealed class AdvancedEffectModValidator
                     TryRequiredInt(condition, "value", file, conditionPath + ".value", issues, out _);
                     break;
 
+                case "value":
+                    ValidateKeys(condition, file, conditionPath, ["kind", "left", "comparison", "right"], ["kind", "left", "comparison", "right"], issues);
+                    ValidateComparison(condition, file, conditionPath, issues);
+                    break;
+
                 default:
                     issues.Add(new("UNSUPPORTED_CONDITION", file, conditionPath + ".kind", $"Condition kind '{kind}' is not supported."));
                     break;
@@ -328,7 +333,6 @@ internal sealed class AdvancedEffectModValidator
             }
             catch (JsonException)
             {
-                // Base validators own invalid JSON reporting.
             }
         }
         return result;
