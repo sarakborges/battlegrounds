@@ -1,5 +1,6 @@
 using System.Collections.ObjectModel;
 using Battlegrounds.Core.Domain.Ids;
+using Battlegrounds.Core.Domain.Leaders;
 using Battlegrounds.Core.Domain.Preparation;
 using Battlegrounds.Core.Domain.Units;
 
@@ -15,6 +16,7 @@ public sealed class PlayerState
     private readonly ReadOnlyCollection<UnitDefinition> _offerView;
 
     public PlayerId Id { get; }
+    public LeaderState? Leader { get; }
     public int Health { get; private set; }
     public bool IsEliminated => Health <= 0;
     public int Resource { get; private set; }
@@ -26,15 +28,24 @@ public sealed class PlayerState
     public IReadOnlyList<UnitInstance> Field => _fieldView;
     public IReadOnlyList<UnitDefinition> Offer => _offerView;
 
-    internal PlayerState(PlayerId id, int startingHealth)
+    internal PlayerState(PlayerId id, int startingHealth, LeaderDefinition? leaderDefinition = null)
     {
         if (startingHealth <= 0)
         {
             throw new ArgumentOutOfRangeException(nameof(startingHealth));
         }
 
+        var initialHealth = startingHealth + (leaderDefinition?.HealthModifier ?? 0);
+        if (initialHealth <= 0)
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(leaderDefinition),
+                "Leader health modifier must leave the player with positive starting Health.");
+        }
+
         Id = id;
-        Health = startingHealth;
+        Leader = leaderDefinition is null ? null : new LeaderState(leaderDefinition);
+        Health = initialHealth;
         _reserveView = _reserve.AsReadOnly();
         _fieldView = _field.AsReadOnly();
         _offerView = _offer.AsReadOnly();
@@ -60,7 +71,7 @@ public sealed class PlayerState
         }
     }
 
-    internal void TakeDamage(int amount)
+    internal PlayerDamageResult TakeDamage(int amount)
     {
         if (amount < 0)
         {
@@ -69,14 +80,29 @@ public sealed class PlayerState
 
         if (amount == 0 || IsEliminated)
         {
-            return;
+            return new PlayerDamageResult(
+                amount,
+                ArmorAbsorbed: 0,
+                HealthDamage: 0,
+                Leader?.Armor ?? 0,
+                Health);
         }
 
-        Health = Math.Max(0, Health - amount);
+        var armorAbsorbed = Leader?.AbsorbDamage(amount) ?? 0;
+        var healthDamage = amount - armorAbsorbed;
+        Health = Math.Max(0, Health - healthDamage);
+
         if (IsEliminated)
         {
             IsReadyForCombat = false;
         }
+
+        return new PlayerDamageResult(
+            amount,
+            armorAbsorbed,
+            healthDamage,
+            Leader?.Armor ?? 0,
+            Health);
     }
 
     internal bool CanAfford(int amount) => Resource >= amount;
