@@ -10,23 +10,23 @@ public sealed class EffectSchemaValidationTests
         var path = CreateTempMod();
         try
         {
-            File.WriteAllText(Path.Combine(path, "content", "units.json"),
-                "[{\"id\":\"unit\",\"name\":\"Unit\",\"tier\":1,\"attack\":1,\"health\":1," +
+            File.WriteAllText(Path.Combine(path, "content", "units", "scout.json"),
+                "{\"id\":\"scout\",\"name\":\"Scout\",\"tier\":1,\"attack\":1,\"health\":1," +
                 "\"triggers\":[{\"event\":\"onPlay\",\"effects\":[" +
                 "{\"kind\":\"destroyUnit\"}," +
                 "{\"kind\":\"triggerEvent\",\"target\":{\"scope\":\"self\"}}" +
-                "]}]}]");
-            File.WriteAllText(Path.Combine(path, "content", "pool.json"),
-                "[{\"unitId\":\"unit\",\"copies\":1}]");
+                "]}]}");
 
             var report = new ModValidator().Validate(path);
 
             Assert.Contains(report.Issues, issue =>
                 issue.Code == "MISSING_REQUIRED_PARAMETER" &&
-                issue.Path == "$[0].triggers[0].effects[0].target");
+                issue.File == "content/units/scout.json" &&
+                issue.Path == "$.triggers[0].effects[0].target");
             Assert.Contains(report.Issues, issue =>
                 issue.Code == "MISSING_REQUIRED_PARAMETER" &&
-                issue.Path == "$[0].triggers[0].effects[1].event");
+                issue.File == "content/units/scout.json" &&
+                issue.Path == "$.triggers[0].effects[1].event");
         }
         finally
         {
@@ -40,17 +40,15 @@ public sealed class EffectSchemaValidationTests
         var path = CreateTempMod();
         try
         {
-            File.WriteAllText(Path.Combine(path, "content", "units.json"),
-                "[{\"id\":\"unit\",\"name\":\"Unit\",\"tier\":1,\"attack\":1,\"health\":1," +
+            File.WriteAllText(Path.Combine(path, "content", "units", "scout.json"),
+                "{\"id\":\"scout\",\"name\":\"Scout\",\"tier\":1,\"attack\":1,\"health\":1," +
                 "\"triggers\":[{\"event\":\"onPlay\",\"effects\":[" +
                 "{\"kind\":\"destroyUnit\",\"target\":{\"scope\":\"self\"}}," +
                 "{\"kind\":\"triggerEvent\",\"target\":{\"scope\":\"self\"},\"event\":\"onDeath\"}" +
-                "]}]}]");
-            File.WriteAllText(Path.Combine(path, "content", "pool.json"),
-                "[{\"unitId\":\"unit\",\"copies\":1}]");
+                "]}]}");
 
             var package = new ModLoader().Load(path);
-            var unit = package.Units.GetRequired(new Battlegrounds.Core.Domain.Ids.UnitId("unit"));
+            var unit = package.Units.GetRequired(new Battlegrounds.Core.Domain.Ids.UnitId("scout"));
             var effects = Assert.Single(unit.Triggers).Effects;
 
             Assert.IsType<DestroyUnitEffectDefinition>(effects[0]);
