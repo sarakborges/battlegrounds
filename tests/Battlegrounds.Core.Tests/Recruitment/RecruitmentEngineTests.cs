@@ -26,7 +26,6 @@ public sealed class RecruitmentEngineTests
             Assert.Equal(3, player.TavernOffer.Count);
             Assert.False(player.IsReadyForCombat);
             Assert.False(player.IsTavernFrozen);
-            Assert.Equal(0, player.FreezeTogglesThisRecruitment);
         });
     }
 
@@ -106,29 +105,21 @@ public sealed class RecruitmentEngineTests
         Assert.Equal(3, player.TavernOffer.Count);
         Assert.Same(frozenCards[0], player.TavernOffer[0]);
         Assert.Same(frozenCards[1], player.TavernOffer[1]);
-        Assert.Equal(0, player.FreezeTogglesThisRecruitment);
     }
 
     [Fact]
-    public void FreezeToggleLimit_RejectsSixthToggleWithoutMutation()
+    public void FreezeTavern_CanBeToggledRepeatedlyWithoutLimit()
     {
         var (match, engine, _) = CreateStartedMatch();
         var player = match.Players[0];
 
-        Assert.True(engine.Execute(match, new FreezeTavernCommand(player.Id)).Succeeded);
-        Assert.True(engine.Execute(match, new UnfreezeTavernCommand(player.Id)).Succeeded);
-        Assert.True(engine.Execute(match, new FreezeTavernCommand(player.Id)).Succeeded);
-        Assert.True(engine.Execute(match, new UnfreezeTavernCommand(player.Id)).Succeeded);
-        Assert.True(engine.Execute(match, new FreezeTavernCommand(player.Id)).Succeeded);
-
-        var revisionBeforeFailure = match.Revision;
-        var result = engine.Execute(match, new UnfreezeTavernCommand(player.Id));
-
-        Assert.False(result.Succeeded);
-        Assert.Equal(RecruitmentFailureCode.FreezeToggleLimitReached, result.FailureCode);
-        Assert.True(player.IsTavernFrozen);
-        Assert.Equal(5, player.FreezeTogglesThisRecruitment);
-        Assert.Equal(revisionBeforeFailure, match.Revision);
+        for (var index = 0; index < 20; index++)
+        {
+            Assert.True(engine.Execute(match, new FreezeTavernCommand(player.Id)).Succeeded);
+            Assert.True(player.IsTavernFrozen);
+            Assert.True(engine.Execute(match, new UnfreezeTavernCommand(player.Id)).Succeeded);
+            Assert.False(player.IsTavernFrozen);
+        }
     }
 
     [Fact]
