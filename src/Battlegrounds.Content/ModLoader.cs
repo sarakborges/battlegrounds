@@ -25,17 +25,23 @@ public sealed class ModLoader
     };
 
     private readonly ModValidator _validator;
+    private readonly LeaderModValidator _leaderValidator = new();
 
     public ModLoader(ModValidator? validator = null)
     {
         _validator = validator ?? new ModValidator();
     }
 
-    public ModValidationReport Validate(string modDirectory) => _validator.Validate(modDirectory);
+    public ModValidationReport Validate(string modDirectory)
+    {
+        var baseReport = _validator.Validate(modDirectory);
+        var leaderIssues = _leaderValidator.Validate(modDirectory);
+        return new ModValidationReport(baseReport.Issues.Concat(leaderIssues));
+    }
 
     public ModPackage Load(string modDirectory)
     {
-        var report = _validator.Validate(modDirectory);
+        var report = Validate(modDirectory);
         if (!report.IsValid) throw new ModValidationException(report);
 
         var manifest = ReadRequired<ModManifest>(Path.Combine(modDirectory, "mod.json"));
