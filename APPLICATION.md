@@ -72,11 +72,15 @@ A record contains:
 - the combat round number;
 - the explicit `CombatPairing` values used;
 - immutable starting Unit identity/stats for live and eliminated-opponent participants;
-- the authoritative `CombatRoundResult` returned by `MatchEngine`.
+- the authoritative `CombatRoundResult` returned by `MatchEngine`, including each settlement's immutable `CombatResult.Timeline`.
 
-This is a client/replay observation, not a second gameplay model. The snapshots are never read back into Core, never drive settlement and never replace `MatchState`. They exist so presentation can keep showing an already-resolved combat after Core has moved to the next lifecycle state.
+The starting snapshots plus the ordered Core timeline give presentation enough data to render combat-local summons, trigger/effect transitions, deaths/revives and settlement after the authoritative Match has already advanced.
+
+This is a client/replay observation, not a second gameplay model. The snapshots and timeline are never read back into Core, never drive settlement and never replace `MatchState`. They exist so presentation can keep showing an already-resolved combat after Core has moved to the next lifecycle state.
 
 `LastCombat` is intentionally only the most recent observation. Long-term replay/history persistence is a separate concern from the live single-player session boundary.
+
+See `COMBAT_TIMELINE.md` for the Core result-event contract.
 
 ## Determinism
 

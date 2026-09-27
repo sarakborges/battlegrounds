@@ -10,7 +10,7 @@ internal sealed class CombatPlaybackState
     private readonly List<CombatPlaybackUnitState> _leftUnits;
     private readonly List<CombatPlaybackUnitState> _rightUnits;
     private readonly Dictionary<UnitInstanceId, CombatPlaybackUnitState> _unitsById;
-    private int _nextAttackIndex;
+    private int _nextTimelineIndex;
 
     public SessionCombatRecord Record { get; }
     public CombatSettlement Settlement { get; }
@@ -19,7 +19,7 @@ internal sealed class CombatPlaybackState
         ?? throw new InvalidOperationException("Combat settlement has no right-side participant.");
     public IReadOnlyList<CombatPlaybackUnitState> LeftUnits => _leftUnits;
     public IReadOnlyList<CombatPlaybackUnitState> RightUnits => _rightUnits;
-    public CombatAttack? CurrentAttack { get; private set; }
+    public CombatTimelineEvent? CurrentEvent { get; private set; }
     public bool SettlementVisible { get; private set; }
     public bool IsComplete { get; private set; }
     public string EventText { get; private set; } = "Combat ready.";
@@ -53,16 +53,16 @@ internal sealed class CombatPlaybackState
     {
         if (IsComplete) return true;
 
-        var attacks = Settlement.CombatResult.Attacks;
-        if (_nextAttackIndex < attacks.Count)
+        var timeline = Settlement.CombatResult.Timeline;
+        if (_nextTimelineIndex < timeline.Count)
         {
-            ApplyAttack(attacks[_nextAttackIndex++]);
+            ApplyEvent(timeline[_nextTimelineIndex++]);
             return false;
         }
 
         if (!SettlementVisible)
         {
-            CurrentAttack = null;
+            CurrentEvent = null;
             ClearHighlights();
             SettlementVisible = true;
             EventText = BuildSettlementText();
@@ -76,64 +76,178 @@ internal sealed class CombatPlaybackState
     public void SkipToSettlement()
     {
         if (IsComplete) return;
-        while (_nextAttackIndex < Settlement.CombatResult.Attacks.Count)
-            ApplyAttack(Settlement.CombatResult.Attacks[_nextAttackIndex++]);
-        CurrentAttack = null;
+        var timeline = Settlement.CombatResult.Timeline;
+        while (_nextTimelineIndex < timeline.Count)
+            ApplyEvent(timeline[_nextTimelineIndex++]);
+        CurrentEvent = null;
         ClearHighlights();
         SettlementVisible = true;
         EventText = BuildSettlementText();
     }
 
-    private void ApplyAttack(CombatAttack attack)
+    private void ApplyEvent(CombatTimelineEvent @event)
     {
         ClearHighlights();
-        CurrentAttack = attack;
+        CurrentEvent = @event;
 
-        var attacker = GetOrCreateUnit(
-            attack.AttackerPlayerId,
-            attack.AttackerInstanceId,
-            attack.AttackerHealthAfter + attack.DamageToAttacker);
-        var target = GetOrCreateUnit(
-            attack.TargetPlayerId,
-            attack.TargetInstanceId,
-            attack.TargetHealthAfter + attack.DamageToTarget);
-
-        attacker.Highlight = "ATTACK";
-        target.Highlight = "TARGET";
-        attacker.Health = attack.AttackerHealthAfter;
-        target.Health = attack.TargetHealthAfter;
-        attacker.IsAlive = !attack.AttackerDied || attack.AttackerRevived;
-        target.IsAlive = !attack.TargetDied || attack.TargetRevived;
-        attacker.Status = BuildUnitOutcome(
-            attack.AttackerBarrierLost,
-            attack.AttackerLethalTriggered,
-            attack.AttackerDied,
-            attack.AttackerRevived);
-        target.Status = BuildUnitOutcome(
-            attack.TargetBarrierLost,
-            attack.TargetLethalTriggered,
-            attack.TargetDied,
-            attack.TargetRevived);
-
-        EventText = $"Attack {attack.Sequence}: P{attack.AttackerPlayerId.Value} {attacker.Name} → " +
-                    $"P{attack.TargetPlayerId.Value} {target.Name}. " +
-                    $"Target takes {attack.DamageToTarget}; attacker takes {attack.DamageToAttacker}.";
+        switch (@event)
+        {
+            case CombatTriggerTimelineEvent trigger:
+                ApplyTrigger(trigger);
+                break;
+            case CombatAttackStartedTimelineEvent attack:
+                ApplyAttackStarted(attack);
+                break;
+            case CombatUnitSummonedTimelineEvent summon:
+                ApplySummon(summon);
+                break;
+            case CombatUnitStatsChangedTimelineEvent stats:
+                ApplyStatsChanged(stats);
+                break;
+            case CombatUnitDamagedTimelineEvent damage:
+                ApplyDamage(damage);
+                break;
+            case CombatUnitDestroyedTimelineEvent destroyed:
+                ApplyDestroyed(destroyed);
+                break;
+            case CombatUnitDiedTimelineEvent died:
+                ApplyDied(died);
+                break;
+            case CombatUnitRevivedTimelineEvent revived:
+                ApplyRevived(revived);
+                break;
+            case CombatBehaviorChangedTimelineEvent behavior:
+                ApplyBehaviorChanged(behavior);
+                break;
+            case CombatResourceChangedTimelineEvent resource:
+                EventText = $"P{resource.PlayerId.Value} combat Resource {(resource.Delta >= 0 ? "+" : string.Empty)}{resource.Delta}.";
+                break;
+            case CombatPowerChangedTimelineEvent power:
+                EventText = $"P{power.PlayerId.Value} Power changed from {power.PreviousPowerId?.Value ?? "none"} to {power.PowerId.Value}.";
+                break;
+            default:
+                EventText = $"Combat event {@event.Sequence}: {@event.Kind}.";
+                break;
+        }
     }
 
-    private CombatPlaybackUnitState GetOrCreateUnit(PlayerId playerId, UnitInstanceId instanceId, int inferredHealth)
+    private void ApplyTrigger(CombatTriggerTimelineEvent trigger)
+    {
+        if (trigger.SourceUnitInstanceId is UnitInstanceId unitId && _unitsById.TryGetValue(unitId, out var unit))
+        {
+            unit.Highlight = "TRIGGER";
+            unit.Status = trigger.Trigger.Value;
+            EventText = $"P{trigger.SourcePlayerId.Value} {unit.Name} triggered {trigger.Trigger.Value}.";
+            return;
+        }
+
+        var source = trigger.SourcePowerId is PowerId powerId ? $"Power {powerId.Value}" : "combat source";
+        EventText = $"P{trigger.SourcePlayerId.Value} {source} triggered {trigger.Trigger.Value}.";
+    }
+
+    private void ApplyAttackStarted(CombatAttackStartedTimelineEvent attack)
+    {
+        var attacker = GetOrCreateUnit(attack.AttackerPlayerId, attack.AttackerInstanceId);
+        var target = GetOrCreateUnit(attack.TargetPlayerId, attack.TargetInstanceId);
+        attacker.Highlight = "ATTACK";
+        target.Highlight = "TARGET";
+        EventText = $"P{attack.AttackerPlayerId.Value} {attacker.Name} attacks P{attack.TargetPlayerId.Value} {target.Name}.";
+    }
+
+    private void ApplySummon(CombatUnitSummonedTimelineEvent summon)
+    {
+        var unit = CombatPlaybackUnitState.FromSnapshot(summon.PlayerId, summon.Unit);
+        _unitsById[unit.InstanceId] = unit;
+        InsertOnBoard(unit, summon.Position);
+        unit.Highlight = "SUMMON";
+        unit.Status = "summoned";
+        EventText = $"P{summon.PlayerId.Value} summoned {unit.Name} at position {summon.Position + 1}.";
+    }
+
+    private void ApplyStatsChanged(CombatUnitStatsChangedTimelineEvent stats)
+    {
+        var unit = GetOrCreateUnit(stats.PlayerId, stats.UnitInstanceId);
+        unit.Attack = stats.AttackAfter;
+        unit.Health = stats.HealthAfter;
+        unit.Highlight = "EFFECT";
+        unit.Status = $"{stats.AttackBefore}/{stats.HealthBefore} → {stats.AttackAfter}/{stats.HealthAfter}";
+        EventText = $"{unit.Name} stats changed to {stats.AttackAfter}/{stats.HealthAfter}.";
+    }
+
+    private void ApplyDamage(CombatUnitDamagedTimelineEvent damage)
+    {
+        var unit = GetOrCreateUnit(damage.PlayerId, damage.UnitInstanceId);
+        unit.Health = damage.HealthAfter;
+        unit.Highlight = "DAMAGE";
+        unit.Status = $"-{damage.Amount} Health";
+        EventText = $"P{damage.PlayerId.Value} {unit.Name} takes {damage.Amount} damage ({damage.HealthBefore} → {damage.HealthAfter}).";
+    }
+
+    private void ApplyDestroyed(CombatUnitDestroyedTimelineEvent destroyed)
+    {
+        var unit = GetOrCreateUnit(destroyed.PlayerId, destroyed.UnitInstanceId);
+        unit.Health = destroyed.HealthAfter;
+        unit.Highlight = "DESTROY";
+        unit.Status = "destroyed";
+        EventText = $"P{destroyed.PlayerId.Value} {unit.Name} was destroyed.";
+    }
+
+    private void ApplyDied(CombatUnitDiedTimelineEvent died)
+    {
+        var unit = GetOrCreateUnit(died.PlayerId, died.UnitInstanceId);
+        unit.IsAlive = false;
+        unit.Status = "died";
+        RemoveFromBoard(unit);
+        EventText = $"P{died.PlayerId.Value} {unit.Name} died from position {died.Position + 1}.";
+    }
+
+    private void ApplyRevived(CombatUnitRevivedTimelineEvent revived)
+    {
+        if (!_unitsById.TryGetValue(revived.Unit.InstanceId, out var unit))
+        {
+            unit = CombatPlaybackUnitState.FromSnapshot(revived.PlayerId, revived.Unit);
+            _unitsById[unit.InstanceId] = unit;
+        }
+        else
+        {
+            unit.Name = revived.Unit.Definition?.Name ?? revived.Unit.UnitId.Value;
+            unit.Attack = revived.Unit.Attack;
+            unit.Health = revived.Unit.Health;
+        }
+
+        unit.IsAlive = true;
+        InsertOnBoard(unit, revived.Position);
+        unit.Highlight = "REVIVE";
+        unit.Status = "revived";
+        EventText = $"P{revived.PlayerId.Value} {unit.Name} revived at position {revived.Position + 1}.";
+    }
+
+    private void ApplyBehaviorChanged(CombatBehaviorChangedTimelineEvent behavior)
+    {
+        var unit = GetOrCreateUnit(behavior.PlayerId, behavior.UnitInstanceId);
+        unit.Highlight = "BEHAVIOR";
+        unit.Status = $"{behavior.Handler.Value} {behavior.Change.ToString().ToLowerInvariant()}";
+        EventText = $"P{behavior.PlayerId.Value} {unit.Name}: behavior {behavior.Handler.Value} {behavior.Change.ToString().ToLowerInvariant()}.";
+    }
+
+    private CombatPlaybackUnitState GetOrCreateUnit(PlayerId playerId, UnitInstanceId instanceId)
     {
         if (_unitsById.TryGetValue(instanceId, out var existing)) return existing;
 
-        var created = new CombatPlaybackUnitState(
-            playerId,
-            instanceId,
-            $"Unit #{instanceId.Value}",
-            null,
-            Math.Max(0, inferredHealth));
+        var created = new CombatPlaybackUnitState(playerId, instanceId, $"Unit #{instanceId.Value}", null, 0);
         _unitsById[instanceId] = created;
         GetSide(playerId).Add(created);
         return created;
     }
+
+    private void InsertOnBoard(CombatPlaybackUnitState unit, int position)
+    {
+        var side = GetSide(unit.PlayerId);
+        side.Remove(unit);
+        side.Insert(Math.Clamp(position, 0, side.Count), unit);
+    }
+
+    private void RemoveFromBoard(CombatPlaybackUnitState unit) => GetSide(unit.PlayerId).Remove(unit);
 
     private List<CombatPlaybackUnitState> GetSide(PlayerId playerId)
     {
@@ -167,24 +281,14 @@ internal sealed class CombatPlaybackState
             : " No player damage.";
         return $"Combat complete: {winner}." + damage;
     }
-
-    private static string BuildUnitOutcome(bool barrierLost, bool lethalTriggered, bool died, bool revived)
-    {
-        var parts = new List<string>();
-        if (barrierLost) parts.Add("barrier lost");
-        if (lethalTriggered) parts.Add("lethal triggered");
-        if (died && revived) parts.Add("died → revived");
-        else if (died) parts.Add("died");
-        return string.Join(" • ", parts);
-    }
 }
 
 internal sealed class CombatPlaybackUnitState
 {
     public PlayerId PlayerId { get; }
     public UnitInstanceId InstanceId { get; }
-    public string Name { get; }
-    public int? Attack { get; }
+    public string Name { get; set; }
+    public int? Attack { get; set; }
     public int Health { get; set; }
     public bool IsAlive { get; set; } = true;
     public string Highlight { get; set; } = string.Empty;
@@ -206,4 +310,12 @@ internal sealed class CombatPlaybackUnitState
 
     public static CombatPlaybackUnitState FromSnapshot(SessionCombatUnitSnapshot snapshot) =>
         new(snapshot.PlayerId, snapshot.InstanceId, snapshot.Name, snapshot.Attack, snapshot.Health);
+
+    public static CombatPlaybackUnitState FromSnapshot(PlayerId playerId, CombatUnitSnapshot snapshot) =>
+        new(
+            playerId,
+            snapshot.InstanceId,
+            snapshot.Definition?.Name ?? snapshot.UnitId.Value,
+            snapshot.Attack,
+            snapshot.Health);
 }

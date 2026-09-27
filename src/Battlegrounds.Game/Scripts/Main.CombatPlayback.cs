@@ -137,14 +137,14 @@ public partial class Main
         if (_combatPlayback is null || _combatOverlay is null) return;
 
         var playback = _combatPlayback;
-        var attacks = playback.Settlement.CombatResult.Attacks;
-        var shownAttack = playback.CurrentAttack?.Sequence ?? 0;
+        var timeline = playback.Settlement.CombatResult.Timeline;
+        var shownEvent = playback.CurrentEvent?.Sequence ?? 0;
         _combatTitle!.Text = $"Round {playback.Record.Round} combat • already resolved by Core";
         _combatProgress!.Text = playback.SettlementVisible
-            ? $"Settlement • {attacks.Count} attack(s)"
-            : shownAttack == 0
-                ? $"Initial boards • {attacks.Count} attack(s) queued"
-                : $"Attack {shownAttack}/{attacks.Count}";
+            ? $"Settlement • {timeline.Count} timeline event(s)"
+            : shownEvent == 0
+                ? $"Initial boards • {timeline.Count} event(s) queued"
+                : $"Event {shownEvent}/{timeline.Count} • {playback.CurrentEvent!.Kind}";
         _combatLeftHeader!.Text = FormatCombatSide(playback.LeftPlayerId, archived: false);
         _combatRightHeader!.Text = FormatCombatSide(
             playback.RightPlayerId,
@@ -154,7 +154,7 @@ public partial class Main
         RenderCombatUnits(_combatLeftUnits!, playback.LeftUnits);
         RenderCombatUnits(_combatRightUnits!, playback.RightUnits);
 
-        _combatNextButton!.Text = playback.SettlementVisible ? "Continue" : "Next";
+        _combatNextButton!.Text = playback.SettlementVisible ? "Continue" : "Next event";
         _combatSkipButton!.Visible = !playback.SettlementVisible;
     }
 

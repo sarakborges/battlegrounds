@@ -101,21 +101,23 @@ After a resolved non-terminal combat, the scene may ask the session to prepare A
 
 `CombatPlaybackState` is a presentation-only mutable view model built from one immutable `SessionCombatRecord`.
 
-Playback starts from the frozen Unit snapshots and consumes `CombatResult.Attacks` strictly in sequence order. Each step updates only local visual state for:
+Playback starts from the frozen Unit snapshots and then consumes `CombatResult.Timeline` strictly in sequence order. Each step applies one already-resolved Core event to local visual state. The current event surface covers:
 
-- attacker/target highlighting;
-- reciprocal damage;
-- health-after values;
-- barrier-loss markers;
-- lethal-trigger markers;
-- death state;
-- death → revive state.
+- trigger attribution for Units and Powers;
+- attack start with attacker/target highlighting;
+- combat-local summons with stable identity and exact board insertion position;
+- trigger-driven stat changes;
+- damage and destruction outside ordinary attacks;
+- Unit death/removal and revive/reinsertion;
+- native behavior add/remove/consume transitions;
+- combat Resource deltas;
+- Power replacement.
 
-After the final attack, playback shows the already-computed `CombatSettlement`, including winner/draw and player damage/Armor absorption. The overlay can auto-step, advance manually or skip directly to settlement. None of those controls call combat simulation again.
+After the final timeline event, playback shows the already-computed `CombatSettlement`, including winner/draw and player damage/Armor absorption. The overlay can auto-step, advance manually or skip directly to settlement. None of those controls call combat simulation again.
 
 A full-screen presentation overlay blocks the underlying Preparation controls while playback is visible. Closing playback simply returns to rendering the authoritative session state that already exists underneath.
 
-Combat-local Units that did not exist in the starting snapshot can still appear later through their runtime `UnitInstanceId`; until Core exposes a richer combat event/identity timeline, those late runtime Units use a generic playback label.
+`CombatAttack` remains a compact Core strike summary, but Godot no longer depends on it as the complete animation stream. See `COMBAT_TIMELINE.md` for the result contract.
 
 ## Read-only rendering
 
@@ -128,7 +130,7 @@ The current main screen reads:
 - human Field state;
 - pending-choice state;
 - validated combine definitions;
-- immutable session combat observations and settlements.
+- immutable session combat observations, event timelines and settlements.
 
 Rendering may create derived labels, ordering, buttons, highlights and playback cursors. Those values are view state only and are never written back into Core.
 
@@ -138,6 +140,6 @@ CI builds `Battlegrounds.Game` in addition to testing Core, Content, AI and Appl
 
 ## Next presentation boundary
 
-The next combat-presentation slice should extend the immutable Core result surface beyond strike summaries into a neutral ordered combat event timeline suitable for replay/animation.
+The next presentation slice should begin moving theme vocabulary out of hardcoded Godot labels and into validated mod-owned presentation/localization data.
 
-That timeline should make combat-local Unit identity and non-attack events explicit — for example summons, trigger-driven stat changes/damage/destruction, Power lifecycle effects and other visible state transitions — while preserving the current rule that simulation resolves once in Core and presentation only consumes immutable result data.
+Core concepts such as `Leader`, `Resource`, `Offer`, `Reserve`, `Field` and `Tier` must remain neutral identifiers in mechanics, while each mod should be able to provide the terminology and localized strings that Godot renders. Content should validate that presentation package before a session starts; Godot should consume it without interpreting gameplay rules.

@@ -122,11 +122,11 @@ Effects include stat modification, damage, destruction, explicit trigger activat
 
 Numeric effect parameters may be dynamic expressions. Target selection and conditions are composable. Scoped event history supports counted conditions and activation limits without introducing a global event bus.
 
-`GameEffectRuntime` owns deterministic trigger/effect ordering. Preparation supplies a persistent authoritative state adapter; Combat supplies an isolated combat-local adapter.
+`GameEffectRuntime` owns deterministic trigger/effect ordering. Preparation supplies a persistent authoritative state adapter; Combat supplies an isolated combat-local adapter. When a Combat trigger actually resolves effects, the runtime also exposes that fact to the Combat world so the immutable result timeline can preserve source attribution without introducing a second effect engine.
 
 Real simultaneous deaths are removed as a death wave before death-related effects resolve. Each death then resolves deterministically; deaths created during that resolution wait for the next wave. Authored `onDeath` resolves before `reviveOnce`, and a successful revive is treated as a normal summon and runs `onSummon`.
 
-See `EFFECTS.md` for the detailed ordering contract.
+See `EFFECTS.md` for effect semantics and `COMBAT_TIMELINE.md` for the immutable replay/presentation event contract.
 
 ## Match lifecycle
 
@@ -151,6 +151,8 @@ The current native post-combat damage policy is `winnerTierPlusSurvivorTiers`: w
 Player damage is applied to Leader Armor first and Health second. `CombatSettlement` reports incoming damage, Armor absorbed, Armor after and Health after so UI/replay consumers do not need to reconstruct the calculation.
 
 Combat `addResource`, power changes and scoped effect-history deltas leave Combat as explicit result data and are settled by `MatchEngine` rather than mutating persistent state from inside the simulator.
+
+`CombatResult.Timeline` is a separate immutable ordered observation of visible combat-local transitions. It includes trigger attribution, attack starts, summons with stable combat identity/position, stat changes, damage/destruction, deaths/revives, behavior transitions and Resource/Power changes. Simulation never reads this timeline back.
 
 ## Matchmaking policy and combat pairing history
 
@@ -228,7 +230,7 @@ The playable Preparation surface now covers Leader selection, generic acquire/de
 
 Multi-step intent is stored only in `PresentationInteractionState`. Targeted Actions/Powers first submit without a target; when Core reports `InvalidActionTarget`/`InvalidPowerTarget`, Godot enters target-selection mode and resubmits the chosen `UnitInstanceId`. Combine selection stores exact highlighted component IDs and finishes with the existing `CombineUnitsCommand`.
 
-Resolved human combat is displayed through a full-screen presentation-owned playback overlay. `CombatPlaybackState` starts from the immutable session snapshots and consumes `CombatResult.Attacks` in order, showing reciprocal damage, health-after values, barrier/lethal outcomes, deaths/revives and the final `CombatSettlement`. Playback may auto-step, advance manually or skip to settlement; none of those controls rerun combat or mutate Core state.
+Resolved human combat is displayed through a full-screen presentation-owned playback overlay. `CombatPlaybackState` starts from the immutable session snapshots and consumes `CombatResult.Timeline` in order, so combat-local summons, triggers, buffs/debuffs, effect damage/destruction, deaths/revives, behavior changes and Power/Resource transitions are rendered from immutable Core output rather than reconstructed in Godot. Playback may auto-step, advance manually or skip to settlement; none of those controls rerun combat or mutate Core state.
 
 See `GAME.md` for the Godot ownership and presentation contract.
 
@@ -348,12 +350,13 @@ Read `ARCHITECTURE.md` before adding features. Its ownership, dependency, mutati
 - deterministic death waves, counted friendly-death listeners, Deathrattle-like effects, Reborn-like behavior and summons;
 - immutable combat snapshots isolated from persistent Preparation state;
 - deterministic attack order, targeting, simultaneous damage, death resolution and winner/draw resolution;
+- immutable ordered `CombatResult.Timeline` for replay/presentation of combat-local triggers and state transitions;
 - deterministic framework-free AI using the same public commands as presentation;
 - framework-free single-player session orchestration over validated Content + Core + AI + matchmaking;
 - immutable session combat observations that freeze starting boards before authoritative settlement advances the Match;
 - thin Godot presentation adapter over the Application boundary with a playable Preparation loop;
 - explicit Godot multi-step interaction state for selected targets, pending choices and combine components;
-- deterministic Godot combat playback over ordered `CombatAttack` results with manual/automatic stepping and settlement skip;
+- deterministic Godot combat playback over the Core event timeline with manual/automatic stepping and settlement skip;
 - whole-mod validation before loading;
 - regression/invariant tests and CI, including a Godot project build.
 
@@ -373,4 +376,4 @@ dotnet build src/Battlegrounds.Game/Battlegrounds.Game.csproj
 
 ## Next architectural slice
 
-Extend Combat's immutable result surface with a neutral ordered event timeline suitable for replay and presentation, not only strike summaries. Make combat-local Unit identity and visible non-attack transitions explicit — summons, trigger-driven stat changes/damage/destruction, Power lifecycle effects and similar events — while preserving the existing rule that Combat resolves exactly once in Core and Godot only consumes immutable result data.
+Introduce validated mod-owned presentation vocabulary/localization so Godot no longer hardcodes generic UI terms such as Leader, Resource, Offer, Reserve, Field and Tier. `Battlegrounds.Content` should load and validate the selected mod's presentation strings/locales, Application should expose the validated package without interpreting it, and Godot should render those strings while Core remains entirely terminology-neutral. Keep binary assets as a later presentation concern rather than coupling them to mechanics.

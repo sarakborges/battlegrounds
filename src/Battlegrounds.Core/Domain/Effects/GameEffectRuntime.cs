@@ -36,6 +36,9 @@ internal interface IEffectRuntimeWorld
     void RecordEvent(PlayerId playerId, NativeGameEventKey @event, UnitDefinition? unit = null);
     int GetTriggerActivationCount(PlayerId playerId, EffectSourceKey source, int triggerIndex, EffectHistoryScope scope);
     void RecordTriggerActivation(PlayerId playerId, EffectSourceKey source, int triggerIndex, EffectHistoryScope scope);
+    void RecordResolvedTrigger(IEffectRuntimeUnit source, NativeTriggerKey trigger, int triggerIndex)
+    {
+    }
     IReadOnlyList<IEffectRuntimeUnit> ExtractDeadUnits();
     IEffectRuntimeUnit? TryRevive(IEffectRuntimeUnit deadUnit);
     void FinalizeDeath(IEffectRuntimeUnit deadUnit);
@@ -170,6 +173,7 @@ internal sealed class GameEffectRuntime
         var context = BuildContext(listener, selectedTargetInstanceId);
         var resolvedEffects = _pipeline.ResolveTrigger(listener.Definition, trigger, context, _randomSource);
         if (resolvedEffects.Count == 0) return;
+        _world.RecordResolvedTrigger(listener, trigger.Event, triggerIndex);
         if (trigger.ActivationLimit is TriggerActivationLimit limit)
             _world.RecordTriggerActivation(listener.OwnerPlayerId, listener.SourceKey, triggerIndex, limit.Scope);
         foreach (var resolved in resolvedEffects) ApplyEffect(listener, resolved, queue);
