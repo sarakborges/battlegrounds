@@ -14,49 +14,51 @@ internal sealed partial class PresentationCardButton : Button
     {
         Text = string.Empty;
         ThemeTypeVariation = "CardButton";
-        CustomMinimumSize = new Vector2(0, 104);
-        SizeFlagsHorizontal = SizeFlags.ExpandFill;
+        CustomMinimumSize = new Vector2(92, 108);
         ClipContents = true;
 
         var margin = IgnoreMouse(new MarginContainer());
-        margin.AddThemeConstantOverride("margin_left", 10);
-        margin.AddThemeConstantOverride("margin_top", 8);
-        margin.AddThemeConstantOverride("margin_right", 10);
-        margin.AddThemeConstantOverride("margin_bottom", 8);
+        margin.AddThemeConstantOverride("margin_left", 6);
+        margin.AddThemeConstantOverride("margin_top", 6);
+        margin.AddThemeConstantOverride("margin_right", 6);
+        margin.AddThemeConstantOverride("margin_bottom", 6);
         AddChild(margin);
         margin.SetAnchorsAndOffsetsPreset(LayoutPreset.FullRect);
 
-        var row = IgnoreMouse(new HBoxContainer
+        var column = IgnoreMouse(new VBoxContainer
         {
             SizeFlagsHorizontal = SizeFlags.ExpandFill,
+            SizeFlagsVertical = SizeFlags.ExpandFill,
         });
-        row.AddThemeConstantOverride("separation", 10);
-        margin.AddChild(row);
+        column.AddThemeConstantOverride("separation", 2);
+        margin.AddChild(column);
 
         _art = IgnoreMouse(new TextureRect
         {
-            CustomMinimumSize = new Vector2(84, 84),
+            CustomMinimumSize = new Vector2(0, 68),
+            SizeFlagsHorizontal = SizeFlags.ExpandFill,
+            SizeFlagsVertical = SizeFlags.ExpandFill,
             StretchMode = TextureRect.StretchModeEnum.KeepAspectCentered,
         });
-        row.AddChild(_art);
-
-        var copy = IgnoreMouse(new VBoxContainer
-        {
-            SizeFlagsHorizontal = SizeFlags.ExpandFill,
-            SizeFlagsVertical = SizeFlags.ShrinkCenter,
-        });
-        copy.AddThemeConstantOverride("separation", 2);
-        row.AddChild(copy);
+        column.AddChild(_art);
 
         _title = CreateLabel("HeadingLabel");
-        _subtitle = CreateLabel("CaptionLabel");
-        _stats = CreateLabel("BodyLabel");
-        _description = CreateLabel("CaptionLabel", wrap: true);
+        _title.HorizontalAlignment = HorizontalAlignment.Center;
+        _title.AutowrapMode = TextServer.AutowrapMode.WordSmart;
 
-        copy.AddChild(_title);
-        copy.AddChild(_subtitle);
-        copy.AddChild(_stats);
-        copy.AddChild(_description);
+        _subtitle = CreateLabel("CaptionLabel");
+        _subtitle.HorizontalAlignment = HorizontalAlignment.Center;
+
+        _stats = CreateLabel("BodyLabel");
+        _stats.HorizontalAlignment = HorizontalAlignment.Center;
+
+        _description = CreateLabel("CaptionLabel", wrap: true);
+        _description.Visible = false;
+
+        column.AddChild(_title);
+        column.AddChild(_subtitle);
+        column.AddChild(_stats);
+        column.AddChild(_description);
     }
 
     public void Configure(
@@ -71,7 +73,8 @@ internal sealed partial class PresentationCardButton : Button
         _title.Text = title;
         SetOptionalText(_subtitle, subtitle);
         SetOptionalText(_stats, stats);
-        SetOptionalText(_description, description);
+        _description.Text = description ?? string.Empty;
+        _description.Visible = false;
         TooltipText = string.IsNullOrWhiteSpace(description) ? title : $"{title}\n{description}";
 
         _art.Texture = texture;
