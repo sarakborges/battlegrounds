@@ -25,7 +25,22 @@ public sealed class PresentationAssetTests
     }
 
     [Fact]
-    public void Load_MissingManifestProducesEmptyCatalog()
+    public void Load_ExampleCuesAreIndexedByEntityAndRole()
+    {
+        var path = Path.Combine(AppContext.BaseDirectory, "mods", "example");
+
+        var cues = new ModPresentationCueLoader().Load(path);
+
+        var attack = cues.GetRequired(ModPresentationEntityKind.Unit, "scout", ModPresentationCueRoles.CombatAttack);
+        Assert.Equal(ModPresentationAnimation.Lunge, attack.Animation);
+        Assert.Equal(0.2, attack.DurationSeconds);
+        Assert.Null(attack.Audio);
+        Assert.True(cues.TryGet(ModPresentationEntityKind.Leader, "steady", ModPresentationCueRoles.UiSelect, out _));
+        Assert.Throws<NotSupportedException>(() => ((IList<ModPresentationCue>)cues.All).Add(cues.All[0]));
+    }
+
+    [Fact]
+    public void Load_MissingManifestProducesEmptyCatalogs()
     {
         var path = CreateTempMod();
         try
@@ -34,9 +49,11 @@ public sealed class PresentationAssetTests
 
             var report = new ModValidator().Validate(path);
             var assets = new ModPresentationAssetLoader().Load(path);
+            var cues = new ModPresentationCueLoader().Load(path);
 
             Assert.True(report.IsValid);
             Assert.Empty(assets.All);
+            Assert.Empty(cues.All);
         }
         finally
         {
@@ -146,6 +163,102 @@ public sealed class PresentationAssetTests
         }
     }
 
+    [Fact]
+    public void Validate_CueRejectsUnknownRoleAndAnimation()
+    {
+        var path = CreateTempMod();
+        try
+        {
+            SetCue(path, "units", "scout", "combat.teleport", new JsonObject
+            {
+                ["animation"] = "warp",
+                ["durationSeconds"] = 0.2,
+            });
+
+            var report = new ModValidator().Validate(path);
+
+            Assert.Contains(report.Issues, issue => issue.Code == "UNKNOWN_PRESENTATION_CUE_ROLE" && issue.Path == "$.units.scout.cues.combat.teleport");
+            Assert.Contains(report.Issues, issue => issue.Code == "INVALID_PRESENTATION_CUE_ANIMATION" && issue.Path == "$.units.scout.cues.combat.teleport.animation");
+        }
+        finally
+        {
+            Directory.Delete(path, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void Validate_CueDurationMustBeBoundedAndAnimationBacked()
+    {
+        var path = CreateTempMod();
+        try
+        {
+            SetCue(path, "units", "scout", ModPresentationCueRoles.CombatDamage, new JsonObject
+            {
+                ["audio"] = "assets/audio/hit.wav",
+                ["durationSeconds"] = 9.0,
+            });
+            Directory.CreateDirectory(Path.Combine(path, "assets", "audio"));
+            File.WriteAllBytes(Path.Combine(path, "assets", "audio", "hit.wav"), [0x52, 0x49, 0x46, 0x46]);
+
+            var report = new ModValidator().Validate(path);
+
+            Assert.Contains(report.Issues, issue => issue.Code == "INVALID_PRESENTATION_CUE_DURATION" && issue.Path == "$.units.scout.cues.combat.damage.durationSeconds");
+        }
+        finally
+        {
+            Directory.Delete(path, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void Validate_AudioCueUsesSafeExistingWavPath()
+    {
+        var path = CreateTempMod();
+        try
+        {
+            SetCue(path, "units", "scout", ModPresentationCueRoles.CombatAttack, new JsonObject
+            {
+                ["audio"] = "assets/../outside.mp3",
+            });
+
+            var report = new ModValidator().Validate(path);
+
+            Assert.Contains(report.Issues, issue => issue.Code == "INVALID_PRESENTATION_ASSET_PATH" && issue.Path == "$.units.scout.cues.combat.attack.audio");
+        }
+        finally
+        {
+            Directory.Delete(path, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void Load_AudioCueExposesImmutableAudioReference()
+    {
+        var path = CreateTempMod();
+        try
+        {
+            Directory.CreateDirectory(Path.Combine(path, "assets", "audio"));
+            File.WriteAllBytes(Path.Combine(path, "assets", "audio", "hit.wav"), [0x52, 0x49, 0x46, 0x46]);
+            SetCue(path, "units", "scout", ModPresentationCueRoles.CombatDamage, new JsonObject
+            {
+                ["animation"] = "shake",
+                ["durationSeconds"] = 0.15,
+                ["audio"] = "assets/audio/hit.wav",
+            });
+
+            var cue = new ModPresentationCueLoader().Load(path)
+                .GetRequired(ModPresentationEntityKind.Unit, "scout", ModPresentationCueRoles.CombatDamage);
+
+            Assert.Equal(ModPresentationAssetType.Audio, cue.Audio?.Type);
+            Assert.Equal("assets/audio/hit.wav", cue.Audio?.RelativePath);
+            Assert.Equal(ModPresentationAnimation.Shake, cue.Animation);
+        }
+        finally
+        {
+            Directory.Delete(path, recursive: true);
+        }
+    }
+
     private static void SetAsset(string modPath, string category, string entityId, string slot, string assetPath)
     {
         var manifestPath = Path.Combine(modPath, "assets", "presentation.json");
@@ -156,6 +269,21 @@ public sealed class PresentationAssetTests
         var entityObject = categoryObject[entityId]?.AsObject() ?? new JsonObject();
         categoryObject[entityId] = entityObject;
         entityObject[slot] = assetPath;
+        File.WriteAllText(manifestPath, root.ToJsonString(new JsonSerializerOptions { WriteIndented = true }));
+    }
+
+    private static void SetCue(string modPath, string category, string entityId, string role, JsonObject cue)
+    {
+        var manifestPath = Path.Combine(modPath, "assets", "presentation.json");
+        var root = JsonNode.Parse(File.ReadAllText(manifestPath))?.AsObject()
+            ?? throw new InvalidDataException("Test asset manifest must contain a JSON object.");
+        var categoryObject = root[category]?.AsObject() ?? new JsonObject();
+        root[category] = categoryObject;
+        var entityObject = categoryObject[entityId]?.AsObject() ?? new JsonObject();
+        categoryObject[entityId] = entityObject;
+        var cues = entityObject["cues"]?.AsObject() ?? new JsonObject();
+        entityObject["cues"] = cues;
+        cues[role] = cue;
         File.WriteAllText(manifestPath, root.ToJsonString(new JsonSerializerOptions { WriteIndented = true }));
     }
 

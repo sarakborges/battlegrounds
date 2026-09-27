@@ -9,10 +9,40 @@ public enum ModPresentationAssetType
     Audio,
 }
 
+public enum ModPresentationAnimation
+{
+    None,
+    Pulse,
+    Shake,
+    Lunge,
+    Fade,
+    Pop,
+}
+
 public static class ModPresentationAssetSlots
 {
     public const string Portrait = "portrait";
     public const string Art = "art";
+}
+
+public static class ModPresentationCueRoles
+{
+    public const string UiSelect = "ui.select";
+    public const string UiAcquire = "ui.acquire";
+    public const string UiDeploy = "ui.deploy";
+    public const string UiPlay = "ui.play";
+    public const string UiRelease = "ui.release";
+
+    public const string CombatAttack = "combat.attack";
+    public const string CombatTarget = "combat.target";
+    public const string CombatSummon = "combat.summon";
+    public const string CombatStats = "combat.stats";
+    public const string CombatDamage = "combat.damage";
+    public const string CombatDestroy = "combat.destroy";
+    public const string CombatDeath = "combat.death";
+    public const string CombatRevive = "combat.revive";
+    public const string CombatTrigger = "combat.trigger";
+    public const string CombatBehavior = "combat.behavior";
 }
 
 public sealed class ModPresentationAssetReference
@@ -96,6 +126,71 @@ public sealed class ModPresentationAssetCatalog
         $"{kind}\u001f{id}\u001f{slot}";
 }
 
+public sealed class ModPresentationCue
+{
+    public ModPresentationEntityKind EntityKind { get; }
+    public string EntityId { get; }
+    public string Role { get; }
+    public ModPresentationAnimation? Animation { get; }
+    public double? DurationSeconds { get; }
+    public ModPresentationAssetReference? Audio { get; }
+
+    internal ModPresentationCue(
+        ModPresentationEntityKind entityKind,
+        string entityId,
+        string role,
+        ModPresentationAnimation? animation,
+        double? durationSeconds,
+        ModPresentationAssetReference? audio)
+    {
+        if (string.IsNullOrWhiteSpace(entityId)) throw new ArgumentException("Entity id cannot be empty.", nameof(entityId));
+        if (string.IsNullOrWhiteSpace(role)) throw new ArgumentException("Cue role cannot be empty.", nameof(role));
+        EntityKind = entityKind;
+        EntityId = entityId;
+        Role = role;
+        Animation = animation;
+        DurationSeconds = durationSeconds;
+        Audio = audio;
+    }
+}
+
+public sealed class ModPresentationCueCatalog
+{
+    private readonly ReadOnlyCollection<ModPresentationCue> _all;
+    private readonly ReadOnlyDictionary<string, ModPresentationCue> _byKey;
+
+    public IReadOnlyList<ModPresentationCue> All => _all;
+
+    internal ModPresentationCueCatalog(IEnumerable<ModPresentationCue> cues)
+    {
+        ArgumentNullException.ThrowIfNull(cues);
+        var ordered = cues
+            .OrderBy(cue => cue.EntityKind)
+            .ThenBy(cue => cue.EntityId, StringComparer.Ordinal)
+            .ThenBy(cue => cue.Role, StringComparer.Ordinal)
+            .ToArray();
+        _all = Array.AsReadOnly(ordered);
+        _byKey = new ReadOnlyDictionary<string, ModPresentationCue>(ordered.ToDictionary(
+            cue => Key(cue.EntityKind, cue.EntityId, cue.Role),
+            cue => cue,
+            StringComparer.Ordinal));
+    }
+
+    public bool TryGet(ModPresentationEntityKind entityKind, string entityId, string role, out ModPresentationCue cue)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(entityId);
+        ArgumentException.ThrowIfNullOrWhiteSpace(role);
+        return _byKey.TryGetValue(Key(entityKind, entityId, role), out cue!);
+    }
+
+    public ModPresentationCue GetRequired(ModPresentationEntityKind entityKind, string entityId, string role) =>
+        TryGet(entityKind, entityId, role, out var cue)
+            ? cue
+            : throw new KeyNotFoundException($"Presentation cue '{entityKind}:{entityId}:{role}' is not defined.");
+
+    private static string Key(ModPresentationEntityKind kind, string id, string role) => $"{kind}\u001f{id}\u001f{role}";
+}
+
 public sealed class ModPresentationAssetLoader
 {
     private static readonly JsonDocumentOptions DocumentOptions = new()
@@ -119,13 +214,13 @@ public sealed class ModPresentationAssetLoader
 
         using var document = JsonDocument.Parse(File.ReadAllText(manifestPath), DocumentOptions);
         var entries = new List<ModPresentationAssetEntry>();
-        ReadCategory(document.RootElement, "leaders", ModPresentationEntityKind.Leader, ModPresentationAssetSlots.Portrait, entries);
-        ReadCategory(document.RootElement, "units", ModPresentationEntityKind.Unit, ModPresentationAssetSlots.Art, entries);
-        ReadCategory(document.RootElement, "actions", ModPresentationEntityKind.Action, ModPresentationAssetSlots.Art, entries);
+        ReadAssetCategory(document.RootElement, "leaders", ModPresentationEntityKind.Leader, ModPresentationAssetSlots.Portrait, entries);
+        ReadAssetCategory(document.RootElement, "units", ModPresentationEntityKind.Unit, ModPresentationAssetSlots.Art, entries);
+        ReadAssetCategory(document.RootElement, "actions", ModPresentationEntityKind.Action, ModPresentationAssetSlots.Art, entries);
         return new ModPresentationAssetCatalog(entries);
     }
 
-    private static void ReadCategory(
+    private static void ReadAssetCategory(
         JsonElement root,
         string category,
         ModPresentationEntityKind kind,
@@ -143,6 +238,69 @@ public sealed class ModPresentationAssetLoader
                 entity.Name,
                 slot,
                 new ModPresentationAssetReference(ModPresentationAssetType.Image, relativePath)));
+        }
+    }
+}
+
+public sealed class ModPresentationCueLoader
+{
+    private static readonly JsonDocumentOptions DocumentOptions = new()
+    {
+        AllowTrailingCommas = true,
+        CommentHandling = JsonCommentHandling.Skip,
+    };
+
+    public ModPresentationCueCatalog Load(string modDirectory)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(modDirectory);
+        var issues = new PresentationAssetModValidator().Validate(modDirectory);
+        if (issues.Count > 0) throw new ModValidationException(new ModValidationReport(issues));
+        return LoadValidated(modDirectory);
+    }
+
+    internal static ModPresentationCueCatalog LoadValidated(string modDirectory)
+    {
+        var manifestPath = Path.Combine(modDirectory, "assets", "presentation.json");
+        if (!File.Exists(manifestPath)) return new ModPresentationCueCatalog([]);
+
+        using var document = JsonDocument.Parse(File.ReadAllText(manifestPath), DocumentOptions);
+        var cues = new List<ModPresentationCue>();
+        ReadCueCategory(document.RootElement, "leaders", ModPresentationEntityKind.Leader, cues);
+        ReadCueCategory(document.RootElement, "units", ModPresentationEntityKind.Unit, cues);
+        ReadCueCategory(document.RootElement, "actions", ModPresentationEntityKind.Action, cues);
+        return new ModPresentationCueCatalog(cues);
+    }
+
+    private static void ReadCueCategory(
+        JsonElement root,
+        string category,
+        ModPresentationEntityKind kind,
+        ICollection<ModPresentationCue> cues)
+    {
+        if (!root.TryGetProperty(category, out var categoryElement)) return;
+        foreach (var entity in categoryElement.EnumerateObject())
+        {
+            if (!entity.Value.TryGetProperty("cues", out var cueElement)) continue;
+            foreach (var cueProperty in cueElement.EnumerateObject())
+            {
+                var cue = cueProperty.Value;
+                ModPresentationAnimation? animation = null;
+                if (cue.TryGetProperty("animation", out var animationElement))
+                {
+                    animation = Enum.Parse<ModPresentationAnimation>(animationElement.GetString()!, ignoreCase: true);
+                }
+
+                double? durationSeconds = cue.TryGetProperty("durationSeconds", out var durationElement)
+                    ? durationElement.GetDouble()
+                    : null;
+                ModPresentationAssetReference? audio = null;
+                if (cue.TryGetProperty("audio", out var audioElement))
+                {
+                    audio = new ModPresentationAssetReference(ModPresentationAssetType.Audio, audioElement.GetString()!);
+                }
+
+                cues.Add(new ModPresentationCue(kind, entity.Name, cueProperty.Name, animation, durationSeconds, audio));
+            }
         }
     }
 }

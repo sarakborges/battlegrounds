@@ -246,7 +246,7 @@ public partial class Main
                 ? Term("unit")
                 : $"{Term("unit")} • {unit.Status}";
             var card = CreateCombatUnitCard(unitId, unit.Name, subtitle, stats);
-            ApplyCombatCue(card, CueForUnit(unit.InstanceId));
+            ApplyCombatCue(card, unitId, CueForUnit(unit.InstanceId));
             container.AddChild(card);
         }
 
@@ -324,43 +324,35 @@ public partial class Main
         container.AddChild(card);
         var targetIndex = Math.Clamp(died.Position, 0, Math.Max(0, container.GetChildCount() - 1));
         container.MoveChild(card, targetIndex);
-        ApplyCombatCue(card, CombatVisualCue.Death);
+        ApplyCombatCue(card, unitId, CombatVisualCue.Death);
     }
 
-    private void ApplyCombatCue(PresentationCardButton card, CombatVisualCue cue)
+    private void ApplyCombatCue(PresentationCardButton card, UnitId? unitId, CombatVisualCue cue)
     {
         if (cue == CombatVisualCue.None) return;
 
-        var tween = card.CreateTween();
-        tween.SetParallel();
-
-        switch (cue)
+        var (role, fallbackAnimation, duration) = cue switch
         {
-            case CombatVisualCue.Summon:
-            case CombatVisualCue.Revive:
-                card.Scale = new Vector2(0.88f, 0.88f);
-                card.Modulate = new Color(1, 1, 1, 0.35f);
-                tween.TweenProperty(card, "scale", Vector2.One, 0.28);
-                tween.TweenProperty(card, "modulate", Colors.White, 0.28);
-                break;
-            case CombatVisualCue.Death:
-                tween.TweenProperty(card, "scale", new Vector2(0.9f, 0.9f), 0.36);
-                tween.TweenProperty(card, "modulate", new Color(1, 1, 1, 0.25f), 0.36);
-                break;
-            case CombatVisualCue.Damage:
-            case CombatVisualCue.Destroyed:
-            case CombatVisualCue.Target:
-                card.Scale = new Vector2(0.95f, 0.95f);
-                tween.TweenProperty(card, "scale", Vector2.One, 0.22);
-                break;
-            case CombatVisualCue.Attacker:
-            case CombatVisualCue.Trigger:
-            case CombatVisualCue.StatsChanged:
-            case CombatVisualCue.Behavior:
-                card.Scale = new Vector2(1.05f, 1.05f);
-                tween.TweenProperty(card, "scale", Vector2.One, 0.24);
-                break;
-        }
+            CombatVisualCue.Trigger => (ModPresentationCueRoles.CombatTrigger, ModPresentationAnimation.Pulse, 0.24),
+            CombatVisualCue.Attacker => (ModPresentationCueRoles.CombatAttack, ModPresentationAnimation.Lunge, 0.24),
+            CombatVisualCue.Target => (ModPresentationCueRoles.CombatTarget, ModPresentationAnimation.Shake, 0.22),
+            CombatVisualCue.Summon => (ModPresentationCueRoles.CombatSummon, ModPresentationAnimation.Pop, 0.28),
+            CombatVisualCue.StatsChanged => (ModPresentationCueRoles.CombatStats, ModPresentationAnimation.Pulse, 0.24),
+            CombatVisualCue.Damage => (ModPresentationCueRoles.CombatDamage, ModPresentationAnimation.Shake, 0.22),
+            CombatVisualCue.Destroyed => (ModPresentationCueRoles.CombatDestroy, ModPresentationAnimation.Shake, 0.22),
+            CombatVisualCue.Death => (ModPresentationCueRoles.CombatDeath, ModPresentationAnimation.Fade, 0.36),
+            CombatVisualCue.Revive => (ModPresentationCueRoles.CombatRevive, ModPresentationAnimation.Pop, 0.28),
+            CombatVisualCue.Behavior => (ModPresentationCueRoles.CombatBehavior, ModPresentationAnimation.Pulse, 0.24),
+            _ => throw new ArgumentOutOfRangeException(nameof(cue), cue, null),
+        };
+
+        PlayPresentationCue(
+            card,
+            ModPresentationEntityKind.Unit,
+            unitId?.Value ?? "__unknown-combat-unit",
+            role,
+            fallbackAnimation,
+            duration);
     }
 
     private void AdvanceCombatPlayback()

@@ -9,6 +9,7 @@ namespace Battlegrounds.Game;
 public partial class Main
 {
     private ModPresentationTextureStore? _presentationTextures;
+    private ModPresentationCuePlayer? _presentationCues;
 
     private PresentationCardButton CreatePresentationCard(
         ModPresentationEntityKind entityKind,
@@ -37,8 +38,24 @@ public partial class Main
         card.Configure(title, subtitle, stats, description, texture);
         if (selected)
             card.SetSelected(true);
+        card.Pressed += () => PlayPresentationCue(
+            card,
+            entityKind,
+            entityId,
+            ModPresentationCueRoles.UiSelect,
+            ModPresentationAnimation.Pulse,
+            0.18);
         return card;
     }
+
+    private void PlayPresentationCue(
+        Control target,
+        ModPresentationEntityKind entityKind,
+        string entityId,
+        string role,
+        ModPresentationAnimation fallbackAnimation = ModPresentationAnimation.Pulse,
+        double fallbackDurationSeconds = 0.18) =>
+        PresentationCues.Play(target, entityKind, entityId, role, fallbackAnimation, fallbackDurationSeconds);
 
     private string UnitCardStats(int tier, int attack, int health) =>
         Text(
@@ -112,4 +129,7 @@ public partial class Main
 
     private ModPresentationTextureStore PresentationTextures =>
         _presentationTextures ??= new ModPresentationTextureStore(ProjectSettings.GlobalizePath(ModPath));
+
+    private ModPresentationCuePlayer PresentationCues =>
+        _presentationCues ??= new ModPresentationCuePlayer(this, ProjectSettings.GlobalizePath(ModPath));
 }
