@@ -4,14 +4,16 @@ namespace Battlegrounds.Game;
 
 /// <summary>
 /// Keeps the presentation adapter's existing VBoxContainer contract while laying
-/// dynamic card children out as a centered horizontal row. This is intentionally
-/// structure-only: card visuals continue to come from the mod presentation/theme layer.
+/// dynamic card children out as a compact centered horizontal row. The container
+/// owns only geometry; visual styling remains in the mod-driven theme layer.
 /// </summary>
 public partial class HorizontalCardRow : VBoxContainer
 {
-    [Export] public float Gap { get; set; } = 10.0f;
-    [Export] public float PreferredCardWidth { get; set; } = 176.0f;
-    [Export] public float MinimumCardWidth { get; set; } = 92.0f;
+    [Export] public float Gap { get; set; } = 8.0f;
+    [Export] public float PreferredCardWidth { get; set; } = 138.0f;
+    [Export] public float MinimumCardWidth { get; set; } = 78.0f;
+    [Export] public float PreferredCardHeight { get; set; } = 168.0f;
+    [Export] public float Padding { get; set; } = 4.0f;
 
     public override void _Notification(int what)
     {
@@ -26,19 +28,24 @@ public partial class HorizontalCardRow : VBoxContainer
         if (children.Length == 0)
             return;
 
-        var availableWidth = Mathf.Max(0.0f, Size.X - Gap * (children.Length - 1));
-        var fitWidth = children.Length == 0 ? PreferredCardWidth : availableWidth / children.Length;
-        var cardWidth = Mathf.Min(PreferredCardWidth, fitWidth);
-        if (availableWidth >= MinimumCardWidth * children.Length)
+        var innerWidth = Mathf.Max(0.0f, Size.X - Padding * 2.0f);
+        var gapsWidth = Gap * Mathf.Max(0, children.Length - 1);
+        var availableCardsWidth = Mathf.Max(0.0f, innerWidth - gapsWidth);
+        var fittedWidth = availableCardsWidth / children.Length;
+        var cardWidth = Mathf.Min(PreferredCardWidth, fittedWidth);
+
+        if (availableCardsWidth >= MinimumCardWidth * children.Length)
             cardWidth = Mathf.Max(MinimumCardWidth, cardWidth);
 
-        var totalWidth = cardWidth * children.Length + Gap * (children.Length - 1);
-        var x = Mathf.Max(0.0f, (Size.X - totalWidth) * 0.5f);
-        var rowHeight = Mathf.Max(0.0f, Size.Y);
+        var availableHeight = Mathf.Max(0.0f, Size.Y - Padding * 2.0f);
+        var cardHeight = Mathf.Min(PreferredCardHeight, availableHeight);
+        var totalWidth = cardWidth * children.Length + gapsWidth;
+        var x = Mathf.Max(Padding, (Size.X - totalWidth) * 0.5f);
+        var y = Mathf.Max(Padding, (Size.Y - cardHeight) * 0.5f);
 
         foreach (var child in children)
         {
-            FitChildInRect(child, new Rect2(x, 0.0f, cardWidth, rowHeight));
+            FitChildInRect(child, new Rect2(x, y, cardWidth, cardHeight));
             x += cardWidth + Gap;
         }
     }
