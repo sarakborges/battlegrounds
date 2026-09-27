@@ -75,7 +75,8 @@ public sealed class PreparationAiAgent
         MatchState match,
         PlayerId playerId,
         int maximumCommands = 128,
-        PreparationAiPersonality personality = PreparationAiPersonality.Tempo)
+        PreparationAiPersonality personality = PreparationAiPersonality.Tempo,
+        PreparationAiStrategy? strategy = null)
     {
         ArgumentNullException.ThrowIfNull(engine);
         ArgumentNullException.ThrowIfNull(match);
@@ -86,6 +87,7 @@ public sealed class PreparationAiAgent
             throw new ArgumentException($"Unknown player '{playerId}'.", nameof(playerId));
         if (player.IsEliminated) throw new InvalidOperationException("An eliminated player cannot be controlled in Preparation.");
 
+        strategy ??= PreparationAiStrategy.Balanced;
         var memory = new TurnMemory(match.Round);
         var executed = 0;
 
@@ -94,7 +96,7 @@ public sealed class PreparationAiAgent
             if (executed >= maximumCommands)
                 throw new InvalidOperationException($"AI exceeded its {maximumCommands}-command Preparation safety budget.");
 
-            var command = ChooseNextCommand(match, player, memory, personality);
+            var command = ChooseNextCommand(match, player, memory, personality, strategy);
             var result = engine.ExecutePreparation(match, command);
             if (!result.Succeeded)
             {
@@ -113,7 +115,8 @@ public sealed class PreparationAiAgent
         MatchState match,
         PlayerState player,
         TurnMemory memory,
-        PreparationAiPersonality personality)
+        PreparationAiPersonality personality,
+        PreparationAiStrategy strategy)
     {
         if (memory.Round != match.Round)
             throw new InvalidOperationException("AI turn memory belongs to a different round.");
@@ -122,7 +125,7 @@ public sealed class PreparationAiAgent
         {
             var optionIndex = ChooseBestIndex(
                 unitChoice.Options,
-                ScoreUnitDefinition,
+                unit => ScoreUnitDefinition(unit, strategy),
                 unit => unit.Id.Value);
             return new ResolveUnitChoiceCommand(player.Id, unitChoice.Id, optionIndex);
         }
@@ -143,12 +146,12 @@ public sealed class PreparationAiAgent
         {
             var reserveIndex = ChooseBestIndex(
                 player.Reserve,
-                ScoreUnitInstance,
+                unit => ScoreUnitInstance(unit, strategy),
                 unit => unit.Id.Value.ToString(System.Globalization.CultureInfo.InvariantCulture));
             return new DeployUnitCommand(player.Id, reserveIndex);
         }
 
-        var release = TryCreateReplacementRelease(player);
+        var release = TryCreateReplacementRelease(player, strategy);
         if (release is not null) return release;
 
         var action = TryCreatePlayActionCommand(match, player);
@@ -156,9 +159,9 @@ public sealed class PreparationAiAgent
 
         var strategic = personality switch
         {
-            PreparationAiPersonality.Tempo => TryCreateTempoCommand(match, player, memory),
-            PreparationAiPersonality.Greedy => TryCreateGreedyCommand(match, player, memory),
-            PreparationAiPersonality.Roller => TryCreateRollerCommand(match, player, memory),
+            PreparationAiPersonality.Tempo => TryCreateTempoCommand(match, player, memory, strategy),
+            PreparationAiPersonality.Greedy => TryCreateGreedyCommand(match, player, memory, strategy),
+            PreparationAiPersonality.Roller => TryCreateRollerCommand(match, player, memory, strategy),
             _ => throw new ArgumentOutOfRangeException(nameof(personality), personality, "Unsupported AI personality."),
         };
         if (strategic is not null) return strategic;
@@ -169,12 +172,16 @@ public sealed class PreparationAiAgent
         return new EndPreparationCommand(player.Id);
     }
 
-    private IPreparationCommand? TryCreateTempoCommand(MatchState match, PlayerState player, TurnMemory memory)
+    private IPreparationCommand? TryCreateTempoCommand(
+        MatchState match,
+        PlayerState player,
+        TurnMemory memory,
+        PreparationAiStrategy strategy)
     {
         var power = TryCreatePowerCommand(match, player);
         if (power is not null) return power;
 
-        var acquire = TryCreateAcquireCommand(player);
+        var acquire = TryCreateAcquireCommand(player, strategy);
         if (acquire is not null) return acquire;
 
         var upgrade = TryCreateUpgradeCommand(player);
@@ -183,7 +190,11 @@ public sealed class PreparationAiAgent
         return TryCreateRefreshCommand(player, memory, maximumRefreshes: 1);
     }
 
-    private IPreparationCommand? TryCreateGreedyCommand(MatchState match, PlayerState player, TurnMemory memory)
+    private IPreparationCommand? TryCreateGreedyCommand(
+        MatchState match,
+        PlayerState player,
+        TurnMemory memory,
+        PreparationAiStrategy strategy)
     {
         var upgrade = TryCreateUpgradeCommand(player);
         if (upgrade is not null) return upgrade;
@@ -191,13 +202,17 @@ public sealed class PreparationAiAgent
         var power = TryCreatePowerCommand(match, player);
         if (power is not null) return power;
 
-        var acquire = TryCreateAcquireCommand(player);
+        var acquire = TryCreateAcquireCommand(player, strategy);
         if (acquire is not null) return acquire;
 
         return TryCreateRefreshCommand(player, memory, maximumRefreshes: 1);
     }
 
-    private IPreparationCommand? TryCreateRollerCommand(MatchState match, PlayerState player, TurnMemory memory)
+    private IPreparationCommand? TryCreateRollerCommand(
+        MatchState match,
+        PlayerState player,
+        TurnMemory memory,
+        PreparationAiStrategy strategy)
     {
         var power = TryCreatePowerCommand(match, player);
         if (power is not null) return power;
@@ -205,7 +220,7 @@ public sealed class PreparationAiAgent
         var refresh = TryCreateRefreshCommand(player, memory, maximumRefreshes: 3);
         if (refresh is not null) return refresh;
 
-        var acquire = TryCreateAcquireCommand(player);
+        var acquire = TryCreateAcquireCommand(player, strategy);
         if (acquire is not null) return acquire;
 
         return TryCreateUpgradeCommand(player);
@@ -256,21 +271,25 @@ public sealed class PreparationAiAgent
         return null;
     }
 
-    private ReleaseUnitCommand? TryCreateReplacementRelease(PlayerState player)
+    private ReleaseUnitCommand? TryCreateReplacementRelease(PlayerState player, PreparationAiStrategy strategy)
     {
         if (player.Field.Count < _rules.FieldCapacity || player.Reserve.Count == 0) return null;
 
         var reserveIndex = ChooseBestIndex(
             player.Reserve,
-            ScoreUnitInstance,
+            unit => ScoreUnitInstance(unit, strategy),
             unit => unit.Id.Value.ToString(System.Globalization.CultureInfo.InvariantCulture));
         var weakestFieldIndex = Enumerable.Range(0, player.Field.Count)
-            .OrderBy(index => ScoreUnitInstance(player.Field[index]))
+            .OrderBy(index => ScoreUnitInstance(player.Field[index], strategy))
             .ThenBy(index => player.Field[index].Id.Value)
             .First();
 
-        if (ScoreUnitInstance(player.Reserve[reserveIndex]) <= ScoreUnitInstance(player.Field[weakestFieldIndex]))
+        if (ScoreUnitInstance(player.Reserve[reserveIndex], strategy) <=
+            ScoreUnitInstance(player.Field[weakestFieldIndex], strategy))
+        {
             return null;
+        }
+
         return new ReleaseUnitCommand(player.Id, weakestFieldIndex);
     }
 
@@ -316,7 +335,7 @@ public sealed class PreparationAiAgent
         return new UsePowerCommand(player.Id, target.Target);
     }
 
-    private AcquirePlayableCommand? TryCreateAcquireCommand(PlayerState player)
+    private AcquirePlayableCommand? TryCreateAcquireCommand(PlayerState player, PreparationAiStrategy strategy)
     {
         if (player.PlayableReserveCount >= _rules.ReserveCapacity || player.PlayableOfferCount == 0)
             return null;
@@ -328,7 +347,7 @@ public sealed class PreparationAiAgent
 
         var index = ChooseBestIndex(
             affordable,
-            ScoreOffer,
+            entry => ScoreOffer(entry, strategy),
             entry => entry.Id);
         return new AcquirePlayableCommand(player.Id, affordable[index].Slot);
     }
@@ -391,16 +410,24 @@ public sealed class PreparationAiAgent
     private int GetAcquireCost(Battlegrounds.Core.Domain.Playables.PlayableOfferEntry entry) =>
         entry.Action?.Cost ?? _rules.AcquireCost;
 
-    private long ScoreOffer(Battlegrounds.Core.Domain.Playables.PlayableOfferEntry entry) =>
+    private long ScoreOffer(
+        Battlegrounds.Core.Domain.Playables.PlayableOfferEntry entry,
+        PreparationAiStrategy strategy) =>
         entry.Unit is not null
-            ? ScoreUnitDefinition(entry.Unit) - GetAcquireCost(entry)
+            ? ScoreUnitDefinition(entry.Unit, strategy) - GetAcquireCost(entry)
             : ScoreActionDefinition(entry.Action!) - GetAcquireCost(entry);
 
     private static long ScoreUnitDefinition(UnitDefinition unit) =>
         ((long)unit.Tier * 10_000L) + ((long)unit.BaseAttack * 10L) + unit.BaseHealth;
 
+    private static long ScoreUnitDefinition(UnitDefinition unit, PreparationAiStrategy strategy) =>
+        ScoreUnitDefinition(unit) + strategy.GetUnitPreferenceBonus(unit);
+
     private static long ScoreUnitInstance(UnitInstance unit) =>
         ((long)unit.Definition.Tier * 10_000L) + ((long)unit.Attack * 10L) + unit.Health;
+
+    private static long ScoreUnitInstance(UnitInstance unit, PreparationAiStrategy strategy) =>
+        ScoreUnitInstance(unit) + strategy.GetUnitPreferenceBonus(unit.Definition);
 
     private static long ScoreActionDefinition(ActionDefinition action) =>
         ((long)action.Tier * 10_000L) + (action.Effects.Count * 10L) - action.Cost;
