@@ -1,21 +1,38 @@
-# Presentation assets
+# Presentation assets and cues
 
-Presentation assets are mod-owned data. They must never become authoritative gameplay state and `Battlegrounds.Core` must never read image/audio files or filesystem paths.
+Presentation assets and playback cues are mod-owned data. They must never become authoritative gameplay state, and `Battlegrounds.Core` must never read image/audio files, filesystem paths, animation names or presentation timing.
 
 ## Manifest
 
-A mod may define `assets/presentation.json`. The file is optional; omitting it produces an empty presentation-asset catalog.
+A mod may define `assets/presentation.json`. The file is optional; omitting it produces empty presentation-asset and cue catalogs.
 
 ```json
 {
   "leaders": {
     "steady": {
-      "portrait": "assets/leaders/steady.svg"
+      "portrait": "assets/leaders/steady.svg",
+      "cues": {
+        "ui.select": {
+          "animation": "pulse",
+          "durationSeconds": 0.16
+        }
+      }
     }
   },
   "units": {
     "scout": {
-      "art": "assets/units/scout.svg"
+      "art": "assets/units/scout.svg",
+      "cues": {
+        "combat.attack": {
+          "animation": "lunge",
+          "durationSeconds": 0.2,
+          "audio": "assets/audio/scout-attack.wav"
+        },
+        "combat.death": {
+          "animation": "fade",
+          "durationSeconds": 0.32
+        }
+      }
     }
   },
   "actions": {
@@ -26,35 +43,66 @@ A mod may define `assets/presentation.json`. The file is optional; omitting it p
 }
 ```
 
-The current stable slots are:
+IDs are the same stable authored IDs used by mechanical content. Presentation metadata does not introduce a second identity system.
 
-- `leaders.<leader-id>.portrait`: image;
-- `units.<unit-id>.art`: image;
-- `actions.<action-id>.art`: image.
+## Static asset slots
 
-IDs are the same stable authored IDs used by mechanical content. Assets do not introduce a second identity system.
+The current stable image slots are:
+
+- `leaders.<leader-id>.portrait`;
+- `units.<unit-id>.art`;
+- `actions.<action-id>.art`.
+
+Image slots accept `.png`, `.jpg`, `.jpeg`, `.webp` and `.svg`.
+
+## Cue roles
+
+Each entity may define a `cues` object keyed by a stable presentation event role. Current roles are:
+
+- Leader: `ui.select`;
+- Unit UI: `ui.select`, `ui.acquire`, `ui.deploy`, `ui.release`;
+- Action UI: `ui.select`, `ui.acquire`, `ui.play`;
+- Unit combat: `combat.attack`, `combat.target`, `combat.summon`, `combat.stats`, `combat.damage`, `combat.destroy`, `combat.death`, `combat.revive`, `combat.trigger`, `combat.behavior`.
+
+A cue must define at least one of `animation` or `audio`. `durationSeconds` is optional, applies only to animation, must be greater than zero and is capped at five seconds.
+
+Current animation names are `none`, `pulse`, `shake`, `lunge`, `fade` and `pop`. They describe presentation intent rather than simulation semantics. `none` can explicitly suppress an engine fallback animation while still allowing audio.
+
+Audio references currently accept `.wav`. Audio is optional; mods without authored sound remain fully valid.
 
 ## Path contract
 
-Asset references are untrusted mod input. `Battlegrounds.Content` validates them before they are exposed:
+Asset references are untrusted mod input. `Battlegrounds.Content` validates them before exposing metadata:
 
 - paths must be non-empty, relative, forward-slash paths under `assets/`;
 - absolute paths, backslashes and `.`/`..` traversal segments are rejected;
-- the referenced authored entity must exist;
-- the slot must be valid for its entity category;
-- the referenced file must exist;
-- image slots currently accept `.png`, `.jpg`, `.jpeg`, `.webp` and `.svg`.
+- referenced authored entity IDs must exist;
+- static slots and cue roles must be valid for their entity category;
+- referenced files must exist;
+- media extensions must match the declared use;
+- cue objects reject unknown keys, invalid animation names and invalid durations.
 
-The manifest may be partial. A Leader, Unit or Action without a presentation asset remains valid and presentation must fall back to text/layout rather than changing gameplay.
+The manifest may be partial. Missing art, audio or cue metadata is a presentation fallback, not a gameplay error.
 
-## Runtime ownership
+## Immutable Content boundary
 
-`ModPresentationAssetLoader` maps validated metadata into an immutable `ModPresentationAssetCatalog`. Entries contain only stable entity identity, presentation slot, asset type and mod-relative path.
+`ModPresentationAssetLoader` maps validated image metadata into an immutable `ModPresentationAssetCatalog`.
 
-`Battlegrounds.Game` owns runtime decoding and rendering. `ModPresentationTextureStore` resolves image references from the active mod directory, caches `Texture2D` instances and can apply them to Godot `TextureRect` or `Button` controls.
+`ModPresentationCueLoader` maps validated cue metadata into an immutable `ModPresentationCueCatalog`. Each cue contains only stable entity identity, a presentation role, optional animation intent/duration and an optional audio file reference. It contains no Godot node, `Tween`, `AudioStream`, texture or decoded bytes.
 
-Neither `Battlegrounds.Core` nor `Battlegrounds.Application` receives Godot textures, decoded image bytes or filesystem concerns.
+## Godot runtime ownership
 
-## Evolution
+`Battlegrounds.Game` owns decoding and playback:
 
-The catalog intentionally separates an asset reference's type from its slot. Future audio slots can use the same validated ID-keyed boundary while Godot remains responsible for decoding/playback. Animation metadata should describe presentation behavior without becoming simulation state or changing deterministic rules.
+- `ModPresentationTextureStore` loads/caches external images as `Texture2D`;
+- `ModPresentationCuePlayer` maps entity/role lookups to presentation-only tweens and optional cached `.wav` playback;
+- reusable cards emit `ui.select` cues when pressed;
+- deterministic combat playback maps the already-resolved current timeline event to the appropriate Unit cue role.
+
+Authored cue duration never delays, advances or gates the simulation. Combat playback continues on its own presentation clock/manual controls; clip completion is not observed by Core or Application.
+
+If a cue is absent, Godot uses its neutral fallback visual emphasis. If authored audio cannot be played at runtime, the event still advances normally and the visual/text fallback remains usable.
+
+## Ownership invariant
+
+Neither `Battlegrounds.Core` nor `Battlegrounds.Application` receives filesystem paths, decoded media, Godot resources, animation completion callbacks or clip duration. Simulation and settlement are fully determined before presentation consumes any cue.
