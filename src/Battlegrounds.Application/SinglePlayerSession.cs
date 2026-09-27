@@ -21,11 +21,14 @@ public sealed record SessionAdvanceResult(
 /// </summary>
 public sealed class SinglePlayerSession
 {
+    private static readonly PreparationAiPersonality[] AvailableAiPersonalities = Enum.GetValues<PreparationAiPersonality>();
+
     private readonly IRandomSource _randomSource;
     private readonly ICombatPairingPolicy _pairingPolicy;
     private readonly PreparationAiAgent _aiAgent;
     private readonly MatchEngine _matchEngine;
     private readonly PlayerId[] _aiPlayerIds;
+    private readonly Dictionary<PlayerId, PreparationAiPersonality> _aiPersonalities;
     private readonly int _aiMaximumCommands;
     private PlayerId[] _preparationInitiative = [];
     private int _preparationInitiativeRound;
@@ -34,6 +37,7 @@ public sealed class SinglePlayerSession
     public ModPackage Mod { get; }
     public PlayerId HumanPlayerId { get; }
     public IReadOnlyList<PlayerId> AiPlayerIds => _aiPlayerIds;
+    public IReadOnlyDictionary<PlayerId, PreparationAiPersonality> AiPersonalities => _aiPersonalities;
     public IReadOnlyList<PlayerId> PreparationInitiative => _preparationInitiative;
     public LeaderSelectionState LeaderSelection { get; }
     public MatchState? Match { get; private set; }
@@ -71,6 +75,12 @@ public sealed class SinglePlayerSession
             .OrderBy(id => id.Value)
             .ToArray();
         LeaderSelection = mod.CreateLeaderSelection(playerIds, randomSource);
+
+        _aiPersonalities = aiPlayerIds
+            .OrderBy(id => id.Value)
+            .ToDictionary(
+                id => id,
+                _ => AvailableAiPersonalities[_randomSource.NextInt(0, AvailableAiPersonalities.Length)]);
 
         foreach (var aiPlayerId in aiPlayerIds.OrderBy(id => id.Value))
             _aiAgent.SelectLeader(LeaderSelection, aiPlayerId);
@@ -191,8 +201,15 @@ public sealed class SinglePlayerSession
                     break;
                 if (!_aiPlayerIds.Contains(currentPlayerId))
                     throw new InvalidOperationException($"Preparation initiative references uncontrolled player '{currentPlayerId}'.");
+                if (!_aiPersonalities.TryGetValue(currentPlayerId, out var personality))
+                    throw new InvalidOperationException($"AI player '{currentPlayerId}' has no assigned Preparation personality.");
 
-                _aiAgent.PlayPreparation(_matchEngine, match, currentPlayerId, _aiMaximumCommands);
+                _aiAgent.PlayPreparation(
+                    _matchEngine,
+                    match,
+                    currentPlayerId,
+                    maximumCommands: _aiMaximumCommands,
+                    personality: personality);
                 aiPreparationsCompleted++;
             }
         }
