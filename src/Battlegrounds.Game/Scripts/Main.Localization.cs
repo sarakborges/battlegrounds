@@ -75,10 +75,10 @@ public partial class Main
     {
         if (_presentationText is null) return;
 
-        GetNode<Label>("Margin/Root/PreparationPanel/Columns/OfferColumn/Title").Text = Term("offer");
-        GetNode<Label>("Margin/Root/PreparationPanel/Columns/ReserveColumn/Title").Text = Term("reserve");
-        GetNode<Label>("Margin/Root/PreparationPanel/Columns/FieldColumn/Title").Text = Term("field");
-        GetNode<Label>("Margin/Root/LogTitle").Text = Text("ui.sessionLog");
+        SetStaticLabel("Margin/Shell/CenterStage/PreparationPanel/TavernArea/ShopRow/Title", Term("offer"));
+        SetStaticLabel("Margin/Shell/CenterStage/PreparationPanel/BottomStrip/ReserveArea/ReserveContent/Title", Term("reserve"));
+        SetStaticLabel("Margin/Shell/CenterStage/PreparationPanel/BoardArea/BoardRow/Title", Term("field"));
+        SetStaticLabel("Margin/Shell/TurnRail/Content/Title", Term("round"));
 
         _confirmInteractionButton.Text = Text("ui.confirm");
         _cancelInteractionButton.Text = Text("ui.cancel");
@@ -87,5 +87,17 @@ public partial class Main
         _powerButton.Text = Text("ui.usePower", ("power", Term("power")));
         _combineButton.Text = Text("ui.combineUnits", ("units", Term("units")));
         _endPreparationButton.Text = Text("ui.endPreparation", ("preparation", Term("preparation")));
+    }
+
+    private void SetStaticLabel(string path, string value)
+    {
+        var label = GetNodeOrNull<Label>(path);
+        if (label is null)
+        {
+            GD.PushWarning($"Presentation text target '{path}' was not found; skipping it.");
+            return;
+        }
+
+        label.Text = value;
     }
 }
