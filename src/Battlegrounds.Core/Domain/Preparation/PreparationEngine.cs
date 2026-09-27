@@ -1,6 +1,7 @@
 using Battlegrounds.Core.Domain.Actions;
 using Battlegrounds.Core.Domain.Behaviors;
 using Battlegrounds.Core.Domain.Choices;
+using Battlegrounds.Core.Domain.Combines;
 using Battlegrounds.Core.Domain.Effects;
 using Battlegrounds.Core.Domain.Ids;
 using Battlegrounds.Core.Domain.Match;
@@ -18,11 +19,13 @@ public sealed class PreparationEngine
     private readonly IUnitPool _unitPool;
     private readonly IRandomSource _randomSource;
     private readonly PreparationEffectEngine _effectEngine;
+    private readonly UnitCatalog? _unitCatalog;
     private readonly PowerCatalog? _powerCatalog;
     private readonly ActionCatalog? _actionCatalog;
+    private readonly UnitCombineCatalog? _combineCatalog;
 
     public PreparationEngine(PreparationRules rules, IUnitPool unitPool, IRandomSource randomSource)
-        : this(rules, unitPool, randomSource, null, null, null, null) { }
+        : this(rules, unitPool, randomSource, null, null, null, null, null) { }
 
     public PreparationEngine(
         PreparationRules rules,
@@ -30,7 +33,7 @@ public sealed class PreparationEngine
         IRandomSource randomSource,
         UnitCatalog? unitCatalog,
         BehaviorCatalog? behaviorCatalog)
-        : this(rules, unitPool, randomSource, unitCatalog, behaviorCatalog, null, null) { }
+        : this(rules, unitPool, randomSource, unitCatalog, behaviorCatalog, null, null, null) { }
 
     public PreparationEngine(
         PreparationRules rules,
@@ -39,13 +42,16 @@ public sealed class PreparationEngine
         UnitCatalog? unitCatalog,
         BehaviorCatalog? behaviorCatalog,
         PowerCatalog? powerCatalog,
-        ActionCatalog? actionCatalog = null)
+        ActionCatalog? actionCatalog = null,
+        UnitCombineCatalog? combineCatalog = null)
     {
         _rules = rules ?? throw new ArgumentNullException(nameof(rules));
         _unitPool = unitPool ?? throw new ArgumentNullException(nameof(unitPool));
         _randomSource = randomSource ?? throw new ArgumentNullException(nameof(randomSource));
+        _unitCatalog = unitCatalog;
         _powerCatalog = powerCatalog;
         _actionCatalog = actionCatalog;
+        _combineCatalog = combineCatalog;
         _effectEngine = new PreparationEffectEngine(
             _rules, _unitPool, _randomSource, unitCatalog, behaviorCatalog, powerCatalog, actionCatalog);
     }
@@ -97,6 +103,7 @@ public sealed class PreparationEngine
             ReleaseUnitCommand release => ReleaseUnit(match, player, release),
             DeployUnitCommand deploy => DeployUnit(match, player, deploy),
             PlayActionCommand playAction => PlayAction(match, player, playAction),
+            CombineUnitsCommand combine => CombineUnits(match, player, combine),
             RefreshOfferCommand => RefreshOffer(match, player),
             UpgradeTierCommand => UpgradeTier(match, player),
             UsePowerCommand usePower => UsePower(match, player, usePower),
@@ -202,6 +209,44 @@ public sealed class PreparationEngine
 
         action = player.RemoveActionFromReserve(actionSlot);
         _effectEngine.ProcessAction(match, player, action, command.TargetUnitInstanceId);
+        return PreparationCommandResult.Success();
+    }
+
+    private PreparationCommandResult CombineUnits(MatchState match, PlayerState player, CombineUnitsCommand command)
+    {
+        if (_combineCatalog is null || _unitCatalog is null || !_combineCatalog.TryGet(command.CombineId, out var combine))
+            return PreparationCommandResult.Failure(PreparationFailureCode.CombineUnavailable);
+        if (command.UnitInstanceIds is null ||
+            command.UnitInstanceIds.Count != combine.RequiredCopies ||
+            command.UnitInstanceIds.Distinct().Count() != combine.RequiredCopies)
+            return PreparationCommandResult.Failure(PreparationFailureCode.InvalidCombineUnits);
+
+        var selected = new List<(UnitInstance Unit, bool IsReserve)>(combine.RequiredCopies);
+        foreach (var instanceId in command.UnitInstanceIds)
+        {
+            if (!player.TryGetOwnedUnit(instanceId, out var unit, out var isReserve) ||
+                !unit.IsAlive ||
+                unit.Definition.Id != combine.SourceUnitId)
+                return PreparationCommandResult.Failure(PreparationFailureCode.InvalidCombineUnits);
+            selected.Add((unit, isReserve));
+        }
+
+        var reserveSources = selected.Count(value => value.IsReserve);
+        var reserveCountAfterCombine = player.PlayableReserveCount - reserveSources + 1;
+        if (reserveCountAfterCombine > _rules.ReserveCapacity)
+            return PreparationCommandResult.Failure(PreparationFailureCode.ReserveFull);
+
+        var resultDefinition = _unitCatalog.GetRequired(combine.ResultUnitId);
+        foreach (var value in selected)
+        {
+            var removed = player.RemoveOwnedUnit(value.Unit.Id);
+            if (removed.PoolReturnDefinition is not null)
+                _unitPool.ReturnUnit(removed.PoolReturnDefinition);
+        }
+
+        var result = match.CreateUnit(resultDefinition, UnitInstanceOrigin.Generated);
+        player.AddToReserve(result);
+        _effectEngine.ProcessCombinedUnit(match, player, result);
         return PreparationCommandResult.Success();
     }
 
