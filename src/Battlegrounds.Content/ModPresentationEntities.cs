@@ -91,7 +91,7 @@ internal static class ModPresentationEntityFallbackLoader
         {
             var directory = Path.Combine(modDirectory, "content", descriptor.ContentDirectory);
             foreach (var path in Directory.GetFiles(directory, "*.json", SearchOption.TopDirectoryOnly)
-                         .OrderBy(Path.GetFileName, StringComparer.Ordinal))
+                         .OrderBy(path => Path.GetFileName(path), StringComparer.Ordinal))
             {
                 using var document = JsonDocument.Parse(File.ReadAllText(path), DocumentOptions);
                 var root = document.RootElement;
