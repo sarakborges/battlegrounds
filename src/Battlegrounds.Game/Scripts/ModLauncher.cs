@@ -5,6 +5,8 @@ namespace Battlegrounds.Game;
 
 public partial class ModLauncher : Control
 {
+    private const string LauncherRevision = "launcher-r3";
+
     [Export] public string ModsRoot { get; set; } = "res://../../mods";
     [Export] public string GameplayScenePath { get; set; } = "res://Scenes/Main.tscn";
     [Export] public int Seed { get; set; } = 20260927;
@@ -24,8 +26,8 @@ public partial class ModLauncher : Control
         _refreshButton = GetNode<Button>("%RefreshButton");
         _refreshButton.Pressed += DiscoverMods;
 
-        _status.Text = "Discovering mods...";
-        GD.Print("[ModLauncher] C# launcher started.");
+        _status.Text = $"Discovering mods... [{LauncherRevision}]";
+        GD.Print($"[ModLauncher] C# launcher started ({LauncherRevision}).");
 
         await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
         DiscoverMods();
@@ -35,7 +37,7 @@ public partial class ModLauncher : Control
     {
         ClearChildren(_modButtons);
         _diagnostics.Text = string.Empty;
-        _status.Text = "Discovering mods...";
+        _status.Text = $"Discovering mods... [{LauncherRevision}]";
 
         try
         {
@@ -44,8 +46,8 @@ public partial class ModLauncher : Control
 
             var entries = new ModDiscovery().Discover(modsRoot);
             _status.Text = entries.Count == 0
-                ? $"No mod packages found in {ModsRoot}."
-                : $"Choose a mod package ({entries.Count} found).";
+                ? $"No mod packages found in {ModsRoot}. [{LauncherRevision}]"
+                : $"Choose a mod package ({entries.Count} found). [{LauncherRevision}]";
 
             foreach (var entry in entries)
                 AddCandidate(entry);
@@ -54,7 +56,7 @@ public partial class ModLauncher : Control
         }
         catch (Exception exception)
         {
-            _status.Text = "Mod discovery failed.";
+            _status.Text = $"Mod discovery failed. [{LauncherRevision}]";
             _diagnostics.Text = exception.ToString();
             GD.PushError($"[ModLauncher] Mod discovery failed: {exception}");
         }
@@ -88,12 +90,20 @@ public partial class ModLauncher : Control
                 ? "Start a local single-player match with this mod."
                 : "Inspect validation diagnostics for this mod.",
         };
+
+        // ButtonDown gives immediate visible proof that pointer input reached the dynamic button.
+        button.ButtonDown += () =>
+        {
+            _status.Text = $"Pressed {entry.DisplayName}... [{LauncherRevision}]";
+            GD.Print($"[ModLauncher] ButtonDown for '{entry.DisplayName}' ({entry.DirectoryName}).");
+        };
         button.Pressed += () => SelectCandidate(entry);
         _modButtons.AddChild(button);
     }
 
     private void SelectCandidate(ModDiscoveryEntry entry)
     {
+        _status.Text = $"Selected {entry.DisplayName}. [{LauncherRevision}]";
         GD.Print($"[ModLauncher] Selected '{entry.DisplayName}' ({entry.DirectoryName}), valid={entry.IsValid}.");
 
         if (!entry.IsValid)
@@ -114,7 +124,7 @@ public partial class ModLauncher : Control
 
     private void StartGame(ModDiscoveryEntry entry)
     {
-        _status.Text = $"Starting {entry.DisplayName}...";
+        _status.Text = $"Starting {entry.DisplayName}... [{LauncherRevision}]";
         _diagnostics.Text = string.Empty;
 
         try
@@ -123,8 +133,6 @@ public partial class ModLauncher : Control
                 ?? throw new InvalidOperationException($"Gameplay scene '{GameplayScenePath}' could not be loaded.");
             var game = packedScene.Instantiate<Main>();
 
-            // Main owns Godot-path globalization. Keep this as a localized res:// path
-            // rather than feeding an absolute OS path back through GlobalizePath().
             game.ModPath = CombineGodotPath(ModsRoot, entry.DirectoryName);
             game.Seed = Seed;
             game.ParticipantCount = ParticipantCount;
@@ -139,7 +147,7 @@ public partial class ModLauncher : Control
         }
         catch (Exception exception)
         {
-            _status.Text = $"Could not start {entry.DisplayName}.";
+            _status.Text = $"Could not start {entry.DisplayName}. [{LauncherRevision}]";
             _diagnostics.Text = exception.ToString();
             GD.PushError($"[ModLauncher] Could not start {entry.DisplayName}: {exception}");
         }
