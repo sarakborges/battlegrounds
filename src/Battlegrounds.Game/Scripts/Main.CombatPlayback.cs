@@ -156,7 +156,7 @@ public partial class Main
             ? Text("ui.combatSettlementProgress", ("events", timeline.Count))
             : shownEvent == 0
                 ? Text("ui.combatInitialBoards", ("events", timeline.Count))
-                : Text("ui.combatEventProgress", ("current", shownEvent), ("events", timeline.Count)) + $" • {playback.CurrentEvent!.Kind}";
+                : Text("ui.combatEventProgress", ("current", shownEvent), ("events", timeline.Count));
         _combatLeftHeader!.Text = FormatCombatSide(playback.LeftPlayerId, archived: false);
         _combatRightHeader!.Text = FormatCombatSide(
             playback.RightPlayerId,
@@ -194,7 +194,7 @@ public partial class Main
         {
             var stats = unit.IsAlive
                 ? $"{(unit.Attack?.ToString() ?? "?")}/{unit.Health}"
-                : "DEAD";
+                : "—";
             var highlight = string.IsNullOrEmpty(unit.Highlight) ? string.Empty : $"[{unit.Highlight}] ";
             var status = string.IsNullOrEmpty(unit.Status) ? string.Empty : $" • {unit.Status}";
             var label = new Label
