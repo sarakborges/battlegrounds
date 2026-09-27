@@ -23,7 +23,7 @@ public partial class Main
         _session is not null &&
         string.Equals(_session.Mod.Id, "warbands", StringComparison.Ordinal);
 
-    public override void _Process(double delta)
+    public override void _PhysicsProcess(double delta)
     {
         UpdateCombineButtonVisibility();
         TrySubmitAutomaticCombine();
