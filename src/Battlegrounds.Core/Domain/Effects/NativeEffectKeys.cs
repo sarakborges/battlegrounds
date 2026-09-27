@@ -62,6 +62,8 @@ public static class NativeEffectKeys
     public static NativeEffectKey RemoveBehavior { get; } = new("removeBehavior");
     public static NativeEffectKey AddResource { get; } = new("addResource");
     public static NativeEffectKey SetPower { get; } = new("setPower");
+    public static NativeEffectKey GenerateUnitToReserve { get; } = new("generateUnitToReserve");
+    public static NativeEffectKey GenerateUnitChoice { get; } = new("generateUnitChoice");
 
     private static readonly HashSet<NativeEffectKey> Supported =
     [
@@ -74,6 +76,8 @@ public static class NativeEffectKeys
         RemoveBehavior,
         AddResource,
         SetPower,
+        GenerateUnitToReserve,
+        GenerateUnitChoice,
     ];
 
     public static bool IsSupported(NativeEffectKey key) => Supported.Contains(key);
