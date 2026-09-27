@@ -46,7 +46,6 @@ internal sealed record GameEffectEvent(NativeTriggerKey Event, IEffectRuntimeUni
 internal sealed class GameEffectRuntime
 {
     private const int MaximumProcessedEvents = 10_000;
-
     private readonly IEffectRuntimeWorld _world;
     private readonly IRandomSource _randomSource;
     private readonly UnitCatalog? _unitCatalog;
@@ -112,20 +111,15 @@ internal sealed class GameEffectRuntime
         var before = _world.GetHistory(playerId);
         _world.RecordEvent(playerId, @event, unit);
         var after = _world.GetHistory(playerId);
-
         foreach (var listener in _world.GetHistoryEventListeners(playerId))
         {
             for (var index = 0; index < listener.Definition.Triggers.Count; index++)
             {
                 var trigger = listener.Definition.Triggers[index];
-                if (trigger.Event != NativeTriggerKeys.AfterEventCount ||
-                    trigger.Counter is not EffectHistoryQuery counter || counter.Event != @event)
+                if (trigger.Event != NativeTriggerKeys.AfterEventCount || trigger.Counter is not EffectHistoryQuery counter || counter.Event != @event)
                     continue;
-
                 var threshold = trigger.Count!.Value;
-                var beforeCount = before.GetEventCount(counter);
-                var afterCount = after.GetEventCount(counter);
-                if (afterCount / threshold > beforeCount / threshold)
+                if (after.GetEventCount(counter) / threshold > before.GetEventCount(counter) / threshold)
                     ResolveSpecificTrigger(listener, index, trigger, queue);
             }
         }
@@ -137,20 +131,14 @@ internal sealed class GameEffectRuntime
         {
             CountProcessedEvent();
             var effectEvent = queue.Dequeue();
-            foreach (var listener in ResolveListeners(effectEvent))
-                ResolveListener(effectEvent, listener, queue);
+            foreach (var listener in ResolveListeners(effectEvent)) ResolveListener(effectEvent, listener, queue);
         }
     }
 
     private IReadOnlyList<IEffectRuntimeUnit> ResolveListeners(GameEffectEvent effectEvent)
     {
         if (effectEvent.Event == NativeTriggerKeys.OnSummon)
-        {
-            return _world.Units
-                .Where(unit => unit.OwnerPlayerId == effectEvent.Subject.OwnerPlayerId)
-                .OrderBy(unit => unit.InstanceId.Value)
-                .ToArray();
-        }
+            return _world.Units.Where(unit => unit.OwnerPlayerId == effectEvent.Subject.OwnerPlayerId).OrderBy(unit => unit.InstanceId.Value).ToArray();
         return [effectEvent.Subject];
     }
 
@@ -161,7 +149,6 @@ internal sealed class GameEffectRuntime
             ResolveCountedDeathTriggers(listener, queue);
             return;
         }
-
         for (var index = 0; index < listener.Definition.Triggers.Count; index++)
         {
             var trigger = listener.Definition.Triggers[index];
@@ -183,10 +170,8 @@ internal sealed class GameEffectRuntime
         var context = BuildContext(listener, selectedTargetInstanceId);
         var resolvedEffects = _pipeline.ResolveTrigger(listener.Definition, trigger, context, _randomSource);
         if (resolvedEffects.Count == 0) return;
-
         if (trigger.ActivationLimit is TriggerActivationLimit limit)
             _world.RecordTriggerActivation(listener.OwnerPlayerId, listener.SourceKey, triggerIndex, limit.Scope);
-
         foreach (var resolved in resolvedEffects) ApplyEffect(listener, resolved, queue);
     }
 
@@ -196,8 +181,7 @@ internal sealed class GameEffectRuntime
         {
             var trigger = listener.Definition.Triggers[index];
             if (trigger.Event != NativeTriggerKeys.AfterFriendlyDeaths) continue;
-            if (AdvanceTrigger(listener.InstanceId, index, trigger.Count!.Value))
-                ResolveSpecificTrigger(listener, index, trigger, queue);
+            if (AdvanceTrigger(listener.InstanceId, index, trigger.Count!.Value)) ResolveSpecificTrigger(listener, index, trigger, queue);
         }
     }
 
@@ -238,11 +222,10 @@ internal sealed class GameEffectRuntime
                 break;
             case SummonUnitEffectDefinition summon:
             {
-                var unitCatalog = _unitCatalog ?? throw new InvalidOperationException("summonUnit requires a UnitCatalog in the effect runtime.");
+                var unitCatalog = RequireUnitCatalog("summonUnit");
                 var count = _pipeline.EvaluateValue(summon.Count, BuildContext(source));
                 if (count <= 0) break;
-                var definition = unitCatalog.GetRequired(summon.UnitId);
-                foreach (var summoned in _world.Summon(source, definition, count))
+                foreach (var summoned in _world.Summon(source, unitCatalog.GetRequired(summon.UnitId), count))
                 {
                     RecordGameEventCore(summoned.OwnerPlayerId, NativeGameEventKeys.UnitSummoned, summoned.Definition, queue);
                     queue.Enqueue(new GameEffectEvent(NativeTriggerKeys.OnSummon, summoned));
@@ -251,36 +234,59 @@ internal sealed class GameEffectRuntime
             }
             case GenerateUnitToReserveEffectDefinition generate:
             {
-                var generationWorld = GetGenerationWorld(generate.Kind);
-                var unitCatalog = _unitCatalog ?? throw new InvalidOperationException("generateUnitToReserve requires a UnitCatalog in the effect runtime.");
                 var count = _pipeline.EvaluateValue(generate.Count, BuildContext(source));
-                if (count > 0) generationWorld.GenerateUnitToReserve(source.OwnerPlayerId, unitCatalog.GetRequired(generate.UnitId), count);
+                if (count > 0) GetGenerationWorld(generate.Kind).GenerateUnitToReserve(source.OwnerPlayerId, RequireUnitCatalog("generateUnitToReserve").GetRequired(generate.UnitId), count);
                 break;
             }
             case GenerateUnitChoiceEffectDefinition choice:
             {
-                var generationWorld = GetGenerationWorld(choice.Kind);
-                var unitCatalog = _unitCatalog ?? throw new InvalidOperationException("generateUnitChoice requires a UnitCatalog in the effect runtime.");
-                var candidates = unitCatalog.All.Where(candidate => choice.Query.Matches(candidate, source.Definition)).ToArray();
+                var candidates = RequireUnitCatalog("generateUnitChoice").All.Where(candidate => choice.Query.Matches(candidate, source.Definition)).ToArray();
                 var options = SelectRandomDefinitions(candidates, choice.OptionCount, _randomSource);
-                if (options.Count > 0) generationWorld.QueueUnitChoice(source.OwnerPlayerId, options);
+                if (options.Count > 0) GetGenerationWorld(choice.Kind).QueueUnitChoice(source.OwnerPlayerId, options);
                 break;
             }
             case GenerateActionToReserveEffectDefinition generateAction:
             {
-                var generationWorld = GetGenerationWorld(generateAction.Kind);
-                var actionCatalog = _actionCatalog ?? throw new InvalidOperationException("generateActionToReserve requires an ActionCatalog in the effect runtime.");
                 var count = _pipeline.EvaluateValue(generateAction.Count, BuildContext(source));
-                if (count > 0) generationWorld.GenerateActionToReserve(source.OwnerPlayerId, actionCatalog.GetRequired(generateAction.ActionId), count);
+                if (count > 0) GetGenerationWorld(generateAction.Kind).GenerateActionToReserve(source.OwnerPlayerId, RequireActionCatalog("generateActionToReserve").GetRequired(generateAction.ActionId), count);
                 break;
             }
             case GenerateActionChoiceEffectDefinition actionChoice:
             {
-                var generationWorld = GetGenerationWorld(actionChoice.Kind);
-                var actionCatalog = _actionCatalog ?? throw new InvalidOperationException("generateActionChoice requires an ActionCatalog in the effect runtime.");
-                var candidates = actionCatalog.All.Where(actionChoice.Query.Matches).ToArray();
+                var candidates = RequireActionCatalog("generateActionChoice").All.Where(actionChoice.Query.Matches).ToArray();
                 var options = SelectRandomDefinitions(candidates, actionChoice.OptionCount, _randomSource);
-                if (options.Count > 0) generationWorld.QueueActionChoice(source.OwnerPlayerId, options);
+                if (options.Count > 0) GetGenerationWorld(actionChoice.Kind).QueueActionChoice(source.OwnerPlayerId, options);
+                break;
+            }
+            case TransformUnitEffectDefinition transform:
+            {
+                var mutationWorld = GetPersistentMutationWorld(transform.Kind);
+                var definition = RequireUnitCatalog("transformUnit").GetRequired(transform.UnitId);
+                foreach (var target in GetCurrentTargets(resolved.TargetInstanceIds)) mutationWorld.TransformUnit(target, definition);
+                break;
+            }
+            case CopyUnitToReserveEffectDefinition copy:
+            {
+                var targets = GetCurrentTargets(resolved.TargetInstanceIds).ToArray();
+                if (targets.Length > 0) GetPersistentMutationWorld(copy.Kind).CopyUnitsToReserve(source.OwnerPlayerId, targets);
+                break;
+            }
+            case ApplyUnitModifierEffectDefinition modifier:
+            {
+                var mutationWorld = GetPersistentMutationWorld(modifier.Kind);
+                var context = BuildContext(source);
+                foreach (var target in GetCurrentTargets(resolved.TargetInstanceIds))
+                {
+                    var attack = _pipeline.EvaluateValue(modifier.AttackDelta, context, target.InstanceId);
+                    var health = _pipeline.EvaluateValue(modifier.HealthDelta, context, target.InstanceId);
+                    if (attack != 0 || health != 0) mutationWorld.ApplyModifier(target, modifier.ModifierKey, attack, health);
+                }
+                break;
+            }
+            case RemoveUnitModifierEffectDefinition removeModifier:
+            {
+                var mutationWorld = GetPersistentMutationWorld(removeModifier.Kind);
+                foreach (var target in GetCurrentTargets(resolved.TargetInstanceIds)) mutationWorld.RemoveModifier(target, removeModifier.ModifierKey);
                 break;
             }
             case AddBehaviorEffectDefinition addBehavior:
@@ -307,8 +313,18 @@ internal sealed class GameEffectRuntime
         }
     }
 
+    private UnitCatalog RequireUnitCatalog(string effect) =>
+        _unitCatalog ?? throw new InvalidOperationException($"{effect} requires a UnitCatalog in the effect runtime.");
+
+    private ActionCatalog RequireActionCatalog(string effect) =>
+        _actionCatalog ?? throw new InvalidOperationException($"{effect} requires an ActionCatalog in the effect runtime.");
+
     private IGenerationChoiceRuntimeWorld GetGenerationWorld(NativeEffectKey kind) =>
         _world as IGenerationChoiceRuntimeWorld
+        ?? throw new InvalidOperationException($"Effect '{kind}' is not supported by this effect world.");
+
+    private IPersistentUnitMutationWorld GetPersistentMutationWorld(NativeEffectKey kind) =>
+        _world as IPersistentUnitMutationWorld
         ?? throw new InvalidOperationException($"Effect '{kind}' is not supported by this effect world.");
 
     private static IReadOnlyList<T> SelectRandomDefinitions<T>(IReadOnlyList<T> candidates, int count, IRandomSource randomSource)
@@ -346,7 +362,6 @@ internal sealed class GameEffectRuntime
         var historyQueue = new Queue<GameEffectEvent>();
         RecordGameEventCore(deadUnit.OwnerPlayerId, NativeGameEventKeys.UnitDied, deadUnit.Definition, historyQueue);
         DrainEventQueue(historyQueue);
-
         var activations = new List<DeathTriggerActivation>();
         AddOwnDeathTriggers(deadUnit, activations);
         AddFriendlyDeathTriggers(deadUnit, activations);
@@ -386,8 +401,7 @@ internal sealed class GameEffectRuntime
             {
                 var trigger = listener.Definition.Triggers[index];
                 if (trigger.Event != NativeTriggerKeys.AfterFriendlyDeaths) continue;
-                if (AdvanceTrigger(listener.InstanceId, index, trigger.Count!.Value))
-                    activations.Add(new DeathTriggerActivation(listener, index, trigger));
+                if (AdvanceTrigger(listener.InstanceId, index, trigger.Count!.Value)) activations.Add(new DeathTriggerActivation(listener, index, trigger));
             }
         }
     }
@@ -407,8 +421,7 @@ internal sealed class GameEffectRuntime
 
     private void ClearTriggerProgress(UnitInstanceId instanceId)
     {
-        foreach (var key in _triggerProgress.Keys.Where(key => key.InstanceId == instanceId).ToArray())
-            _triggerProgress.Remove(key);
+        foreach (var key in _triggerProgress.Keys.Where(key => key.InstanceId == instanceId).ToArray()) _triggerProgress.Remove(key);
     }
 
     private EffectResolutionContext BuildContext(IEffectRuntimeUnit source, UnitInstanceId? selectedTargetInstanceId = null)
@@ -419,30 +432,15 @@ internal sealed class GameEffectRuntime
         {
             var position = positions.GetValueOrDefault(unit.OwnerPlayerId);
             positions[unit.OwnerPlayerId] = position + 1;
-            snapshots.Add(CreateSnapshot(unit, isSelectable: true, position));
+            snapshots.Add(CreateSnapshot(unit, true, position));
         }
-        if (snapshots.All(snapshot => snapshot.InstanceId != source.InstanceId))
-            snapshots.Add(CreateSnapshot(source, isSelectable: false, position: -1));
-
-        return new EffectResolutionContext(
-            source.InstanceId,
-            source.OwnerPlayerId,
-            snapshots,
-            selectedTargetInstanceId,
-            _world.GetHistory(source.OwnerPlayerId));
+        if (snapshots.All(snapshot => snapshot.InstanceId != source.InstanceId)) snapshots.Add(CreateSnapshot(source, false, -1));
+        return new EffectResolutionContext(source.InstanceId, source.OwnerPlayerId, snapshots, selectedTargetInstanceId, _world.GetHistory(source.OwnerPlayerId));
     }
 
     private static EffectUnitSnapshot CreateSnapshot(IEffectRuntimeUnit unit, bool isSelectable, int position) =>
-        new(
-            unit.InstanceId,
-            unit.OwnerPlayerId,
-            unit.IsAlive,
-            unit.Attack,
-            unit.Health,
-            position,
-            isSelectable,
-            unit.Definition.Types.Select(type => type.Id),
-            unit.Definition.Tags.Select(tag => tag.Id));
+        new(unit.InstanceId, unit.OwnerPlayerId, unit.IsAlive, unit.Attack, unit.Health, position, isSelectable,
+            unit.Definition.Types.Select(type => type.Id), unit.Definition.Tags.Select(tag => tag.Id));
 
     private static int FindTriggerIndex(UnitDefinition definition, TriggerDefinition trigger)
     {

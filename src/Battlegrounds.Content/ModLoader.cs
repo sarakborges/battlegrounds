@@ -144,6 +144,18 @@ public sealed class ModLoader
             "generateUnitChoice" => new GenerateUnitChoiceEffectDefinition(BuildGenerationQuery(data.GenerationQuery), data.OptionCount ?? 3),
             "generateActionToReserve" => new GenerateActionToReserveEffectDefinition(new ActionId(data.ActionId ?? throw new InvalidDataException("Validated generateActionToReserve effect is missing actionId.")), data.Count is null ? new ConstantEffectValueExpression(1) : BuildRequiredValue(data.Count, "generateActionToReserve.count")),
             "generateActionChoice" => new GenerateActionChoiceEffectDefinition(BuildActionGenerationQuery(data.ActionQuery), data.OptionCount ?? 3),
+            "transformUnit" => new TransformUnitEffectDefinition(
+                BuildTarget(data.Target),
+                new UnitId(data.UnitId ?? throw new InvalidDataException("Validated transformUnit effect is missing unitId."))),
+            "copyUnitToReserve" => new CopyUnitToReserveEffectDefinition(BuildTarget(data.Target)),
+            "applyUnitModifier" => new ApplyUnitModifierEffectDefinition(
+                BuildTarget(data.Target),
+                data.ModifierKey ?? throw new InvalidDataException("Validated applyUnitModifier effect is missing modifierKey."),
+                BuildOptionalValue(data.Attack),
+                BuildOptionalValue(data.Health)),
+            "removeUnitModifier" => new RemoveUnitModifierEffectDefinition(
+                BuildTarget(data.Target),
+                data.ModifierKey ?? throw new InvalidDataException("Validated removeUnitModifier effect is missing modifierKey.")),
             "addBehavior" => new AddBehaviorEffectDefinition(BuildTarget(data.Target), new BehaviorId(data.BehaviorId ?? throw new InvalidDataException("Validated addBehavior effect is missing behaviorId."))),
             "removeBehavior" => new RemoveBehaviorEffectDefinition(BuildTarget(data.Target), new BehaviorId(data.BehaviorId ?? throw new InvalidDataException("Validated removeBehavior effect is missing behaviorId."))),
             "addResource" => new AddResourceEffectDefinition(BuildRequiredValue(data.Amount, "addResource.amount")),
@@ -296,7 +308,8 @@ public sealed class ModLoader
         GenerationQueryData? GenerationQuery,
         int? OptionCount,
         string? ActionId,
-        ActionQueryData? ActionQuery);
+        ActionQueryData? ActionQuery,
+        string? ModifierKey);
     private sealed record GenerationQueryData(int? MinimumTier, int? MaximumTier, string? TypeId, string? TagId, bool? ExcludeSource);
     private sealed record ActionQueryData(int? MinimumTier, int? MaximumTier, string? ExcludeActionId);
     private record QueryData(EffectTargetScope Scope, bool? ExcludeSource, string? TypeId, string? TagId);

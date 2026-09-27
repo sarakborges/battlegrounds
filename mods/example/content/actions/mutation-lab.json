@@ -1,0 +1,29 @@
+{
+  "id": "mutation-lab",
+  "name": "Mutation Lab",
+  "tier": 1,
+  "cost": 0,
+  "effects": [
+    {
+      "kind": "applyUnitModifier",
+      "target": { "scope": "selected" },
+      "modifierKey": "mutation-lab",
+      "attack": 1,
+      "health": 2
+    },
+    {
+      "kind": "copyUnitToReserve",
+      "target": { "scope": "selected" }
+    },
+    {
+      "kind": "removeUnitModifier",
+      "target": { "scope": "selected" },
+      "modifierKey": "mutation-lab"
+    },
+    {
+      "kind": "transformUnit",
+      "target": { "scope": "selected" },
+      "unitId": "guard"
+    }
+  ]
+}

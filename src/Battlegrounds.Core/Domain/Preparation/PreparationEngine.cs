@@ -160,7 +160,7 @@ public sealed class PreparationEngine
         if (command.FieldSlot < 0 || command.FieldSlot >= player.Field.Count)
             return PreparationCommandResult.Failure(PreparationFailureCode.InvalidFieldSlot);
         var unit = player.Field[command.FieldSlot];
-        if (unit.Origin == UnitInstanceOrigin.Pooled) _unitPool.ReturnUnit(unit.Definition);
+        if (unit.PoolReturnDefinition is not null) _unitPool.ReturnUnit(unit.PoolReturnDefinition);
         player.RemoveFromField(command.FieldSlot);
         player.GainResource(_rules.ReleaseValue, _rules.MaximumResource);
         _effectEngine.ProcessGameEvent(match, player, NativeGameEventKeys.UnitReleased, unit.Definition);
@@ -287,6 +287,10 @@ public sealed class PreparationEngine
             TriggerEventEffectDefinition value => value.Target,
             AddBehaviorEffectDefinition value => value.Target,
             RemoveBehaviorEffectDefinition value => value.Target,
+            TransformUnitEffectDefinition value => value.Target,
+            CopyUnitToReserveEffectDefinition value => value.Target,
+            ApplyUnitModifierEffectDefinition value => value.Target,
+            RemoveUnitModifierEffectDefinition value => value.Target,
             _ => null,
         };
 
