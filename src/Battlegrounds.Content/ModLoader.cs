@@ -3,6 +3,7 @@ using System.Text.Json.Serialization;
 using Battlegrounds.Core.Domain.Actions;
 using Battlegrounds.Core.Domain.Behaviors;
 using Battlegrounds.Core.Domain.Combat;
+using Battlegrounds.Core.Domain.Combines;
 using Battlegrounds.Core.Domain.Effects;
 using Battlegrounds.Core.Domain.Ids;
 using Battlegrounds.Core.Domain.Leaders;
@@ -43,6 +44,7 @@ public sealed class ModLoader
         var behaviorData = ReadDirectory<BehaviorData>(Path.Combine(modDirectory, "content", "behaviors"));
         var powerData = ReadDirectory<PowerData>(Path.Combine(modDirectory, "content", "powers"));
         var actionData = ReadDirectory<ActionData>(Path.Combine(modDirectory, "content", "actions"));
+        var combineData = ReadOptionalDirectory<UnitCombineData>(Path.Combine(modDirectory, "content", "combines"));
         var leaderData = ReadDirectory<LeaderData>(Path.Combine(modDirectory, "content", "leaders"));
         var typeData = ReadDirectory<NamedIdData>(Path.Combine(modDirectory, "content", "types"));
         var tagData = ReadDirectory<NamedIdData>(Path.Combine(modDirectory, "content", "tags"));
@@ -93,6 +95,14 @@ public sealed class ModLoader
             (unit.Triggers ?? []).Select(BuildTrigger))).ToArray();
 
         var catalog = new UnitCatalog(definitions);
+        var combineCatalog = new UnitCombineCatalog(combineData.Select(data =>
+        {
+            var sourceId = new UnitId(data.SourceUnitId);
+            var resultId = new UnitId(data.ResultUnitId);
+            catalog.GetRequired(sourceId);
+            catalog.GetRequired(resultId);
+            return new UnitCombineDefinition(new UnitCombineId(data.Id), data.Name, sourceId, data.RequiredCopies, resultId);
+        }));
         var poolEntries = poolData.Select(entry => new UnitPoolEntry(new UnitId(entry.UnitId), entry.Copies)).ToArray();
         _ = new UnitPool(catalog, poolEntries);
 
@@ -108,6 +118,7 @@ public sealed class ModLoader
             leaderCatalog,
             powerCatalog,
             actionCatalog,
+            combineCatalog,
             unitTypeCatalog,
             tagCatalog,
             catalog,
@@ -268,6 +279,9 @@ public sealed class ModLoader
             .Select(ReadRequired<T>)
             .ToArray();
 
+    private static T[] ReadOptionalDirectory<T>(string directory) =>
+        Directory.Exists(directory) ? ReadDirectory<T>(directory) : [];
+
     private static T ReadRequired<T>(string path)
     {
         var json = File.ReadAllText(path);
@@ -287,6 +301,7 @@ public sealed class ModLoader
     private sealed record PowerActivationData(int Cost, int MaxUsesPerTurn, int? MaxUsesPerMatch);
     private sealed record PowerData(string Id, string Name, PowerActivationData? Activation, TriggerData[] Triggers);
     private sealed record ActionData(string Id, string Name, int Tier, int Cost, EffectData[] Effects);
+    private sealed record UnitCombineData(string Id, string Name, string SourceUnitId, int RequiredCopies, string ResultUnitId);
     private sealed record LeaderData(string Id, string Name, int HealthModifier, int Armor, string InitialPowerId);
     private sealed record NamedIdData(string Id, string Name);
     private sealed record UnitData(string Id, string Name, int Tier, int Attack, int Health, string[]? Behaviors, string[]? Types, string[]? Tags, TriggerData[]? Triggers);
