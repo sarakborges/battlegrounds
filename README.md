@@ -25,6 +25,18 @@ Examples:
 
 The Core must never encode fandom-specific display terminology into IDs, commands, rules or algorithms. There is intentionally no hardcoded `Standard` gameplay preset in Core.
 
+## Mod-owned vocabulary and localization
+
+Visible vocabulary and UI templates are validated Content data rather than engine-owned English strings.
+
+`mod.json` contains the package's fallback terminology for neutral concepts such as Unit, Action, Leader, Power, Health, Armor, Resource, Offer, Tier, Reserve, Field, Preparation, Combat and Round. `localization/presentation.json` selects the default locale, while `localization/<locale>.json` files provide localized `term.*` overrides and `ui.*` templates.
+
+The default locale must be complete. Secondary locales may be partial and resolve missing keys through deterministic exact-locale → language-locale → default-locale fallback. `Battlegrounds.Game` chooses the requested/system locale and formats the validated templates; Application only passes the validated package through, and Core never sees locale data.
+
+`mods/example` currently demonstrates `en` and `pt-BR` presentation data.
+
+See `LOCALIZATION.md` for the format, fallback and ownership contract.
+
 ## One authored entity per file
 
 Mod content never uses giant catalog arrays such as `units.json`, `actions.json`, `leaders.json`, `powers.json`, `combines.json`, `types.json` or `behaviors.json`.
@@ -60,7 +72,7 @@ The file name is part of the validation contract: `content/units/guard.json` mus
 
 This rule applies to future ID-addressable content too: artifacts, quests, anomalies, or other authored entities should each have their own file rather than being accumulated into one array document.
 
-Aggregate files are reserved for genuinely package-global configuration, such as `mod.json`, `rules/*.json` and `content/pool.json`.
+Aggregate files are reserved for genuinely package-global configuration, such as `mod.json`, `rules/*.json`, `content/pool.json` and `localization/presentation.json`.
 
 ## Leaders and powers
 
@@ -220,6 +232,8 @@ See `AI.md` for ownership and determinism rules.
 
 `AdvanceAutomated()` finishes active AI Preparations, waits if the human is not ready, and otherwise resolves exactly one combat round before returning control at the next Preparation or Finished state. Immediately before resolution, the session freezes the paired starting Unit views; after Core returns, `LastCombat` exposes a `SessionCombatRecord` containing those immutable snapshots plus the authoritative `CombatRoundResult`. Presentation can therefore keep showing the completed combat after the Match has already advanced without owning or delaying simulation.
 
+The session exposes the validated `ModPackage`, including its immutable presentation catalog, but does not select locales or interpret localized strings.
+
 See `APPLICATION.md` for the orchestration and ownership contract.
 
 ## Godot presentation adapter
@@ -230,9 +244,11 @@ The playable Preparation surface now covers Leader selection, generic acquire/de
 
 Multi-step intent is stored only in `PresentationInteractionState`. Targeted Actions/Powers first submit without a target; when Core reports `InvalidActionTarget`/`InvalidPowerTarget`, Godot enters target-selection mode and resubmits the chosen `UnitInstanceId`. Combine selection stores exact highlighted component IDs and finishes with the existing `CombineUnitsCommand`.
 
+Godot resolves the selected mod's `ModPresentationCatalog` using the exported locale or Godot's system locale. Preparation labels, summaries, concept vocabulary and combat playback chrome are rendered from mod-owned terminology/templates with Content-owned fallback instead of hardcoded engine English.
+
 Resolved human combat is displayed through a full-screen presentation-owned playback overlay. `CombatPlaybackState` starts from the immutable session snapshots and consumes `CombatResult.Timeline` in order, so combat-local summons, triggers, buffs/debuffs, effect damage/destruction, deaths/revives, behavior changes and Power/Resource transitions are rendered from immutable Core output rather than reconstructed in Godot. Playback may auto-step, advance manually or skip to settlement; none of those controls rerun combat or mutate Core state.
 
-See `GAME.md` for the Godot ownership and presentation contract.
+See `GAME.md` for the Godot ownership contract and `LOCALIZATION.md` for the presentation string contract.
 
 ## Mod validation is mandatory
 
@@ -240,7 +256,7 @@ See `GAME.md` for the Godot ownership and presentation contract.
 
 `ModLoader.Validate(...)` and `ModValidator.Validate(...)` return a structured report suitable for UI, including the actual file, JSON path, issue code, severity and message.
 
-Validation covers required global files/content directories, required and unknown keys, JSON types/ranges, one-object-per-entity-file structure, entity ID/file-name agreement, duplicate IDs/references, cross-file references, unsupported native handlers/triggers/effects/policies, taxonomy references, leader starting values, Leader → initial-Power references, persistent-effect phase legality, Action/choice/generation rules and Unit-combine references/constraints.
+Validation covers required global files/content directories, required and unknown keys, JSON types/ranges, one-object-per-entity-file structure, entity ID/file-name agreement, duplicate IDs/references, cross-file references, unsupported native handlers/triggers/effects/policies, taxonomy references, leader starting values, Leader → initial-Power references, persistent-effect phase legality, Action/choice/generation rules, Unit-combine references/constraints, required presentation terminology, locale identifiers, default-locale completeness and localization string shape.
 
 Examples of required rules:
 
@@ -290,8 +306,10 @@ mods/
       combines/
         <combine-id>.json
       pool.json
+    localization/
+      presentation.json
+      <locale>.json
     assets/                 # future
-    localization/           # future
 ```
 
 `Battlegrounds.Content` owns filesystem/JSON loading and validation. `Battlegrounds.Core` never reads files or JSON directly. `mods/example` is only a neutral schema/integration fixture.
@@ -354,9 +372,10 @@ Read `ARCHITECTURE.md` before adding features. Its ownership, dependency, mutati
 - deterministic framework-free AI using the same public commands as presentation;
 - framework-free single-player session orchestration over validated Content + Core + AI + matchmaking;
 - immutable session combat observations that freeze starting boards before authoritative settlement advances the Match;
-- thin Godot presentation adapter over the Application boundary with a playable Preparation loop;
+- validated mod-owned presentation terminology/locales with deterministic fallback and immutable `ModPresentationCatalog`;
+- thin Godot presentation adapter over the Application boundary with a playable localized Preparation loop;
 - explicit Godot multi-step interaction state for selected targets, pending choices and combine components;
-- deterministic Godot combat playback over the Core event timeline with manual/automatic stepping and settlement skip;
+- deterministic Godot combat playback over the Core event timeline with manual/automatic stepping, settlement skip and mod-owned presentation vocabulary;
 - whole-mod validation before loading;
 - regression/invariant tests and CI, including a Godot project build.
 
@@ -376,4 +395,4 @@ dotnet build src/Battlegrounds.Game/Battlegrounds.Game.csproj
 
 ## Next architectural slice
 
-Introduce validated mod-owned presentation vocabulary/localization so Godot no longer hardcodes generic UI terms such as Leader, Resource, Offer, Reserve, Field and Tier. `Battlegrounds.Content` should load and validate the selected mod's presentation strings/locales, Application should expose the validated package without interpreting it, and Godot should render those strings while Core remains entirely terminology-neutral. Keep binary assets as a later presentation concern rather than coupling them to mechanics.
+Localize authored entity display text without making gameplay identity locale-dependent. Add stable localization keys for Leader, Power, Unit, Action, behavior, type, tag and combine names plus future descriptions where appropriate; keep IDs, rules and immutable gameplay definitions mechanically stable. `Battlegrounds.Content` should validate localized entity references/fallbacks and Godot should render the resolved text. Keep binary visual/audio assets as the following presentation concern rather than coupling them to Core.
