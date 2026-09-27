@@ -132,8 +132,9 @@ public partial class ModLauncher : Control
 
             GD.Print($"[ModLauncher] Starting '{entry.DisplayName}' from '{game.ModPath}'.");
 
-            var parent = GetParent() ?? throw new InvalidOperationException("Launcher has no scene-tree parent.");
-            parent.AddChild(game);
+            var tree = GetTree();
+            tree.Root.AddChild(game);
+            tree.CurrentScene = game;
             QueueFree();
         }
         catch (Exception exception)
