@@ -41,7 +41,7 @@ public sealed class PreparationAiStrategyTests
             typeMatchBonus: 100,
             tagMatchBonus: 40);
 
-        Assert.Equal(140, strategy.GetUnitPreferenceBonus(unit));
+        Assert.Equal(140L, strategy.GetUnitPreferenceBonus(unit));
     }
 
     private static UnitId PlayStrategy(PreparationAiStrategy strategy)
