@@ -25,7 +25,8 @@ public sealed record SimulationPlayerResult(
     int Rounds,
     int FinalTier,
     int FinalHealth,
-    long PreparationCommands);
+    long PreparationCommands,
+    PreparationAiCommandCounts CommandCounts);
 
 public sealed record SimulationMatchResult(
     int MatchIndex,
@@ -33,13 +34,29 @@ public sealed record SimulationMatchResult(
     int Rounds,
     IReadOnlyList<SimulationPlayerResult> Players);
 
+public sealed record SimulationCommandAverages(
+    double Acquires,
+    double Releases,
+    double Deploys,
+    double ActionsPlayed,
+    double Combines,
+    double Refreshes,
+    double Upgrades,
+    double PowersUsed,
+    double UnitChoicesResolved,
+    double ActionChoicesResolved,
+    double Freezes,
+    double Unfreezes,
+    double Ends);
+
 public sealed record SimulationGroupSummary(
     string Id,
     int Games,
     int Wins,
     double WinRate,
     double AveragePlacement,
-    double AveragePreparationCommands);
+    double AveragePreparationCommands,
+    SimulationCommandAverages AverageCommands);
 
 public sealed record SimulationReport(
     string ModId,
@@ -49,6 +66,7 @@ public sealed record SimulationReport(
     int BaseSeed,
     double AverageRounds,
     long TotalPreparationCommands,
+    PreparationAiCommandCounts TotalCommandCounts,
     IReadOnlyList<SimulationGroupSummary> Leaders,
     IReadOnlyList<SimulationGroupSummary> Personalities,
     IReadOnlyList<SimulationGroupSummary> Strategies,
@@ -72,6 +90,10 @@ public sealed class SimulationRunner
         }
 
         var players = results.SelectMany(result => result.Players).ToArray();
+        var totalCommandCounts = players.Aggregate(
+            PreparationAiCommandCounts.Zero,
+            (sum, player) => sum + player.CommandCounts);
+
         return new SimulationReport(
             mod.Id,
             mod.Name,
@@ -79,7 +101,8 @@ public sealed class SimulationRunner
             options.Players,
             options.Seed,
             results.Average(result => result.Rounds),
-            players.Sum(player => player.PreparationCommands),
+            totalCommandCounts.Total,
+            totalCommandCounts,
             Summarize(players, player => player.LeaderId),
             Summarize(players, player => player.Personality),
             Summarize(players, player => player.Strategy),
@@ -123,7 +146,7 @@ public sealed class SimulationRunner
 
         var match = engine.CreateMatch(selection.GetCompletedPlayerSetups());
         engine.BeginMatch(match);
-        var preparationCommands = playerIds.ToDictionary(id => id, _ => 0L);
+        var commandCounts = playerIds.ToDictionary(id => id, _ => PreparationAiCommandCounts.Zero);
 
         while (match.Phase != MatchPhase.Finished)
         {
@@ -156,7 +179,7 @@ public sealed class SimulationRunner
                     options.MaximumCommandsPerPreparation,
                     personalities[playerId],
                     strategies[playerId]);
-                preparationCommands[playerId] += result.CommandsExecuted;
+                commandCounts[playerId] += result.CommandCounts;
             }
 
             if (match.Phase != MatchPhase.Combat)
@@ -178,6 +201,7 @@ public sealed class SimulationRunner
                 if (!match.TryGetPlacement(playerId, out var placement))
                     throw new InvalidOperationException($"Simulation finished without placement for player '{playerId}'.");
 
+                var telemetry = commandCounts[playerId];
                 return new SimulationPlayerResult(
                     matchIndex,
                     seed,
@@ -189,7 +213,8 @@ public sealed class SimulationRunner
                     match.Round,
                     player.Tier,
                     player.Health,
-                    preparationCommands[playerId]);
+                    telemetry.Total,
+                    telemetry);
             })
             .ToArray();
 
@@ -226,9 +251,26 @@ public sealed class SimulationRunner
                     wins,
                     wins / (double)values.Length,
                     values.Average(player => player.Placement),
-                    values.Average(player => player.PreparationCommands));
+                    values.Average(player => player.PreparationCommands),
+                    AverageCommands(values));
             })
             .ToArray();
+
+    private static SimulationCommandAverages AverageCommands(IReadOnlyCollection<SimulationPlayerResult> players) =>
+        new(
+            players.Average(player => player.CommandCounts.Acquires),
+            players.Average(player => player.CommandCounts.Releases),
+            players.Average(player => player.CommandCounts.Deploys),
+            players.Average(player => player.CommandCounts.ActionsPlayed),
+            players.Average(player => player.CommandCounts.Combines),
+            players.Average(player => player.CommandCounts.Refreshes),
+            players.Average(player => player.CommandCounts.Upgrades),
+            players.Average(player => player.CommandCounts.PowersUsed),
+            players.Average(player => player.CommandCounts.UnitChoicesResolved),
+            players.Average(player => player.CommandCounts.ActionChoicesResolved),
+            players.Average(player => player.CommandCounts.Freezes),
+            players.Average(player => player.CommandCounts.Unfreezes),
+            players.Average(player => player.CommandCounts.Ends));
 
     private static void Shuffle<T>(T[] values, IRandomSource random)
     {
