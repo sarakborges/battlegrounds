@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <OutputType>Exe</OutputType>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <IsPackable>false</IsPackable>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <LangVersion>latest</LangVersion>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="xunit.v3" Version="4.0.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../../src/Battlegrounds.Application/Battlegrounds.Application.csproj" />
+    <ProjectReference Include="../../src/Battlegrounds.Content/Battlegrounds.Content.csproj" />
+    <ProjectReference Include="../../src/Battlegrounds.Core/Battlegrounds.Core.csproj" />
+  </ItemGroup>
+</Project>
