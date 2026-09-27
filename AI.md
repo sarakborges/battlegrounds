@@ -12,7 +12,7 @@ The AI does not own or mutate authoritative match state. It reads the same publi
 
 The baseline `PreparationAiAgent` is intentionally mechanical rather than fandom-aware. It can select a Leader, resolve pending choices, combine Units, deploy Units, replace weaker field Units, play Actions, activate Powers, acquire playables, upgrade tier, refresh/freeze and end Preparation.
 
-Its scoring uses only neutral mechanical data such as tier, current Attack/Health, cost, Health modifiers and Armor. Mods remain responsible for names, themes, authored effects and balance.
+Its baseline scoring uses only neutral mechanical data such as tier, current Attack/Health, cost, Health modifiers and Armor. Mods remain responsible for names, themes, authored effects and balance.
 
 ## Preparation personalities
 
@@ -26,13 +26,34 @@ The current profiles are:
 
 Mandatory state handling remains shared across personalities. Pending choices must still be resolved, legal combines are still taken, reserve Units are deployed when space exists, stronger reserve replacements may release weaker field Units, and owned Actions are played through the normal command boundary before the economic personality ordering is consulted.
 
-This separation is intentional. Personality describes *how* an AI pilots a position; future archetype/tribe strategy can describe *what* composition or synergy it is pursuing. Two AIs pursuing the same archetype can therefore still make different economic decisions.
+## Preparation strategies
 
-`SinglePlayerSession` assigns one personality to each AI at session creation using the same injected deterministic RNG used by the rest of the match. The assignment is exposed read-only for diagnostics through `AiPersonalities` and remains stable for that AI throughout the session.
+`PreparationAiStrategy` is a separate layer from personality. Personality answers *how* an AI pilots its economy; strategy answers *what kind of Units* it currently values.
+
+A strategy may prefer one or more neutral `UnitTypeId` and/or `TagId` values. Matching Units receive an additive score bonus on top of their normal mechanical value. Strategy currently influences:
+
+- generated Unit choices;
+- which reserve Unit is deployed first;
+- whether a reserve Unit is valuable enough to replace a field Unit;
+- which affordable Unit is acquired from the current Offer.
+
+Target selection for damaging/buff effects is intentionally not strategy-biased yet, and Action scoring remains mechanical. This keeps the first strategy slice focused on composition building rather than making every tactical choice archetype-aware.
+
+`PreparationAiStrategy.Balanced` adds no composition preference. `PreferType(...)` and `PreferTag(...)` create theme-neutral focused strategies without hardcoding any tribe/fandom IDs in the AI project.
+
+This separation means two AIs can pursue the same type strategy with different personalities: a `Greedy` type-focused AI may tier aggressively, while a `Tempo` AI pursuing the same type may buy immediate board strength first.
+
+## Session assignment
+
+`SinglePlayerSession` assigns one personality and one strategy independently to each AI at session creation using the same injected deterministic RNG used by the rest of the match.
+
+The available strategy set is derived from validated mod content: `Balanced` plus one `PreferType(...)` strategy for every Unit type present in the mod's Unit catalog. The assignments are exposed read-only through `AiPersonalities` and `AiStrategies` for diagnostics and remain stable for that AI throughout the session.
+
+Strategies are intentionally not authored as AI-specific JSON yet. Once the content-rich playable mod demonstrates real multi-type archetypes or tag-driven builds, the same strategy object can be composed from authored content without changing Core command legality or mutation ownership.
 
 ## Determinism
 
-Tie-breaking and personality assignment use injected `IRandomSource` values. The same state plus the same RNG sequence produces the same decisions and personality assignments.
+Tie-breaking, personality assignment and strategy assignment use injected `IRandomSource` values. The same state plus the same RNG sequence produces the same decisions and assignments.
 
 `PlayPreparation` has a command-count safety budget. This is an AI control-flow guard against authored zero-cost generation loops; it is unrelated to combat attack resolution and does not add an attack limit to Combat. Personality-specific refresh preferences are additionally bounded, so a zero-cost refresh rule cannot create an unbounded personality loop before the general safety budget is reached.
 
