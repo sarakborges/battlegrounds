@@ -48,7 +48,7 @@ mouse_filter = 2
 [node name="Subtitle" type="Label" parent="Margin/Root"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 18
-text = "Mod selection · launcher-r5 source"
+text = "Mod selection · launcher-r6 auto-start diagnostic"
 mouse_filter = 2
 
 [node name="Status" type="Label" parent="Margin/Root"]
