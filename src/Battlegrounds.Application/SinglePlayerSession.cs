@@ -29,6 +29,7 @@ public sealed class SinglePlayerSession
     private readonly MatchEngine _matchEngine;
     private readonly PlayerId[] _aiPlayerIds;
     private readonly Dictionary<PlayerId, PreparationAiPersonality> _aiPersonalities;
+    private readonly Dictionary<PlayerId, PreparationAiStrategy> _aiStrategies;
     private readonly int _aiMaximumCommands;
     private PlayerId[] _preparationInitiative = [];
     private int _preparationInitiativeRound;
@@ -38,6 +39,7 @@ public sealed class SinglePlayerSession
     public PlayerId HumanPlayerId { get; }
     public IReadOnlyList<PlayerId> AiPlayerIds => _aiPlayerIds;
     public IReadOnlyDictionary<PlayerId, PreparationAiPersonality> AiPersonalities => _aiPersonalities;
+    public IReadOnlyDictionary<PlayerId, PreparationAiStrategy> AiStrategies => _aiStrategies;
     public IReadOnlyList<PlayerId> PreparationInitiative => _preparationInitiative;
     public LeaderSelectionState LeaderSelection { get; }
     public MatchState? Match { get; private set; }
@@ -81,6 +83,13 @@ public sealed class SinglePlayerSession
             .ToDictionary(
                 id => id,
                 _ => AvailableAiPersonalities[_randomSource.NextInt(0, AvailableAiPersonalities.Length)]);
+
+        var availableStrategies = BuildAvailableStrategies(mod);
+        _aiStrategies = aiPlayerIds
+            .OrderBy(id => id.Value)
+            .ToDictionary(
+                id => id,
+                _ => availableStrategies[_randomSource.NextInt(0, availableStrategies.Length)]);
 
         foreach (var aiPlayerId in aiPlayerIds.OrderBy(id => id.Value))
             _aiAgent.SelectLeader(LeaderSelection, aiPlayerId);
@@ -203,13 +212,16 @@ public sealed class SinglePlayerSession
                     throw new InvalidOperationException($"Preparation initiative references uncontrolled player '{currentPlayerId}'.");
                 if (!_aiPersonalities.TryGetValue(currentPlayerId, out var personality))
                     throw new InvalidOperationException($"AI player '{currentPlayerId}' has no assigned Preparation personality.");
+                if (!_aiStrategies.TryGetValue(currentPlayerId, out var strategy))
+                    throw new InvalidOperationException($"AI player '{currentPlayerId}' has no assigned Preparation strategy.");
 
                 _aiAgent.PlayPreparation(
                     _matchEngine,
                     match,
                     currentPlayerId,
                     maximumCommands: _aiMaximumCommands,
-                    personality: personality);
+                    personality: personality,
+                    strategy: strategy);
                 aiPreparationsCompleted++;
             }
         }
@@ -232,6 +244,20 @@ public sealed class SinglePlayerSession
             EnsurePreparationInitiative(match);
 
         return CreateAdvanceResult(match, aiPreparationsCompleted, pairings, combatRound);
+    }
+
+    private static PreparationAiStrategy[] BuildAvailableStrategies(ModPackage mod)
+    {
+        var typeStrategies = mod.Units.All
+            .SelectMany(unit => unit.Types)
+            .Select(type => type.Id)
+            .Distinct()
+            .OrderBy(id => id.Value, StringComparer.Ordinal)
+            .Select(PreparationAiStrategy.PreferType);
+
+        return new[] { PreparationAiStrategy.Balanced }
+            .Concat(typeStrategies)
+            .ToArray();
     }
 
     private void EnsurePreparationInitiative(MatchState match)
