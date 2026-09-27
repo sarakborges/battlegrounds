@@ -1,0 +1,17 @@
+{
+  "leaders": {
+    "steady": {
+      "portrait": "assets/leaders/steady.svg"
+    }
+  },
+  "units": {
+    "scout": {
+      "art": "assets/units/scout.svg"
+    }
+  },
+  "actions": {
+    "training": {
+      "art": "assets/actions/training.svg"
+    }
+  }
+}
