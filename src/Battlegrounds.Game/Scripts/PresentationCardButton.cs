@@ -115,6 +115,8 @@ internal sealed partial class PresentationCardButton : Button
         _dragPayload = payload;
         _dragEnabled = enabled;
         MouseDefaultCursorShape = enabled ? CursorShape.Drag : CursorShape.Arrow;
+        ButtonMask = enabled ? (MouseButtonMask)0 : MouseButtonMask.Left;
+        FocusMode = enabled ? FocusModeEnum.None : FocusModeEnum.All;
     }
 
     private Control CreateDragPreview()
@@ -173,6 +175,8 @@ internal sealed partial class PresentationCardButton : Button
                 break;
             case "FieldButtons":
                 ApplyFootprint(138, 112, showSubtitle: false, "board");
+                ButtonMask = (MouseButtonMask)0;
+                FocusMode = FocusModeEnum.None;
                 break;
             case "ReserveButtons":
                 ApplyFootprint(90, 34, showSubtitle: false, "reserve");
