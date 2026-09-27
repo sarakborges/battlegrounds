@@ -66,6 +66,10 @@ public static class NativeEffectKeys
     public static NativeEffectKey GenerateUnitChoice { get; } = new("generateUnitChoice");
     public static NativeEffectKey GenerateActionToReserve { get; } = new("generateActionToReserve");
     public static NativeEffectKey GenerateActionChoice { get; } = new("generateActionChoice");
+    public static NativeEffectKey TransformUnit { get; } = new("transformUnit");
+    public static NativeEffectKey CopyUnitToReserve { get; } = new("copyUnitToReserve");
+    public static NativeEffectKey ApplyUnitModifier { get; } = new("applyUnitModifier");
+    public static NativeEffectKey RemoveUnitModifier { get; } = new("removeUnitModifier");
 
     private static readonly HashSet<NativeEffectKey> Supported =
     [
@@ -82,6 +86,10 @@ public static class NativeEffectKeys
         GenerateUnitChoice,
         GenerateActionToReserve,
         GenerateActionChoice,
+        TransformUnit,
+        CopyUnitToReserve,
+        ApplyUnitModifier,
+        RemoveUnitModifier,
     ];
 
     public static bool IsSupported(NativeEffectKey key) => Supported.Contains(key);
