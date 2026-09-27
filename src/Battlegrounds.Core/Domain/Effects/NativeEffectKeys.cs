@@ -64,6 +64,8 @@ public static class NativeEffectKeys
     public static NativeEffectKey SetPower { get; } = new("setPower");
     public static NativeEffectKey GenerateUnitToReserve { get; } = new("generateUnitToReserve");
     public static NativeEffectKey GenerateUnitChoice { get; } = new("generateUnitChoice");
+    public static NativeEffectKey GenerateActionToReserve { get; } = new("generateActionToReserve");
+    public static NativeEffectKey GenerateActionChoice { get; } = new("generateActionChoice");
 
     private static readonly HashSet<NativeEffectKey> Supported =
     [
@@ -78,6 +80,8 @@ public static class NativeEffectKeys
         SetPower,
         GenerateUnitToReserve,
         GenerateUnitChoice,
+        GenerateActionToReserve,
+        GenerateActionChoice,
     ];
 
     public static bool IsSupported(NativeEffectKey key) => Supported.Contains(key);
