@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using Battlegrounds.Core.Domain.Combines;
 using Battlegrounds.Core.Domain.Ids;
 
 namespace Battlegrounds.Core.Domain.Units;
@@ -9,8 +10,9 @@ public sealed class UnitCatalog
     private readonly ReadOnlyCollection<UnitDefinition> _all;
 
     public IReadOnlyList<UnitDefinition> All => _all;
+    public UnitCombineCatalog Combines { get; }
 
-    public UnitCatalog(IEnumerable<UnitDefinition> definitions)
+    public UnitCatalog(IEnumerable<UnitDefinition> definitions, UnitCombineCatalog? combines = null)
     {
         ArgumentNullException.ThrowIfNull(definitions);
 
@@ -40,6 +42,15 @@ public sealed class UnitCatalog
 
         _byId = ordered.ToDictionary(definition => definition.Id);
         _all = Array.AsReadOnly(ordered);
+        Combines = combines ?? new UnitCombineCatalog([]);
+
+        foreach (var combine in Combines.All)
+        {
+            if (!_byId.ContainsKey(combine.SourceUnitId))
+                throw new ArgumentException($"Unit combine '{combine.Id}' references unknown source unit '{combine.SourceUnitId}'.", nameof(combines));
+            if (!_byId.ContainsKey(combine.ResultUnitId))
+                throw new ArgumentException($"Unit combine '{combine.Id}' references unknown result unit '{combine.ResultUnitId}'.", nameof(combines));
+        }
     }
 
     public UnitDefinition GetRequired(UnitId unitId)
