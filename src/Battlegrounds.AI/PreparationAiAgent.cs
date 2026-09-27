@@ -80,7 +80,8 @@ public sealed class PreparationAiAgent
         PlayerId playerId,
         int maximumCommands = 128,
         PreparationAiPersonality personality = PreparationAiPersonality.Tempo,
-        PreparationAiStrategy? strategy = null)
+        PreparationAiStrategy? strategy = null,
+        IPreparationAiCommandObserver? observer = null)
     {
         ArgumentNullException.ThrowIfNull(engine);
         ArgumentNullException.ThrowIfNull(match);
@@ -102,6 +103,7 @@ public sealed class PreparationAiAgent
                 throw new InvalidOperationException($"AI exceeded its {maximumCommands}-command Preparation safety budget.");
 
             var command = ChooseNextCommand(match, player, memory, personality, strategy);
+            observer?.BeforeCommand(player, command);
             var result = engine.ExecutePreparation(match, command);
             if (!result.Succeeded)
             {
@@ -109,6 +111,7 @@ public sealed class PreparationAiAgent
                     $"AI emitted illegal command '{command.GetType().Name}': {result.FailureCode}.");
             }
 
+            observer?.AfterAcceptedCommand(player, command);
             executed++;
             commandCounts = commandCounts.Add(command);
             if (command is RefreshOfferCommand) memory.Refreshes++;
