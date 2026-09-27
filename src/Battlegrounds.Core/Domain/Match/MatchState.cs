@@ -15,6 +15,8 @@ public sealed class MatchState
     private readonly Dictionary<PlayerId, PlayerState> _playersById;
     private readonly List<MatchElimination> _eliminations = [];
     private readonly ReadOnlyCollection<MatchElimination> _eliminationsView;
+    private readonly List<MatchCombatPairing> _combatPairingHistory = [];
+    private readonly ReadOnlyCollection<MatchCombatPairing> _combatPairingHistoryView;
     private readonly Dictionary<PlayerId, int> _placements = [];
     private long _nextUnitInstanceId = 1;
     private long _nextActionInstanceId = 1;
@@ -25,6 +27,7 @@ public sealed class MatchState
     public long Revision { get; private set; }
     public IReadOnlyList<PlayerState> Players => _playersView;
     public IReadOnlyList<MatchElimination> Eliminations => _eliminationsView;
+    public IReadOnlyList<MatchCombatPairing> CombatPairingHistory => _combatPairingHistoryView;
     public EliminatedOpponentSnapshot? LatestEliminatedOpponent { get; private set; }
     public int ActivePlayerCount => _players.Count(player => !player.IsEliminated);
     public PlayerId? WinnerPlayerId =>
@@ -38,6 +41,7 @@ public sealed class MatchState
         _playersView = _players.AsReadOnly();
         _playersById = players.ToDictionary(player => player.Id);
         _eliminationsView = _eliminations.AsReadOnly();
+        _combatPairingHistoryView = _combatPairingHistory.AsReadOnly();
     }
 
     public static MatchState Create(IEnumerable<PlayerId> playerIds, MatchRules rules)
@@ -78,6 +82,34 @@ public sealed class MatchState
         if (Phase != MatchPhase.Preparation) throw new InvalidOperationException($"Cannot begin combat from {Phase}.");
         if (ActivePlayerCount <= 1) throw new InvalidOperationException("A finished match cannot begin combat.");
         Phase = MatchPhase.Combat;
+    }
+
+    internal void RecordCombatPairings(
+        IReadOnlyList<CombatPairing> pairings,
+        EliminatedOpponentSnapshot? eliminatedOpponent)
+    {
+        ArgumentNullException.ThrowIfNull(pairings);
+        if (Phase != MatchPhase.Combat)
+        {
+            throw new InvalidOperationException($"Cannot record combat pairings from {Phase}.");
+        }
+
+        foreach (var pairing in pairings)
+        {
+            PlayerId? eliminatedOpponentSourcePlayerId = null;
+            if (pairing.UsesEliminatedOpponent)
+            {
+                eliminatedOpponentSourcePlayerId = eliminatedOpponent?.SourcePlayerId
+                    ?? throw new InvalidOperationException(
+                        "An eliminated-opponent pairing requires the snapshot used for that combat round.");
+            }
+
+            _combatPairingHistory.Add(new MatchCombatPairing(
+                Round,
+                pairing.LeftPlayerId,
+                pairing.RightPlayerId,
+                eliminatedOpponentSourcePlayerId));
+        }
     }
 
     internal void RecordEliminations(IReadOnlyList<PlayerId> eliminationSequence, IReadOnlyDictionary<PlayerId, int> healthBeforeCombat)
