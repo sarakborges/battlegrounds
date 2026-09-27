@@ -146,6 +146,10 @@ Playback starts from the frozen Unit snapshots and then consumes `CombatResult.T
 - combat Resource deltas;
 - Power replacement.
 
+Combat board rows now use the same `PresentationCardButton` and validated Unit art as Preparation. Godot builds a presentation-only `UnitInstanceId → UnitId` lookup from frozen starting snapshots plus immutable summon/revive events so runtime instances retain stable authored visual identity without adding media concerns to Core.
+
+The current timeline event selects a visual cue only. Attackers/targets, Unit trigger sources, summons, stat changes, damage, destruction, revives and behavior changes receive short scale/fade tweens on their rendered cards. A death event renders a transient fading Unit card at the event's recorded board position even though `CombatPlaybackState` has already removed that Unit from its projected board. These cues never affect timeline order or state mutation; rebuilding the same playback without tweens yields the same board projection and settlement.
+
 After the final timeline event, playback shows the already-computed `CombatSettlement`, including winner/draw and player damage/Armor absorption. The overlay can auto-step, advance manually or skip directly to settlement. None of those controls call combat simulation again.
 
 A full-screen presentation overlay blocks the underlying Preparation controls while playback is visible. Closing playback simply returns to rendering the authoritative session state that already exists underneath.
@@ -167,7 +171,7 @@ The current main screen reads:
 - validated combine definitions;
 - immutable session combat observations, event timelines and settlements.
 
-Rendering may create derived labels, cards, textures, ordering, buttons, highlights, formatted strings and playback cursors. Those values are view state only and are never written back into Core.
+Rendering may create derived labels, cards, textures, ordering, buttons, highlights, formatted strings, playback cursors and short-lived tweens. Those values are view state only and are never written back into Core.
 
 ## CI contract
 
@@ -175,4 +179,4 @@ CI builds `Battlegrounds.Game` in addition to testing Core, Content, AI and Appl
 
 ## Next presentation boundary
 
-Reuse the same mod-owned visual identity during deterministic combat playback. Combat boards should render Unit art/cards from `CombatPlaybackState`, and timeline events may drive presentation-only emphasis or animation cues, but playback must continue consuming already-resolved immutable events rather than becoming a second simulator or timing-dependent authority.
+Extend mod-owned presentation metadata beyond static images. Add validated audio references and authored animation/cue metadata keyed by stable entity IDs and presentation event roles; `Battlegrounds.Content` should validate paths/types/schema, while Godot owns clip loading, playback and timeline-to-cue mapping. Audio duration, animation completion and missing optional media must never gate or alter simulation, settlement or authoritative Match state.

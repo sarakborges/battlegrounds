@@ -1,4 +1,6 @@
 using Battlegrounds.Application;
+using Battlegrounds.Content;
+using Battlegrounds.Core.Domain.Combat;
 using Battlegrounds.Core.Domain.Ids;
 using Godot;
 
@@ -11,6 +13,7 @@ public partial class Main
     private long _observedCombatSequence;
     private double _combatPlaybackAccumulator;
     private CombatPlaybackState? _combatPlayback;
+    private readonly Dictionary<UnitInstanceId, UnitId> _combatUnitDefinitions = [];
     private PanelContainer? _combatOverlay;
     private Label? _combatTitle;
     private Label? _combatProgress;
@@ -21,6 +24,21 @@ public partial class Main
     private VBoxContainer? _combatRightUnits;
     private Button? _combatNextButton;
     private Button? _combatSkipButton;
+
+    private enum CombatVisualCue
+    {
+        None,
+        Trigger,
+        Attacker,
+        Target,
+        Summon,
+        StatsChanged,
+        Damage,
+        Destroyed,
+        Death,
+        Revive,
+        Behavior,
+    }
 
     public override void _Process(double delta)
     {
@@ -46,11 +64,32 @@ public partial class Main
         if (playback is null) return;
 
         _combatPlayback = playback;
+        BuildCombatUnitDefinitionIndex(playback);
         _combatPlaybackAccumulator = 0;
         EnsureCombatPlaybackUi();
         _combatOverlay!.Visible = true;
         RenderCombatPlayback();
         AppendLog($"Playing resolved {Term("combat")} {Term("round")} {record.Round} from immutable session data.");
+    }
+
+    private void BuildCombatUnitDefinitionIndex(CombatPlaybackState playback)
+    {
+        _combatUnitDefinitions.Clear();
+        foreach (var snapshot in playback.Record.StartingUnits)
+            _combatUnitDefinitions[snapshot.InstanceId] = snapshot.UnitId;
+
+        foreach (var timelineEvent in playback.Settlement.CombatResult.Timeline)
+        {
+            switch (timelineEvent)
+            {
+                case CombatUnitSummonedTimelineEvent summoned:
+                    _combatUnitDefinitions[summoned.Unit.InstanceId] = summoned.Unit.UnitId;
+                    break;
+                case CombatUnitRevivedTimelineEvent revived:
+                    _combatUnitDefinitions[revived.Unit.InstanceId] = revived.Unit.UnitId;
+                    break;
+            }
+        }
     }
 
     private void EnsureCombatPlaybackUi()
@@ -121,7 +160,10 @@ public partial class Main
         right.AddChild(_combatRightUnits);
         boards.AddChild(right);
 
-        _combatEvent = new Label();
+        _combatEvent = new Label
+        {
+            AutowrapMode = TextServer.AutowrapMode.WordSmart,
+        };
         _combatEvent.AddThemeFontSizeOverride("font_size", 17);
         root.AddChild(_combatEvent);
 
@@ -163,8 +205,8 @@ public partial class Main
             archived: playback.Settlement.RightPlayerId is null);
         _combatEvent!.Text = playback.EventText;
 
-        RenderCombatUnits(_combatLeftUnits!, playback.LeftUnits);
-        RenderCombatUnits(_combatRightUnits!, playback.RightUnits);
+        RenderCombatUnits(_combatLeftUnits!, playback.LeftPlayerId, playback.LeftUnits);
+        RenderCombatUnits(_combatRightUnits!, playback.RightPlayerId, playback.RightUnits);
 
         _combatNextButton!.Text = playback.SettlementVisible ? Text("ui.continue") : Text("ui.next");
         _combatSkipButton!.Text = Text("ui.skipSettlement");
@@ -181,10 +223,13 @@ public partial class Main
         return Text(key, ("player", playerId.Value));
     }
 
-    private void RenderCombatUnits(VBoxContainer container, IReadOnlyList<CombatPlaybackUnitState> units)
+    private void RenderCombatUnits(
+        VBoxContainer container,
+        PlayerId playerId,
+        IReadOnlyList<CombatPlaybackUnitState> units)
     {
         ClearChildren(container);
-        if (units.Count == 0)
+        if (units.Count == 0 && !IsCurrentDeathFor(playerId))
         {
             AddMutedLabel(container, Text("ui.emptyField", ("field", Term("field"))));
             return;
@@ -192,17 +237,129 @@ public partial class Main
 
         foreach (var unit in units)
         {
+            var unitId = ResolveCombatUnitId(unit.InstanceId);
+            var tier = ResolveCombatUnitTier(unitId);
             var stats = unit.IsAlive
-                ? $"{(unit.Attack?.ToString() ?? "?")}/{unit.Health}"
+                ? UnitCardStats(tier, unit.Attack ?? 0, unit.Health)
                 : "—";
-            var highlight = string.IsNullOrEmpty(unit.Highlight) ? string.Empty : $"[{unit.Highlight}] ";
-            var status = string.IsNullOrEmpty(unit.Status) ? string.Empty : $" • {unit.Status}";
-            var label = new Label
-            {
-                Text = $"{highlight}{unit.Name} • {stats}{status}",
-                SizeFlagsHorizontal = Control.SizeFlags.ExpandFill,
-            };
-            container.AddChild(label);
+            var subtitle = string.IsNullOrEmpty(unit.Status)
+                ? Term("unit")
+                : $"{Term("unit")} • {unit.Status}";
+            var card = CreateCombatUnitCard(unitId, unit.Name, subtitle, stats);
+            ApplyCombatCue(card, CueForUnit(unit.InstanceId));
+            container.AddChild(card);
+        }
+
+        RenderTransientDeathCue(container, playerId);
+    }
+
+    private PresentationCardButton CreateCombatUnitCard(
+        UnitId? unitId,
+        string title,
+        string subtitle,
+        string stats)
+    {
+        PresentationCardButton card;
+        if (unitId is UnitId knownUnitId)
+        {
+            card = CreatePresentationCard(
+                ModPresentationEntityKind.Unit,
+                knownUnitId.Value,
+                ModPresentationAssetSlots.Art,
+                title,
+                subtitle,
+                stats);
+        }
+        else
+        {
+            card = new PresentationCardButton();
+            card.Configure(title, subtitle, stats, description: null, texture: null);
+        }
+
+        card.MouseFilter = Control.MouseFilterEnum.Ignore;
+        card.FocusMode = Control.FocusModeEnum.None;
+        return card;
+    }
+
+    private UnitId? ResolveCombatUnitId(UnitInstanceId instanceId) =>
+        _combatUnitDefinitions.TryGetValue(instanceId, out var unitId) ? unitId : null;
+
+    private int ResolveCombatUnitTier(UnitId? unitId)
+    {
+        if (_session is null || unitId is not UnitId knownUnitId) return 0;
+        return _session.Mod.Units.GetRequired(knownUnitId).Tier;
+    }
+
+    private CombatVisualCue CueForUnit(UnitInstanceId instanceId)
+    {
+        if (_combatPlayback?.CurrentEvent is not CombatTimelineEvent current) return CombatVisualCue.None;
+        return current switch
+        {
+            CombatTriggerTimelineEvent trigger when trigger.SourceUnitInstanceId == instanceId => CombatVisualCue.Trigger,
+            CombatAttackStartedTimelineEvent attack when attack.AttackerInstanceId == instanceId => CombatVisualCue.Attacker,
+            CombatAttackStartedTimelineEvent attack when attack.TargetInstanceId == instanceId => CombatVisualCue.Target,
+            CombatUnitSummonedTimelineEvent summon when summon.Unit.InstanceId == instanceId => CombatVisualCue.Summon,
+            CombatUnitStatsChangedTimelineEvent stats when stats.UnitInstanceId == instanceId => CombatVisualCue.StatsChanged,
+            CombatUnitDamagedTimelineEvent damage when damage.UnitInstanceId == instanceId => CombatVisualCue.Damage,
+            CombatUnitDestroyedTimelineEvent destroyed when destroyed.UnitInstanceId == instanceId => CombatVisualCue.Destroyed,
+            CombatUnitRevivedTimelineEvent revived when revived.Unit.InstanceId == instanceId => CombatVisualCue.Revive,
+            CombatBehaviorChangedTimelineEvent behavior when behavior.UnitInstanceId == instanceId => CombatVisualCue.Behavior,
+            _ => CombatVisualCue.None,
+        };
+    }
+
+    private bool IsCurrentDeathFor(PlayerId playerId) =>
+        _combatPlayback?.CurrentEvent is CombatUnitDiedTimelineEvent died && died.PlayerId == playerId;
+
+    private void RenderTransientDeathCue(VBoxContainer container, PlayerId playerId)
+    {
+        if (_combatPlayback?.CurrentEvent is not CombatUnitDiedTimelineEvent died || died.PlayerId != playerId)
+            return;
+
+        var unitId = ResolveCombatUnitId(died.UnitInstanceId);
+        var title = unitId is UnitId knownUnitId
+            ? UnitName(knownUnitId)
+            : Text("ui.combatUnitFallback", ("unit", Term("unit")), ("instance", died.UnitInstanceId.Value));
+        var card = CreateCombatUnitCard(unitId, title, Term("unit"), "—");
+        container.AddChild(card);
+        var targetIndex = Math.Clamp(died.Position, 0, Math.Max(0, container.GetChildCount() - 1));
+        container.MoveChild(card, targetIndex);
+        ApplyCombatCue(card, CombatVisualCue.Death);
+    }
+
+    private void ApplyCombatCue(PresentationCardButton card, CombatVisualCue cue)
+    {
+        if (cue == CombatVisualCue.None) return;
+
+        var tween = card.CreateTween();
+        tween.SetParallel();
+
+        switch (cue)
+        {
+            case CombatVisualCue.Summon:
+            case CombatVisualCue.Revive:
+                card.Scale = new Vector2(0.88f, 0.88f);
+                card.Modulate = new Color(1, 1, 1, 0.35f);
+                tween.TweenProperty(card, "scale", Vector2.One, 0.28);
+                tween.TweenProperty(card, "modulate", Colors.White, 0.28);
+                break;
+            case CombatVisualCue.Death:
+                tween.TweenProperty(card, "scale", new Vector2(0.9f, 0.9f), 0.36);
+                tween.TweenProperty(card, "modulate", new Color(1, 1, 1, 0.25f), 0.36);
+                break;
+            case CombatVisualCue.Damage:
+            case CombatVisualCue.Destroyed:
+            case CombatVisualCue.Target:
+                card.Scale = new Vector2(0.95f, 0.95f);
+                tween.TweenProperty(card, "scale", Vector2.One, 0.22);
+                break;
+            case CombatVisualCue.Attacker:
+            case CombatVisualCue.Trigger:
+            case CombatVisualCue.StatsChanged:
+            case CombatVisualCue.Behavior:
+                card.Scale = new Vector2(1.05f, 1.05f);
+                tween.TweenProperty(card, "scale", Vector2.One, 0.24);
+                break;
         }
     }
 
@@ -238,6 +395,7 @@ public partial class Main
         if (_combatPlayback is not null)
             AppendLog($"Finished {Term("combat")} playback for {Term("round")} {_combatPlayback.Record.Round}.");
         _combatPlayback = null;
+        _combatUnitDefinitions.Clear();
         _combatPlaybackAccumulator = 0;
         if (_combatOverlay is not null) _combatOverlay.Visible = false;
         Render();
