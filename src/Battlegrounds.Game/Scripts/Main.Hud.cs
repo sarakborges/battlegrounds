@@ -16,7 +16,7 @@ public partial class Main
     private bool _hudBound;
     private string? _hudSignature;
 
-    public override void _Process(double delta)
+    private void RefreshSemanticHud()
     {
         if (!_hudBound)
         {
@@ -76,7 +76,11 @@ public partial class Main
         if (_session is null)
             return;
 
-        ClearChildren(_opponentEntries);
+        foreach (var child in _opponentEntries.GetChildren())
+        {
+            _opponentEntries.RemoveChild(child);
+            child.QueueFree();
+        }
 
         var ordered = match.Players
             .OrderBy(player => player.IsEliminated)
