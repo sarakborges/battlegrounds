@@ -51,11 +51,21 @@ The available strategy set is derived from validated mod content: `Balanced` plu
 
 Strategies are intentionally not authored as AI-specific JSON yet. Once the content-rich playable mod demonstrates real multi-type archetypes or tag-driven builds, the same strategy object can be composed from authored content without changing Core command legality or mutation ownership.
 
+## Command telemetry
+
+`PlayPreparation` returns `PreparationAiResult`, including a typed `PreparationAiCommandCounts` observation. It records successful acquire, release, deploy, Action play, combine, refresh, upgrade, Power use, pending-choice resolution, freeze/unfreeze and end-Preparation commands.
+
+A command enters telemetry only after `MatchEngine.ExecutePreparation(...)` succeeds. Invalid commands still throw through the existing AI guard and are not counted. `CommandsExecuted` remains available as the turn total and is equal to `CommandCounts.Total` for a successful completed result.
+
+Telemetry is deliberately one-way observation. The AI policy never reads these counters, they consume no RNG, and Core does not know they exist. This allows headless simulation and diagnostics to measure behavior without giving the AI privileged information or changing the deterministic gameplay sequence.
+
 ## Determinism
 
 Tie-breaking, personality assignment and strategy assignment use injected `IRandomSource` values. The same state plus the same RNG sequence produces the same decisions and assignments.
 
 `PlayPreparation` has a command-count safety budget. This is an AI control-flow guard against authored zero-cost generation loops; it is unrelated to combat attack resolution and does not add an attack limit to Combat. Personality-specific refresh preferences are additionally bounded, so a zero-cost refresh rule cannot create an unbounded personality loop before the general safety budget is reached.
+
+Command telemetry does not consume RNG or influence scoring, so enabling downstream reporting does not change AI decisions.
 
 ## Ownership
 
