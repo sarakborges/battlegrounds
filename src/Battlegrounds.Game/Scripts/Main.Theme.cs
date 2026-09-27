@@ -61,16 +61,14 @@ public partial class Main
 
     private void ApplySemanticTypography()
     {
-        ApplyTextRole("Margin/Shell/CenterStage/Title", "TitleLabel");
         ApplyTextRole(_status, "HeadingLabel");
         ApplyTextRole(_leaderPrompt, "HeadingLabel");
-        ApplyTextRole(_humanSummary, "BodyLabel");
         ApplyTextRole(_interactionPrompt, "BodyLabel");
-        ApplyTextRole("Margin/Shell/CenterStage/PreparationPanel/TavernArea/ShopRow/Title", "HeadingLabel");
-        ApplyTextRole("Margin/Shell/CenterStage/PreparationPanel/BottomStrip/ReserveArea/ReserveContent/Title", "HeadingLabel");
-        ApplyTextRole("Margin/Shell/CenterStage/PreparationPanel/BoardArea/BoardRow/Title", "HeadingLabel");
-        ApplyTextRole("Margin/Shell/OpponentRail/Content/Title", "HeadingLabel");
-        ApplyTextRole("Margin/Shell/TurnRail/Content/Title", "HeadingLabel");
+        ApplyTextRole("Margin/Shell/CenterStage/PreparationPanel/TavernControls/TierBadge/HudTierValue", "HeadingLabel");
+        ApplyTextRole("Margin/Shell/CenterStage/PreparationPanel/HeroDock/HealthBadge/HudHealthValue", "HeadingLabel");
+        ApplyTextRole("Margin/Shell/CenterStage/PreparationPanel/HeroDock/HudArmorBadge/HudArmorValue", "HeadingLabel");
+        ApplyTextRole("Margin/Shell/CenterStage/PreparationPanel/HeroDock/HeroCore/HudHeroName", "HeadingLabel");
+        ApplyTextRole("Margin/Shell/CenterStage/PreparationPanel/HeroDock/ResourceBadge/HudResourceValue", "HeadingLabel");
     }
 
     private void ApplyTextRole(string path, string variation)
