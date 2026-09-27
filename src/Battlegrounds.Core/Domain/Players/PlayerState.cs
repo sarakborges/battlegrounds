@@ -207,50 +207,6 @@ public sealed partial class PlayerState
         return true;
     }
 
-    internal bool TryGetOwnedUnit(UnitInstanceId instanceId, out UnitInstance unit, out bool isReserve)
-    {
-        var reserveUnit = _reserve.FirstOrDefault(candidate => candidate.Id == instanceId);
-        if (reserveUnit is not null)
-        {
-            unit = reserveUnit;
-            isReserve = true;
-            return true;
-        }
-
-        var fieldUnit = _field.FirstOrDefault(candidate => candidate.Id == instanceId);
-        if (fieldUnit is not null)
-        {
-            unit = fieldUnit;
-            isReserve = false;
-            return true;
-        }
-
-        unit = null!;
-        isReserve = false;
-        return false;
-    }
-
-    internal UnitInstance RemoveOwnedUnit(UnitInstanceId instanceId)
-    {
-        var reserveIndex = _reserve.FindIndex(unit => unit.Id == instanceId);
-        if (reserveIndex >= 0)
-        {
-            var unit = _reserve[reserveIndex];
-            _reserve.RemoveAt(reserveIndex);
-            return unit;
-        }
-
-        var fieldIndex = _field.FindIndex(unit => unit.Id == instanceId);
-        if (fieldIndex >= 0)
-        {
-            var unit = _field[fieldIndex];
-            _field.RemoveAt(fieldIndex);
-            return unit;
-        }
-
-        throw new InvalidOperationException($"Player '{Id}' does not own unit instance '{instanceId}'.");
-    }
-
     internal void UpgradeTier(PreparationRules rules)
     {
         if (Tier >= rules.MaximumTier || UpgradeCost is null)
