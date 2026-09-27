@@ -329,18 +329,18 @@ public sealed class PreparationEngine
         var actionCount = _rules.GetActionOfferSize(player.Tier);
         if (!player.IsOfferFrozen)
         {
-            var units = _unitPool.ExchangeOffer(player.Offer.ToArray(), player.Tier, unitCount, _randomSource);
-            return (ValidateUnitOffer(units, player.Tier), DrawActionOffer(player.Tier, actionCount));
+            var freshUnits = _unitPool.ExchangeOffer(player.Offer.ToArray(), player.Tier, unitCount, _randomSource);
+            return (ValidateUnitOffer(freshUnits, player.Tier), DrawActionOffer(player.Tier, actionCount));
         }
 
         if (player.Offer.Count > unitCount || player.ActionOffer.Count > actionCount)
             throw new InvalidOperationException("Frozen offer exceeds the configured playable offer composition.");
-        var units = player.Offer.Concat(_unitPool.DrawOffer(player.Tier, unitCount - player.Offer.Count, _randomSource)).ToArray();
-        var actions = player.ActionOffer.Concat(DrawActionOffer(
+        var frozenUnits = player.Offer.Concat(_unitPool.DrawOffer(player.Tier, unitCount - player.Offer.Count, _randomSource)).ToArray();
+        var frozenActions = player.ActionOffer.Concat(DrawActionOffer(
             player.Tier,
             actionCount - player.ActionOffer.Count,
             player.ActionOffer.Select(action => action.Id))).ToArray();
-        return (ValidateUnitOffer(units, player.Tier), actions);
+        return (ValidateUnitOffer(frozenUnits, player.Tier), frozenActions);
     }
 
     private IReadOnlyList<ActionDefinition> DrawActionOffer(
