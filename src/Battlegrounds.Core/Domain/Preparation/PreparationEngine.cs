@@ -105,6 +105,10 @@ public sealed class PreparationEngine
             return PreparationCommandResult.Failure(PreparationFailureCode.PlayerEliminated);
         if (player.IsReadyForCombat)
             return PreparationCommandResult.Failure(PreparationFailureCode.PlayerAlreadyReady);
+        if (player.PendingChoice is not null && command is not ResolveUnitChoiceCommand)
+            return PreparationCommandResult.Failure(PreparationFailureCode.PendingChoiceMustBeResolved);
+        if (player.PendingChoice is null && command is ResolveUnitChoiceCommand)
+            return PreparationCommandResult.Failure(PreparationFailureCode.NoPendingChoice);
 
         var result = command switch
         {
@@ -114,6 +118,7 @@ public sealed class PreparationEngine
             RefreshOfferCommand => RefreshOffer(match, player),
             UpgradeTierCommand => UpgradeTier(match, player),
             UsePowerCommand usePower => UsePower(match, player, usePower),
+            ResolveUnitChoiceCommand resolveChoice => ResolveUnitChoice(match, player, resolveChoice),
             FreezeOfferCommand => FreezeOffer(player),
             UnfreezeOfferCommand => UnfreezeOffer(player),
             EndPreparationCommand => EndPreparation(match, player),
@@ -242,6 +247,24 @@ public sealed class PreparationEngine
         _effectEngine.ProcessGameEvent(match, player, NativeGameEventKeys.PowerActivated);
         _effectEngine.ProcessPower(match, player, power, command.TargetUnitInstanceId);
         leader.RecordUse(power.Id);
+        return PreparationCommandResult.Success();
+    }
+
+    private PreparationCommandResult ResolveUnitChoice(
+        MatchState match,
+        PlayerState player,
+        ResolveUnitChoiceCommand command)
+    {
+        var choice = player.PendingChoice;
+        if (choice is null)
+            return PreparationCommandResult.Failure(PreparationFailureCode.NoPendingChoice);
+        if (choice.Id != command.ChoiceId || command.OptionIndex < 0 || command.OptionIndex >= choice.Options.Count)
+            return PreparationCommandResult.Failure(PreparationFailureCode.InvalidChoice);
+        if (player.Reserve.Count >= _rules.ReserveCapacity)
+            return PreparationCommandResult.Failure(PreparationFailureCode.ReserveFull);
+
+        var definition = player.ResolveUnitChoice(command.ChoiceId, command.OptionIndex);
+        player.AddToReserve(match.CreateUnit(definition, UnitInstanceOrigin.Generated));
         return PreparationCommandResult.Success();
     }
 
