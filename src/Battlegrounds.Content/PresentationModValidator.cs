@@ -18,6 +18,7 @@ internal sealed class PresentationModValidator
         if (string.IsNullOrWhiteSpace(modDirectory) || !Directory.Exists(modDirectory)) return issues;
 
         ValidateRequiredTerminology(modDirectory, issues);
+        var entityIds = LoadEntityIds(modDirectory);
 
         var localizationDirectory = Path.Combine(modDirectory, "localization");
         if (!Directory.Exists(localizationDirectory))
@@ -84,7 +85,7 @@ internal sealed class PresentationModValidator
             var root = ReadObject(path, relativePath, required: false, issues);
             if (root is null) continue;
             localeContent[locale] = root.Value;
-            ValidateLocaleStrings(root.Value, relativePath, issues);
+            ValidateLocaleStrings(root.Value, relativePath, entityIds, issues);
         }
 
         if (defaultLocale is not null && !localeContent.ContainsKey(defaultLocale))
@@ -148,9 +149,27 @@ internal sealed class PresentationModValidator
         }
     }
 
+    private static IReadOnlyDictionary<ModPresentationEntityKind, HashSet<string>> LoadEntityIds(string modDirectory)
+    {
+        var result = new Dictionary<ModPresentationEntityKind, HashSet<string>>();
+        foreach (var descriptor in ModPresentationEntityKeys.Descriptors)
+        {
+            var ids = new HashSet<string>(StringComparer.Ordinal);
+            var directory = Path.Combine(modDirectory, "content", descriptor.ContentDirectory);
+            if (Directory.Exists(directory))
+            {
+                foreach (var path in Directory.GetFiles(directory, "*.json", SearchOption.TopDirectoryOnly))
+                    ids.Add(Path.GetFileNameWithoutExtension(path));
+            }
+            result[descriptor.Kind] = ids;
+        }
+        return result;
+    }
+
     private static void ValidateLocaleStrings(
         JsonElement root,
         string relativePath,
+        IReadOnlyDictionary<ModPresentationEntityKind, HashSet<string>> entityIds,
         ICollection<ModValidationIssue> issues)
     {
         foreach (var pair in root.EnumerateObject())
@@ -165,6 +184,36 @@ internal sealed class PresentationModValidator
                     "$." + pair.Name,
                     "Localization keys and values must be non-empty strings."));
             }
+
+            ValidateEntityLocalizationKey(pair.Name, relativePath, entityIds, issues);
+        }
+    }
+
+    private static void ValidateEntityLocalizationKey(
+        string key,
+        string relativePath,
+        IReadOnlyDictionary<ModPresentationEntityKind, HashSet<string>> entityIds,
+        ICollection<ModValidationIssue> issues)
+    {
+        if (!key.StartsWith("entity.", StringComparison.Ordinal)) return;
+
+        if (!ModPresentationEntityKeys.TryParse(key, out var kind, out var id, out _))
+        {
+            issues.Add(new(
+                "INVALID_ENTITY_LOCALIZATION_KEY",
+                relativePath,
+                "$." + key,
+                $"Entity localization key '{key}' must use entity.<kind>.<id>.name or entity.<kind>.<id>.description."));
+            return;
+        }
+
+        if (!entityIds.TryGetValue(kind, out var ids) || !ids.Contains(id))
+        {
+            issues.Add(new(
+                "UNKNOWN_ENTITY_LOCALIZATION_REFERENCE",
+                relativePath,
+                "$." + key,
+                $"Entity localization key '{key}' references unknown {ModPresentationEntityKeys.GetDescriptor(kind).KeySegment} id '{id}'."));
         }
     }
 
