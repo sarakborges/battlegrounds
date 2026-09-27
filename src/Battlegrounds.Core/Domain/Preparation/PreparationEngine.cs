@@ -102,6 +102,7 @@ public sealed class PreparationEngine
             AcquirePlayableCommand acquire => AcquirePlayable(match, player, acquire),
             ReleaseUnitCommand release => ReleaseUnit(match, player, release),
             DeployUnitCommand deploy => DeployUnit(match, player, deploy),
+            ReorderFieldCommand reorder => ReorderField(player, reorder),
             PlayActionCommand playAction => PlayAction(match, player, playAction),
             CombineUnitsCommand combine => CombineUnits(match, player, combine),
             RefreshOfferCommand => RefreshOffer(match, player),
@@ -182,6 +183,23 @@ public sealed class PreparationEngine
             return PreparationCommandResult.Failure(PreparationFailureCode.FieldFull);
         var unit = player.DeployFromReserve(command.ReserveSlot);
         _effectEngine.ProcessPlayedUnit(match, player, unit);
+        return PreparationCommandResult.Success();
+    }
+
+    private static PreparationCommandResult ReorderField(PlayerState player, ReorderFieldCommand command)
+    {
+        if (command.UnitInstanceIds is null ||
+            command.UnitInstanceIds.Count != player.Field.Count ||
+            command.UnitInstanceIds.Distinct().Count() != player.Field.Count)
+        {
+            return PreparationCommandResult.Failure(PreparationFailureCode.InvalidFieldOrder);
+        }
+
+        var currentIds = player.Field.Select(unit => unit.Id).ToHashSet();
+        if (!currentIds.SetEquals(command.UnitInstanceIds))
+            return PreparationCommandResult.Failure(PreparationFailureCode.InvalidFieldOrder);
+
+        player.ReorderField(command.UnitInstanceIds);
         return PreparationCommandResult.Success();
     }
 
