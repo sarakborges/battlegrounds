@@ -8,21 +8,35 @@ public sealed class ModValidator
             .Where(issue => !IsSupersededEffectSchemaIssue(issue))
             .Where(issue => !IsSupersededStaticEffectValueIssue(issue))
             .Where(issue => !IsSupersededGenerationIssue(issue))
+            .Where(issue => !IsSupersededPersistentMutationIssue(issue))
             .Where(issue => !(issue.Code == "UNKNOWN_KEY" && issue.File == "rules/preparation.json" && issue.Path == "$.actionOfferSizesByTier"))
             .Where(issue => !(issue.Code == "UNKNOWN_KEY" && issue.File.StartsWith("content/leaders/", StringComparison.Ordinal) && issue.Path == "$.initialPowerId"));
 
         var powerIssues = new PowerLifecycleModValidator().Validate(modDirectory)
             .Where(issue => !IsSupersededEffectSchemaIssue(issue))
             .Where(issue => !IsSupersededStaticEffectValueIssue(issue))
-            .Where(issue => !IsSupersededGenerationIssue(issue));
+            .Where(issue => !IsSupersededGenerationIssue(issue))
+            .Where(issue => !IsSupersededPersistentMutationIssue(issue));
+
+        var advancedIssues = new AdvancedEffectModValidator().Validate(modDirectory)
+            .Where(issue => !IsSupersededPersistentMutationIssue(issue));
+        var dynamicIssues = new DynamicEffectValueModValidator().Validate(modDirectory)
+            .Where(issue => !IsSupersededPersistentMutationIssue(issue));
+        var statefulIssues = new StatefulEffectModValidator().Validate(modDirectory)
+            .Where(issue => !IsSupersededPersistentMutationIssue(issue));
+        var generationIssues = new GenerationChoiceModValidator().Validate(modDirectory)
+            .Where(issue => !IsSupersededPersistentMutationIssue(issue));
+        var actionIssues = new ActionModValidator().Validate(modDirectory)
+            .Where(issue => !IsSupersededPersistentMutationIssue(issue));
 
         var issues = baseIssues
             .Concat(powerIssues)
-            .Concat(new AdvancedEffectModValidator().Validate(modDirectory))
-            .Concat(new DynamicEffectValueModValidator().Validate(modDirectory))
-            .Concat(new StatefulEffectModValidator().Validate(modDirectory))
-            .Concat(new GenerationChoiceModValidator().Validate(modDirectory))
-            .Concat(new ActionModValidator().Validate(modDirectory))
+            .Concat(advancedIssues)
+            .Concat(dynamicIssues)
+            .Concat(statefulIssues)
+            .Concat(generationIssues)
+            .Concat(actionIssues)
+            .Concat(new PersistentUnitMutationModValidator().Validate(modDirectory))
             .ToArray();
 
         var preliminaryReport = new ModValidationReport(issues);
@@ -74,5 +88,19 @@ public sealed class ModValidator
                 issue.Path.EndsWith(".generationQuery", StringComparison.Ordinal) ||
                 issue.Path.EndsWith(".actionQuery", StringComparison.Ordinal) ||
                 issue.Path.EndsWith(".optionCount", StringComparison.Ordinal));
+    }
+
+    private static bool IsSupersededPersistentMutationIssue(ModValidationIssue issue)
+    {
+        if (!issue.Path.Contains(".effects[", StringComparison.Ordinal)) return false;
+
+        if (issue.Code == "UNSUPPORTED_EFFECT" &&
+            (issue.Message.Contains("transformUnit", StringComparison.Ordinal) ||
+             issue.Message.Contains("copyUnitToReserve", StringComparison.Ordinal) ||
+             issue.Message.Contains("applyUnitModifier", StringComparison.Ordinal) ||
+             issue.Message.Contains("removeUnitModifier", StringComparison.Ordinal)))
+            return true;
+
+        return issue.Code == "UNKNOWN_KEY" && issue.Path.EndsWith(".modifierKey", StringComparison.Ordinal);
     }
 }
