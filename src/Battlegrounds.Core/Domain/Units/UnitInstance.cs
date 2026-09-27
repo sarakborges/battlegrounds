@@ -53,6 +53,7 @@ public sealed class UnitInstance
     {
         if (string.IsNullOrWhiteSpace(key)) throw new ArgumentException("Modifier key cannot be empty.", nameof(key));
         if (attackDelta == 0 && healthDelta == 0) return;
+
         RemoveModifier(key);
         var modifier = new UnitModifierState(key, attackDelta, healthDelta);
         _modifiers.Add(modifier);
@@ -63,6 +64,7 @@ public sealed class UnitInstance
     {
         var index = _modifiers.FindIndex(modifier => string.Equals(modifier.Key, key, StringComparison.Ordinal));
         if (index < 0) return false;
+
         var modifier = _modifiers[index];
         _modifiers.RemoveAt(index);
         ModifyStats(-modifier.AttackDelta, -modifier.HealthDelta);
@@ -72,6 +74,8 @@ public sealed class UnitInstance
     internal void Transform(UnitDefinition definition)
     {
         Definition = definition ?? throw new ArgumentNullException(nameof(definition));
+        Origin = UnitInstanceOrigin.Generated;
+        PoolReturnDefinition = null;
         Attack = definition.BaseAttack;
         Health = definition.BaseHealth;
         _behaviors.Clear();
@@ -79,18 +83,12 @@ public sealed class UnitInstance
         _modifiers.Clear();
     }
 
-    internal UnitDefinition? DetachFromPool()
-    {
-        var pooled = PoolReturnDefinition;
-        PoolReturnDefinition = null;
-        Origin = UnitInstanceOrigin.Generated;
-        return pooled;
-    }
-
     internal void CopyRuntimeStateFrom(UnitInstance source)
     {
         ArgumentNullException.ThrowIfNull(source);
         Definition = source.Definition;
+        Origin = UnitInstanceOrigin.Generated;
+        PoolReturnDefinition = null;
         Attack = source.Attack;
         Health = source.Health;
         _behaviors.Clear();
