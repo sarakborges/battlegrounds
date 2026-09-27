@@ -39,6 +39,7 @@ public sealed record CombatAttackStartedTimelineEvent(
 
 public sealed record CombatUnitSummonedTimelineEvent(
     int Sequence,
+    PlayerId PlayerId,
     CombatUnitSnapshot Unit,
     int Position,
     UnitInstanceId? SourceUnitInstanceId,
@@ -82,6 +83,7 @@ public sealed record CombatUnitDiedTimelineEvent(
 
 public sealed record CombatUnitRevivedTimelineEvent(
     int Sequence,
+    PlayerId PlayerId,
     CombatUnitSnapshot Unit,
     int Position)
     : CombatTimelineEvent(Sequence, CombatTimelineEventKind.UnitRevived);
