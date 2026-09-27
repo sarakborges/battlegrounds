@@ -224,6 +224,8 @@ The baseline `PreparationAiAgent` reads the same public state available to prese
 
 The baseline scoring is intentionally mechanical and theme-neutral. Tie-breaking uses injected `IRandomSource`, and a command-count safety budget prevents authored zero-cost loops from trapping AI control flow.
 
+AI decision policy is separate from Preparation initiative. The current baseline agent supplies one deterministic policy; future AI personalities may weight legal courses of action differently and therefore produce different full-turn sequences even when pursuing similar archetypes.
+
 See `AI.md` for ownership and determinism rules.
 
 ## Single-player application/session
@@ -232,7 +234,15 @@ See `AI.md` for ownership and determinism rules.
 
 `SinglePlayerSession` coordinates one human player plus AI opponents. AI Leader selection and Preparation use `PreparationAiAgent`; human input uses the same `IPreparationCommand` types; combat pairings come from `ICombatPairingPolicy`; and all authoritative mutation still enters through `MatchEngine`/Core.
 
-`AdvanceAutomated()` finishes active AI Preparations, waits if the human is not ready, and otherwise resolves exactly one combat round before returning control at the next Preparation or Finished state. Immediately before resolution, the session freezes the paired starting Unit views; after Core returns, `LastCombat` exposes a `SessionCombatRecord` containing those immutable snapshots plus the authoritative `CombatRoundResult`. Presentation can therefore keep showing the completed combat after the Match has already advanced without owning or delaying simulation.
+Every Preparation round rolls a fresh random initiative order across active players. Only the current initiative owner may issue Preparation commands. That player may perform any number of legal actions—buying, releasing, refreshing, upgrading, using powers, resolving generated choices and so on—until `EndPreparationCommand` yields to the next player. There is no one-human-action/one-AI-action alternation, no action quota and no Preparation timer in the current local flow.
+
+`AdvanceAutomated()` runs consecutive AI initiative turns until initiative reaches the human. While the human owns initiative, AI opponents do not execute Preparation commands in real time, so opponent activity cannot change the shared Unit pool while the human is thinking. The human's own commands can still change the pool normally. When the human ends Preparation, automation continues through later AI initiative turns; once every active player is ready, the session resolves exactly one combat round before returning at the next Preparation or Finished state.
+
+The shared Unit pool is authoritative but hidden from the human. Exact remaining-copy counts are not exposed; the player's direct view of pool outcomes is its own current Offer. Existing offers reserve their pooled Units according to Core ownership rules, and refresh/release/combine paths continue to exchange or return pooled copies through Core.
+
+Initiative is rolled independently each round from the deterministic session RNG. There is intentionally no rotation or fairness correction: the same player may be first for several consecutive rounds if the seeded random sequence produces that result.
+
+Immediately before combat resolution, the session freezes the paired starting Unit views; after Core returns, `LastCombat` exposes a `SessionCombatRecord` containing those immutable snapshots plus the authoritative `CombatRoundResult`. Presentation can therefore keep showing the completed combat after the Match has already advanced without owning or delaying simulation.
 
 The session exposes the validated `ModPackage`, including its immutable presentation catalog, but does not select locales or interpret localized strings.
 
@@ -379,6 +389,8 @@ Read `ARCHITECTURE.md` before adding features. Its ownership, dependency, mutati
 - deterministic attack order, targeting, simultaneous damage, death resolution and winner/draw resolution;
 - immutable ordered `CombatResult.Timeline` for replay/presentation of combat-local triggers and state transitions;
 - deterministic framework-free AI using the same public commands as presentation;
+- random per-round single-player Preparation initiative with complete player turns and no real-time opponent mutation during the human turn;
+- hidden authoritative shared Unit pool: exact remaining-copy counts are not exposed to the human;
 - framework-free single-player session orchestration over validated Content + Core + AI + matchmaking;
 - immutable session combat observations that freeze starting boards before authoritative settlement advances the Match;
 - validated mod-owned presentation terminology/locales with deterministic fallback and immutable `ModPresentationCatalog`;
