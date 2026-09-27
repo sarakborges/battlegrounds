@@ -33,7 +33,7 @@ public partial class ModLauncher : Control
 
         try
         {
-            var modsRoot = ProjectSettings.GlobalizePath(ModsRoot);
+            var modsRoot = ResolveModsRoot();
             var entries = new ModDiscovery().Discover(modsRoot);
             _status.Text = entries.Count == 0
                 ? $"No mod packages found in {ModsRoot}."
@@ -47,6 +47,22 @@ public partial class ModLauncher : Control
             _status.Text = "Mod discovery failed.";
             _diagnostics.Text = exception.Message;
         }
+    }
+
+    private string ResolveModsRoot()
+    {
+        if (ModsRoot.StartsWith("res://", StringComparison.Ordinal))
+        {
+            var projectRoot = ProjectSettings.GlobalizePath("res://");
+            var relative = ModsRoot["res://".Length..]
+                .Replace('/', Path.DirectorySeparatorChar);
+            return Path.GetFullPath(Path.Combine(projectRoot, relative));
+        }
+
+        if (ModsRoot.StartsWith("user://", StringComparison.Ordinal))
+            return Path.GetFullPath(ProjectSettings.GlobalizePath(ModsRoot));
+
+        return Path.GetFullPath(ModsRoot);
     }
 
     private void AddCandidate(ModDiscoveryEntry entry)
