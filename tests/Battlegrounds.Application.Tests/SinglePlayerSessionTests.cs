@@ -1,3 +1,4 @@
+using Battlegrounds.AI;
 using Battlegrounds.Application;
 using Battlegrounds.Content;
 using Battlegrounds.Core.Domain.Ids;
@@ -23,6 +24,7 @@ public sealed class SinglePlayerSessionTests
         Assert.Equal(1, session.LeaderSelection.SelectedCount);
         Assert.True(session.LeaderSelection.TryGetSelection(ai, out _));
         Assert.False(session.LeaderSelection.TryGetSelection(human, out _));
+        Assert.True(session.AiPersonalities.ContainsKey(ai));
 
         var humanLeader = session.LeaderSelection.GetOffer(human)[0];
         var result = session.SelectHumanLeader(humanLeader);
@@ -37,6 +39,19 @@ public sealed class SinglePlayerSessionTests
         Assert.Contains(human, session.PreparationInitiative);
         Assert.Contains(ai, session.PreparationInitiative);
         Assert.Equal(session.PreparationInitiative[0], session.CurrentPreparationPlayerId);
+    }
+
+    [Fact]
+    public void Create_AssignsAiPersonalityDeterministicallyFromSessionRng()
+    {
+        var minimum = CreateStartedSession(new MinimumRandomSource());
+        var maximum = CreateStartedSession(new MaximumRandomSource());
+
+        var minimumAi = Assert.Single(minimum.AiPlayerIds);
+        var maximumAi = Assert.Single(maximum.AiPlayerIds);
+
+        Assert.Equal(PreparationAiPersonality.Tempo, minimum.AiPersonalities[minimumAi]);
+        Assert.Equal(PreparationAiPersonality.Roller, maximum.AiPersonalities[maximumAi]);
     }
 
     [Fact]
