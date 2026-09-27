@@ -2,5 +2,178 @@
 
 [ext_resource path="res://Scripts/Main.cs" type="Script" id="1_main"]
 
-[node name="Main" type="Node"]
+[node name="Main" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
 script = ExtResource("1_main")
+
+[node name="Background" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(0.055, 0.063, 0.082, 1)
+
+[node name="Margin" type="MarginContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 32.0
+offset_top = 24.0
+offset_right = -32.0
+offset_bottom = -24.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Root" type="VBoxContainer" parent="Margin"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="Title" type="Label" parent="Margin/Root"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 28
+text = "Battlegrounds"
+
+[node name="Status" type="Label" parent="Margin/Root"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_font_sizes/font_size = 18
+text = "Loading..."
+
+[node name="MatchSummary" type="Label" parent="Margin/Root"]
+unique_name_in_owner = true
+layout_mode = 2
+text = ""
+
+[node name="DividerA" type="HSeparator" parent="Margin/Root"]
+layout_mode = 2
+
+[node name="LeaderPanel" type="VBoxContainer" parent="Margin/Root"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="LeaderPrompt" type="Label" parent="Margin/Root/LeaderPanel"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_font_sizes/font_size = 20
+text = "Choose your Leader"
+
+[node name="LeaderButtons" type="VBoxContainer" parent="Margin/Root/LeaderPanel"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_constants/separation = 6
+
+[node name="PreparationPanel" type="VBoxContainer" parent="Margin/Root"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_constants/separation = 10
+visible = false
+
+[node name="HumanSummary" type="Label" parent="Margin/Root/PreparationPanel"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_font_sizes/font_size = 17
+text = ""
+
+[node name="Columns" type="HBoxContainer" parent="Margin/Root/PreparationPanel"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/separation = 16
+
+[node name="OfferColumn" type="VBoxContainer" parent="Margin/Root/PreparationPanel/Columns"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Title" type="Label" parent="Margin/Root/PreparationPanel/Columns/OfferColumn"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 18
+text = "Offer"
+
+[node name="OfferButtons" type="VBoxContainer" parent="Margin/Root/PreparationPanel/Columns/OfferColumn"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_constants/separation = 4
+
+[node name="ReserveColumn" type="VBoxContainer" parent="Margin/Root/PreparationPanel/Columns"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Title" type="Label" parent="Margin/Root/PreparationPanel/Columns/ReserveColumn"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 18
+text = "Reserve"
+
+[node name="ReserveButtons" type="VBoxContainer" parent="Margin/Root/PreparationPanel/Columns/ReserveColumn"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_constants/separation = 4
+
+[node name="FieldColumn" type="VBoxContainer" parent="Margin/Root/PreparationPanel/Columns"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Title" type="Label" parent="Margin/Root/PreparationPanel/Columns/FieldColumn"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 18
+text = "Field"
+
+[node name="FieldButtons" type="VBoxContainer" parent="Margin/Root/PreparationPanel/Columns/FieldColumn"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_constants/separation = 4
+
+[node name="Actions" type="HBoxContainer" parent="Margin/Root/PreparationPanel"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="RefreshButton" type="Button" parent="Margin/Root/PreparationPanel/Actions"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Refresh"
+
+[node name="UpgradeButton" type="Button" parent="Margin/Root/PreparationPanel/Actions"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Upgrade tier"
+
+[node name="FreezeButton" type="Button" parent="Margin/Root/PreparationPanel/Actions"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Freeze offer"
+
+[node name="PowerButton" type="Button" parent="Margin/Root/PreparationPanel/Actions"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Use power"
+
+[node name="EndPreparationButton" type="Button" parent="Margin/Root/PreparationPanel/Actions"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+text = "End Preparation"
+
+[node name="DividerB" type="HSeparator" parent="Margin/Root"]
+layout_mode = 2
+
+[node name="LogTitle" type="Label" parent="Margin/Root"]
+layout_mode = 2
+text = "Session log"
+
+[node name="Log" type="RichTextLabel" parent="Margin/Root"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 150)
+layout_mode = 2
+size_flags_vertical = 3
+scroll_active = true
+scroll_following = true
+fit_content = false
+text = ""
