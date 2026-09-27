@@ -25,11 +25,24 @@ Battlegrounds.Application
 - `ModPath`: validated mod directory, defaulting to the repository `mods/example` fixture while developing locally;
 - `Seed`: deterministic single-player session seed;
 - `ParticipantCount`: one human plus AI opponents. It must satisfy the selected mod's player-count rules and is currently required to be even because round one has no eliminated-opponent snapshot;
+- `Locale`: optional presentation locale. Empty means use Godot's system locale and then the mod catalog's fallback rules;
 - `CombatPlaybackStepSeconds`: presentation-only delay between automatic playback steps.
 
-Bootstrap uses `ModLoader.Load(...)` before session creation. Invalid mod data therefore never becomes a running session.
+Bootstrap uses `ModLoader.Load(...)` before session creation. Invalid gameplay or presentation/localization data therefore never becomes a running session.
 
 Player `0` is the local human and the remaining generated player IDs are AI-controlled for this local prototype. These IDs are presentation/bootstrap configuration, not theme concepts or gameplay rules.
+
+## Mod-owned presentation text
+
+Godot does not own the visible vocabulary for neutral engine concepts. After loading the mod it resolves `ModPackage.Presentation` for the requested locale and renders that `ModPresentationText`.
+
+The current UI uses mod-owned terminology/templates for concepts and chrome such as Leader, Unit, Action, Power, Health, Armor, Resource, Offer, Tier, Reserve, Field, Preparation, Combat, Round, acquire/release verbs, summaries, interaction prompts and combat playback controls.
+
+When `Locale` is empty, `TranslationServer.GetLocale()` provides the requested locale. Content applies exact-locale, language-locale and default-locale fallback; Godot does not implement a second fallback algorithm.
+
+The scene may substitute runtime values into validated named templates, but localized strings never control simulation. Core commands, IDs, enums, targeting and validation remain independent of display text.
+
+See `LOCALIZATION.md` for the package format and fallback contract.
 
 ## Input translation
 
@@ -99,7 +112,7 @@ After a resolved non-terminal combat, the scene may ask the session to prepare A
 
 ## Deterministic combat playback
 
-`CombatPlaybackState` is a presentation-only mutable view model built from one immutable `SessionCombatRecord`.
+`CombatPlaybackState` is a presentation-only mutable view model built from one immutable `SessionCombatRecord` plus the resolved mod presentation text.
 
 Playback starts from the frozen Unit snapshots and then consumes `CombatResult.Timeline` strictly in sequence order. Each step applies one already-resolved Core event to local visual state. The current event surface covers:
 
@@ -123,6 +136,7 @@ A full-screen presentation overlay blocks the underlying Preparation controls wh
 
 The current main screen reads:
 
+- validated mod presentation/localization data;
 - match phase and round;
 - each player's Leader, Health, Armor, Tier, readiness/elimination state;
 - the human Resource, upgrade cost and freeze state;
@@ -132,7 +146,7 @@ The current main screen reads:
 - validated combine definitions;
 - immutable session combat observations, event timelines and settlements.
 
-Rendering may create derived labels, ordering, buttons, highlights and playback cursors. Those values are view state only and are never written back into Core.
+Rendering may create derived labels, ordering, buttons, highlights, formatted strings and playback cursors. Those values are view state only and are never written back into Core.
 
 ## CI contract
 
@@ -140,6 +154,6 @@ CI builds `Battlegrounds.Game` in addition to testing Core, Content, AI and Appl
 
 ## Next presentation boundary
 
-The next presentation slice should begin moving theme vocabulary out of hardcoded Godot labels and into validated mod-owned presentation/localization data.
+Generic UI vocabulary/templates are now mod-owned, but authored entity names remain single display strings inside gameplay content files.
 
-Core concepts such as `Leader`, `Resource`, `Offer`, `Reserve`, `Field` and `Tier` must remain neutral identifiers in mechanics, while each mod should be able to provide the terminology and localized strings that Godot renders. Content should validate that presentation package before a session starts; Godot should consume it without interpreting gameplay rules.
+The next presentation/content slice should add stable localization keys for authored Leaders, Powers, Units, Actions, behaviors, types, tags and combines, plus future descriptions where appropriate. IDs and gameplay definitions must remain locale-independent. Binary art/audio should remain a later presentation concern.
