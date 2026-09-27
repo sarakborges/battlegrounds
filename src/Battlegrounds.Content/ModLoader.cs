@@ -2,6 +2,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using Battlegrounds.Core.Domain.Actions;
 using Battlegrounds.Core.Domain.Behaviors;
+using Battlegrounds.Core.Domain.Combines;
 using Battlegrounds.Core.Domain.Combat;
 using Battlegrounds.Core.Domain.Effects;
 using Battlegrounds.Core.Domain.Ids;
@@ -47,6 +48,7 @@ public sealed class ModLoader
         var typeData = ReadDirectory<NamedIdData>(Path.Combine(modDirectory, "content", "types"));
         var tagData = ReadDirectory<NamedIdData>(Path.Combine(modDirectory, "content", "tags"));
         var unitData = ReadDirectory<UnitData>(Path.Combine(modDirectory, "content", "units"));
+        var combineData = ReadDirectory<UnitCombineData>(Path.Combine(modDirectory, "content", "combines"));
         var poolData = ReadRequired<UnitPoolData[]>(Path.Combine(modDirectory, "content", "pool.json"));
 
         var leaderSelectionRules = new LeaderSelectionRules(setupRulesData.LeaderOfferSize, setupRulesData.LeaderOfferPolicy);
@@ -92,7 +94,14 @@ public sealed class ModLoader
             (unit.Tags ?? []).Select(id => tagCatalog.GetRequired(new TagId(id))),
             (unit.Triggers ?? []).Select(BuildTrigger))).ToArray();
 
-        var catalog = new UnitCatalog(definitions);
+        var combineCatalog = new UnitCombineCatalog(combineData.Select(data =>
+            new UnitCombineDefinition(
+                new UnitCombineId(data.Id),
+                data.Name,
+                new UnitId(data.SourceUnitId),
+                data.RequiredCopies,
+                new UnitId(data.ResultUnitId))));
+        var catalog = new UnitCatalog(definitions, combineCatalog);
         var poolEntries = poolData.Select(entry => new UnitPoolEntry(new UnitId(entry.UnitId), entry.Copies)).ToArray();
         _ = new UnitPool(catalog, poolEntries);
 
@@ -290,6 +299,7 @@ public sealed class ModLoader
     private sealed record LeaderData(string Id, string Name, int HealthModifier, int Armor, string InitialPowerId);
     private sealed record NamedIdData(string Id, string Name);
     private sealed record UnitData(string Id, string Name, int Tier, int Attack, int Health, string[]? Behaviors, string[]? Types, string[]? Tags, TriggerData[]? Triggers);
+    private sealed record UnitCombineData(string Id, string Name, string SourceUnitId, int RequiredCopies, string ResultUnitId);
     private sealed record TriggerData(string Event, EffectData[] Effects, int? Count, ConditionData[]? Conditions, TriggerActivationLimitData? ActivationLimit, HistoryQueryData? Counter);
     private sealed record TriggerActivationLimitData(EffectHistoryScope Scope, int Count);
     private sealed record HistoryQueryData(string Event, EffectHistoryScope Scope, string? TypeId, string? TagId);

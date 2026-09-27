@@ -12,6 +12,10 @@ public sealed record AcquirePlayableCommand(PlayerId PlayerId, int OfferSlot) : 
 public sealed record ReleaseUnitCommand(PlayerId PlayerId, int FieldSlot) : IPreparationCommand;
 public sealed record DeployUnitCommand(PlayerId PlayerId, int ReserveSlot) : IPreparationCommand;
 public sealed record PlayActionCommand(PlayerId PlayerId, int ReserveSlot, UnitInstanceId? TargetUnitInstanceId = null) : IPreparationCommand;
+public sealed record CombineUnitsCommand(
+    PlayerId PlayerId,
+    UnitCombineId CombineId,
+    IReadOnlyList<UnitInstanceId> UnitInstanceIds) : IPreparationCommand;
 public sealed record RefreshOfferCommand(PlayerId PlayerId) : IPreparationCommand;
 public sealed record UpgradeTierCommand(PlayerId PlayerId) : IPreparationCommand;
 public sealed record UsePowerCommand(PlayerId PlayerId, UnitInstanceId? TargetUnitInstanceId = null) : IPreparationCommand;

@@ -1,0 +1,18 @@
+{
+  "id": "scout-merged",
+  "name": "Merged Scout",
+  "tier": 1,
+  "attack": 4,
+  "health": 6,
+  "behaviors": [],
+  "types": ["organic"],
+  "tags": ["starter"],
+  "triggers": [
+    {
+      "event": "onCombine",
+      "effects": [
+        { "kind": "addResource", "amount": 1 }
+      ]
+    }
+  ]
+}

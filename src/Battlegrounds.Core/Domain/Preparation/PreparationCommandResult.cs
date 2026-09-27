@@ -16,6 +16,8 @@ public enum PreparationFailureCode
     InvalidReserveSlot,
     InvalidFieldSlot,
     InvalidActionTarget,
+    CombineUnavailable,
+    InvalidCombineUnits,
     MaximumTier,
     PowerUnavailable,
     PowerNotActivatable,
