@@ -14,18 +14,20 @@ From the repository root:
 dotnet run --project tools/Battlegrounds.Simulator/Battlegrounds.Simulator.csproj -- \
   --mod mods/example \
   --matches 1000 \
-  --players 4 \
+  --players 2 \
   --seed 12345
 ```
 
-The current round-one combat contract requires an even initial player count because no eliminated-opponent snapshot exists before the first combat. If `--players` is omitted, the simulator chooses the supported even count closest to four.
+The current round-one combat contract requires an even initial player count because no eliminated-opponent snapshot exists before the first combat. If `--players` is omitted, the simulator chooses the smallest supported even count. For a production/content-rich mod, pass the intended lobby size explicitly.
+
+`mods/example` is a compact schema/integration fixture rather than a balance-sized pool. Larger AI-only lobbies can exhaust its eligible copies while filling offers, so examples and CI intentionally use two players. A real playable mod should size its pool for its supported lobby and offer curve.
 
 Useful options:
 
 ```text
 --mod <path>          mod directory; default mods/example
 --matches <n>         number of matches; default 100
---players <n>         players per match
+--players <n>         players per match; default smallest supported even count
 --seed <n>            base seed; match i uses baseSeed + i
 --max-commands <n>    AI Preparation safety budget; default 128
 --max-rounds <n>      per-match round safety budget; default 200
@@ -39,6 +41,7 @@ Example with artifacts:
 dotnet run --project tools/Battlegrounds.Simulator/Battlegrounds.Simulator.csproj -- \
   --mod mods/example \
   --matches 5000 \
+  --players 2 \
   --seed 7000 \
   --json artifacts/simulation.json \
   --csv artifacts/simulation.csv
@@ -67,4 +70,4 @@ Different simulator match seeds are independent match runs; one failed or change
 
 ## CI
 
-CI runs a short smoke simulation against `mods/example` after Core, Content, AI and Application tests. This verifies that the command-line project builds and that a complete AI-only match can advance through Preparation, Combat, elimination and final placement without Godot.
+CI runs a short two-player smoke simulation against `mods/example` after Core, Content, AI and Application tests. This verifies that the command-line project builds and that a complete AI-only match can advance through Preparation, Combat, elimination and final placement without Godot.
