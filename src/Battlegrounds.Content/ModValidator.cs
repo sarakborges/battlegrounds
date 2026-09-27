@@ -9,6 +9,7 @@ public sealed class ModValidator
             .Where(issue => !IsSupersededStaticEffectValueIssue(issue))
             .Where(issue => !IsSupersededGenerationIssue(issue))
             .Where(issue => !IsSupersededPersistentMutationIssue(issue))
+            .Where(issue => !IsSupersededCombineIssue(issue))
             .Where(issue => !(issue.Code == "UNKNOWN_KEY" && issue.File == "rules/preparation.json" && issue.Path == "$.actionOfferSizesByTier"))
             .Where(issue => !(issue.Code == "UNKNOWN_KEY" && issue.File.StartsWith("content/leaders/", StringComparison.Ordinal) && issue.Path == "$.initialPowerId"));
 
@@ -16,18 +17,24 @@ public sealed class ModValidator
             .Where(issue => !IsSupersededEffectSchemaIssue(issue))
             .Where(issue => !IsSupersededStaticEffectValueIssue(issue))
             .Where(issue => !IsSupersededGenerationIssue(issue))
-            .Where(issue => !IsSupersededPersistentMutationIssue(issue));
+            .Where(issue => !IsSupersededPersistentMutationIssue(issue))
+            .Where(issue => !IsSupersededCombineIssue(issue));
 
         var advancedIssues = new AdvancedEffectModValidator().Validate(modDirectory)
-            .Where(issue => !IsSupersededPersistentMutationIssue(issue));
+            .Where(issue => !IsSupersededPersistentMutationIssue(issue))
+            .Where(issue => !IsSupersededCombineIssue(issue));
         var dynamicIssues = new DynamicEffectValueModValidator().Validate(modDirectory)
-            .Where(issue => !IsSupersededPersistentMutationIssue(issue));
+            .Where(issue => !IsSupersededPersistentMutationIssue(issue))
+            .Where(issue => !IsSupersededCombineIssue(issue));
         var statefulIssues = new StatefulEffectModValidator().Validate(modDirectory)
-            .Where(issue => !IsSupersededPersistentMutationIssue(issue));
+            .Where(issue => !IsSupersededPersistentMutationIssue(issue))
+            .Where(issue => !IsSupersededCombineIssue(issue));
         var generationIssues = new GenerationChoiceModValidator().Validate(modDirectory)
-            .Where(issue => !IsSupersededPersistentMutationIssue(issue));
+            .Where(issue => !IsSupersededPersistentMutationIssue(issue))
+            .Where(issue => !IsSupersededCombineIssue(issue));
         var actionIssues = new ActionModValidator().Validate(modDirectory)
-            .Where(issue => !IsSupersededPersistentMutationIssue(issue));
+            .Where(issue => !IsSupersededPersistentMutationIssue(issue))
+            .Where(issue => !IsSupersededCombineIssue(issue));
 
         var issues = baseIssues
             .Concat(powerIssues)
@@ -37,6 +44,7 @@ public sealed class ModValidator
             .Concat(generationIssues)
             .Concat(actionIssues)
             .Concat(new PersistentUnitMutationModValidator().Validate(modDirectory))
+            .Concat(new UnitCombineModValidator().Validate(modDirectory))
             .ToArray();
 
         var preliminaryReport = new ModValidationReport(issues);
@@ -103,4 +111,7 @@ public sealed class ModValidator
 
         return issue.Code == "UNKNOWN_KEY" && issue.Path.EndsWith(".modifierKey", StringComparison.Ordinal);
     }
+
+    private static bool IsSupersededCombineIssue(ModValidationIssue issue) =>
+        issue.Code == "UNSUPPORTED_TRIGGER" && issue.Message.Contains("onCombine", StringComparison.Ordinal);
 }
