@@ -1,0 +1,7 @@
+{
+  "id": "scout-upgrade",
+  "name": "Scout Upgrade",
+  "sourceUnitId": "scout",
+  "requiredCopies": 3,
+  "resultUnitId": "scout-prime"
+}
