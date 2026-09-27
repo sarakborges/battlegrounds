@@ -5,10 +5,10 @@ namespace Battlegrounds.Game;
 /// <summary>
 /// Keeps dynamic presentation cards in a compact centered horizontal row while the
 /// surrounding scene owns the row height. The row reports no content-driven minimum
-/// height so cards never inflate the vertical HUD by being interpreted as a VBox stack.
+/// height so cards never inflate the vertical HUD.
 ///
-/// The Field row configures native Godot drag/drop on its cards. Reordering still
-/// submits ordinary Core commands through Main; visual child order is not authoritative.
+/// Field cards are drag sources. Reorder destinations are explicit insertion gaps
+/// between pieces, including the leading and trailing edges of the warband.
 /// </summary>
 public partial class HorizontalCardRow : VBoxContainer
 {
@@ -31,7 +31,9 @@ public partial class HorizontalCardRow : VBoxContainer
 
     public override void _Process(double delta)
     {
-        if (!IsFieldRow) return;
+        if (!IsFieldRow)
+            return;
+
         ConfigureFieldDragAndDrop();
     }
 
@@ -40,34 +42,33 @@ public partial class HorizontalCardRow : VBoxContainer
         if (what != NotificationSortChildren)
             return;
 
-        var children = GetChildren()
-            .OfType<Control>()
-            .Where(child => child.Visible && !child.IsQueuedForDeletion())
-            .ToArray();
-
-        if (children.Length == 0)
+        var cards = CurrentCards();
+        if (cards.Length == 0)
             return;
 
         var innerWidth = Mathf.Max(0.0f, Size.X - Padding * 2.0f);
-        var gapsWidth = Gap * Mathf.Max(0, children.Length - 1);
+        var gapsWidth = Gap * Mathf.Max(0, cards.Length - 1);
         var availableCardsWidth = Mathf.Max(0.0f, innerWidth - gapsWidth);
-        var fittedWidth = availableCardsWidth / children.Length;
+        var fittedWidth = availableCardsWidth / cards.Length;
         var cardWidth = Mathf.Min(PreferredCardWidth, fittedWidth);
 
-        if (availableCardsWidth >= MinimumCardWidth * children.Length)
+        if (availableCardsWidth >= MinimumCardWidth * cards.Length)
             cardWidth = Mathf.Max(MinimumCardWidth, cardWidth);
 
         var availableHeight = Mathf.Max(0.0f, Size.Y - Padding * 2.0f);
         var cardHeight = Mathf.Min(PreferredCardHeight, availableHeight);
-        var totalWidth = cardWidth * children.Length + gapsWidth;
+        var totalWidth = cardWidth * cards.Length + gapsWidth;
         var x = Mathf.Max(Padding, (Size.X - totalWidth) * 0.5f);
         var y = Mathf.Max(Padding, (Size.Y - cardHeight) * 0.5f);
 
-        foreach (var child in children)
+        foreach (var card in cards)
         {
-            FitChildInRect(child, new Rect2(x, y, cardWidth, cardHeight));
+            FitChildInRect(card, new Rect2(x, y, cardWidth, cardHeight));
             x += cardWidth + Gap;
         }
+
+        if (IsFieldRow)
+            LayoutInsertionZones(cards, y, cardHeight);
     }
 
     private void ApplySemanticGeometry()
@@ -89,11 +90,11 @@ public partial class HorizontalCardRow : VBoxContainer
                 Padding = 4.0f;
                 break;
             case "FieldButtons":
-                Gap = 8.0f;
-                PreferredCardWidth = 152.0f;
-                MinimumCardWidth = 102.0f;
+                Gap = 18.0f;
+                PreferredCardWidth = 148.0f;
+                MinimumCardWidth = 98.0f;
                 PreferredCardHeight = 204.0f;
-                Padding = 6.0f;
+                Padding = 10.0f;
                 break;
             case "ReserveButtons":
                 Gap = 4.0f;
@@ -108,26 +109,100 @@ public partial class HorizontalCardRow : VBoxContainer
     private void ConfigureFieldDragAndDrop()
     {
         var main = FindMain();
-        if (main is null) return;
+        if (main is null)
+            return;
 
-        var cards = GetChildren()
-            .OfType<PresentationCardButton>()
-            .Where(card => !card.IsQueuedForDeletion())
-            .ToArray();
+        var cards = CurrentCards();
         var enabled = main.CanReorderHumanField && cards.Length > 1;
 
         for (var index = 0; index < cards.Length; index++)
-            cards[index].ConfigureFieldDrag(index, enabled, main.ReorderHumanField);
+            cards[index].ConfigureFieldDrag(index, main.CanUsePreparationDrag);
+
+        SyncInsertionZones(cards.Length, enabled, main.ReorderHumanFieldAtInsertion);
+        QueueSort();
     }
+
+    private void SyncInsertionZones(int cardCount, bool enabled, Action<int, int> dropHandler)
+    {
+        var zones = GetChildren()
+            .OfType<FieldInsertionDropZone>()
+            .Where(zone => !zone.IsQueuedForDeletion())
+            .ToList();
+        var required = cardCount + 1;
+
+        while (zones.Count < required)
+        {
+            var zone = new FieldInsertionDropZone();
+            AddChild(zone);
+            zones.Add(zone);
+        }
+
+        for (var index = 0; index < zones.Count; index++)
+        {
+            if (index >= required)
+            {
+                zones[index].QueueFree();
+                continue;
+            }
+
+            zones[index].Configure(index, enabled, dropHandler);
+        }
+    }
+
+    private void LayoutInsertionZones(PresentationCardButton[] cards, float y, float cardHeight)
+    {
+        var zones = GetChildren()
+            .OfType<FieldInsertionDropZone>()
+            .Where(zone => !zone.IsQueuedForDeletion())
+            .OrderBy(zone => zone.GetIndex())
+            .ToArray();
+        if (zones.Length < cards.Length + 1)
+            return;
+
+        var zoneHeight = Mathf.Max(32.0f, cardHeight - 24.0f);
+        var zoneY = y + (cardHeight - zoneHeight) * 0.5f;
+
+        for (var insertion = 0; insertion <= cards.Length; insertion++)
+        {
+            float left;
+            float right;
+            if (insertion == 0)
+            {
+                right = cards[0].Position.X;
+                left = Mathf.Max(0.0f, right - Gap);
+            }
+            else if (insertion == cards.Length)
+            {
+                left = cards[^1].Position.X + cards[^1].Size.X;
+                right = Mathf.Min(Size.X, left + Gap);
+            }
+            else
+            {
+                left = cards[insertion - 1].Position.X + cards[insertion - 1].Size.X;
+                right = cards[insertion].Position.X;
+            }
+
+            var width = Mathf.Max(8.0f, right - left);
+            FitChildInRect(zones[insertion], new Rect2(left, zoneY, width, zoneHeight));
+        }
+    }
+
+    private PresentationCardButton[] CurrentCards() =>
+        GetChildren()
+            .OfType<PresentationCardButton>()
+            .Where(card => card.Visible && !card.IsQueuedForDeletion())
+            .ToArray();
 
     private Main? FindMain()
     {
         Node? node = GetParent();
         while (node is not null)
         {
-            if (node is Main main) return main;
+            if (node is Main main)
+                return main;
             node = node.GetParent();
         }
+
         return null;
     }
 }
