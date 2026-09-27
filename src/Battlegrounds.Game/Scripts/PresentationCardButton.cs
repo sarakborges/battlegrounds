@@ -9,9 +9,8 @@ internal sealed partial class PresentationCardButton : Button
     private readonly Label _subtitle;
     private readonly Label _stats;
     private readonly Label _description;
-    private int _fieldDragIndex = -1;
-    private bool _fieldDragEnabled;
-    private Action<int, int>? _fieldDropHandler;
+    private string? _dragPayload;
+    private bool _dragEnabled;
 
     public PresentationCardButton()
     {
@@ -72,39 +71,11 @@ internal sealed partial class PresentationCardButton : Button
 
     public override Variant _GetDragData(Vector2 atPosition)
     {
-        if (!_fieldDragEnabled || _fieldDragIndex < 0 || _fieldDropHandler is null)
+        if (!_dragEnabled || string.IsNullOrWhiteSpace(_dragPayload))
             return default;
 
-        var preview = new Label
-        {
-            Text = _title.Text,
-            CustomMinimumSize = new Vector2(Mathf.Max(96.0f, Size.X * 0.8f), 36.0f),
-            HorizontalAlignment = HorizontalAlignment.Center,
-            VerticalAlignment = VerticalAlignment.Center,
-            ThemeTypeVariation = "HeadingLabel",
-            MouseFilter = MouseFilterEnum.Ignore,
-        };
-        SetDragPreview(preview);
-        return $"field:{_fieldDragIndex}";
-    }
-
-    public override bool _CanDropData(Vector2 atPosition, Variant data)
-    {
-        if (!_fieldDragEnabled || _fieldDropHandler is null || !TryReadFieldDragIndex(data, out var sourceIndex))
-            return false;
-
-        return sourceIndex != _fieldDragIndex;
-    }
-
-    public override void _DropData(Vector2 atPosition, Variant data)
-    {
-        if (!_fieldDragEnabled || _fieldDropHandler is null || !TryReadFieldDragIndex(data, out var sourceIndex))
-            return;
-
-        if (sourceIndex == _fieldDragIndex)
-            return;
-
-        _fieldDropHandler(sourceIndex, _fieldDragIndex);
+        SetDragPreview(CreateDragPreview());
+        return _dragPayload;
     }
 
     public void Configure(
@@ -127,18 +98,68 @@ internal sealed partial class PresentationCardButton : Button
         _art.Visible = texture is not null;
     }
 
-    public void ConfigureFieldDrag(int index, bool enabled, Action<int, int> dropHandler)
-    {
-        _fieldDragIndex = index;
-        _fieldDragEnabled = enabled;
-        _fieldDropHandler = dropHandler;
-        MouseDefaultCursorShape = enabled ? CursorShape.Drag : CursorShape.Arrow;
-    }
+    public void ConfigureOfferDrag(int slot, bool enabled) =>
+        ConfigureDrag(PreparationDragPayload.Offer(slot), enabled);
+
+    public void ConfigureFieldDrag(int index, bool enabled) =>
+        ConfigureDrag(PreparationDragPayload.Field(index), enabled);
 
     public void SetSelected(bool selected)
     {
         ToggleMode = true;
         ButtonPressed = selected;
+    }
+
+    private void ConfigureDrag(string payload, bool enabled)
+    {
+        _dragPayload = payload;
+        _dragEnabled = enabled;
+        MouseDefaultCursorShape = enabled ? CursorShape.Drag : CursorShape.Arrow;
+        ButtonMask = enabled ? (MouseButtonMask)0 : MouseButtonMask.Left;
+        FocusMode = enabled ? FocusModeEnum.None : FocusModeEnum.All;
+    }
+
+    private Control CreateDragPreview()
+    {
+        var preview = new PanelContainer
+        {
+            CustomMinimumSize = new Vector2(Mathf.Max(92.0f, Size.X * 0.72f), Mathf.Max(72.0f, Size.Y * 0.58f)),
+            ThemeTypeVariation = "DragPreview",
+            MouseFilter = MouseFilterEnum.Ignore,
+        };
+
+        var column = new VBoxContainer
+        {
+            MouseFilter = MouseFilterEnum.Ignore,
+            SizeFlagsHorizontal = SizeFlags.ExpandFill,
+            SizeFlagsVertical = SizeFlags.ExpandFill,
+        };
+        column.AddThemeConstantOverride("separation", 2);
+        preview.AddChild(column);
+
+        if (_art.Texture is not null)
+        {
+            column.AddChild(new TextureRect
+            {
+                Texture = _art.Texture,
+                CustomMinimumSize = new Vector2(0, 48),
+                SizeFlagsHorizontal = SizeFlags.ExpandFill,
+                SizeFlagsVertical = SizeFlags.ExpandFill,
+                ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize,
+                StretchMode = TextureRect.StretchModeEnum.KeepAspectCovered,
+                MouseFilter = MouseFilterEnum.Ignore,
+            });
+        }
+
+        column.AddChild(new Label
+        {
+            Text = _title.Text,
+            HorizontalAlignment = HorizontalAlignment.Center,
+            ThemeTypeVariation = "HeadingLabel",
+            MouseFilter = MouseFilterEnum.Ignore,
+        });
+
+        return preview;
     }
 
     private void ApplyFootprintForParent()
@@ -154,6 +175,8 @@ internal sealed partial class PresentationCardButton : Button
                 break;
             case "FieldButtons":
                 ApplyFootprint(138, 112, showSubtitle: false, "board");
+                ButtonMask = (MouseButtonMask)0;
+                FocusMode = FocusModeEnum.None;
                 break;
             case "ReserveButtons":
                 ApplyFootprint(90, 34, showSubtitle: false, "reserve");
@@ -173,17 +196,6 @@ internal sealed partial class PresentationCardButton : Button
         _art.CustomMinimumSize = new Vector2(0, artHeight);
         _subtitle.Visible = showSubtitle && !string.IsNullOrWhiteSpace(_subtitle.Text);
         SetMeta("presentation_footprint", role);
-    }
-
-    private static bool TryReadFieldDragIndex(Variant data, out int index)
-    {
-        index = -1;
-        if (data.VariantType != Variant.Type.String)
-            return false;
-
-        var text = data.AsString();
-        return text.StartsWith("field:", StringComparison.Ordinal) &&
-               int.TryParse(text["field:".Length..], out index);
     }
 
     private static Label CreateLabel(string variation, bool wrap = false)
