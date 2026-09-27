@@ -38,7 +38,8 @@ internal sealed partial class PresentationCardButton : Button
             CustomMinimumSize = new Vector2(0, 68),
             SizeFlagsHorizontal = SizeFlags.ExpandFill,
             SizeFlagsVertical = SizeFlags.ExpandFill,
-            StretchMode = TextureRect.StretchModeEnum.KeepAspectCentered,
+            ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize,
+            StretchMode = TextureRect.StretchModeEnum.KeepAspectCovered,
         });
         column.AddChild(_art);
 
@@ -59,6 +60,11 @@ internal sealed partial class PresentationCardButton : Button
         column.AddChild(_subtitle);
         column.AddChild(_stats);
         column.AddChild(_description);
+    }
+
+    public override void _Ready()
+    {
+        ApplyFootprintForParent();
     }
 
     public void Configure(
@@ -85,6 +91,40 @@ internal sealed partial class PresentationCardButton : Button
     {
         ToggleMode = true;
         ButtonPressed = selected;
+    }
+
+    private void ApplyFootprintForParent()
+    {
+        var parentName = GetParent()?.Name.ToString();
+        switch (parentName)
+        {
+            case "LeaderButtons":
+                ApplyFootprint(new Vector2(156, 214), 142, showSubtitle: false, "leader");
+                break;
+            case "OfferButtons":
+                ApplyFootprint(new Vector2(118, 172), 102, showSubtitle: false, "shop");
+                break;
+            case "FieldButtons":
+                ApplyFootprint(new Vector2(138, 206), 126, showSubtitle: false, "board");
+                break;
+            case "ReserveButtons":
+                ApplyFootprint(new Vector2(90, 108), 58, showSubtitle: false, "reserve");
+                break;
+            case "InteractionButtons":
+                ApplyFootprint(new Vector2(124, 168), 96, showSubtitle: false, "choice");
+                break;
+            default:
+                SetMeta("presentation_footprint", "default");
+                break;
+        }
+    }
+
+    private void ApplyFootprint(Vector2 minimumSize, float artHeight, bool showSubtitle, string role)
+    {
+        CustomMinimumSize = minimumSize;
+        _art.CustomMinimumSize = new Vector2(0, artHeight);
+        _subtitle.Visible = showSubtitle && !string.IsNullOrWhiteSpace(_subtitle.Text);
+        SetMeta("presentation_footprint", role);
     }
 
     private static Label CreateLabel(string variation, bool wrap = false)
