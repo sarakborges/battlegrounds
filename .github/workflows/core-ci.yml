@@ -21,3 +21,5 @@ jobs:
         run: dotnet test tests/Battlegrounds.AI.Tests/Battlegrounds.AI.Tests.csproj --configuration Release
       - name: Test application session orchestration
         run: dotnet test tests/Battlegrounds.Application.Tests/Battlegrounds.Application.Tests.csproj --configuration Release
+      - name: Build Godot presentation adapter
+        run: dotnet build src/Battlegrounds.Game/Battlegrounds.Game.csproj --configuration Release
