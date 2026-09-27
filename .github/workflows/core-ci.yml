@@ -21,5 +21,7 @@ jobs:
         run: dotnet test tests/Battlegrounds.AI.Tests/Battlegrounds.AI.Tests.csproj --configuration Release
       - name: Test application session orchestration
         run: dotnet test tests/Battlegrounds.Application.Tests/Battlegrounds.Application.Tests.csproj --configuration Release
+      - name: Smoke-test headless simulator
+        run: dotnet run --project tools/Battlegrounds.Simulator/Battlegrounds.Simulator.csproj --configuration Release -- --mod mods/example --matches 2 --players 4 --seed 17
       - name: Build Godot presentation adapter
         run: dotnet build src/Battlegrounds.Game/Battlegrounds.Game.csproj --configuration Release
