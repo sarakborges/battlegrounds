@@ -5,7 +5,7 @@ namespace Battlegrounds.Game;
 
 public partial class ModLauncher : Control
 {
-    private const string LauncherRevision = "launcher-r4";
+    private const string LauncherRevision = "launcher-r5";
 
     [Export] public string ModsRoot { get; set; } = "res://../../mods";
     [Export] public string GameplayScenePath { get; set; } = "res://Scenes/Main.tscn";
@@ -13,6 +13,7 @@ public partial class ModLauncher : Control
     [Export] public int ParticipantCount { get; set; } = 4;
     [Export] public string Locale { get; set; } = string.Empty;
 
+    private readonly List<(Button Button, ModDiscoveryEntry Entry)> _candidateButtons = new();
     private Label _status = null!;
     private VBoxContainer _modButtons = null!;
     private RichTextLabel _diagnostics = null!;
@@ -33,8 +34,37 @@ public partial class ModLauncher : Control
         DiscoverMods();
     }
 
+    public override void _Input(InputEvent @event)
+    {
+        if (@event is not InputEventMouseButton mouse ||
+            mouse.ButtonIndex != MouseButton.Left ||
+            !mouse.Pressed)
+        {
+            return;
+        }
+
+        GD.Print($"[ModLauncher] Raw left click at {mouse.Position} ({LauncherRevision}).");
+        _status.Text = $"Raw click at {mouse.Position}. [{LauncherRevision}]";
+
+        foreach (var candidate in _candidateButtons)
+        {
+            if (!GodotObject.IsInstanceValid(candidate.Button) || !candidate.Button.Visible)
+                continue;
+
+            if (!candidate.Button.GetGlobalRect().HasPoint(mouse.Position))
+                continue;
+
+            GD.Print($"[ModLauncher] Raw click matched '{candidate.Entry.DisplayName}'.");
+            _status.Text = $"Raw click matched {candidate.Entry.DisplayName}. [{LauncherRevision}]";
+            GetViewport().SetInputAsHandled();
+            SelectCandidate(candidate.Entry);
+            return;
+        }
+    }
+
     private void DiscoverMods()
     {
+        _candidateButtons.Clear();
         ClearChildren(_modButtons);
         _diagnostics.Text = string.Empty;
         _status.Text = $"Discovering mods... [{LauncherRevision}]";
@@ -95,11 +125,12 @@ public partial class ModLauncher : Control
 
         button.ButtonDown += () =>
         {
-            _status.Text = $"Pressed {entry.DisplayName}... [{LauncherRevision}]";
+            _status.Text = $"ButtonDown {entry.DisplayName}. [{LauncherRevision}]";
             GD.Print($"[ModLauncher] ButtonDown for '{entry.DisplayName}' ({entry.DirectoryName}).");
         };
         button.Pressed += () => SelectCandidate(entry);
         _modButtons.AddChild(button);
+        _candidateButtons.Add((button, entry));
     }
 
     private void SelectCandidate(ModDiscoveryEntry entry)
