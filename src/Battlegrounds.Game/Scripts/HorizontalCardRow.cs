@@ -7,8 +7,8 @@ namespace Battlegrounds.Game;
 /// surrounding scene owns the row height. The row reports no content-driven minimum
 /// height so cards never inflate the vertical HUD.
 ///
-/// Field cards are drag sources. Reorder destinations are explicit insertion gaps
-/// between pieces, including the leading and trailing edges of the warband.
+/// Tavern offers and field pieces are drag sources. Field reorder destinations are
+/// explicit insertion gaps between pieces, including the leading and trailing edges.
 /// </summary>
 public partial class HorizontalCardRow : VBoxContainer
 {
@@ -18,12 +18,13 @@ public partial class HorizontalCardRow : VBoxContainer
     [Export] public float PreferredCardHeight { get; set; } = 168.0f;
     [Export] public float Padding { get; set; } = 4.0f;
 
+    private bool IsOfferRow => Name == "OfferButtons";
     private bool IsFieldRow => Name == "FieldButtons";
 
     public override void _Ready()
     {
         ApplySemanticGeometry();
-        SetProcess(IsFieldRow);
+        SetProcess(IsOfferRow || IsFieldRow);
         QueueSort();
     }
 
@@ -31,10 +32,10 @@ public partial class HorizontalCardRow : VBoxContainer
 
     public override void _Process(double delta)
     {
-        if (!IsFieldRow)
-            return;
-
-        ConfigureFieldDragAndDrop();
+        if (IsOfferRow)
+            ConfigureOfferDrag();
+        if (IsFieldRow)
+            ConfigureFieldDragAndDrop();
     }
 
     public override void _Notification(int what)
@@ -106,6 +107,17 @@ public partial class HorizontalCardRow : VBoxContainer
         }
     }
 
+    private void ConfigureOfferDrag()
+    {
+        var main = FindMain();
+        if (main is null)
+            return;
+
+        var cards = CurrentCards();
+        for (var index = 0; index < cards.Length; index++)
+            cards[index].ConfigureOfferDrag(index, main.CanUsePreparationDrag && !cards[index].Disabled);
+    }
+
     private void ConfigureFieldDragAndDrop()
     {
         var main = FindMain();
@@ -113,12 +125,12 @@ public partial class HorizontalCardRow : VBoxContainer
             return;
 
         var cards = CurrentCards();
-        var enabled = main.CanReorderHumanField && cards.Length > 1;
+        var reorderEnabled = main.CanReorderHumanField && cards.Length > 1;
 
         for (var index = 0; index < cards.Length; index++)
-            cards[index].ConfigureFieldDrag(index, main.CanUsePreparationDrag);
+            cards[index].ConfigureFieldDrag(index, main.CanUsePreparationDrag && !cards[index].Disabled);
 
-        SyncInsertionZones(cards.Length, enabled, main.ReorderHumanFieldAtInsertion);
+        SyncInsertionZones(cards.Length, reorderEnabled, main.ReorderHumanFieldAtInsertion);
         QueueSort();
     }
 
