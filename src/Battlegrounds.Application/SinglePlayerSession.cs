@@ -27,15 +27,22 @@ public sealed class SinglePlayerSession
     private readonly MatchEngine _matchEngine;
     private readonly PlayerId[] _aiPlayerIds;
     private readonly int _aiMaximumCommands;
+    private PlayerId[] _preparationInitiative = [];
+    private int _preparationInitiativeRound;
     private long _combatResolutionSequence;
 
     public ModPackage Mod { get; }
     public PlayerId HumanPlayerId { get; }
     public IReadOnlyList<PlayerId> AiPlayerIds => _aiPlayerIds;
+    public IReadOnlyList<PlayerId> PreparationInitiative => _preparationInitiative;
     public LeaderSelectionState LeaderSelection { get; }
     public MatchState? Match { get; private set; }
     public SessionCombatRecord? LastCombat { get; private set; }
     public bool HasStarted => Match is not null;
+    public PlayerId? CurrentPreparationPlayerId =>
+        Match is { Phase: MatchPhase.Preparation } match && _preparationInitiativeRound == match.Round
+            ? FindCurrentPreparationPlayer(match)
+            : null;
 
     private SinglePlayerSession(
         ModPackage mod,
@@ -135,6 +142,7 @@ public sealed class SinglePlayerSession
 
         Match = _matchEngine.CreateMatch(LeaderSelection.GetCompletedPlayerSetups());
         _matchEngine.BeginMatch(Match);
+        EnsurePreparationInitiative(Match);
         return result;
     }
 
@@ -144,12 +152,26 @@ public sealed class SinglePlayerSession
         var match = GetStartedMatch();
         if (command.PlayerId != HumanPlayerId)
             throw new ArgumentException("The human command boundary cannot submit commands for an AI-controlled player.", nameof(command));
+
+        if (match.Phase == MatchPhase.Preparation)
+        {
+            EnsurePreparationInitiative(match);
+            var currentPlayerId = FindCurrentPreparationPlayer(match)
+                ?? throw new InvalidOperationException("Preparation has no active initiative owner.");
+            if (currentPlayerId != HumanPlayerId)
+            {
+                throw new InvalidOperationException(
+                    $"Player '{currentPlayerId}' currently owns Preparation initiative; human commands must wait for the human initiative turn.");
+            }
+        }
+
         return _matchEngine.ExecutePreparation(match, command);
     }
 
     /// <summary>
-    /// Advances AI Preparation for the current round. If every active player is ready, resolves exactly one
-    /// combat round and stops at the next human-facing Preparation or Finished state.
+    /// Advances consecutive AI-owned Preparation turns in the current round and stops as soon as initiative
+    /// reaches the human. If every active player is ready, resolves exactly one combat round and stops at the
+    /// next Preparation or Finished state.
     /// </summary>
     public SessionAdvanceResult AdvanceAutomated()
     {
@@ -160,12 +182,17 @@ public sealed class SinglePlayerSession
         var aiPreparationsCompleted = 0;
         if (match.Phase == MatchPhase.Preparation)
         {
-            foreach (var aiPlayerId in _aiPlayerIds.OrderBy(id => id.Value))
+            EnsurePreparationInitiative(match);
+            while (match.Phase == MatchPhase.Preparation)
             {
-                if (!match.TryGetPlayer(aiPlayerId, out var player) || player.IsEliminated || player.IsReadyForCombat)
-                    continue;
+                var currentPlayerId = FindCurrentPreparationPlayer(match)
+                    ?? throw new InvalidOperationException("Preparation has no active initiative owner.");
+                if (currentPlayerId == HumanPlayerId)
+                    break;
+                if (!_aiPlayerIds.Contains(currentPlayerId))
+                    throw new InvalidOperationException($"Preparation initiative references uncontrolled player '{currentPlayerId}'.");
 
-                _aiAgent.PlayPreparation(_matchEngine, match, aiPlayerId, _aiMaximumCommands);
+                _aiAgent.PlayPreparation(_matchEngine, match, currentPlayerId, _aiMaximumCommands);
                 aiPreparationsCompleted++;
             }
         }
@@ -183,7 +210,45 @@ public sealed class SinglePlayerSession
             pairings,
             startingUnits,
             combatRound);
+
+        if (match.Phase == MatchPhase.Preparation)
+            EnsurePreparationInitiative(match);
+
         return CreateAdvanceResult(match, aiPreparationsCompleted, pairings, combatRound);
+    }
+
+    private void EnsurePreparationInitiative(MatchState match)
+    {
+        if (match.Phase != MatchPhase.Preparation)
+            return;
+        if (_preparationInitiativeRound == match.Round && _preparationInitiative.Length > 0)
+            return;
+
+        var initiative = match.Players
+            .Where(player => !player.IsEliminated)
+            .Select(player => player.Id)
+            .ToArray();
+
+        for (var index = initiative.Length - 1; index > 0; index--)
+        {
+            var swapIndex = _randomSource.NextInt(0, index + 1);
+            (initiative[index], initiative[swapIndex]) = (initiative[swapIndex], initiative[index]);
+        }
+
+        _preparationInitiative = initiative;
+        _preparationInitiativeRound = match.Round;
+    }
+
+    private PlayerId? FindCurrentPreparationPlayer(MatchState match)
+    {
+        foreach (var playerId in _preparationInitiative)
+        {
+            if (!match.TryGetPlayer(playerId, out var player) || player.IsEliminated || player.IsReadyForCombat)
+                continue;
+            return playerId;
+        }
+
+        return null;
     }
 
     private SessionCombatUnitSnapshot[] CaptureStartingCombatUnits(
