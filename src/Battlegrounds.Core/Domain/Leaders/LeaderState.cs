@@ -33,7 +33,7 @@ public sealed class LeaderState
 
     internal void BeginTurn() => _usesThisTurn.Clear();
 
-    internal bool CanUse(PowerDefinition power)
+    public bool CanUse(PowerDefinition power)
     {
         ArgumentNullException.ThrowIfNull(power);
         if (CurrentPowerId != power.Id || power.Activation is null) return false;
@@ -55,8 +55,8 @@ public sealed class LeaderState
         _usesThisMatch[powerId] = _usesThisMatch.GetValueOrDefault(powerId) + 1;
     }
 
-    internal int GetUsesThisTurn(PowerId powerId) => _usesThisTurn.GetValueOrDefault(powerId);
-    internal int GetUsesThisMatch(PowerId powerId) => _usesThisMatch.GetValueOrDefault(powerId);
+    public int GetUsesThisTurn(PowerId powerId) => _usesThisTurn.GetValueOrDefault(powerId);
+    public int GetUsesThisMatch(PowerId powerId) => _usesThisMatch.GetValueOrDefault(powerId);
 
     internal void SetPower(PowerId powerId) => CurrentPowerId = powerId;
 }
