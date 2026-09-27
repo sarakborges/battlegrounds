@@ -37,6 +37,7 @@ internal static class ModPresentationLoader
             locales.Add(Path.GetFileNameWithoutExtension(path), values);
         }
 
-        return new ModPresentationCatalog(defaultLocale, terminology, locales);
+        var entityFallbacks = ModPresentationEntityFallbackLoader.Load(modDirectory);
+        return new ModPresentationCatalog(defaultLocale, terminology, entityFallbacks, locales);
     }
 }
