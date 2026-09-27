@@ -5,7 +5,7 @@ namespace Battlegrounds.Game;
 
 public partial class ModLauncher : Control
 {
-    private const string LauncherRevision = "launcher-r5";
+    private const string LauncherRevision = "launcher-r6";
 
     [Export] public string ModsRoot { get; set; } = "res://../../mods";
     [Export] public string GameplayScenePath { get; set; } = "res://Scenes/Main.tscn";
@@ -18,6 +18,7 @@ public partial class ModLauncher : Control
     private VBoxContainer _modButtons = null!;
     private RichTextLabel _diagnostics = null!;
     private Button _refreshButton = null!;
+    private bool _autoStartAttempted;
 
     public override async void _Ready()
     {
@@ -62,7 +63,7 @@ public partial class ModLauncher : Control
         }
     }
 
-    private void DiscoverMods()
+    private async void DiscoverMods()
     {
         _candidateButtons.Clear();
         ClearChildren(_modButtons);
@@ -83,6 +84,27 @@ public partial class ModLauncher : Control
                 AddCandidate(entry);
 
             GD.Print($"[ModLauncher] Discovery complete: {entries.Count} package(s).");
+
+            if (_autoStartAttempted)
+                return;
+
+            var autoStart = entries.FirstOrDefault(entry =>
+                                entry.IsValid && entry.DirectoryName.Equals("warbands", StringComparison.OrdinalIgnoreCase))
+                            ?? entries.FirstOrDefault(entry => entry.IsValid);
+            if (autoStart is null)
+                return;
+
+            _autoStartAttempted = true;
+            _status.Text = $"Auto-starting {autoStart.DisplayName} in 1 second... [{LauncherRevision}]";
+            GD.Print($"[ModLauncher] Diagnostic auto-start armed for '{autoStart.DisplayName}'.");
+
+            await ToSignal(GetTree().CreateTimer(1.0), SceneTreeTimer.SignalName.Timeout);
+            if (!IsInsideTree())
+                return;
+
+            _status.Text = $"Auto-starting {autoStart.DisplayName} now... [{LauncherRevision}]";
+            GD.Print($"[ModLauncher] Diagnostic auto-start firing for '{autoStart.DisplayName}'.");
+            StartGame(autoStart);
         }
         catch (Exception exception)
         {
