@@ -37,11 +37,11 @@ internal sealed class CombatPlaybackState
         EventText = Text("ui.combatReady", ("combat", Term("combat")));
         _leftUnits = record.StartingUnits
             .Where(unit => unit.PlayerId == LeftPlayerId)
-            .Select(CombatPlaybackUnitState.FromSnapshot)
+            .Select(unit => CombatPlaybackUnitState.FromSnapshot(unit, UnitName(unit.UnitId)))
             .ToList();
         _rightUnits = record.StartingUnits
             .Where(unit => unit.PlayerId == RightPlayerId)
-            .Select(CombatPlaybackUnitState.FromSnapshot)
+            .Select(unit => CombatPlaybackUnitState.FromSnapshot(unit, UnitName(unit.UnitId)))
             .ToList();
         _unitsById = _leftUnits.Concat(_rightUnits).ToDictionary(unit => unit.InstanceId);
     }
@@ -146,8 +146,8 @@ internal sealed class CombatPlaybackState
                     "ui.combatPowerChanged",
                     ("player", power.PlayerId.Value),
                     ("power", Term("power")),
-                    ("previous", power.PreviousPowerId?.Value ?? "—"),
-                    ("next", power.PowerId.Value));
+                    ("previous", power.PreviousPowerId is PowerId previousPowerId ? PowerName(previousPowerId) : "—"),
+                    ("next", PowerName(power.PowerId)));
                 break;
             default:
                 EventText = Text(
@@ -174,7 +174,7 @@ internal sealed class CombatPlaybackState
         }
 
         var source = trigger.SourcePowerId is PowerId powerId
-            ? Text("ui.combatPowerSource", ("power", Term("power")), ("id", powerId.Value))
+            ? Text("ui.combatPowerSource", ("power", Term("power")), ("id", PowerName(powerId)))
             : Text("ui.combatSource", ("combat", Term("combat")));
         EventText = Text(
             "ui.combatSourceTriggered",
@@ -199,7 +199,7 @@ internal sealed class CombatPlaybackState
 
     private void ApplySummon(CombatUnitSummonedTimelineEvent summon)
     {
-        var unit = CombatPlaybackUnitState.FromSnapshot(summon.PlayerId, summon.Unit);
+        var unit = CombatPlaybackUnitState.FromSnapshot(summon.PlayerId, summon.Unit, UnitName(summon.Unit.UnitId));
         _unitsById[unit.InstanceId] = unit;
         InsertOnBoard(unit, summon.Position);
         unit.Highlight = "+";
@@ -266,12 +266,12 @@ internal sealed class CombatPlaybackState
     {
         if (!_unitsById.TryGetValue(revived.Unit.InstanceId, out var unit))
         {
-            unit = CombatPlaybackUnitState.FromSnapshot(revived.PlayerId, revived.Unit);
+            unit = CombatPlaybackUnitState.FromSnapshot(revived.PlayerId, revived.Unit, UnitName(revived.Unit.UnitId));
             _unitsById[unit.InstanceId] = unit;
         }
         else
         {
-            unit.Name = revived.Unit.Definition?.Name ?? revived.Unit.UnitId.Value;
+            unit.Name = UnitName(revived.Unit.UnitId);
             unit.Attack = revived.Unit.Attack;
             unit.Health = revived.Unit.Health;
         }
@@ -364,6 +364,10 @@ internal sealed class CombatPlaybackState
             ("damage", damage));
     }
 
+    private string UnitName(UnitId id) => _text.EntityName(ModPresentationEntityKind.Unit, id.Value);
+
+    private string PowerName(PowerId id) => _text.EntityName(ModPresentationEntityKind.Power, id.Value);
+
     private string Term(string key) => _text.Term(key);
 
     private string Text(string key, params (string Name, object? Value)[] values) =>
@@ -395,14 +399,9 @@ internal sealed class CombatPlaybackUnitState
         Health = health;
     }
 
-    public static CombatPlaybackUnitState FromSnapshot(SessionCombatUnitSnapshot snapshot) =>
-        new(snapshot.PlayerId, snapshot.InstanceId, snapshot.Name, snapshot.Attack, snapshot.Health);
+    public static CombatPlaybackUnitState FromSnapshot(SessionCombatUnitSnapshot snapshot, string name) =>
+        new(snapshot.PlayerId, snapshot.InstanceId, name, snapshot.Attack, snapshot.Health);
 
-    public static CombatPlaybackUnitState FromSnapshot(PlayerId playerId, CombatUnitSnapshot snapshot) =>
-        new(
-            playerId,
-            snapshot.InstanceId,
-            snapshot.Definition?.Name ?? snapshot.UnitId.Value,
-            snapshot.Attack,
-            snapshot.Health);
+    public static CombatPlaybackUnitState FromSnapshot(PlayerId playerId, CombatUnitSnapshot snapshot, string name) =>
+        new(playerId, snapshot.InstanceId, name, snapshot.Attack, snapshot.Health);
 }

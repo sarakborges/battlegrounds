@@ -1,5 +1,6 @@
 using Battlegrounds.Content;
 using Battlegrounds.Core.Domain.Choices;
+using Battlegrounds.Core.Domain.Ids;
 using Battlegrounds.Core.Domain.Match;
 using Battlegrounds.Core.Domain.Playables;
 using Godot;
@@ -29,6 +30,22 @@ public partial class Main
 
     private string Text(string key, params (string Name, object? Value)[] values) =>
         _presentationText?.Format(key, values) ?? key;
+
+    private string EntityName(ModPresentationEntityKind kind, string id) =>
+        _presentationText?.EntityName(kind, id) ?? id;
+
+    private string LeaderName(LeaderId id) => EntityName(ModPresentationEntityKind.Leader, id.Value);
+    private string PowerName(PowerId id) => EntityName(ModPresentationEntityKind.Power, id.Value);
+    private string UnitName(UnitId id) => EntityName(ModPresentationEntityKind.Unit, id.Value);
+    private string ActionName(ActionId id) => EntityName(ModPresentationEntityKind.Action, id.Value);
+    private string CombineName(UnitCombineId id) => EntityName(ModPresentationEntityKind.Combine, id.Value);
+
+    private string PlayableName(PlayableKind kind, string id) => kind switch
+    {
+        PlayableKind.Unit => EntityName(ModPresentationEntityKind.Unit, id),
+        PlayableKind.Action => EntityName(ModPresentationEntityKind.Action, id),
+        _ => id,
+    };
 
     private string PhaseText(MatchPhase phase) => phase switch
     {

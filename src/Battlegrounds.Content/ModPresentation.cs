@@ -111,23 +111,28 @@ public sealed class ModPresentationCatalog
 {
     private readonly ReadOnlyDictionary<string, IReadOnlyDictionary<string, string>> _locales;
     private readonly ReadOnlyDictionary<string, string> _terminology;
+    private readonly ReadOnlyDictionary<string, string> _entityFallbacks;
 
     public string DefaultLocale { get; }
     public IReadOnlyDictionary<string, IReadOnlyDictionary<string, string>> Locales => _locales;
     public IReadOnlyDictionary<string, string> Terminology => _terminology;
+    public IReadOnlyDictionary<string, string> EntityFallbacks => _entityFallbacks;
 
     internal ModPresentationCatalog(
         string defaultLocale,
         IReadOnlyDictionary<string, string> terminology,
+        IReadOnlyDictionary<string, string> entityFallbacks,
         IReadOnlyDictionary<string, IReadOnlyDictionary<string, string>> locales)
     {
         if (string.IsNullOrWhiteSpace(defaultLocale)) throw new ArgumentException("Default locale cannot be empty.", nameof(defaultLocale));
         ArgumentNullException.ThrowIfNull(terminology);
+        ArgumentNullException.ThrowIfNull(entityFallbacks);
         ArgumentNullException.ThrowIfNull(locales);
         if (!locales.ContainsKey(defaultLocale)) throw new ArgumentException($"Default locale '{defaultLocale}' is missing.", nameof(locales));
 
         DefaultLocale = defaultLocale;
         _terminology = new ReadOnlyDictionary<string, string>(new Dictionary<string, string>(terminology, StringComparer.Ordinal));
+        _entityFallbacks = new ReadOnlyDictionary<string, string>(new Dictionary<string, string>(entityFallbacks, StringComparer.Ordinal));
         _locales = new ReadOnlyDictionary<string, IReadOnlyDictionary<string, string>>(
             locales.ToDictionary(
                 pair => pair.Key,
@@ -143,7 +148,7 @@ public sealed class ModPresentationCatalog
 
         foreach (var pair in _terminology)
             strings[ModPresentationKeys.Term(pair.Key)] = pair.Value;
-
+        Overlay(strings, _entityFallbacks);
         Overlay(strings, _locales[DefaultLocale]);
 
         var languageLocale = ResolveLanguageLocale(selectedLocale);
@@ -210,6 +215,12 @@ public sealed class ModPresentationText
     public bool TryGet(string key, out string value) => _strings.TryGetValue(key, out value!);
 
     public string Term(string terminologyKey) => Get(ModPresentationKeys.Term(terminologyKey));
+
+    public string EntityName(ModPresentationEntityKind kind, string id) =>
+        Get(ModPresentationEntityKeys.Name(kind, id));
+
+    public bool TryEntityDescription(ModPresentationEntityKind kind, string id, out string value) =>
+        TryGet(ModPresentationEntityKeys.Description(kind, id), out value!);
 
     public string Format(string key, params (string Name, object? Value)[] values)
     {
