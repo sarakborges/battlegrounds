@@ -240,9 +240,9 @@ See `APPLICATION.md` for the orchestration and ownership contract.
 
 ## Godot presentation adapter
 
-`Battlegrounds.Game` boots a validated mod and deterministic `SinglePlayerSession` and keeps Godot on the presentation side of the architecture boundary.
+`Battlegrounds.Game` boots through `ModLauncher`, which asks `Battlegrounds.Content.ModDiscovery` for deterministic direct-child package candidates under an explicit mods root. Valid packages may start a match; invalid packages remain visible and expose their validation diagnostics. Only after an explicit valid selection does Godot instantiate the existing gameplay scene, load the full `ModPackage` and create the deterministic `SinglePlayerSession`. Core and Application remain unaware of directories and selection UI.
 
-The playable Preparation surface now covers Leader selection, generic acquire/deploy/release, refresh, upgrade, freeze/unfreeze, Action/Power activation, pending Unit/Action choices, explicit Unit-combine component selection and ending Preparation.
+The playable Preparation surface covers Leader selection, generic acquire/deploy/release, refresh, upgrade, freeze/unfreeze, Action/Power activation, pending Unit/Action choices, explicit Unit-combine component selection and ending Preparation.
 
 Multi-step intent is stored only in `PresentationInteractionState`. Targeted Actions/Powers first submit without a target; when Core reports `InvalidActionTarget`/`InvalidPowerTarget`, Godot enters target-selection mode and resubmits the chosen `UnitInstanceId`. Combine selection stores exact highlighted component IDs and finishes with the existing `CombineUnitsCommand`.
 
@@ -258,7 +258,7 @@ See `GAME.md` for the Godot ownership contract, `LOCALIZATION.md` for the presen
 
 `ModLoader.Load(...)` validates the complete mod before creating a `ModPackage`. Invalid mods are rejected as a whole.
 
-`ModLoader.Validate(...)` and `ModValidator.Validate(...)` return a structured report suitable for UI, including the actual file, JSON path, issue code, severity and message.
+`ModLoader.Validate(...)` and `ModValidator.Validate(...)` return a structured report suitable for UI, including the actual file, JSON path, issue code, severity and message. `ModDiscovery` applies the same validation while scanning direct child directories and exposes a lightweight `ModPackageSummary` (`schemaVersion`, `id`, `name`) plus the report without creating match state. Discovery order is ordinal and deterministic.
 
 Validation covers required global files/content directories, required and unknown keys, JSON types/ranges, one-object-per-entity-file structure, entity ID/file-name agreement, duplicate IDs/references, cross-file references, unsupported native handlers/triggers/effects/policies, taxonomy references, leader starting values, Leader → initial-Power references, persistent-effect phase legality, Action/choice/generation rules, Unit-combine references/constraints, required presentation terminology, locale identifiers, default-locale completeness, localization string shape, stable authored-entity localization references, presentation-asset entity/slot/path/type/existence constraints, and presentation cue roles/animation/duration/audio schema.
 
@@ -321,7 +321,7 @@ mods/
       audio/
 ```
 
-`Battlegrounds.Content` owns filesystem/JSON loading and validation. `Battlegrounds.Core` never reads files or JSON directly. `mods/example` is only a neutral schema/integration fixture.
+`Battlegrounds.Content` owns filesystem/JSON loading, discovery and validation. `Battlegrounds.Core` never reads files or JSON directly. `mods/example` is only a neutral schema/integration fixture.
 
 ## Stack
 
@@ -387,6 +387,8 @@ Read `ARCHITECTURE.md` before adding features. Its ownership, dependency, mutati
 - validated stable entity/event-role animation/audio metadata through immutable `ModPresentationCueCatalog` entries;
 - Godot-owned runtime external-image/audio decoding and caching through `ModPresentationTextureStore` / `ModPresentationCuePlayer`, with no filesystem or timing dependency in Core/Application;
 - reusable Godot Leader/Unit/Action presentation cards combining optional art, localized names/descriptions and mechanical stats while preserving existing command wiring;
+- deterministic Content-owned mod discovery with lightweight summaries and validation diagnostics for valid/invalid direct-child packages;
+- Godot mod-selection launcher that starts gameplay only after explicit valid-package selection;
 - thin Godot presentation adapter over the Application boundary with a playable localized Preparation loop;
 - explicit Godot multi-step interaction state for selected targets, pending choices and combine components;
 - deterministic Godot combat playback over the Core event timeline with visual Unit cards, mod-owned art/cues, presentation-only event tweens/audio, manual/automatic stepping and settlement skip;
@@ -395,7 +397,7 @@ Read `ARCHITECTURE.md` before adding features. Its ownership, dependency, mutati
 
 ## Local development
 
-Open `src/Battlegrounds.Game/project.godot` with the .NET build of Godot 4.7.2.
+Open `src/Battlegrounds.Game/project.godot` with the .NET build of Godot 4.7.2. The project now opens on the mod-selection launcher; `mods/example` should appear as a valid package and can be selected to start the local single-player session.
 
 Run tests/build with:
 
@@ -407,6 +409,8 @@ dotnet test tests/Battlegrounds.Application.Tests/Battlegrounds.Application.Test
 dotnet build src/Battlegrounds.Game/Battlegrounds.Game.csproj
 ```
 
-## Next architectural slice
+## Next playable slice
 
-Replace the development-only exported `ModPath` bootstrap with a real mod discovery/selection boundary. Let `Battlegrounds.Content` discover candidate packages from an explicit mods root and expose lightweight validated package summaries/diagnostics without starting a match; let Godot present available/invalid mods and start a `SinglePlayerSession` only after explicit selection. Discovery order must be deterministic, invalid packages must remain inspectable without becoming loadable gameplay state, and Core/Application must remain unaware of directories or selection UI.
+Build the first content-rich mod that is worth replaying, rather than extending the generic engine speculatively. Target roughly 20–30 Units, 4–6 Leaders/Powers, several combines, and 2–3 clear archetypes/synergy packages across a meaningful Tier curve. Use real repeated matches against the existing AI to expose balance problems, missing presentation affordances and concrete mechanical gaps.
+
+New Core abstractions should be added only when authored content for this playable mod demonstrates a real mechanical need. Prefer solving balance, content variety, readability and moment-to-moment decisions with the systems that already exist before expanding the engine surface again.
