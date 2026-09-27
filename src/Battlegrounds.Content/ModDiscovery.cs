@@ -80,9 +80,9 @@ public sealed class ModDiscovery
                 return new ModPackageSummary(null, null, null);
 
             var root = document.RootElement;
-            var schemaVersion = root.TryGetProperty("schemaVersion", out var schemaElement) &&
-                                schemaElement.ValueKind == JsonValueKind.Number &&
-                                schemaElement.TryGetInt32(out var schema)
+            int? schemaVersion = root.TryGetProperty("schemaVersion", out var schemaElement) &&
+                                 schemaElement.ValueKind == JsonValueKind.Number &&
+                                 schemaElement.TryGetInt32(out var schema)
                 ? schema
                 : null;
             var id = ReadOptionalString(root, "id");
