@@ -11,6 +11,9 @@ internal sealed partial class PresentationCardButton : Button
     private readonly Label _description;
     private string? _dragPayload;
     private bool _dragEnabled;
+    private bool _dragActive;
+    private Action? _dragStarted;
+    private Action? _dragEnded;
 
     public PresentationCardButton()
     {
@@ -74,8 +77,21 @@ internal sealed partial class PresentationCardButton : Button
         if (!_dragEnabled || string.IsNullOrWhiteSpace(_dragPayload))
             return default;
 
+        _dragActive = true;
+        SelfModulate = new Color(1, 1, 1, 0.06f);
+        _dragStarted?.Invoke();
         SetDragPreview(CreateDragPreview());
         return _dragPayload;
+    }
+
+    public override void _Notification(int what)
+    {
+        if (what != NotificationDragEnd || !_dragActive)
+            return;
+
+        _dragActive = false;
+        SelfModulate = Colors.White;
+        _dragEnded?.Invoke();
     }
 
     public void Configure(
@@ -99,10 +115,18 @@ internal sealed partial class PresentationCardButton : Button
     }
 
     public void ConfigureOfferDrag(int slot, bool enabled) =>
-        ConfigureDrag(PreparationDragPayload.Offer(slot), enabled);
+        ConfigureDrag(PreparationDragPayload.Offer(slot), enabled, null, null);
 
-    public void ConfigureFieldDrag(int index, bool enabled) =>
-        ConfigureDrag(PreparationDragPayload.Field(index), enabled);
+    public void ConfigureFieldDrag(
+        int index,
+        bool enabled,
+        Action<int> dragStarted,
+        Action dragEnded) =>
+        ConfigureDrag(
+            PreparationDragPayload.Field(index),
+            enabled,
+            () => dragStarted(index),
+            dragEnded);
 
     public void SetSelected(bool selected)
     {
@@ -110,10 +134,12 @@ internal sealed partial class PresentationCardButton : Button
         ButtonPressed = selected;
     }
 
-    private void ConfigureDrag(string payload, bool enabled)
+    private void ConfigureDrag(string payload, bool enabled, Action? dragStarted, Action? dragEnded)
     {
         _dragPayload = payload;
         _dragEnabled = enabled;
+        _dragStarted = dragStarted;
+        _dragEnded = dragEnded;
         MouseDefaultCursorShape = enabled ? CursorShape.Drag : CursorShape.Arrow;
         ButtonMask = enabled ? (MouseButtonMask)0 : MouseButtonMask.Left;
         FocusMode = enabled ? FocusModeEnum.None : FocusModeEnum.All;
@@ -123,9 +149,13 @@ internal sealed partial class PresentationCardButton : Button
     {
         var preview = new PanelContainer
         {
-            CustomMinimumSize = new Vector2(Mathf.Max(92.0f, Size.X * 0.72f), Mathf.Max(72.0f, Size.Y * 0.58f)),
+            CustomMinimumSize = new Vector2(
+                Mathf.Max(108.0f, Size.X * 0.94f),
+                Mathf.Max(96.0f, Size.Y * 0.88f)),
             ThemeTypeVariation = "DragPreview",
             MouseFilter = MouseFilterEnum.Ignore,
+            Scale = new Vector2(1.035f, 1.035f),
+            Rotation = Mathf.DegToRad(-2.0f),
         };
 
         var column = new VBoxContainer
@@ -142,7 +172,7 @@ internal sealed partial class PresentationCardButton : Button
             column.AddChild(new TextureRect
             {
                 Texture = _art.Texture,
-                CustomMinimumSize = new Vector2(0, 48),
+                CustomMinimumSize = new Vector2(0, Mathf.Max(56.0f, Size.Y * 0.58f)),
                 SizeFlagsHorizontal = SizeFlags.ExpandFill,
                 SizeFlagsVertical = SizeFlags.ExpandFill,
                 ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize,
