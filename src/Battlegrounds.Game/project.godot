@@ -6,6 +6,7 @@ config_version=5
 [application]
 
 config/name="Battlegrounds"
+config/features=PackedStringArray("4.7", "C#", "GL Compatibility")
 run/main_scene="res://Scenes/ModLauncher.tscn"
 
 [display]
@@ -15,6 +16,10 @@ window/size/viewport_height=900
 window/size/window_width_override=1280
 window/size/window_height_override=720
 window/stretch/mode="canvas_items"
+
+[dotnet]
+
+project/assembly_name="Battlegrounds.Game"
 
 [rendering]
 
