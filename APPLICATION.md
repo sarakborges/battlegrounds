@@ -30,12 +30,13 @@ The session:
 
 - creates the mod-defined `LeaderSelectionState`;
 - assigns each AI one deterministic `PreparationAiPersonality` for the session;
+- assigns each AI one independent deterministic `PreparationAiStrategy` for the session;
 - lets `PreparationAiAgent` select AI Leaders through the same selection boundary used by callers;
 - leaves the human Leader choice explicit;
 - creates and begins `MatchState` only after Leader selection is complete;
 - rolls a fresh random Preparation initiative order for every round;
 - accepts human Preparation commands only while the human owns initiative;
-- runs an AI player's complete Preparation turn only while that AI owns initiative, using its assigned personality;
+- runs an AI player's complete Preparation turn only while that AI owns initiative, using its assigned personality and strategy;
 - lets each initiative owner execute any number of legal Preparation commands before `EndPreparationCommand` yields to the next player;
 - asks `ICombatPairingPolicy` for explicit `CombatPairing` values;
 - captures a read-only observation of the paired starting fields immediately before combat resolution;
@@ -44,7 +45,15 @@ The session:
 
 The session never edits Health, Resource, offers, reserves, fields, Leaders, placements, history or phase directly.
 
-`AiPersonalities` exposes the assigned AI personalities through a read-only application-facing dictionary for diagnostics/presentation. The personality is stable for the session; it changes decision policy, not ownership or legality.
+`AiPersonalities` and `AiStrategies` expose the assigned AI policy layers through read-only application-facing dictionaries for diagnostics/presentation. Both assignments are stable for the session; they change decision policy, not ownership or legality.
+
+## AI strategy assignment
+
+The application derives a theme-neutral strategy pool from validated Unit content. Every session always has `PreparationAiStrategy.Balanced`, plus one `PreferType(typeId)` strategy for every distinct `UnitTypeId` present in the selected mod's Unit catalog.
+
+Each AI receives one strategy independently from its personality. Because the two draws are independent, two AIs can pursue the same Unit type while expressing different economic temperaments, or share a personality while valuing different compositions.
+
+This is intentionally a baseline. The application does not infer hidden semantic meaning from type names and does not hardcode concepts such as Beast, Pirate, Machine or any fandom-specific tribe. Future authored multi-type/tag strategies can extend the strategy set once real playable content demonstrates that need.
 
 ## Preparation initiative and the shared pool
 
@@ -58,7 +67,7 @@ The authoritative pool remains hidden state. Presentation and AI may observe the
 
 Offer generation at the beginning of a round remains part of Core's Preparation setup. Once those offers exist, initiative controls all player-issued Preparation commands for the round.
 
-The initiative boundary is independent of AI decision policy. `Tempo`, `Greedy` and `Roller` personalities may choose different priorities and therefore different command sequences—even when pursuing similar archetypes—without changing the rule that a single initiative owner acts at a time.
+The initiative boundary is independent of AI decision policy. Personality changes economic ordering, while strategy changes composition valuation; neither changes the rule that a single initiative owner acts at a time.
 
 ## Validated mod presentation pass-through
 
@@ -84,7 +93,7 @@ A command for an AI-controlled player is rejected by the application boundary be
 
 `AdvanceAutomated()` has deliberately narrow semantics:
 
-1. if the match is in Preparation, run consecutive AI initiative owners one complete Preparation turn at a time with each AI's assigned personality;
+1. if the match is in Preparation, run consecutive AI initiative owners one complete Preparation turn at a time with each AI's assigned personality and strategy;
 2. stop immediately when initiative reaches the human player;
 3. if every active player has ended Preparation and the match reached Combat, create explicit pairings and resolve exactly one combat round;
 4. roll the next round's initiative if combat returns the Match to Preparation, then stop at that Preparation or Finished state.
@@ -113,9 +122,9 @@ See `COMBAT_TIMELINE.md` for the Core result-event contract.
 
 ## Determinism
 
-The same injected `IRandomSource` is shared by Leader offers, AI personality assignment, Preparation initiative, AI tie-breaking, offer generation, combat and matchmaking. The seed overload creates one `SeededRandomSource` for the entire session.
+The same injected `IRandomSource` is shared by Leader offers, AI personality assignment, AI strategy assignment, Preparation initiative, AI tie-breaking, offer generation, combat and matchmaking. The seed overload creates one `SeededRandomSource` for the entire session.
 
-Given the same validated mod, participant IDs, human commands and seed, application orchestration follows the same deterministic Core/AI sequence, including the same AI personality assignments. Locale selection does not participate in this deterministic gameplay stream.
+Given the same validated mod, participant IDs, human commands and seed, application orchestration follows the same deterministic Core/AI sequence, including the same AI personality and strategy assignments. Locale selection does not participate in this deterministic gameplay stream.
 
 ## Current odd-player constraint
 
