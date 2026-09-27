@@ -108,15 +108,13 @@ internal static class SimulatorProgram
 
     private static int ChooseDefaultPlayerCount(ModPackage mod)
     {
-        var candidates = Enumerable
-            .Range(mod.MatchRules.MinimumPlayers, mod.MatchRules.MaximumPlayers - mod.MatchRules.MinimumPlayers + 1)
-            .Where(value => value % 2 == 0)
-            .OrderBy(value => Math.Abs(value - 4))
-            .ThenBy(value => value)
-            .ToArray();
-        if (candidates.Length == 0)
-            throw new InvalidOperationException($"Mod '{mod.Id}' has no supported even player count under the current round-one combat contract.");
-        return candidates[0];
+        for (var value = mod.MatchRules.MinimumPlayers; value <= mod.MatchRules.MaximumPlayers; value++)
+        {
+            if (value % 2 == 0) return value;
+        }
+
+        throw new InvalidOperationException(
+            $"Mod '{mod.Id}' has no supported even player count under the current round-one combat contract.");
     }
 
     private static void PrintReport(SimulationReport report)
@@ -206,7 +204,7 @@ internal static class SimulatorProgram
         Console.WriteLine("Options:");
         Console.WriteLine("  --mod <path>          Mod directory. Default: mods/example");
         Console.WriteLine("  --matches <n>         Number of matches. Default: 100");
-        Console.WriteLine("  --players <n>         Players per match. Default: supported count closest to 4");
+        Console.WriteLine("  --players <n>         Players per match. Default: smallest supported even count");
         Console.WriteLine("  --seed <n>            Base seed; each match uses seed+n. Default: 12345");
         Console.WriteLine("  --max-commands <n>    AI safety limit per Preparation. Default: 128");
         Console.WriteLine("  --max-rounds <n>      Match safety limit. Default: 200");
