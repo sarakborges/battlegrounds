@@ -81,7 +81,7 @@ public sealed class CombatTimelineTests
         var summonEvent = Assert.IsType<CombatUnitSummonedTimelineEvent>(summoned);
 
         Assert.True(deathEvent.Sequence < summonEvent.Sequence);
-        Assert.Equal(new PlayerId(0), summonEvent.Unit.Definition is null ? default : new PlayerId(0));
+        Assert.Equal(new PlayerId(0), summonEvent.PlayerId);
         Assert.Equal(token.Id, summonEvent.Unit.UnitId);
         Assert.Equal("Token", summonEvent.Unit.Definition?.Name);
         Assert.True(summonEvent.Unit.InstanceId.Value > 2);
