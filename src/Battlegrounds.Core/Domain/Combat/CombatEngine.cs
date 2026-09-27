@@ -524,8 +524,8 @@ public sealed class CombatEngine
             int count)
         {
             var side = GetSide(source.OwnerPlayerId);
-            var sourcePowerId = source is CombatPowerRuntimeUnit powerSource ? powerSource.PowerId : null;
-            var sourceUnitInstanceId = source is CombatPowerRuntimeUnit ? null : source.InstanceId;
+            PowerId? sourcePowerId = source is CombatPowerRuntimeUnit powerSource ? powerSource.PowerId : null;
+            UnitInstanceId? sourceUnitInstanceId = source is CombatPowerRuntimeUnit ? null : source.InstanceId;
             var insertionIndex = source is CombatPowerRuntimeUnit
                 ? side.UnitCount
                 : ResolveSummonIndex(source, side);
@@ -548,6 +548,7 @@ public sealed class CombatEngine
                 summoned.Add(unit);
                 _timeline.Add(new CombatUnitSummonedTimelineEvent(
                     NextTimelineSequence(),
+                    side.PlayerId,
                     unit.Snapshot(),
                     insertedAt,
                     sourceUnitInstanceId,
@@ -630,6 +631,7 @@ public sealed class CombatEngine
             _summonCursors[unit.InstanceId] = insertionIndex + 1;
             _timeline.Add(new CombatUnitRevivedTimelineEvent(
                 NextTimelineSequence(),
+                unit.OwnerPlayerId,
                 unit.Snapshot(),
                 insertionIndex));
             return unit;
