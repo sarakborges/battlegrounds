@@ -47,8 +47,8 @@ internal sealed partial class FieldInsertionDropZone : Control
             return false;
         }
 
-        var parentRow = GetParentOrNull<HorizontalCardRow>();
-        parentRow?.PreviewFieldInsertion(sourceIndex, _insertionIndex);
+        if (GetParent() is HorizontalCardRow parentRow)
+            parentRow.PreviewFieldInsertion(sourceIndex, _insertionIndex);
 
         var resultingIndex = _insertionIndex > sourceIndex ? _insertionIndex - 1 : _insertionIndex;
         var valid = resultingIndex != sourceIndex;
