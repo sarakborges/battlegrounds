@@ -61,21 +61,20 @@ public partial class Main
 
     private void ApplySemanticTypography()
     {
-        if (_modTheme is null) return;
-
-        ApplyFontSize(GetNode<Label>("Margin/Root/Title"), "title");
-        ApplyFontSize(_status, "heading");
-        ApplyFontSize(_leaderPrompt, "heading");
-        ApplyFontSize(_humanSummary, "body");
-        ApplyFontSize(_interactionPrompt, "body");
-        ApplyFontSize(GetNode<Label>("Margin/Root/PreparationPanel/Columns/OfferColumn/Title"), "heading");
-        ApplyFontSize(GetNode<Label>("Margin/Root/PreparationPanel/Columns/ReserveColumn/Title"), "heading");
-        ApplyFontSize(GetNode<Label>("Margin/Root/PreparationPanel/Columns/FieldColumn/Title"), "heading");
+        ApplyTextRole(GetNode<Label>("Margin/Root/Title"), "TitleLabel");
+        ApplyTextRole(_status, "HeadingLabel");
+        ApplyTextRole(_leaderPrompt, "HeadingLabel");
+        ApplyTextRole(_humanSummary, "BodyLabel");
+        ApplyTextRole(_interactionPrompt, "BodyLabel");
+        ApplyTextRole(GetNode<Label>("Margin/Root/PreparationPanel/Columns/OfferColumn/Title"), "HeadingLabel");
+        ApplyTextRole(GetNode<Label>("Margin/Root/PreparationPanel/Columns/ReserveColumn/Title"), "HeadingLabel");
+        ApplyTextRole(GetNode<Label>("Margin/Root/PreparationPanel/Columns/FieldColumn/Title"), "HeadingLabel");
+        ApplyTextRole(GetNode<Label>("Margin/Root/LogTitle"), "CaptionLabel");
     }
 
-    private void ApplyFontSize(Control control, string token)
+    private static void ApplyTextRole(Label label, string variation)
     {
-        if (_modTheme is null || !_modTheme.FontSizes.TryGetValue(token, out var size)) return;
-        control.AddThemeFontSizeOverride("font_size", size);
+        label.RemoveThemeFontSizeOverride("font_size");
+        label.ThemeTypeVariation = variation;
     }
 }
