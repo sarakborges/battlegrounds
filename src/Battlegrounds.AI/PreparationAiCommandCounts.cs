@@ -23,10 +23,13 @@ public sealed record PreparationAiCommandCounts(
 {
     public static PreparationAiCommandCounts Zero { get; } = new();
 
+    public long Reorders { get; init; }
+
     public long Total =>
         Acquires +
         Releases +
         Deploys +
+        Reorders +
         ActionsPlayed +
         Combines +
         Refreshes +
@@ -47,6 +50,7 @@ public sealed record PreparationAiCommandCounts(
             AcquireUnitCommand or AcquirePlayableCommand => this with { Acquires = Acquires + 1 },
             ReleaseUnitCommand => this with { Releases = Releases + 1 },
             DeployUnitCommand => this with { Deploys = Deploys + 1 },
+            ReorderFieldCommand => this with { Reorders = Reorders + 1 },
             PlayActionCommand => this with { ActionsPlayed = ActionsPlayed + 1 },
             CombineUnitsCommand => this with { Combines = Combines + 1 },
             RefreshOfferCommand => this with { Refreshes = Refreshes + 1 },
@@ -84,6 +88,9 @@ public sealed record PreparationAiCommandCounts(
             left.ActionChoicesResolved + right.ActionChoicesResolved,
             left.Freezes + right.Freezes,
             left.Unfreezes + right.Unfreezes,
-            left.Ends + right.Ends);
+            left.Ends + right.Ends)
+        {
+            Reorders = left.Reorders + right.Reorders,
+        };
     }
 }
