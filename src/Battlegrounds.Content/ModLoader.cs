@@ -185,6 +185,14 @@ public sealed class ModLoader
                 data.Count is null
                     ? new ConstantEffectValueExpression(1)
                     : BuildRequiredValue(data.Count, "summonUnit.count")),
+            "generateUnitToReserve" => new GenerateUnitToReserveEffectDefinition(
+                new UnitId(data.UnitId ?? throw new InvalidDataException("Validated generateUnitToReserve effect is missing unitId.")),
+                data.Count is null
+                    ? new ConstantEffectValueExpression(1)
+                    : BuildRequiredValue(data.Count, "generateUnitToReserve.count")),
+            "generateUnitChoice" => new GenerateUnitChoiceEffectDefinition(
+                BuildGenerationQuery(data.GenerationQuery),
+                data.OptionCount ?? 3),
             "addBehavior" => new AddBehaviorEffectDefinition(
                 BuildTarget(data.Target),
                 new BehaviorId(data.BehaviorId ?? throw new InvalidDataException("Validated addBehavior effect is missing behaviorId."))),
@@ -196,6 +204,19 @@ public sealed class ModLoader
                 new PowerId(data.PowerId ?? throw new InvalidDataException("Validated setPower effect is missing powerId."))),
             _ => throw new InvalidDataException($"Validated effect kind '{data.Kind}' is unsupported."),
         };
+
+    private static UnitDefinitionQuery BuildGenerationQuery(GenerationQueryData? data)
+    {
+        if (data is null)
+            throw new InvalidDataException("Validated generateUnitChoice effect is missing query.");
+
+        return new UnitDefinitionQuery(
+            data.MinimumTier,
+            data.MaximumTier,
+            string.IsNullOrWhiteSpace(data.TypeId) ? null : new UnitTypeId(data.TypeId),
+            string.IsNullOrWhiteSpace(data.TagId) ? null : new TagId(data.TagId),
+            data.ExcludeSource ?? false);
+    }
 
     private static EffectValueExpression? BuildOptionalValue(JsonElement? data) =>
         data is null ? null : BuildValue(data.Value);
@@ -357,7 +378,15 @@ public sealed class ModLoader
         JsonElement? Count,
         string? BehaviorId,
         string? Event,
-        string? PowerId);
+        string? PowerId,
+        GenerationQueryData? GenerationQuery,
+        int? OptionCount);
+    private sealed record GenerationQueryData(
+        int? MinimumTier,
+        int? MaximumTier,
+        string? TypeId,
+        string? TagId,
+        bool? ExcludeSource);
     private record QueryData(EffectTargetScope Scope, bool? ExcludeSource, string? TypeId, string? TagId);
     private sealed record TargetData(
         EffectTargetScope Scope,
