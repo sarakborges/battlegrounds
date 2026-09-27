@@ -2,6 +2,7 @@ using System.Collections.ObjectModel;
 using Battlegrounds.Core.Domain.Actions;
 using Battlegrounds.Core.Domain.Behaviors;
 using Battlegrounds.Core.Domain.Combat;
+using Battlegrounds.Core.Domain.Combines;
 using Battlegrounds.Core.Domain.Ids;
 using Battlegrounds.Core.Domain.Leaders;
 using Battlegrounds.Core.Domain.Players;
@@ -84,7 +85,8 @@ public sealed class MatchEngine
         BehaviorCatalog? behaviorCatalog = null,
         LeaderCatalog? leaderCatalog = null,
         PowerCatalog? powerCatalog = null,
-        ActionCatalog? actionCatalog = null)
+        ActionCatalog? actionCatalog = null,
+        UnitCombineCatalog? combineCatalog = null)
     {
         _matchRules = matchRules ?? throw new ArgumentNullException(nameof(matchRules));
         ArgumentNullException.ThrowIfNull(preparationRules);
@@ -100,7 +102,8 @@ public sealed class MatchEngine
             unitCatalog,
             behaviorCatalog,
             powerCatalog,
-            actionCatalog);
+            actionCatalog,
+            combineCatalog);
 
         _combatEngine = unitCatalog is not null && behaviorCatalog is not null
             ? new CombatEngine(preparationRules.FieldCapacity, unitCatalog, behaviorCatalog, powerCatalog)
