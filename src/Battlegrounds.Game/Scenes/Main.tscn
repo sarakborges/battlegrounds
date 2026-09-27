@@ -1,6 +1,7 @@
-[gd_scene load_steps=2 format=3]
+[gd_scene load_steps=3 format=3]
 
 [ext_resource path="res://Scripts/Main.cs" type="Script" id="1_main"]
+[ext_resource path="res://Scripts/HorizontalCardRow.cs" type="Script" id="2_card_row"]
 
 [node name="Main" type="Control"]
 layout_mode = 3
@@ -26,191 +27,301 @@ layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_left = 32.0
-offset_top = 24.0
-offset_right = -32.0
-offset_bottom = -24.0
+offset_left = 18.0
+offset_top = 18.0
+offset_right = -18.0
+offset_bottom = -18.0
 grow_horizontal = 2
 grow_vertical = 2
 
-[node name="Root" type="VBoxContainer" parent="Margin"]
+[node name="Shell" type="HBoxContainer" parent="Margin"]
 layout_mode = 2
-theme_override_constants/separation = 12
+theme_override_constants/separation = 14
 
-[node name="Title" type="Label" parent="Margin/Root"]
+[node name="OpponentRail" type="PanelContainer" parent="Margin/Shell"]
+custom_minimum_size = Vector2(250, 0)
 layout_mode = 2
-theme_override_font_sizes/font_size = 28
-text = "Battlegrounds"
+size_flags_vertical = 3
 
-[node name="Status" type="Label" parent="Margin/Root"]
-unique_name_in_owner = true
+[node name="Content" type="VBoxContainer" parent="Margin/Shell/OpponentRail"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="Title" type="Label" parent="Margin/Shell/OpponentRail/Content"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 18
-text = "Loading..."
+text = "Players"
+horizontal_alignment = 1
 
-[node name="MatchSummary" type="Label" parent="Margin/Root"]
+[node name="Divider" type="HSeparator" parent="Margin/Shell/OpponentRail/Content"]
+layout_mode = 2
+
+[node name="MatchSummary" type="Label" parent="Margin/Shell/OpponentRail/Content"]
 unique_name_in_owner = true
 layout_mode = 2
+size_flags_vertical = 3
 text = ""
+autowrap_mode = 2
+vertical_alignment = 1
 
-[node name="DividerA" type="HSeparator" parent="Margin/Root"]
+[node name="CenterStage" type="VBoxContainer" parent="Margin/Shell"]
 layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_constants/separation = 10
 
-[node name="LeaderPanel" type="VBoxContainer" parent="Margin/Root"]
+[node name="Title" type="Label" parent="Margin/Shell/CenterStage"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 22
+text = "Battlegrounds"
+horizontal_alignment = 1
+
+[node name="LeaderPanel" type="VBoxContainer" parent="Margin/Shell/CenterStage"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 520)
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/separation = 18
+
+[node name="LeaderPrompt" type="Label" parent="Margin/Shell/CenterStage/LeaderPanel"]
 unique_name_in_owner = true
 layout_mode = 2
-theme_override_constants/separation = 8
-
-[node name="LeaderPrompt" type="Label" parent="Margin/Root/LeaderPanel"]
-unique_name_in_owner = true
-layout_mode = 2
-theme_override_font_sizes/font_size = 20
+theme_override_font_sizes/font_size = 24
 text = ""
+horizontal_alignment = 1
 
-[node name="LeaderButtons" type="VBoxContainer" parent="Margin/Root/LeaderPanel"]
+[node name="LeaderButtons" type="VBoxContainer" parent="Margin/Shell/CenterStage/LeaderPanel"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 420)
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+script = ExtResource("2_card_row")
+
+[node name="PreparationPanel" type="VBoxContainer" parent="Margin/Shell/CenterStage"]
 unique_name_in_owner = true
 layout_mode = 2
-theme_override_constants/separation = 6
-
-[node name="PreparationPanel" type="VBoxContainer" parent="Margin/Root"]
-unique_name_in_owner = true
-layout_mode = 2
+size_flags_vertical = 3
 theme_override_constants/separation = 10
 visible = false
 
-[node name="HumanSummary" type="Label" parent="Margin/Root/PreparationPanel"]
-unique_name_in_owner = true
+[node name="TavernToolbar" type="HBoxContainer" parent="Margin/Shell/CenterStage/PreparationPanel"]
+custom_minimum_size = Vector2(0, 56)
 layout_mode = 2
-theme_override_font_sizes/font_size = 17
+theme_override_constants/separation = 8
+
+[node name="UpgradeButton" type="Button" parent="Margin/Shell/CenterStage/PreparationPanel/TavernToolbar"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(150, 0)
+layout_mode = 2
 text = ""
 
-[node name="InteractionPanel" type="VBoxContainer" parent="Margin/Root/PreparationPanel"]
+[node name="ToolbarSpacer" type="Control" parent="Margin/Shell/CenterStage/PreparationPanel/TavernToolbar"]
+layout_mode = 2
+size_flags_horizontal = 3
+mouse_filter = 2
+
+[node name="RefreshButton" type="Button" parent="Margin/Shell/CenterStage/PreparationPanel/TavernToolbar"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(130, 0)
+layout_mode = 2
+text = ""
+
+[node name="FreezeButton" type="Button" parent="Margin/Shell/CenterStage/PreparationPanel/TavernToolbar"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(130, 0)
+layout_mode = 2
+text = ""
+
+[node name="TavernArea" type="PanelContainer" parent="Margin/Shell/CenterStage/PreparationPanel"]
+custom_minimum_size = Vector2(0, 220)
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="ShopRow" type="VBoxContainer" parent="Margin/Shell/CenterStage/PreparationPanel/TavernArea"]
+layout_mode = 2
+theme_override_constants/separation = 6
+
+[node name="Title" type="Label" parent="Margin/Shell/CenterStage/PreparationPanel/TavernArea/ShopRow"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 17
+text = "Tavern"
+horizontal_alignment = 1
+
+[node name="OfferButtons" type="VBoxContainer" parent="Margin/Shell/CenterStage/PreparationPanel/TavernArea/ShopRow"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 180)
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+clip_contents = true
+script = ExtResource("2_card_row")
+
+[node name="InteractionPanel" type="VBoxContainer" parent="Margin/Shell/CenterStage/PreparationPanel"]
 unique_name_in_owner = true
 layout_mode = 2
 theme_override_constants/separation = 6
 visible = false
 
-[node name="InteractionPrompt" type="Label" parent="Margin/Root/PreparationPanel/InteractionPanel"]
+[node name="InteractionPrompt" type="Label" parent="Margin/Shell/CenterStage/PreparationPanel/InteractionPanel"]
 unique_name_in_owner = true
 layout_mode = 2
 theme_override_font_sizes/font_size = 16
 text = ""
+horizontal_alignment = 1
+autowrap_mode = 2
 
-[node name="InteractionButtons" type="VBoxContainer" parent="Margin/Root/PreparationPanel/InteractionPanel"]
+[node name="InteractionButtons" type="VBoxContainer" parent="Margin/Shell/CenterStage/PreparationPanel/InteractionPanel"]
 unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 110)
 layout_mode = 2
-theme_override_constants/separation = 4
+size_flags_horizontal = 3
+clip_contents = true
+script = ExtResource("2_card_row")
 
-[node name="InteractionActions" type="HBoxContainer" parent="Margin/Root/PreparationPanel/InteractionPanel"]
+[node name="InteractionActions" type="HBoxContainer" parent="Margin/Shell/CenterStage/PreparationPanel/InteractionPanel"]
 layout_mode = 2
-theme_override_constants/separation = 6
+alignment = 1
+theme_override_constants/separation = 8
 
-[node name="ConfirmInteractionButton" type="Button" parent="Margin/Root/PreparationPanel/InteractionPanel/InteractionActions"]
+[node name="ConfirmInteractionButton" type="Button" parent="Margin/Shell/CenterStage/PreparationPanel/InteractionPanel/InteractionActions"]
 unique_name_in_owner = true
 layout_mode = 2
 text = ""
 visible = false
 
-[node name="CancelInteractionButton" type="Button" parent="Margin/Root/PreparationPanel/InteractionPanel/InteractionActions"]
+[node name="CancelInteractionButton" type="Button" parent="Margin/Shell/CenterStage/PreparationPanel/InteractionPanel/InteractionActions"]
 unique_name_in_owner = true
 layout_mode = 2
 text = ""
 
-[node name="Columns" type="HBoxContainer" parent="Margin/Root/PreparationPanel"]
+[node name="BoardArea" type="PanelContainer" parent="Margin/Shell/CenterStage/PreparationPanel"]
+custom_minimum_size = Vector2(0, 250)
 layout_mode = 2
 size_flags_vertical = 3
-theme_override_constants/separation = 16
 
-[node name="OfferColumn" type="VBoxContainer" parent="Margin/Root/PreparationPanel/Columns"]
+[node name="BoardRow" type="VBoxContainer" parent="Margin/Shell/CenterStage/PreparationPanel/BoardArea"]
+layout_mode = 2
+theme_override_constants/separation = 6
+
+[node name="Title" type="Label" parent="Margin/Shell/CenterStage/PreparationPanel/BoardArea/BoardRow"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 17
+text = "Board"
+horizontal_alignment = 1
+
+[node name="FieldButtons" type="VBoxContainer" parent="Margin/Shell/CenterStage/PreparationPanel/BoardArea/BoardRow"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 210)
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+clip_contents = true
+script = ExtResource("2_card_row")
+
+[node name="BottomStrip" type="HBoxContainer" parent="Margin/Shell/CenterStage/PreparationPanel"]
+custom_minimum_size = Vector2(0, 190)
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="ReserveArea" type="PanelContainer" parent="Margin/Shell/CenterStage/PreparationPanel/BottomStrip"]
 layout_mode = 2
 size_flags_horizontal = 3
 
-[node name="Title" type="Label" parent="Margin/Root/PreparationPanel/Columns/OfferColumn"]
-layout_mode = 2
-theme_override_font_sizes/font_size = 18
-text = ""
-
-[node name="OfferButtons" type="VBoxContainer" parent="Margin/Root/PreparationPanel/Columns/OfferColumn"]
-unique_name_in_owner = true
+[node name="ReserveContent" type="VBoxContainer" parent="Margin/Shell/CenterStage/PreparationPanel/BottomStrip/ReserveArea"]
 layout_mode = 2
 theme_override_constants/separation = 4
 
-[node name="ReserveColumn" type="VBoxContainer" parent="Margin/Root/PreparationPanel/Columns"]
+[node name="Title" type="Label" parent="Margin/Shell/CenterStage/PreparationPanel/BottomStrip/ReserveArea/ReserveContent"]
 layout_mode = 2
-size_flags_horizontal = 3
+text = "Reserve"
+horizontal_alignment = 1
 
-[node name="Title" type="Label" parent="Margin/Root/PreparationPanel/Columns/ReserveColumn"]
-layout_mode = 2
-theme_override_font_sizes/font_size = 18
-text = ""
-
-[node name="ReserveButtons" type="VBoxContainer" parent="Margin/Root/PreparationPanel/Columns/ReserveColumn"]
-unique_name_in_owner = true
-layout_mode = 2
-theme_override_constants/separation = 4
-
-[node name="FieldColumn" type="VBoxContainer" parent="Margin/Root/PreparationPanel/Columns"]
-layout_mode = 2
-size_flags_horizontal = 3
-
-[node name="Title" type="Label" parent="Margin/Root/PreparationPanel/Columns/FieldColumn"]
-layout_mode = 2
-theme_override_font_sizes/font_size = 18
-text = ""
-
-[node name="FieldButtons" type="VBoxContainer" parent="Margin/Root/PreparationPanel/Columns/FieldColumn"]
-unique_name_in_owner = true
-layout_mode = 2
-theme_override_constants/separation = 4
-
-[node name="Actions" type="HBoxContainer" parent="Margin/Root/PreparationPanel"]
-layout_mode = 2
-theme_override_constants/separation = 8
-
-[node name="RefreshButton" type="Button" parent="Margin/Root/PreparationPanel/Actions"]
-unique_name_in_owner = true
-layout_mode = 2
-text = ""
-
-[node name="UpgradeButton" type="Button" parent="Margin/Root/PreparationPanel/Actions"]
-unique_name_in_owner = true
-layout_mode = 2
-text = ""
-
-[node name="FreezeButton" type="Button" parent="Margin/Root/PreparationPanel/Actions"]
-unique_name_in_owner = true
-layout_mode = 2
-text = ""
-
-[node name="PowerButton" type="Button" parent="Margin/Root/PreparationPanel/Actions"]
-unique_name_in_owner = true
-layout_mode = 2
-text = ""
-
-[node name="CombineButton" type="Button" parent="Margin/Root/PreparationPanel/Actions"]
-unique_name_in_owner = true
-layout_mode = 2
-text = ""
-
-[node name="EndPreparationButton" type="Button" parent="Margin/Root/PreparationPanel/Actions"]
-unique_name_in_owner = true
-layout_mode = 2
-size_flags_horizontal = 3
-text = ""
-
-[node name="DividerB" type="HSeparator" parent="Margin/Root"]
-layout_mode = 2
-
-[node name="LogTitle" type="Label" parent="Margin/Root"]
-layout_mode = 2
-text = ""
-
-[node name="Log" type="RichTextLabel" parent="Margin/Root"]
+[node name="ReserveButtons" type="VBoxContainer" parent="Margin/Shell/CenterStage/PreparationPanel/BottomStrip/ReserveArea/ReserveContent"]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 150)
 layout_mode = 2
+size_flags_horizontal = 3
 size_flags_vertical = 3
+clip_contents = true
+script = ExtResource("2_card_row")
+
+[node name="HeroArea" type="PanelContainer" parent="Margin/Shell/CenterStage/PreparationPanel/BottomStrip"]
+custom_minimum_size = Vector2(320, 0)
+layout_mode = 2
+
+[node name="HeroContent" type="VBoxContainer" parent="Margin/Shell/CenterStage/PreparationPanel/BottomStrip/HeroArea"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="HumanSummary" type="Label" parent="Margin/Shell/CenterStage/PreparationPanel/BottomStrip/HeroArea/HeroContent"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_font_sizes/font_size = 15
+text = ""
+horizontal_alignment = 1
+vertical_alignment = 1
+autowrap_mode = 2
+
+[node name="HeroActions" type="HBoxContainer" parent="Margin/Shell/CenterStage/PreparationPanel/BottomStrip/HeroArea/HeroContent"]
+layout_mode = 2
+alignment = 1
+theme_override_constants/separation = 8
+
+[node name="PowerButton" type="Button" parent="Margin/Shell/CenterStage/PreparationPanel/BottomStrip/HeroArea/HeroContent/HeroActions"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(130, 44)
+layout_mode = 2
+text = ""
+
+[node name="CombineButton" type="Button" parent="Margin/Shell/CenterStage/PreparationPanel/BottomStrip/HeroArea/HeroContent/HeroActions"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(130, 44)
+layout_mode = 2
+text = ""
+
+[node name="TurnRail" type="PanelContainer" parent="Margin/Shell"]
+custom_minimum_size = Vector2(190, 0)
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="Content" type="VBoxContainer" parent="Margin/Shell/TurnRail"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="Title" type="Label" parent="Margin/Shell/TurnRail/Content"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 18
+text = "Round"
+horizontal_alignment = 1
+
+[node name="Status" type="Label" parent="Margin/Shell/TurnRail/Content"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 120)
+layout_mode = 2
+text = "Loading..."
+horizontal_alignment = 1
+vertical_alignment = 1
+autowrap_mode = 2
+
+[node name="TurnSpacer" type="Control" parent="Margin/Shell/TurnRail/Content"]
+layout_mode = 2
+size_flags_vertical = 3
+mouse_filter = 2
+
+[node name="EndPreparationButton" type="Button" parent="Margin/Shell/TurnRail/Content"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 72)
+layout_mode = 2
+text = ""
+
+[node name="Log" type="RichTextLabel" parent="Margin/Shell/TurnRail/Content"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 120)
+layout_mode = 2
 scroll_active = true
 scroll_following = true
 fit_content = false
 text = ""
+visible = false
