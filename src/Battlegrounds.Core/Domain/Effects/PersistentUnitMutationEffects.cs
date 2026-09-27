@@ -67,10 +67,10 @@ public sealed record RemoveUnitModifierEffectDefinition : EffectDefinition
     }
 }
 
-internal interface IPersistentUnitMutationRuntime
+internal interface IPersistentUnitMutationWorld
 {
-    void TransformUnit(UnitInstanceId unitId, UnitDefinition definition);
-    int CopyUnitsToReserve(PlayerId ownerPlayerId, IReadOnlyList<UnitInstanceId> unitIds);
-    void ApplyModifier(UnitInstanceId unitId, string key, int attackDelta, int healthDelta);
-    bool RemoveModifier(UnitInstanceId unitId, string key);
+    void TransformUnit(IEffectRuntimeUnit unit, UnitDefinition definition);
+    int CopyUnitsToReserve(PlayerId ownerPlayerId, IReadOnlyList<IEffectRuntimeUnit> units);
+    void ApplyModifier(IEffectRuntimeUnit unit, string key, int attackDelta, int healthDelta);
+    bool RemoveModifier(IEffectRuntimeUnit unit, string key);
 }
