@@ -128,7 +128,7 @@ internal sealed class CombatPlaybackState
             playerId,
             instanceId,
             $"Unit #{instanceId.Value}",
-            attack: null,
+            null,
             Math.Max(0, inferredHealth));
         _unitsById[instanceId] = created;
         GetSide(playerId).Add(created);
