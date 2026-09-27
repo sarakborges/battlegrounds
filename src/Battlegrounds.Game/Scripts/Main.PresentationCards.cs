@@ -38,6 +38,13 @@ public partial class Main
         card.Configure(title, subtitle, stats, description, texture);
         if (selected)
             card.SetSelected(true);
+        card.Pressed += () => PlayPresentationCue(
+            card,
+            entityKind,
+            entityId,
+            ModPresentationCueRoles.UiSelect,
+            ModPresentationAnimation.Pulse,
+            0.18);
         return card;
     }
 
