@@ -21,6 +21,7 @@ internal sealed class ModThemeBuilder
     {
         var theme = new Theme();
         ApplyDefaults(theme);
+        ApplyTypographyVariations(theme);
 
         theme.SetTypeVariation("PrimaryButton", "Button");
         theme.SetTypeVariation("CardButton", "Button");
@@ -62,11 +63,30 @@ internal sealed class ModThemeBuilder
             theme.SetColor("font_uneditable_color", "LineEdit", muted);
     }
 
+    private void ApplyTypographyVariations(Theme theme)
+    {
+        ApplyLabelVariation(theme, "TitleLabel", "title", preferDisplayFont: true, colorToken: "text");
+        ApplyLabelVariation(theme, "HeadingLabel", "heading", preferDisplayFont: true, colorToken: "text");
+        ApplyLabelVariation(theme, "BodyLabel", "body", preferDisplayFont: false, colorToken: "text");
+        ApplyLabelVariation(theme, "CaptionLabel", "caption", preferDisplayFont: false, colorToken: "textMuted");
+    }
+
+    private void ApplyLabelVariation(Theme theme, string variation, string sizeToken, bool preferDisplayFont, string colorToken)
+    {
+        theme.SetTypeVariation(variation, "Label");
+        var fontKey = preferDisplayFont && _source.Fonts.ContainsKey("display") ? "display" : "body";
+        if (_source.Fonts.TryGetValue(fontKey, out var font)) theme.SetFont("font", variation, LoadFont(font.RelativePath));
+        if (_source.FontSizes.TryGetValue(sizeToken, out var size)) theme.SetFontSize("font_size", variation, size);
+        if (TryColor(colorToken, out var color)) theme.SetColor("font_color", variation, color);
+    }
+
     private void ApplyComponent(Theme theme, string role, string godotType, string? inheritedRole = null)
     {
-        var hasInherited = inheritedRole is not null && _source.Components.TryGetValue(inheritedRole, out var inherited);
-        var hasOwn = _source.Components.TryGetValue(role, out var own);
-        if (!hasInherited && !hasOwn) return;
+        var inherited = inheritedRole is not null && _source.Components.TryGetValue(inheritedRole, out var inheritedStyle)
+            ? inheritedStyle
+            : null;
+        var own = _source.Components.TryGetValue(role, out var ownStyle) ? ownStyle : null;
+        if (inherited is null && own is null) return;
 
         var normal = Resolve(inherited, own, "normal");
         ApplyFont(theme, godotType, normal);
@@ -198,34 +218,60 @@ internal sealed class ModThemeBuilder
 
     private static ResolvedStyle Resolve(ModThemeStyle? inherited, ModThemeStyle? own, string state)
     {
-        var inheritedNormal = inherited?.States.GetValueOrDefault("normal");
-        var ownNormal = own?.States.GetValueOrDefault("normal");
-        var inheritedState = state == "normal" ? null : inherited?.States.GetValueOrDefault(state);
-        var ownState = state == "normal" ? null : own?.States.GetValueOrDefault(state);
+        var inheritedNormal = TryState(inherited, "normal");
+        var ownNormal = TryState(own, "normal");
+        var inheritedState = state == "normal" ? null : TryState(inherited, state);
+        var ownState = state == "normal" ? null : TryState(own, state);
         var layers = new[] { inherited, inheritedNormal, own, ownNormal, inheritedState, ownState };
 
         return new ResolvedStyle(
-            Last(layers, item => item.Font),
-            Last(layers, item => item.FontSize),
-            Last(layers, item => item.TextColor),
-            Last(layers, item => item.BackgroundColor),
-            Last(layers, item => item.BorderColor),
-            Last(layers, item => item.BorderWidth),
-            Last(layers, item => item.Radius),
-            Last(layers, item => item.Padding),
-            Last(layers, item => item.BackgroundAsset),
-            Last(layers, item => item.Slice),
-            Last(layers, item => item.Opacity));
+            LastString(layers, item => item.Font),
+            LastString(layers, item => item.FontSize),
+            LastString(layers, item => item.TextColor),
+            LastString(layers, item => item.BackgroundColor),
+            LastString(layers, item => item.BorderColor),
+            LastValue(layers, item => item.BorderWidth),
+            LastString(layers, item => item.Radius),
+            LastReference(layers, item => item.Padding),
+            LastString(layers, item => item.BackgroundAsset),
+            LastReference(layers, item => item.Slice),
+            LastValue(layers, item => item.Opacity));
     }
 
-    private static T? Last<T>(IEnumerable<ModThemeStyle?> layers, Func<ModThemeStyle, T?> selector)
+    private static ModThemeStyle? TryState(ModThemeStyle? style, string state) =>
+        style is not null && style.States.TryGetValue(state, out var value) ? value : null;
+
+    private static string? LastString(IEnumerable<ModThemeStyle?> layers, Func<ModThemeStyle, string?> selector)
     {
-        T? result = default;
+        string? result = null;
         foreach (var layer in layers)
         {
             if (layer is null) continue;
-            var value = selector(layer);
-            if (value is not null) result = value;
+            result = selector(layer) ?? result;
+        }
+        return result;
+    }
+
+    private static T? LastReference<T>(IEnumerable<ModThemeStyle?> layers, Func<ModThemeStyle, T?> selector)
+        where T : class
+    {
+        T? result = null;
+        foreach (var layer in layers)
+        {
+            if (layer is null) continue;
+            result = selector(layer) ?? result;
+        }
+        return result;
+    }
+
+    private static T? LastValue<T>(IEnumerable<ModThemeStyle?> layers, Func<ModThemeStyle, T?> selector)
+        where T : struct
+    {
+        T? result = null;
+        foreach (var layer in layers)
+        {
+            if (layer is null) continue;
+            result = selector(layer) ?? result;
         }
         return result;
     }
