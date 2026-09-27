@@ -62,6 +62,15 @@ internal sealed class PreparationEffectEngine
         }
     }
 
+    public void ProcessCombinedUnit(MatchState match, PlayerState owner, UnitInstance unit)
+    {
+        ArgumentNullException.ThrowIfNull(unit);
+        var trigger = unit.Definition.Triggers.FirstOrDefault(candidate => candidate.Event == NativeTriggerKeys.OnCombine);
+        if (trigger is null) return;
+        var (world, runtime) = GetRuntime(match);
+        runtime.ProcessTrigger(world.Wrap(unit, owner.Id), trigger);
+    }
+
     public void ProcessAction(
         MatchState match,
         PlayerState owner,
@@ -199,9 +208,11 @@ internal sealed class PreparationEffectEngine
         {
             foreach (var player in _match.Players)
             {
-                if (player.TryGetFieldUnit(instanceId, out var found))
+                if (player.TryGetFieldUnit(instanceId, out var found) ||
+                    player.Reserve.FirstOrDefault(candidate => candidate.Id == instanceId) is { } foundReserve)
                 {
-                    unit = Wrap(found, player.Id);
+                    var resolved = found ?? foundReserve;
+                    unit = Wrap(resolved, player.Id);
                     return true;
                 }
             }
