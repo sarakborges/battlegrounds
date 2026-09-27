@@ -61,15 +61,28 @@ public partial class Main
 
     private void ApplySemanticTypography()
     {
-        ApplyTextRole(GetNode<Label>("Margin/Root/Title"), "TitleLabel");
+        ApplyTextRole("Margin/Shell/CenterStage/Title", "TitleLabel");
         ApplyTextRole(_status, "HeadingLabel");
         ApplyTextRole(_leaderPrompt, "HeadingLabel");
         ApplyTextRole(_humanSummary, "BodyLabel");
         ApplyTextRole(_interactionPrompt, "BodyLabel");
-        ApplyTextRole(GetNode<Label>("Margin/Root/PreparationPanel/Columns/OfferColumn/Title"), "HeadingLabel");
-        ApplyTextRole(GetNode<Label>("Margin/Root/PreparationPanel/Columns/ReserveColumn/Title"), "HeadingLabel");
-        ApplyTextRole(GetNode<Label>("Margin/Root/PreparationPanel/Columns/FieldColumn/Title"), "HeadingLabel");
-        ApplyTextRole(GetNode<Label>("Margin/Root/LogTitle"), "CaptionLabel");
+        ApplyTextRole("Margin/Shell/CenterStage/PreparationPanel/TavernArea/ShopRow/Title", "HeadingLabel");
+        ApplyTextRole("Margin/Shell/CenterStage/PreparationPanel/BottomStrip/ReserveArea/ReserveContent/Title", "HeadingLabel");
+        ApplyTextRole("Margin/Shell/CenterStage/PreparationPanel/BoardArea/BoardRow/Title", "HeadingLabel");
+        ApplyTextRole("Margin/Shell/OpponentRail/Content/Title", "HeadingLabel");
+        ApplyTextRole("Margin/Shell/TurnRail/Content/Title", "HeadingLabel");
+    }
+
+    private void ApplyTextRole(string path, string variation)
+    {
+        var label = GetNodeOrNull<Label>(path);
+        if (label is null)
+        {
+            GD.PushWarning($"Theme typography target '{path}' was not found; skipping it.");
+            return;
+        }
+
+        ApplyTextRole(label, variation);
     }
 
     private static void ApplyTextRole(Label label, string variation)
