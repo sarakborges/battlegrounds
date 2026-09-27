@@ -9,7 +9,6 @@ public sealed class EffectUnitSnapshot
 {
     private readonly HashSet<UnitTypeId> _types;
     private readonly HashSet<TagId> _tags;
-
     public UnitInstanceId InstanceId { get; }
     public PlayerId OwnerPlayerId { get; }
     public bool IsAlive { get; }
@@ -48,25 +47,13 @@ public sealed class EffectResolutionContext
 {
     private readonly ReadOnlyCollection<EffectUnitSnapshot> _units;
     private readonly EffectHistorySnapshot _history;
-
     public UnitInstanceId SourceInstanceId { get; }
     public PlayerId SourcePlayerId { get; }
     public UnitInstanceId? SelectedTargetInstanceId { get; }
     public IReadOnlyList<EffectUnitSnapshot> Units => _units;
 
-    public EffectResolutionContext(
-        UnitInstanceId sourceInstanceId,
-        PlayerId sourcePlayerId,
-        IEnumerable<EffectUnitSnapshot> units,
-        UnitInstanceId? selectedTargetInstanceId = null)
-        : this(
-            sourceInstanceId,
-            sourcePlayerId,
-            units,
-            selectedTargetInstanceId,
-            EffectHistorySnapshot.Empty)
-    {
-    }
+    public EffectResolutionContext(UnitInstanceId sourceInstanceId, PlayerId sourcePlayerId, IEnumerable<EffectUnitSnapshot> units, UnitInstanceId? selectedTargetInstanceId = null)
+        : this(sourceInstanceId, sourcePlayerId, units, selectedTargetInstanceId, EffectHistorySnapshot.Empty) { }
 
     internal EffectResolutionContext(
         UnitInstanceId sourceInstanceId,
@@ -78,16 +65,11 @@ public sealed class EffectResolutionContext
         ArgumentNullException.ThrowIfNull(units);
         var materialized = units.ToArray();
         var duplicate = materialized.GroupBy(unit => unit.InstanceId).FirstOrDefault(group => group.Count() > 1);
-        if (duplicate is not null)
-            throw new ArgumentException($"Duplicate effect unit instance id '{duplicate.Key}'.", nameof(units));
+        if (duplicate is not null) throw new ArgumentException($"Duplicate effect unit instance id '{duplicate.Key}'.", nameof(units));
         if (!materialized.Any(unit => unit.InstanceId == sourceInstanceId && unit.OwnerPlayerId == sourcePlayerId))
             throw new ArgumentException("Effect source must be present in the resolution context.", nameof(units));
-        if (selectedTargetInstanceId is not null &&
-            !materialized.Any(unit => unit.InstanceId == selectedTargetInstanceId.Value && unit.IsAlive && unit.IsSelectable))
-        {
+        if (selectedTargetInstanceId is not null && !materialized.Any(unit => unit.InstanceId == selectedTargetInstanceId.Value && unit.IsAlive && unit.IsSelectable))
             throw new ArgumentException("Selected effect target must be a living selectable unit in the resolution context.", nameof(selectedTargetInstanceId));
-        }
-
         SourceInstanceId = sourceInstanceId;
         SourcePlayerId = sourcePlayerId;
         SelectedTargetInstanceId = selectedTargetInstanceId;
@@ -107,75 +89,42 @@ public sealed record ResolvedEffect(
 
 public sealed class EffectPipeline
 {
-    public IReadOnlyList<ResolvedEffect> ResolveEvent(
-        UnitDefinition sourceDefinition,
-        NativeTriggerKey eventKey,
-        EffectResolutionContext context,
-        IRandomSource randomSource)
+    public IReadOnlyList<ResolvedEffect> ResolveEvent(UnitDefinition sourceDefinition, NativeTriggerKey eventKey, EffectResolutionContext context, IRandomSource randomSource)
     {
         ArgumentNullException.ThrowIfNull(sourceDefinition);
         ArgumentNullException.ThrowIfNull(context);
         ArgumentNullException.ThrowIfNull(randomSource);
-        if (!NativeTriggerKeys.IsSupported(eventKey))
-            throw new ArgumentException($"Unsupported trigger '{eventKey}'.", nameof(eventKey));
-
+        if (!NativeTriggerKeys.IsSupported(eventKey)) throw new ArgumentException($"Unsupported trigger '{eventKey}'.", nameof(eventKey));
         var resolved = new List<ResolvedEffect>();
         var sequence = 0;
         foreach (var trigger in sourceDefinition.Triggers)
         {
             if (trigger.Event != eventKey || !ConditionsMatch(trigger, context)) continue;
             foreach (var effect in trigger.Effects)
-            {
-                sequence++;
-                resolved.Add(new ResolvedEffect(
-                    sequence,
-                    context.SourceInstanceId,
-                    eventKey,
-                    effect,
-                    ResolveTargets(effect, context, randomSource)));
-            }
+                resolved.Add(new ResolvedEffect(++sequence, context.SourceInstanceId, eventKey, effect, ResolveTargets(effect, context, randomSource)));
         }
         return resolved;
     }
 
-    public IReadOnlyList<ResolvedEffect> ResolveTrigger(
-        UnitDefinition sourceDefinition,
-        TriggerDefinition trigger,
-        EffectResolutionContext context,
-        IRandomSource randomSource)
+    public IReadOnlyList<ResolvedEffect> ResolveTrigger(UnitDefinition sourceDefinition, TriggerDefinition trigger, EffectResolutionContext context, IRandomSource randomSource)
     {
         ArgumentNullException.ThrowIfNull(sourceDefinition);
         ArgumentNullException.ThrowIfNull(trigger);
         ArgumentNullException.ThrowIfNull(context);
         ArgumentNullException.ThrowIfNull(randomSource);
-
-        if (!sourceDefinition.Triggers.Contains(trigger))
-            throw new ArgumentException("Trigger does not belong to the source definition.", nameof(trigger));
+        if (!sourceDefinition.Triggers.Contains(trigger)) throw new ArgumentException("Trigger does not belong to the source definition.", nameof(trigger));
         if (!ConditionsMatch(trigger, context)) return [];
-
         var resolved = new List<ResolvedEffect>(trigger.Effects.Count);
         var sequence = 0;
         foreach (var effect in trigger.Effects)
-        {
-            sequence++;
-            resolved.Add(new ResolvedEffect(
-                sequence,
-                context.SourceInstanceId,
-                trigger.Event,
-                effect,
-                ResolveTargets(effect, context, randomSource)));
-        }
+            resolved.Add(new ResolvedEffect(++sequence, context.SourceInstanceId, trigger.Event, effect, ResolveTargets(effect, context, randomSource)));
         return resolved;
     }
 
-    public int EvaluateValue(
-        EffectValueExpression expression,
-        EffectResolutionContext context,
-        UnitInstanceId? targetInstanceId = null)
+    public int EvaluateValue(EffectValueExpression expression, EffectResolutionContext context, UnitInstanceId? targetInstanceId = null)
     {
         ArgumentNullException.ThrowIfNull(expression);
         ArgumentNullException.ThrowIfNull(context);
-
         return expression switch
         {
             ConstantEffectValueExpression constant => constant.Value,
@@ -188,15 +137,9 @@ public sealed class EffectPipeline
         };
     }
 
-    private int EvaluateComposite(
-        CompositeEffectValueExpression expression,
-        EffectResolutionContext context,
-        UnitInstanceId? targetInstanceId)
+    private int EvaluateComposite(CompositeEffectValueExpression expression, EffectResolutionContext context, UnitInstanceId? targetInstanceId)
     {
-        var values = expression.Values
-            .Select(value => EvaluateValue(value, context, targetInstanceId))
-            .ToArray();
-
+        var values = expression.Values.Select(value => EvaluateValue(value, context, targetInstanceId)).ToArray();
         return expression.Operation switch
         {
             EffectValueOperation.Add => values.Aggregate(0, (left, right) => checked(left + right)),
@@ -213,69 +156,46 @@ public sealed class EffectPipeline
         {
             var matched = condition switch
             {
-                UnitCountConditionDefinition count => Compare(
-                    QueryUnits(count.Query, context).Count,
-                    count.Comparison,
-                    count.Value),
-                SourceStatConditionDefinition sourceStat => Compare(
-                    GetSourceStat(context, sourceStat.Stat),
-                    sourceStat.Comparison,
-                    sourceStat.Value),
-                ValueConditionDefinition value => Compare(
-                    EvaluateValue(value.Left, context),
-                    value.Comparison,
-                    EvaluateValue(value.Right, context)),
+                UnitCountConditionDefinition count => Compare(QueryUnits(count.Query, context).Count, count.Comparison, count.Value),
+                SourceStatConditionDefinition sourceStat => Compare(GetSourceStat(context, sourceStat.Stat), sourceStat.Comparison, sourceStat.Value),
+                ValueConditionDefinition value => Compare(EvaluateValue(value.Left, context), value.Comparison, EvaluateValue(value.Right, context)),
                 _ => throw new ArgumentOutOfRangeException(nameof(condition), condition.GetType().Name, "Unsupported effect condition."),
             };
-
             if (!matched) return false;
         }
-
         return true;
     }
 
-    private static int GetSourceStat(EffectResolutionContext context, EffectStat stat)
-    {
-        var source = context.Units.Single(unit => unit.InstanceId == context.SourceInstanceId);
-        return GetStat(source, stat);
-    }
+    private static int GetSourceStat(EffectResolutionContext context, EffectStat stat) =>
+        GetStat(context.Units.Single(unit => unit.InstanceId == context.SourceInstanceId), stat);
 
-    private static int GetTargetStat(
-        EffectResolutionContext context,
-        UnitInstanceId? targetInstanceId,
-        EffectStat stat)
+    private static int GetTargetStat(EffectResolutionContext context, UnitInstanceId? targetInstanceId, EffectStat stat)
     {
-        if (targetInstanceId is null)
-            throw new InvalidOperationException("targetStat value expressions require an effect target.");
+        if (targetInstanceId is null) throw new InvalidOperationException("targetStat value expressions require an effect target.");
         var target = context.Units.SingleOrDefault(unit => unit.InstanceId == targetInstanceId.Value)
             ?? throw new InvalidOperationException($"Effect target '{targetInstanceId.Value}' is not present in the value context.");
         return GetStat(target, stat);
     }
 
-    private static int GetStat(EffectUnitSnapshot unit, EffectStat stat) =>
-        stat switch
-        {
-            EffectStat.Attack => unit.Attack,
-            EffectStat.Health => unit.Health,
-            _ => throw new ArgumentOutOfRangeException(nameof(stat), stat, "Unsupported effect stat."),
-        };
+    private static int GetStat(EffectUnitSnapshot unit, EffectStat stat) => stat switch
+    {
+        EffectStat.Attack => unit.Attack,
+        EffectStat.Health => unit.Health,
+        _ => throw new ArgumentOutOfRangeException(nameof(stat), stat, "Unsupported effect stat."),
+    };
 
-    private static bool Compare(int left, EffectComparison comparison, int right) =>
-        comparison switch
-        {
-            EffectComparison.Equal => left == right,
-            EffectComparison.NotEqual => left != right,
-            EffectComparison.LessThan => left < right,
-            EffectComparison.LessThanOrEqual => left <= right,
-            EffectComparison.GreaterThan => left > right,
-            EffectComparison.GreaterThanOrEqual => left >= right,
-            _ => throw new ArgumentOutOfRangeException(nameof(comparison), comparison, "Unsupported comparison."),
-        };
+    private static bool Compare(int left, EffectComparison comparison, int right) => comparison switch
+    {
+        EffectComparison.Equal => left == right,
+        EffectComparison.NotEqual => left != right,
+        EffectComparison.LessThan => left < right,
+        EffectComparison.LessThanOrEqual => left <= right,
+        EffectComparison.GreaterThan => left > right,
+        EffectComparison.GreaterThanOrEqual => left >= right,
+        _ => throw new ArgumentOutOfRangeException(nameof(comparison), comparison, "Unsupported comparison."),
+    };
 
-    private static IReadOnlyList<UnitInstanceId> ResolveTargets(
-        EffectDefinition effect,
-        EffectResolutionContext context,
-        IRandomSource randomSource)
+    private static IReadOnlyList<UnitInstanceId> ResolveTargets(EffectDefinition effect, EffectResolutionContext context, IRandomSource randomSource)
     {
         var selector = effect switch
         {
@@ -285,6 +205,10 @@ public sealed class EffectPipeline
             TriggerEventEffectDefinition value => value.Target,
             AddBehaviorEffectDefinition value => value.Target,
             RemoveBehaviorEffectDefinition value => value.Target,
+            TransformUnitEffectDefinition value => value.Target,
+            CopyUnitToReserveEffectDefinition value => value.Target,
+            ApplyUnitModifierEffectDefinition value => value.Target,
+            RemoveUnitModifierEffectDefinition value => value.Target,
             _ => null,
         };
         if (selector is null) return [];
@@ -300,9 +224,9 @@ public sealed class EffectPipeline
             EffectTargetSelection.HighestHealth => candidates.OrderByDescending(unit => unit.Health).ThenBy(unit => unit.Position),
             EffectTargetSelection.Leftmost => candidates.OrderBy(unit => unit.Position),
             EffectTargetSelection.Rightmost => candidates.OrderByDescending(unit => unit.Position),
-            EffectTargetSelection.Adjacent => SelectAdjacent(candidates, context, includeLeft: true, includeRight: true),
-            EffectTargetSelection.LeftAdjacent => SelectAdjacent(candidates, context, includeLeft: true, includeRight: false),
-            EffectTargetSelection.RightAdjacent => SelectAdjacent(candidates, context, includeLeft: false, includeRight: true),
+            EffectTargetSelection.Adjacent => SelectAdjacent(candidates, context, true, true),
+            EffectTargetSelection.LeftAdjacent => SelectAdjacent(candidates, context, true, false),
+            EffectTargetSelection.RightAdjacent => SelectAdjacent(candidates, context, false, true),
             _ => throw new ArgumentOutOfRangeException(nameof(selector.Selection), selector.Selection, "Unsupported target selection."),
         };
 
@@ -312,15 +236,11 @@ public sealed class EffectPipeline
                  EffectTargetSelection.LowestHealth or EffectTargetSelection.HighestHealth or
                  EffectTargetSelection.Leftmost or EffectTargetSelection.Rightmost)
             selected = selected.Take(selector.Limit ?? 1);
-
         return selected.Select(unit => unit.InstanceId).ToArray();
     }
 
-    private static IReadOnlyList<EffectUnitSnapshot> QueryUnits(
-        EffectUnitQuery query,
-        EffectResolutionContext context)
-    {
-        return context.Units
+    private static IReadOnlyList<EffectUnitSnapshot> QueryUnits(EffectUnitQuery query, EffectResolutionContext context) =>
+        context.Units
             .Where(unit => unit.IsAlive && unit.IsSelectable)
             .Where(unit => IsInScope(unit, query.Scope, context))
             .Where(unit => !query.ExcludeSource || unit.InstanceId != context.SourceInstanceId)
@@ -330,25 +250,17 @@ public sealed class EffectPipeline
             .ThenBy(unit => unit.Position)
             .ThenBy(unit => unit.InstanceId.Value)
             .ToArray();
-    }
 
-    private static bool IsInScope(
-        EffectUnitSnapshot unit,
-        EffectTargetScope scope,
-        EffectResolutionContext context) =>
-        scope switch
-        {
-            EffectTargetScope.Self => unit.InstanceId == context.SourceInstanceId,
-            EffectTargetScope.Selected => context.SelectedTargetInstanceId == unit.InstanceId,
-            EffectTargetScope.Friendly => unit.OwnerPlayerId == context.SourcePlayerId,
-            EffectTargetScope.Enemy => unit.OwnerPlayerId != context.SourcePlayerId,
-            _ => false,
-        };
+    private static bool IsInScope(EffectUnitSnapshot unit, EffectTargetScope scope, EffectResolutionContext context) => scope switch
+    {
+        EffectTargetScope.Self => unit.InstanceId == context.SourceInstanceId,
+        EffectTargetScope.Selected => context.SelectedTargetInstanceId == unit.InstanceId,
+        EffectTargetScope.Friendly => unit.OwnerPlayerId == context.SourcePlayerId,
+        EffectTargetScope.Enemy => unit.OwnerPlayerId != context.SourcePlayerId,
+        _ => false,
+    };
 
-    private static IReadOnlyList<EffectUnitSnapshot> SelectRandom(
-        IReadOnlyList<EffectUnitSnapshot> candidates,
-        int count,
-        IRandomSource randomSource)
+    private static IReadOnlyList<EffectUnitSnapshot> SelectRandom(IReadOnlyList<EffectUnitSnapshot> candidates, int count, IRandomSource randomSource)
     {
         var remaining = candidates.ToList();
         var result = new List<EffectUnitSnapshot>(Math.Min(count, remaining.Count));
@@ -369,18 +281,15 @@ public sealed class EffectPipeline
     {
         var source = context.Units.Single(unit => unit.InstanceId == context.SourceInstanceId);
         if (source.Position < 0) return [];
-
         var result = new List<EffectUnitSnapshot>(2);
         if (includeLeft)
         {
-            var left = candidates.FirstOrDefault(unit =>
-                unit.OwnerPlayerId == source.OwnerPlayerId && unit.Position == source.Position - 1);
+            var left = candidates.FirstOrDefault(unit => unit.OwnerPlayerId == source.OwnerPlayerId && unit.Position == source.Position - 1);
             if (left is not null) result.Add(left);
         }
         if (includeRight)
         {
-            var right = candidates.FirstOrDefault(unit =>
-                unit.OwnerPlayerId == source.OwnerPlayerId && unit.Position == source.Position + 1);
+            var right = candidates.FirstOrDefault(unit => unit.OwnerPlayerId == source.OwnerPlayerId && unit.Position == source.Position + 1);
             if (right is not null) result.Add(right);
         }
         return result;
