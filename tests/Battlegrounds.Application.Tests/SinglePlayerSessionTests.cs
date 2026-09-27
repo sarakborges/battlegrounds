@@ -56,7 +56,7 @@ public sealed class SinglePlayerSessionTests
         var human = session.HumanPlayerId;
         var ai = Assert.Single(session.AiPlayerIds);
 
-        Assert.Equal([human, ai], session.PreparationInitiative);
+        Assert.Equal(new[] { human, ai }, session.PreparationInitiative);
 
         var advance = session.AdvanceAutomated();
 
@@ -75,7 +75,7 @@ public sealed class SinglePlayerSessionTests
         var human = session.HumanPlayerId;
         var ai = Assert.Single(session.AiPlayerIds);
 
-        Assert.Equal([ai, human], session.PreparationInitiative);
+        Assert.Equal(new[] { ai, human }, session.PreparationInitiative);
 
         var advance = session.AdvanceAutomated();
 
@@ -114,7 +114,7 @@ public sealed class SinglePlayerSessionTests
         var human = session.HumanPlayerId;
         var ai = Assert.Single(session.AiPlayerIds);
 
-        Assert.Equal([human, ai], session.PreparationInitiative);
+        Assert.Equal(new[] { human, ai }, session.PreparationInitiative);
 
         var humanEnd = session.ExecuteHumanPreparation(new EndPreparationCommand(human));
         Assert.True(humanEnd.Succeeded);
