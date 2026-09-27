@@ -19,13 +19,13 @@ public sealed class UnitInstance
 
     public UnitInstanceId Id { get; }
     public UnitDefinition Definition { get; private set; }
-    public UnitInstanceOrigin Origin { get; }
+    public UnitInstanceOrigin Origin { get; private set; }
     public int Attack { get; private set; }
     public int Health { get; private set; }
     public IReadOnlyList<BehaviorDefinition> Behaviors => _behaviorsView;
     public IReadOnlyList<UnitModifierState> Modifiers => _modifiersView;
     public bool IsAlive => Health > 0;
-    internal UnitDefinition? PoolReturnDefinition { get; }
+    internal UnitDefinition? PoolReturnDefinition { get; private set; }
 
     internal UnitInstance(
         UnitInstanceId id,
@@ -53,7 +53,6 @@ public sealed class UnitInstance
     {
         if (string.IsNullOrWhiteSpace(key)) throw new ArgumentException("Modifier key cannot be empty.", nameof(key));
         if (attackDelta == 0 && healthDelta == 0) return;
-
         RemoveModifier(key);
         var modifier = new UnitModifierState(key, attackDelta, healthDelta);
         _modifiers.Add(modifier);
@@ -64,7 +63,6 @@ public sealed class UnitInstance
     {
         var index = _modifiers.FindIndex(modifier => string.Equals(modifier.Key, key, StringComparison.Ordinal));
         if (index < 0) return false;
-
         var modifier = _modifiers[index];
         _modifiers.RemoveAt(index);
         ModifyStats(-modifier.AttackDelta, -modifier.HealthDelta);
@@ -79,6 +77,14 @@ public sealed class UnitInstance
         _behaviors.Clear();
         _behaviors.AddRange(definition.Behaviors);
         _modifiers.Clear();
+    }
+
+    internal UnitDefinition? DetachFromPool()
+    {
+        var pooled = PoolReturnDefinition;
+        PoolReturnDefinition = null;
+        Origin = UnitInstanceOrigin.Generated;
+        return pooled;
     }
 
     internal void CopyRuntimeStateFrom(UnitInstance source)
