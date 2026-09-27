@@ -16,13 +16,20 @@ public partial class ModLauncher : Control
     private RichTextLabel _diagnostics = null!;
     private Button _refreshButton = null!;
 
-    public override void _Ready()
+    public override async void _Ready()
     {
         _status = GetNode<Label>("%Status");
         _modButtons = GetNode<VBoxContainer>("%ModButtons");
         _diagnostics = GetNode<RichTextLabel>("%Diagnostics");
         _refreshButton = GetNode<Button>("%RefreshButton");
         _refreshButton.Pressed += DiscoverMods;
+
+        _status.Text = "Discovering mods...";
+        GD.Print("[ModLauncher] C# launcher started.");
+
+        // Let the launcher render once before filesystem validation starts. This makes
+        // a missing C# runtime distinguishable from a slow or failing discovery pass.
+        await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
         DiscoverMods();
     }
 
@@ -30,10 +37,13 @@ public partial class ModLauncher : Control
     {
         ClearChildren(_modButtons);
         _diagnostics.Text = string.Empty;
+        _status.Text = "Discovering mods...";
 
         try
         {
-            var modsRoot = ProjectSettings.GlobalizePath(ModsRoot);
+            var modsRoot = ResolveModsRoot();
+            GD.Print($"[ModLauncher] Discovering mods in '{modsRoot}'.");
+
             var entries = new ModDiscovery().Discover(modsRoot);
             _status.Text = entries.Count == 0
                 ? $"No mod packages found in {ModsRoot}."
@@ -41,12 +51,31 @@ public partial class ModLauncher : Control
 
             foreach (var entry in entries)
                 AddCandidate(entry);
+
+            GD.Print($"[ModLauncher] Discovery complete: {entries.Count} package(s).");
         }
         catch (Exception exception)
         {
             _status.Text = "Mod discovery failed.";
-            _diagnostics.Text = exception.Message;
+            _diagnostics.Text = exception.ToString();
+            GD.PushError($"[ModLauncher] Mod discovery failed: {exception}");
         }
+    }
+
+    private string ResolveModsRoot()
+    {
+        if (ModsRoot.StartsWith("res://", StringComparison.Ordinal))
+        {
+            var projectRoot = ProjectSettings.GlobalizePath("res://");
+            var relative = ModsRoot["res://".Length..]
+                .Replace('/', Path.DirectorySeparatorChar);
+            return Path.GetFullPath(Path.Combine(projectRoot, relative));
+        }
+
+        if (ModsRoot.StartsWith("user://", StringComparison.Ordinal))
+            return Path.GetFullPath(ProjectSettings.GlobalizePath(ModsRoot));
+
+        return Path.GetFullPath(ModsRoot);
     }
 
     private void AddCandidate(ModDiscoveryEntry entry)
@@ -90,7 +119,7 @@ public partial class ModLauncher : Control
             var packedScene = ResourceLoader.Load<PackedScene>(GameplayScenePath)
                 ?? throw new InvalidOperationException($"Gameplay scene '{GameplayScenePath}' could not be loaded.");
             var game = packedScene.Instantiate<Main>();
-            game.ModPath = CombineGodotPath(ModsRoot, entry.DirectoryName);
+            game.ModPath = entry.DirectoryPath;
             game.Seed = Seed;
             game.ParticipantCount = ParticipantCount;
             game.Locale = Locale;
@@ -103,11 +132,9 @@ public partial class ModLauncher : Control
         {
             _status.Text = $"Could not start {entry.DisplayName}.";
             _diagnostics.Text = exception.ToString();
+            GD.PushError($"[ModLauncher] Could not start {entry.DisplayName}: {exception}");
         }
     }
-
-    private static string CombineGodotPath(string root, string child) =>
-        $"{root.TrimEnd('/', '\\')}/{child}";
 
     private static void ClearChildren(Node parent)
     {

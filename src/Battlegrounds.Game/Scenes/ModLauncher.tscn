@@ -50,7 +50,7 @@ text = "Mod selection"
 [node name="Status" type="Label" parent="Margin/Root"]
 unique_name_in_owner = true
 layout_mode = 2
-text = "Discovering mods..."
+text = "Launcher C# script did not start. Use Godot 4.7.2 .NET and build the project."
 
 [node name="RefreshButton" type="Button" parent="Margin/Root"]
 unique_name_in_owner = true
