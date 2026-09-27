@@ -1,6 +1,7 @@
 using System.Collections.ObjectModel;
 using Battlegrounds.Core.Domain.Actions;
 using Battlegrounds.Core.Domain.Behaviors;
+using Battlegrounds.Core.Domain.Combines;
 using Battlegrounds.Core.Domain.Combat;
 using Battlegrounds.Core.Domain.Ids;
 using Battlegrounds.Core.Domain.Leaders;
@@ -32,6 +33,7 @@ public sealed class ModPackage
     public UnitTypeCatalog UnitTypes { get; }
     public TagCatalog Tags { get; }
     public UnitCatalog Units { get; }
+    public UnitCombineCatalog Combines => Units.Combines;
     public IReadOnlyList<UnitPoolEntry> PoolEntries => _poolEntries;
 
     internal ModPackage(
@@ -87,7 +89,8 @@ public sealed class ModPackage
             Units,
             Behaviors,
             Powers,
-            Actions);
+            Actions,
+            Combines);
     }
 
     public CombatEngine CreateCombatEngine() => new(PreparationRules.FieldCapacity, Units, Behaviors);
