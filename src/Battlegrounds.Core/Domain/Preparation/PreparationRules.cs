@@ -3,6 +3,7 @@ namespace Battlegrounds.Core.Domain.Preparation;
 public sealed class PreparationRules
 {
     private readonly int[] _offerSizesByTier;
+    private readonly int[] _actionOfferSizesByTier;
     private readonly int[] _initialUpgradeCostsByTier;
 
     public int StartingResource { get; }
@@ -26,7 +27,8 @@ public sealed class PreparationRules
         int reserveCapacity,
         int maximumTier,
         IReadOnlyList<int> offerSizesByTier,
-        IReadOnlyList<int> initialUpgradeCostsByTier)
+        IReadOnlyList<int> initialUpgradeCostsByTier,
+        IReadOnlyList<int>? actionOfferSizesByTier = null)
     {
         if (startingResource < 0) throw new ArgumentOutOfRangeException(nameof(startingResource));
         if (resourcePerRound < 0) throw new ArgumentOutOfRangeException(nameof(resourcePerRound));
@@ -41,31 +43,26 @@ public sealed class PreparationRules
         ArgumentNullException.ThrowIfNull(initialUpgradeCostsByTier);
 
         if (offerSizesByTier.Count != maximumTier)
-        {
             throw new ArgumentException("Offer size must be defined for every tier.", nameof(offerSizesByTier));
-        }
-
         if (initialUpgradeCostsByTier.Count != maximumTier - 1)
-        {
             throw new ArgumentException("Upgrade cost must be defined for every non-maximum tier.", nameof(initialUpgradeCostsByTier));
-        }
-
         if (offerSizesByTier.Any(size => size <= 0))
-        {
             throw new ArgumentException("Offer sizes must be positive.", nameof(offerSizesByTier));
-        }
-
         for (var index = 1; index < offerSizesByTier.Count; index++)
         {
             if (offerSizesByTier[index] < offerSizesByTier[index - 1])
-            {
                 throw new ArgumentException("Offer sizes cannot decrease at higher tiers.", nameof(offerSizesByTier));
-            }
         }
-
         if (initialUpgradeCostsByTier.Any(cost => cost < 0))
-        {
             throw new ArgumentException("Upgrade costs cannot be negative.", nameof(initialUpgradeCostsByTier));
+
+        var actionSizes = actionOfferSizesByTier?.ToArray() ?? new int[maximumTier];
+        if (actionSizes.Length != maximumTier)
+            throw new ArgumentException("Action offer size must be defined for every tier.", nameof(actionOfferSizesByTier));
+        for (var index = 0; index < actionSizes.Length; index++)
+        {
+            if (actionSizes[index] < 0 || actionSizes[index] > offerSizesByTier[index])
+                throw new ArgumentException("Action offer size must be between zero and total offer size.", nameof(actionOfferSizesByTier));
         }
 
         StartingResource = startingResource;
@@ -78,6 +75,7 @@ public sealed class PreparationRules
         ReserveCapacity = reserveCapacity;
         MaximumTier = maximumTier;
         _offerSizesByTier = offerSizesByTier.ToArray();
+        _actionOfferSizesByTier = actionSizes;
         _initialUpgradeCostsByTier = initialUpgradeCostsByTier.ToArray();
     }
 
@@ -93,6 +91,14 @@ public sealed class PreparationRules
         return _offerSizesByTier[tier - 1];
     }
 
+    public int GetActionOfferSize(int tier)
+    {
+        ValidateTier(tier);
+        return _actionOfferSizesByTier[tier - 1];
+    }
+
+    public int GetUnitOfferSize(int tier) => GetOfferSize(tier) - GetActionOfferSize(tier);
+
     public int? GetInitialUpgradeCost(int tier)
     {
         ValidateTier(tier);
@@ -101,9 +107,6 @@ public sealed class PreparationRules
 
     private void ValidateTier(int tier)
     {
-        if (tier < 1 || tier > MaximumTier)
-        {
-            throw new ArgumentOutOfRangeException(nameof(tier));
-        }
+        if (tier < 1 || tier > MaximumTier) throw new ArgumentOutOfRangeException(nameof(tier));
     }
 }
