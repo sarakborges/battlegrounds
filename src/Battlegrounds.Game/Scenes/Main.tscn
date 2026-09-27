@@ -1,7 +1,8 @@
-[gd_scene load_steps=3 format=3]
+[gd_scene load_steps=4 format=3]
 
 [ext_resource path="res://Scripts/Main.cs" type="Script" id="1_main"]
 [ext_resource path="res://Scripts/HorizontalCardRow.cs" type="Script" id="2_card_row"]
+[ext_resource path="res://Scripts/GameplayHudDriver.cs" type="Script" id="3_hud_driver"]
 
 [node name="Main" type="Control"]
 layout_mode = 3
@@ -11,6 +12,9 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("1_main")
+
+[node name="HudDriver" type="Node" parent="."]
+script = ExtResource("3_hud_driver")
 
 [node name="Background" type="ColorRect" parent="."]
 layout_mode = 1
