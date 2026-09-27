@@ -131,7 +131,11 @@ internal sealed class PreparationEffectEngine
             baseAttack: 0,
             baseHealth: 1,
             triggers: power.Triggers);
-        return new PowerRuntimeUnit(AllocateSyntheticInstanceId(_runtimeMatch ?? throw new InvalidOperationException("Effect runtime has not been initialized.")), owner.Id, power.Id, definition);
+        return new PowerRuntimeUnit(
+            AllocateSyntheticInstanceId(_runtimeMatch ?? throw new InvalidOperationException("Effect runtime has not been initialized.")),
+            owner.Id,
+            power.Id,
+            definition);
     }
 
     private UnitInstanceId AllocateSyntheticInstanceId(MatchState match)
@@ -155,7 +159,7 @@ internal sealed class PreparationEffectEngine
         return (_runtimeWorld!, _runtime!);
     }
 
-    private sealed class PreparationEffectWorld : IEffectRuntimeWorld, IGenerationChoiceRuntimeWorld
+    private sealed class PreparationEffectWorld : IEffectRuntimeWorld, IGenerationChoiceRuntimeWorld, IPersistentUnitMutationWorld
     {
         private readonly MatchState _match;
         private readonly PreparationRules _rules;
@@ -221,6 +225,31 @@ internal sealed class PreparationEffectEngine
         public bool RemoveBehavior(IEffectRuntimeUnit unit, BehaviorId behaviorId) => GetUnit(unit).RemoveBehavior(behaviorId);
         public void TakeDamage(IEffectRuntimeUnit unit, int amount) => GetUnit(unit).TakeDamage(amount);
         public void Destroy(IEffectRuntimeUnit unit) => GetUnit(unit).Destroy();
+
+        public void TransformUnit(IEffectRuntimeUnit unit, UnitDefinition definition) =>
+            GetUnit(unit).Transform(definition);
+
+        public int CopyUnitsToReserve(PlayerId ownerPlayerId, IReadOnlyList<IEffectRuntimeUnit> units)
+        {
+            ArgumentNullException.ThrowIfNull(units);
+            var owner = GetPlayer(ownerPlayerId);
+            var available = Math.Max(0, _rules.ReserveCapacity - owner.PlayableReserveCount - owner.PendingChoiceCount);
+            var count = Math.Min(available, units.Count);
+            for (var index = 0; index < count; index++)
+            {
+                var source = GetUnit(units[index]);
+                var copy = _match.CreateUnit(source.Definition, UnitInstanceOrigin.Generated);
+                copy.CopyRuntimeStateFrom(source);
+                owner.AddToReserve(copy);
+            }
+            return count;
+        }
+
+        public void ApplyModifier(IEffectRuntimeUnit unit, string key, int attackDelta, int healthDelta) =>
+            GetUnit(unit).ApplyModifier(key, attackDelta, healthDelta);
+
+        public bool RemoveModifier(IEffectRuntimeUnit unit, string key) =>
+            GetUnit(unit).RemoveModifier(key);
 
         public IReadOnlyList<IEffectRuntimeUnit> Summon(IEffectRuntimeUnit source, UnitDefinition definition, int count)
         {
@@ -333,7 +362,7 @@ internal sealed class PreparationEffectEngine
         public void FinalizeDeath(IEffectRuntimeUnit deadUnit)
         {
             var unit = GetUnit(deadUnit);
-            if (unit.Origin == UnitInstanceOrigin.Pooled) _unitPool.ReturnUnit(unit.Definition);
+            if (unit.PoolReturnDefinition is not null) _unitPool.ReturnUnit(unit.PoolReturnDefinition);
         }
 
         private PlayerState GetPlayer(PlayerId playerId) =>
