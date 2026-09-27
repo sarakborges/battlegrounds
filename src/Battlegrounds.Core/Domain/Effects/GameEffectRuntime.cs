@@ -1,3 +1,4 @@
+using Battlegrounds.Core.Domain.Actions;
 using Battlegrounds.Core.Domain.Behaviors;
 using Battlegrounds.Core.Domain.Ids;
 using Battlegrounds.Core.Domain.Units;
@@ -19,7 +20,6 @@ internal interface IEffectRuntimeUnit
 internal interface IEffectRuntimeWorld
 {
     IReadOnlyList<IEffectRuntimeUnit> Units { get; }
-
     bool TryGetUnit(UnitInstanceId instanceId, out IEffectRuntimeUnit unit);
     IReadOnlyList<IEffectRuntimeUnit> GetHistoryEventListeners(PlayerId playerId);
     void ModifyStats(IEffectRuntimeUnit unit, int attackDelta, int healthDelta);
@@ -28,33 +28,20 @@ internal interface IEffectRuntimeWorld
     bool RemoveBehavior(IEffectRuntimeUnit unit, BehaviorId behaviorId);
     void TakeDamage(IEffectRuntimeUnit unit, int amount);
     void Destroy(IEffectRuntimeUnit unit);
-    IReadOnlyList<IEffectRuntimeUnit> Summon(
-        IEffectRuntimeUnit source,
-        UnitDefinition definition,
-        int count);
+    IReadOnlyList<IEffectRuntimeUnit> Summon(IEffectRuntimeUnit source, UnitDefinition definition, int count);
     void AdjustResource(PlayerId playerId, int amount);
     void SetPower(PlayerId playerId, PowerId powerId) =>
         throw new InvalidOperationException("This effect world does not support persistent power changes.");
     EffectHistorySnapshot GetHistory(PlayerId playerId);
     void RecordEvent(PlayerId playerId, NativeGameEventKey @event, UnitDefinition? unit = null);
-    int GetTriggerActivationCount(
-        PlayerId playerId,
-        EffectSourceKey source,
-        int triggerIndex,
-        EffectHistoryScope scope);
-    void RecordTriggerActivation(
-        PlayerId playerId,
-        EffectSourceKey source,
-        int triggerIndex,
-        EffectHistoryScope scope);
+    int GetTriggerActivationCount(PlayerId playerId, EffectSourceKey source, int triggerIndex, EffectHistoryScope scope);
+    void RecordTriggerActivation(PlayerId playerId, EffectSourceKey source, int triggerIndex, EffectHistoryScope scope);
     IReadOnlyList<IEffectRuntimeUnit> ExtractDeadUnits();
     IEffectRuntimeUnit? TryRevive(IEffectRuntimeUnit deadUnit);
     void FinalizeDeath(IEffectRuntimeUnit deadUnit);
 }
 
-internal sealed record GameEffectEvent(
-    NativeTriggerKey Event,
-    IEffectRuntimeUnit Subject);
+internal sealed record GameEffectEvent(NativeTriggerKey Event, IEffectRuntimeUnit Subject);
 
 internal sealed class GameEffectRuntime
 {
@@ -64,6 +51,7 @@ internal sealed class GameEffectRuntime
     private readonly IRandomSource _randomSource;
     private readonly UnitCatalog? _unitCatalog;
     private readonly BehaviorCatalog? _behaviorCatalog;
+    private readonly ActionCatalog? _actionCatalog;
     private readonly EffectPipeline _pipeline = new();
     private readonly Dictionary<(UnitInstanceId InstanceId, int TriggerIndex), int> _triggerProgress = [];
     private int _processedEvents;
@@ -72,12 +60,14 @@ internal sealed class GameEffectRuntime
         IEffectRuntimeWorld world,
         IRandomSource randomSource,
         UnitCatalog? unitCatalog,
-        BehaviorCatalog? behaviorCatalog)
+        BehaviorCatalog? behaviorCatalog,
+        ActionCatalog? actionCatalog = null)
     {
         _world = world ?? throw new ArgumentNullException(nameof(world));
         _randomSource = randomSource ?? throw new ArgumentNullException(nameof(randomSource));
         _unitCatalog = unitCatalog;
         _behaviorCatalog = behaviorCatalog;
+        _actionCatalog = actionCatalog;
     }
 
     public void Process(GameEffectEvent effectEvent) => Process([effectEvent]);
@@ -86,27 +76,21 @@ internal sealed class GameEffectRuntime
     {
         ArgumentNullException.ThrowIfNull(initialEvents);
         _processedEvents = 0;
-
         var queue = new Queue<GameEffectEvent>();
         foreach (var effectEvent in initialEvents)
         {
             ValidateEvent(effectEvent);
             queue.Enqueue(effectEvent);
         }
-
         DrainEventQueue(queue);
         ResolveDeathWaves();
     }
 
-    public void ProcessTrigger(
-        IEffectRuntimeUnit source,
-        TriggerDefinition trigger,
-        UnitInstanceId? selectedTargetInstanceId = null)
+    public void ProcessTrigger(IEffectRuntimeUnit source, TriggerDefinition trigger, UnitInstanceId? selectedTargetInstanceId = null)
     {
         ArgumentNullException.ThrowIfNull(source);
         ArgumentNullException.ThrowIfNull(trigger);
         _processedEvents = 0;
-
         var triggerIndex = FindTriggerIndex(source.Definition, trigger);
         var queue = new Queue<GameEffectEvent>();
         ResolveSpecificTrigger(source, triggerIndex, trigger, queue, selectedTargetInstanceId);
@@ -114,27 +98,16 @@ internal sealed class GameEffectRuntime
         ResolveDeathWaves();
     }
 
-    public void RecordGameEvent(
-        PlayerId playerId,
-        NativeGameEventKey @event,
-        UnitDefinition? unit = null,
-        bool resolveDeaths = true)
+    public void RecordGameEvent(PlayerId playerId, NativeGameEventKey @event, UnitDefinition? unit = null, bool resolveDeaths = true)
     {
         _processedEvents = 0;
         var queue = new Queue<GameEffectEvent>();
         RecordGameEventCore(playerId, @event, unit, queue);
         DrainEventQueue(queue);
-        if (resolveDeaths)
-        {
-            ResolveDeathWaves();
-        }
+        if (resolveDeaths) ResolveDeathWaves();
     }
 
-    private void RecordGameEventCore(
-        PlayerId playerId,
-        NativeGameEventKey @event,
-        UnitDefinition? unit,
-        Queue<GameEffectEvent> queue)
+    private void RecordGameEventCore(PlayerId playerId, NativeGameEventKey @event, UnitDefinition? unit, Queue<GameEffectEvent> queue)
     {
         var before = _world.GetHistory(playerId);
         _world.RecordEvent(playerId, @event, unit);
@@ -146,19 +119,14 @@ internal sealed class GameEffectRuntime
             {
                 var trigger = listener.Definition.Triggers[index];
                 if (trigger.Event != NativeTriggerKeys.AfterEventCount ||
-                    trigger.Counter is not EffectHistoryQuery counter ||
-                    counter.Event != @event)
-                {
+                    trigger.Counter is not EffectHistoryQuery counter || counter.Event != @event)
                     continue;
-                }
 
                 var threshold = trigger.Count!.Value;
                 var beforeCount = before.GetEventCount(counter);
                 var afterCount = after.GetEventCount(counter);
                 if (afterCount / threshold > beforeCount / threshold)
-                {
                     ResolveSpecificTrigger(listener, index, trigger, queue);
-                }
             }
         }
     }
@@ -170,9 +138,7 @@ internal sealed class GameEffectRuntime
             CountProcessedEvent();
             var effectEvent = queue.Dequeue();
             foreach (var listener in ResolveListeners(effectEvent))
-            {
                 ResolveListener(effectEvent, listener, queue);
-            }
         }
     }
 
@@ -185,14 +151,10 @@ internal sealed class GameEffectRuntime
                 .OrderBy(unit => unit.InstanceId.Value)
                 .ToArray();
         }
-
         return [effectEvent.Subject];
     }
 
-    private void ResolveListener(
-        GameEffectEvent effectEvent,
-        IEffectRuntimeUnit listener,
-        Queue<GameEffectEvent> queue)
+    private void ResolveListener(GameEffectEvent effectEvent, IEffectRuntimeUnit listener, Queue<GameEffectEvent> queue)
     {
         if (effectEvent.Event == NativeTriggerKeys.AfterFriendlyDeaths)
         {
@@ -203,10 +165,7 @@ internal sealed class GameEffectRuntime
         for (var index = 0; index < listener.Definition.Triggers.Count; index++)
         {
             var trigger = listener.Definition.Triggers[index];
-            if (trigger.Event == effectEvent.Event)
-            {
-                ResolveSpecificTrigger(listener, index, trigger, queue);
-            }
+            if (trigger.Event == effectEvent.Event) ResolveSpecificTrigger(listener, index, trigger, queue);
         }
     }
 
@@ -218,65 +177,31 @@ internal sealed class GameEffectRuntime
         UnitInstanceId? selectedTargetInstanceId = null)
     {
         if (trigger.ActivationLimit is TriggerActivationLimit activationLimit &&
-            _world.GetTriggerActivationCount(
-                listener.OwnerPlayerId,
-                listener.SourceKey,
-                triggerIndex,
-                activationLimit.Scope) >= activationLimit.Maximum)
-        {
+            _world.GetTriggerActivationCount(listener.OwnerPlayerId, listener.SourceKey, triggerIndex, activationLimit.Scope) >= activationLimit.Maximum)
             return;
-        }
 
         var context = BuildContext(listener, selectedTargetInstanceId);
-        var resolvedEffects = _pipeline.ResolveTrigger(
-            listener.Definition,
-            trigger,
-            context,
-            _randomSource);
-
-        if (resolvedEffects.Count == 0)
-        {
-            return;
-        }
+        var resolvedEffects = _pipeline.ResolveTrigger(listener.Definition, trigger, context, _randomSource);
+        if (resolvedEffects.Count == 0) return;
 
         if (trigger.ActivationLimit is TriggerActivationLimit limit)
-        {
-            _world.RecordTriggerActivation(
-                listener.OwnerPlayerId,
-                listener.SourceKey,
-                triggerIndex,
-                limit.Scope);
-        }
+            _world.RecordTriggerActivation(listener.OwnerPlayerId, listener.SourceKey, triggerIndex, limit.Scope);
 
-        foreach (var resolved in resolvedEffects)
-        {
-            ApplyEffect(listener, resolved, queue);
-        }
+        foreach (var resolved in resolvedEffects) ApplyEffect(listener, resolved, queue);
     }
 
-    private void ResolveCountedDeathTriggers(
-        IEffectRuntimeUnit listener,
-        Queue<GameEffectEvent> queue)
+    private void ResolveCountedDeathTriggers(IEffectRuntimeUnit listener, Queue<GameEffectEvent> queue)
     {
         for (var index = 0; index < listener.Definition.Triggers.Count; index++)
         {
             var trigger = listener.Definition.Triggers[index];
-            if (trigger.Event != NativeTriggerKeys.AfterFriendlyDeaths)
-            {
-                continue;
-            }
-
+            if (trigger.Event != NativeTriggerKeys.AfterFriendlyDeaths) continue;
             if (AdvanceTrigger(listener.InstanceId, index, trigger.Count!.Value))
-            {
                 ResolveSpecificTrigger(listener, index, trigger, queue);
-            }
         }
     }
 
-    private void ApplyEffect(
-        IEffectRuntimeUnit source,
-        ResolvedEffect resolved,
-        Queue<GameEffectEvent> queue)
+    private void ApplyEffect(IEffectRuntimeUnit source, ResolvedEffect resolved, Queue<GameEffectEvent> queue)
     {
         switch (resolved.Definition)
         {
@@ -287,64 +212,35 @@ internal sealed class GameEffectRuntime
                 {
                     var attackDelta = _pipeline.EvaluateValue(modifyStats.AttackDelta, context, target.InstanceId);
                     var healthDelta = _pipeline.EvaluateValue(modifyStats.HealthDelta, context, target.InstanceId);
-                    if (attackDelta != 0 || healthDelta != 0)
-                    {
-                        _world.ModifyStats(target, attackDelta, healthDelta);
-                    }
+                    if (attackDelta != 0 || healthDelta != 0) _world.ModifyStats(target, attackDelta, healthDelta);
                 }
                 break;
             }
-
             case DealDamageEffectDefinition dealDamage:
             {
                 var context = BuildContext(source);
                 foreach (var target in GetCurrentTargets(resolved.TargetInstanceIds))
                 {
                     var amount = _pipeline.EvaluateValue(dealDamage.Amount, context, target.InstanceId);
-                    if (amount <= 0)
-                    {
-                        continue;
-                    }
-                    if (_world.TryConsumeBehavior(target, NativeBehaviorKeys.DamageBarrier))
-                    {
-                        continue;
-                    }
-
+                    if (amount <= 0 || _world.TryConsumeBehavior(target, NativeBehaviorKeys.DamageBarrier)) continue;
                     _world.TakeDamage(target, amount);
                     RecordGameEventCore(target.OwnerPlayerId, NativeGameEventKeys.UnitDamaged, target.Definition, queue);
-                    if (_world.TryConsumeBehavior(source, NativeBehaviorKeys.LethalFirstDamagePerCombat))
-                    {
-                        _world.Destroy(target);
-                    }
-
+                    if (_world.TryConsumeBehavior(source, NativeBehaviorKeys.LethalFirstDamagePerCombat)) _world.Destroy(target);
                     queue.Enqueue(new GameEffectEvent(NativeTriggerKeys.OnDamage, target));
                 }
                 break;
             }
-
             case DestroyUnitEffectDefinition:
-                foreach (var target in GetCurrentTargets(resolved.TargetInstanceIds))
-                {
-                    _world.Destroy(target);
-                }
+                foreach (var target in GetCurrentTargets(resolved.TargetInstanceIds)) _world.Destroy(target);
                 break;
-
             case TriggerEventEffectDefinition triggerEvent:
-                foreach (var target in GetCurrentTargets(resolved.TargetInstanceIds))
-                {
-                    queue.Enqueue(new GameEffectEvent(triggerEvent.Event, target));
-                }
+                foreach (var target in GetCurrentTargets(resolved.TargetInstanceIds)) queue.Enqueue(new GameEffectEvent(triggerEvent.Event, target));
                 break;
-
             case SummonUnitEffectDefinition summon:
             {
-                var unitCatalog = _unitCatalog
-                    ?? throw new InvalidOperationException("summonUnit requires a UnitCatalog in the effect runtime.");
+                var unitCatalog = _unitCatalog ?? throw new InvalidOperationException("summonUnit requires a UnitCatalog in the effect runtime.");
                 var count = _pipeline.EvaluateValue(summon.Count, BuildContext(source));
-                if (count <= 0)
-                {
-                    break;
-                }
+                if (count <= 0) break;
                 var definition = unitCatalog.GetRequired(summon.UnitId);
                 foreach (var summoned in _world.Summon(source, definition, count))
                 {
@@ -353,79 +249,61 @@ internal sealed class GameEffectRuntime
                 }
                 break;
             }
-
             case GenerateUnitToReserveEffectDefinition generate:
             {
                 var generationWorld = GetGenerationWorld(generate.Kind);
-                var unitCatalog = _unitCatalog
-                    ?? throw new InvalidOperationException("generateUnitToReserve requires a UnitCatalog in the effect runtime.");
+                var unitCatalog = _unitCatalog ?? throw new InvalidOperationException("generateUnitToReserve requires a UnitCatalog in the effect runtime.");
                 var count = _pipeline.EvaluateValue(generate.Count, BuildContext(source));
-                if (count <= 0)
-                {
-                    break;
-                }
-
-                generationWorld.GenerateUnitToReserve(
-                    source.OwnerPlayerId,
-                    unitCatalog.GetRequired(generate.UnitId),
-                    count);
+                if (count > 0) generationWorld.GenerateUnitToReserve(source.OwnerPlayerId, unitCatalog.GetRequired(generate.UnitId), count);
                 break;
             }
-
             case GenerateUnitChoiceEffectDefinition choice:
             {
                 var generationWorld = GetGenerationWorld(choice.Kind);
-                var unitCatalog = _unitCatalog
-                    ?? throw new InvalidOperationException("generateUnitChoice requires a UnitCatalog in the effect runtime.");
-                var candidates = unitCatalog.All
-                    .Where(candidate => choice.Query.Matches(candidate, source.Definition))
-                    .ToArray();
+                var unitCatalog = _unitCatalog ?? throw new InvalidOperationException("generateUnitChoice requires a UnitCatalog in the effect runtime.");
+                var candidates = unitCatalog.All.Where(candidate => choice.Query.Matches(candidate, source.Definition)).ToArray();
                 var options = SelectRandomDefinitions(candidates, choice.OptionCount, _randomSource);
-                if (options.Count > 0)
-                {
-                    generationWorld.QueueUnitChoice(source.OwnerPlayerId, options);
-                }
+                if (options.Count > 0) generationWorld.QueueUnitChoice(source.OwnerPlayerId, options);
                 break;
             }
-
+            case GenerateActionToReserveEffectDefinition generateAction:
+            {
+                var generationWorld = GetGenerationWorld(generateAction.Kind);
+                var actionCatalog = _actionCatalog ?? throw new InvalidOperationException("generateActionToReserve requires an ActionCatalog in the effect runtime.");
+                var count = _pipeline.EvaluateValue(generateAction.Count, BuildContext(source));
+                if (count > 0) generationWorld.GenerateActionToReserve(source.OwnerPlayerId, actionCatalog.GetRequired(generateAction.ActionId), count);
+                break;
+            }
+            case GenerateActionChoiceEffectDefinition actionChoice:
+            {
+                var generationWorld = GetGenerationWorld(actionChoice.Kind);
+                var actionCatalog = _actionCatalog ?? throw new InvalidOperationException("generateActionChoice requires an ActionCatalog in the effect runtime.");
+                var candidates = actionCatalog.All.Where(actionChoice.Query.Matches).ToArray();
+                var options = SelectRandomDefinitions(candidates, actionChoice.OptionCount, _randomSource);
+                if (options.Count > 0) generationWorld.QueueActionChoice(source.OwnerPlayerId, options);
+                break;
+            }
             case AddBehaviorEffectDefinition addBehavior:
             {
-                var behaviorCatalog = _behaviorCatalog
-                    ?? throw new InvalidOperationException("addBehavior requires a BehaviorCatalog in the effect runtime.");
+                var behaviorCatalog = _behaviorCatalog ?? throw new InvalidOperationException("addBehavior requires a BehaviorCatalog in the effect runtime.");
                 var behavior = behaviorCatalog.GetRequired(addBehavior.BehaviorId);
-                foreach (var target in GetCurrentTargets(resolved.TargetInstanceIds))
-                {
-                    _world.AddBehavior(target, behavior);
-                }
+                foreach (var target in GetCurrentTargets(resolved.TargetInstanceIds)) _world.AddBehavior(target, behavior);
                 break;
             }
-
             case RemoveBehaviorEffectDefinition removeBehavior:
-                foreach (var target in GetCurrentTargets(resolved.TargetInstanceIds))
-                {
-                    _world.RemoveBehavior(target, removeBehavior.BehaviorId);
-                }
+                foreach (var target in GetCurrentTargets(resolved.TargetInstanceIds)) _world.RemoveBehavior(target, removeBehavior.BehaviorId);
                 break;
-
             case AddResourceEffectDefinition addResource:
             {
                 var amount = _pipeline.EvaluateValue(addResource.Amount, BuildContext(source));
-                if (amount != 0)
-                {
-                    _world.AdjustResource(source.OwnerPlayerId, amount);
-                }
+                if (amount != 0) _world.AdjustResource(source.OwnerPlayerId, amount);
                 break;
             }
-
             case SetPowerEffectDefinition setPower:
                 _world.SetPower(source.OwnerPlayerId, setPower.PowerId);
                 break;
-
             default:
-                throw new ArgumentOutOfRangeException(
-                    nameof(resolved),
-                    resolved.Definition.Kind,
-                    "Unsupported effect kind.");
+                throw new ArgumentOutOfRangeException(nameof(resolved), resolved.Definition.Kind, "Unsupported effect kind.");
         }
     }
 
@@ -433,13 +311,10 @@ internal sealed class GameEffectRuntime
         _world as IGenerationChoiceRuntimeWorld
         ?? throw new InvalidOperationException($"Effect '{kind}' is not supported by this effect world.");
 
-    private static IReadOnlyList<UnitDefinition> SelectRandomDefinitions(
-        IReadOnlyList<UnitDefinition> candidates,
-        int count,
-        IRandomSource randomSource)
+    private static IReadOnlyList<T> SelectRandomDefinitions<T>(IReadOnlyList<T> candidates, int count, IRandomSource randomSource)
     {
         var remaining = candidates.ToList();
-        var result = new List<UnitDefinition>(Math.Min(count, remaining.Count));
+        var result = new List<T>(Math.Min(count, remaining.Count));
         while (remaining.Count > 0 && result.Count < count)
         {
             var index = randomSource.NextInt(0, remaining.Count);
@@ -449,35 +324,19 @@ internal sealed class GameEffectRuntime
         return result;
     }
 
-    private IEnumerable<IEffectRuntimeUnit> GetCurrentTargets(
-        IEnumerable<UnitInstanceId> targetInstanceIds)
+    private IEnumerable<IEffectRuntimeUnit> GetCurrentTargets(IEnumerable<UnitInstanceId> targetInstanceIds)
     {
         foreach (var instanceId in targetInstanceIds)
-        {
-            if (_world.TryGetUnit(instanceId, out var unit))
-            {
-                yield return unit;
-            }
-        }
+            if (_world.TryGetUnit(instanceId, out var unit)) yield return unit;
     }
 
     private void ResolveDeathWaves()
     {
         while (true)
         {
-            var deadUnits = _world.ExtractDeadUnits()
-                .OrderBy(unit => unit.InstanceId.Value)
-                .ToArray();
-
-            if (deadUnits.Length == 0)
-            {
-                return;
-            }
-
-            foreach (var deadUnit in deadUnits)
-            {
-                ResolveDeath(deadUnit);
-            }
+            var deadUnits = _world.ExtractDeadUnits().OrderBy(unit => unit.InstanceId.Value).ToArray();
+            if (deadUnits.Length == 0) return;
+            foreach (var deadUnit in deadUnits) ResolveDeath(deadUnit);
         }
     }
 
@@ -491,17 +350,10 @@ internal sealed class GameEffectRuntime
         var activations = new List<DeathTriggerActivation>();
         AddOwnDeathTriggers(deadUnit, activations);
         AddFriendlyDeathTriggers(deadUnit, activations);
-
-        foreach (var activation in activations
-                     .OrderBy(value => value.Listener.InstanceId.Value)
-                     .ThenBy(value => value.TriggerIndex))
+        foreach (var activation in activations.OrderBy(value => value.Listener.InstanceId.Value).ThenBy(value => value.TriggerIndex))
         {
             var queue = new Queue<GameEffectEvent>();
-            ResolveSpecificTrigger(
-                activation.Listener,
-                activation.TriggerIndex,
-                activation.Trigger,
-                queue);
+            ResolveSpecificTrigger(activation.Listener, activation.TriggerIndex, activation.Trigger, queue);
             DrainEventQueue(queue);
         }
 
@@ -514,44 +366,28 @@ internal sealed class GameEffectRuntime
             DrainEventQueue(queue);
             return;
         }
-
         _world.FinalizeDeath(deadUnit);
     }
 
-    private static void AddOwnDeathTriggers(
-        IEffectRuntimeUnit deadUnit,
-        ICollection<DeathTriggerActivation> activations)
+    private static void AddOwnDeathTriggers(IEffectRuntimeUnit deadUnit, ICollection<DeathTriggerActivation> activations)
     {
         for (var index = 0; index < deadUnit.Definition.Triggers.Count; index++)
         {
             var trigger = deadUnit.Definition.Triggers[index];
-            if (trigger.Event == NativeTriggerKeys.OnDeath)
-            {
-                activations.Add(new DeathTriggerActivation(deadUnit, index, trigger));
-            }
+            if (trigger.Event == NativeTriggerKeys.OnDeath) activations.Add(new DeathTriggerActivation(deadUnit, index, trigger));
         }
     }
 
-    private void AddFriendlyDeathTriggers(
-        IEffectRuntimeUnit deadUnit,
-        ICollection<DeathTriggerActivation> activations)
+    private void AddFriendlyDeathTriggers(IEffectRuntimeUnit deadUnit, ICollection<DeathTriggerActivation> activations)
     {
-        foreach (var listener in _world.Units
-                     .Where(unit => unit.OwnerPlayerId == deadUnit.OwnerPlayerId)
-                     .OrderBy(unit => unit.InstanceId.Value))
+        foreach (var listener in _world.Units.Where(unit => unit.OwnerPlayerId == deadUnit.OwnerPlayerId).OrderBy(unit => unit.InstanceId.Value))
         {
             for (var index = 0; index < listener.Definition.Triggers.Count; index++)
             {
                 var trigger = listener.Definition.Triggers[index];
-                if (trigger.Event != NativeTriggerKeys.AfterFriendlyDeaths)
-                {
-                    continue;
-                }
-
+                if (trigger.Event != NativeTriggerKeys.AfterFriendlyDeaths) continue;
                 if (AdvanceTrigger(listener.InstanceId, index, trigger.Count!.Value))
-                {
                     activations.Add(new DeathTriggerActivation(listener, index, trigger));
-                }
             }
         }
     }
@@ -565,24 +401,17 @@ internal sealed class GameEffectRuntime
             _triggerProgress[key] = progress;
             return false;
         }
-
         _triggerProgress[key] = 0;
         return true;
     }
 
     private void ClearTriggerProgress(UnitInstanceId instanceId)
     {
-        foreach (var key in _triggerProgress.Keys
-                     .Where(key => key.InstanceId == instanceId)
-                     .ToArray())
-        {
+        foreach (var key in _triggerProgress.Keys.Where(key => key.InstanceId == instanceId).ToArray())
             _triggerProgress.Remove(key);
-        }
     }
 
-    private EffectResolutionContext BuildContext(
-        IEffectRuntimeUnit source,
-        UnitInstanceId? selectedTargetInstanceId = null)
+    private EffectResolutionContext BuildContext(IEffectRuntimeUnit source, UnitInstanceId? selectedTargetInstanceId = null)
     {
         var positions = new Dictionary<PlayerId, int>();
         var snapshots = new List<EffectUnitSnapshot>();
@@ -592,11 +421,8 @@ internal sealed class GameEffectRuntime
             positions[unit.OwnerPlayerId] = position + 1;
             snapshots.Add(CreateSnapshot(unit, isSelectable: true, position));
         }
-
         if (snapshots.All(snapshot => snapshot.InstanceId != source.InstanceId))
-        {
             snapshots.Add(CreateSnapshot(source, isSelectable: false, position: -1));
-        }
 
         return new EffectResolutionContext(
             source.InstanceId,
@@ -606,10 +432,7 @@ internal sealed class GameEffectRuntime
             _world.GetHistory(source.OwnerPlayerId));
     }
 
-    private static EffectUnitSnapshot CreateSnapshot(
-        IEffectRuntimeUnit unit,
-        bool isSelectable,
-        int position) =>
+    private static EffectUnitSnapshot CreateSnapshot(IEffectRuntimeUnit unit, bool isSelectable, int position) =>
         new(
             unit.InstanceId,
             unit.OwnerPlayerId,
@@ -624,13 +447,7 @@ internal sealed class GameEffectRuntime
     private static int FindTriggerIndex(UnitDefinition definition, TriggerDefinition trigger)
     {
         for (var index = 0; index < definition.Triggers.Count; index++)
-        {
-            if (ReferenceEquals(definition.Triggers[index], trigger) || definition.Triggers[index] == trigger)
-            {
-                return index;
-            }
-        }
-
+            if (ReferenceEquals(definition.Triggers[index], trigger) || definition.Triggers[index] == trigger) return index;
         throw new ArgumentException("Trigger does not belong to the source definition.", nameof(trigger));
     }
 
@@ -638,23 +455,15 @@ internal sealed class GameEffectRuntime
     {
         _processedEvents++;
         if (_processedEvents > MaximumProcessedEvents)
-        {
-            throw new InvalidOperationException(
-                "Effect runtime exceeded its internal safety budget. The mod likely contains a recursive effect loop.");
-        }
+            throw new InvalidOperationException("Effect runtime exceeded its internal safety budget. The mod likely contains a recursive effect loop.");
     }
 
     private static void ValidateEvent(GameEffectEvent effectEvent)
     {
         ArgumentNullException.ThrowIfNull(effectEvent);
         if (!NativeTriggerKeys.IsSupported(effectEvent.Event))
-        {
             throw new ArgumentException($"Unsupported trigger '{effectEvent.Event}'.", nameof(effectEvent));
-        }
     }
 
-    private sealed record DeathTriggerActivation(
-        IEffectRuntimeUnit Listener,
-        int TriggerIndex,
-        TriggerDefinition Trigger);
+    private sealed record DeathTriggerActivation(IEffectRuntimeUnit Listener, int TriggerIndex, TriggerDefinition Trigger);
 }
