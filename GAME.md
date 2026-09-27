@@ -36,13 +36,31 @@ Player `0` is the local human and the remaining generated player IDs are AI-cont
 
 Godot does not own the visible vocabulary for neutral engine concepts. After loading the mod it resolves `ModPackage.Presentation` for the requested locale and renders that `ModPresentationText`.
 
-The current UI uses mod-owned terminology/templates for concepts and chrome such as Leader, Unit, Action, Power, Health, Armor, Resource, Offer, Tier, Reserve, Field, Preparation, Combat, Round, acquire/release verbs, summaries, interaction prompts and combat playback controls.
+The current UI uses mod-owned terminology/templates for concepts and chrome such as Leader, Unit, Action, Power, Health, Armor, Resource, Offer, Tier, Reserve, Field, Preparation, Combat, Round, acquire/release verbs, summaries, interaction prompts, reusable card stat lines and combat playback controls.
 
 When `Locale` is empty, `TranslationServer.GetLocale()` provides the requested locale. Content applies exact-locale, language-locale and default-locale fallback; Godot does not implement a second fallback algorithm.
 
 The scene may substitute runtime values into validated named templates, but localized strings never control simulation. Core commands, IDs, enums, targeting and validation remain independent of display text.
 
 See `LOCALIZATION.md` for the package format and fallback contract.
+
+## Mod-owned presentation assets
+
+Validated image references remain presentation data. `Battlegrounds.Content` validates `assets/presentation.json`; `Battlegrounds.Game` resolves those references through `ModPresentationTextureStore` and owns image decoding plus `Texture2D` caching.
+
+The reusable `PresentationCardButton` composes:
+
+- optional Leader portrait or Unit/Action art;
+- localized entity name;
+- presentation context such as acquire/deploy/play/release or entity kind;
+- localized mechanical stat text;
+- optional localized entity description.
+
+Missing art is not an error after validation when no asset reference was authored. The media region simply collapses and the same text/stat card remains usable. A failed runtime decode also degrades to the same text layout rather than changing gameplay state.
+
+`PresentationCardButton` is view-only. It stores no authoritative slot, Unit instance, affordability, targeting or selection legality. The owning render method still captures the existing mechanical ID/slot and wires the same command handler as before.
+
+See `PRESENTATION_ASSETS.md` for the asset path/type contract.
 
 ## Input translation
 
@@ -61,6 +79,8 @@ The current presentation surface covers:
 - pending Unit/Action choice resolution;
 - explicit Unit-combine recipe and component selection;
 - ending Preparation.
+
+Leader choices, pending Unit/Action choices, Offer, Reserve and Field entries use the reusable presentation card while preserving the same command wiring.
 
 Rejected commands are displayed as presentation feedback. The UI does not reproduce affordability, capacity, phase, target or readiness validation.
 
@@ -87,7 +107,7 @@ This keeps type/tag selector semantics, phase legality and effect validation out
 
 `PlayerState.PendingChoice` is authoritative read-only state. While a pending choice exists, unrelated Preparation controls are disabled.
 
-Godot renders the authored options and resolves the selected index only through:
+Godot renders the authored options as Unit/Action cards and resolves the selected index only through:
 
 - `ResolveUnitChoiceCommand`;
 - `ResolveActionChoiceCommand`.
@@ -100,7 +120,7 @@ Available recipe presentation is derived from the validated mod combine catalog 
 
 After choosing a recipe, the user explicitly toggles exact owned Unit instances. Presentation stores only those selected IDs. Confirmation submits one `CombineUnitsCommand` containing the selected `UnitInstanceId` values.
 
-Core still validates the recipe, copy count and instances, consumes components, returns pool ownership and creates the result. Godot never performs those mutations.
+Reserve/Field component cards may show presentation-only selected styling, but Core still validates the recipe, copy count and instances, consumes components, returns pool ownership and creates the result. Godot never performs those mutations.
 
 ## Automated advancement
 
@@ -137,6 +157,7 @@ A full-screen presentation overlay blocks the underlying Preparation controls wh
 The current main screen reads:
 
 - validated mod presentation/localization data;
+- validated mod-owned portrait/art references;
 - match phase and round;
 - each player's Leader, Health, Armor, Tier, readiness/elimination state;
 - the human Resource, upgrade cost and freeze state;
@@ -146,7 +167,7 @@ The current main screen reads:
 - validated combine definitions;
 - immutable session combat observations, event timelines and settlements.
 
-Rendering may create derived labels, ordering, buttons, highlights, formatted strings and playback cursors. Those values are view state only and are never written back into Core.
+Rendering may create derived labels, cards, textures, ordering, buttons, highlights, formatted strings and playback cursors. Those values are view state only and are never written back into Core.
 
 ## CI contract
 
@@ -154,6 +175,4 @@ CI builds `Battlegrounds.Game` in addition to testing Core, Content, AI and Appl
 
 ## Next presentation boundary
 
-Generic UI vocabulary/templates are now mod-owned, but authored entity names remain single display strings inside gameplay content files.
-
-The next presentation/content slice should add stable localization keys for authored Leaders, Powers, Units, Actions, behaviors, types, tags and combines, plus future descriptions where appropriate. IDs and gameplay definitions must remain locale-independent. Binary art/audio should remain a later presentation concern.
+Reuse the same mod-owned visual identity during deterministic combat playback. Combat boards should render Unit art/cards from `CombatPlaybackState`, and timeline events may drive presentation-only emphasis or animation cues, but playback must continue consuming already-resolved immutable events rather than becoming a second simulator or timing-dependent authority.

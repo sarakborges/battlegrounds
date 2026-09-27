@@ -136,7 +136,7 @@ Effects include stat modification, damage, destruction, explicit trigger activat
 
 Numeric effect parameters may be dynamic expressions. Target selection and conditions are composable. Scoped event history supports counted conditions and activation limits without introducing a global event bus.
 
-`GameEffectRuntime` owns deterministic trigger/effect ordering. Preparation supplies a persistent authoritative state adapter; Combat supplies an isolated combat-local adapter. When a Combat trigger actually resolves effects, the runtime also exposes that fact to the Combat world so the immutable result timeline can preserve source attribution without introducing a second effect engine.
+`GameEffectRuntime` owns deterministic trigger/effect ordering. Preparation supplies a persistent authoritative state adapter; Combat supplies an isolated combat-local state adapter. When a Combat trigger actually resolves effects, the runtime also exposes that fact to the Combat world so the immutable result timeline can preserve source attribution without introducing a second effect engine.
 
 Real simultaneous deaths are removed as a death wave before death-related effects resolve. Each death then resolves deterministically; deaths created during that resolution wait for the next wave. Authored `onDeath` resolves before `reviveOnce`, and a successful revive is treated as a normal summon and runs `onSummon`.
 
@@ -248,7 +248,7 @@ Multi-step intent is stored only in `PresentationInteractionState`. Targeted Act
 
 Godot resolves the selected mod's `ModPresentationCatalog` using the exported locale or Godot's system locale. Preparation labels, summaries, concept vocabulary, authored Leader/Power/Unit/Action/combine names and combat playback text are rendered from mod-owned presentation data with Content-owned fallback instead of hardcoded engine English or locale-dependent gameplay identity.
 
-Validated image metadata remains outside Core. `ModPresentationTextureStore` is the Godot-side runtime boundary for loading mod-relative images into cached `Texture2D` instances and applying them to presentation controls; Content only exposes validated ID/slot/path metadata.
+Validated image metadata remains outside Core. `ModPresentationTextureStore` is the Godot-side runtime boundary for loading mod-relative images into cached `Texture2D` instances. Reusable `PresentationCardButton` controls now render Leader choices plus Unit/Action pending choices, Offer, Reserve and Field entries from the same stable IDs, composing optional portrait/art, localized name/description and localized mechanical stat lines. Missing media collapses to a text/stat layout; cards still submit the same existing slots/IDs/commands and never become gameplay authority.
 
 Resolved human combat is displayed through a full-screen presentation-owned playback overlay. `CombatPlaybackState` starts from the immutable session snapshots and consumes `CombatResult.Timeline` in order, so combat-local summons, triggers, buffs/debuffs, effect damage/destruction, deaths/revives, behavior changes and Power/Resource transitions are rendered from immutable Core output rather than reconstructed in Godot. Playback may auto-step, advance manually or skip to settlement; none of those controls rerun combat or mutate Core state.
 
@@ -384,6 +384,7 @@ Read `ARCHITECTURE.md` before adding features. Its ownership, dependency, mutati
 - stable localized authored display keys for Leaders, Powers, Units, Actions, behaviors, types, tags and combines, with content-file name fallback and optional descriptions;
 - validated ID-keyed Leader portrait and Unit/Action art metadata with an immutable `ModPresentationAssetCatalog` and optional per-entity fallback;
 - Godot-owned runtime external-image decoding/texture caching through `ModPresentationTextureStore`, with no asset filesystem dependency in Core;
+- reusable Godot Leader/Unit/Action presentation cards combining optional art, localized names/descriptions and mechanical stats while preserving existing command wiring;
 - thin Godot presentation adapter over the Application boundary with a playable localized Preparation loop;
 - explicit Godot multi-step interaction state for selected targets, pending choices and combine components;
 - deterministic Godot combat playback over the Core event timeline with manual/automatic stepping, settlement skip and mod-owned presentation vocabulary/entity names;
@@ -406,4 +407,4 @@ dotnet build src/Battlegrounds.Game/Battlegrounds.Game.csproj
 
 ## Next architectural slice
 
-Consume the validated presentation metadata in reusable Godot visual components instead of text-only controls. Add stable presentation cards for Leader choices and Unit/Action offer/reserve/field entries that compose portrait/art, localized names/descriptions and mechanical stats while preserving the existing command/interaction boundaries; missing media must degrade deterministically to text/layout fallback, and no visual state may become authoritative gameplay state.
+Reuse the same mod-owned visual identity in deterministic combat playback. Render combat board Units from `CombatPlaybackState` with the validated Unit art/card presentation, and let timeline events drive presentation-only emphasis/animation cues for attacks, summons, damage, deaths, revives and trigger sources. Playback must remain a pure consumer of the already-resolved immutable timeline: no animation timing or visual state may influence simulation, settlement or authoritative Match state.

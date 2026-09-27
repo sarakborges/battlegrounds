@@ -167,16 +167,13 @@ public partial class Main : Control
                 < 0 => Text("ui.healthModifierNegative", ("value", definition.HealthModifier), ("health", Term("health"))),
                 _ => Text("ui.healthBase", ("health", Term("health"))),
             };
-            var button = new Button
-            {
-                Text = Text(
-                    "ui.leaderOption",
-                    ("name", LeaderName(definition.Id)),
-                    ("healthText", healthText),
-                    ("armorValue", definition.StartingArmor),
-                    ("armor", Term("armor"))),
-                SizeFlagsHorizontal = Control.SizeFlags.ExpandFill,
-            };
+            var button = CreatePresentationCard(
+                ModPresentationEntityKind.Leader,
+                definition.Id.Value,
+                ModPresentationAssetSlots.Portrait,
+                LeaderName(definition.Id),
+                Term("leader"),
+                LeaderCardStats(healthText, definition.StartingArmor));
             button.Pressed += () => SelectLeader(leaderId);
             _leaderButtons.AddChild(button);
         }
@@ -351,18 +348,13 @@ public partial class Main : Control
                 {
                     var option = unitChoice.Options[index];
                     var capturedIndex = index;
-                    var button = new Button
-                    {
-                        Text = Text(
-                            "ui.chooseUnitOption",
-                            ("name", UnitName(option.Id)),
-                            ("unit", Term("unit")),
-                            ("tier", Term("tier")),
-                            ("tierValue", option.Tier),
-                            ("attack", option.BaseAttack),
-                            ("healthValue", option.BaseHealth)),
-                        SizeFlagsHorizontal = Control.SizeFlags.ExpandFill,
-                    };
+                    var button = CreatePresentationCard(
+                        ModPresentationEntityKind.Unit,
+                        option.Id.Value,
+                        ModPresentationAssetSlots.Art,
+                        UnitName(option.Id),
+                        Term("unit"),
+                        BuildUnitDefinitionStats(option));
                     button.Pressed += () => ResolveChoice(unitChoice, capturedIndex);
                     _interactionButtons.AddChild(button);
                 }
@@ -372,17 +364,13 @@ public partial class Main : Control
                 {
                     var option = actionChoice.Options[index];
                     var capturedIndex = index;
-                    var button = new Button
-                    {
-                        Text = Text(
-                            "ui.chooseActionOption",
-                            ("name", ActionName(option.Id)),
-                            ("action", Term("action")),
-                            ("tier", Term("tier")),
-                            ("tierValue", option.Tier),
-                            ("cost", option.Cost)),
-                        SizeFlagsHorizontal = Control.SizeFlags.ExpandFill,
-                    };
+                    var button = CreatePresentationCard(
+                        ModPresentationEntityKind.Action,
+                        option.Id.Value,
+                        ModPresentationAssetSlots.Art,
+                        ActionName(option.Id),
+                        Term("action"),
+                        ActionCardStats(option.Tier, option.Cost));
                     button.Pressed += () => ResolveChoice(actionChoice, capturedIndex);
                     _interactionButtons.AddChild(button);
                 }
@@ -512,19 +500,14 @@ public partial class Main : Control
         foreach (var entry in human.PlayableOffer)
         {
             var cost = entry.Cost ?? _session.Mod.PreparationRules.AcquireCost;
-            var button = new Button
-            {
-                Text = Text(
-                    "ui.acquireEntry",
-                    ("acquire", Term("acquire")),
-                    ("name", PlayableName(entry.Kind, entry.Id)),
-                    ("kind", PlayableKindText(entry.Kind)),
-                    ("tier", Term("tier")),
-                    ("tierValue", entry.Tier),
-                    ("cost", cost)),
-                Disabled = human.IsReadyForCombat || blocked,
-                SizeFlagsHorizontal = Control.SizeFlags.ExpandFill,
-            };
+            var button = CreatePresentationCard(
+                PlayableEntityKind(entry.Kind),
+                entry.Id,
+                PlayableAssetSlot(entry.Kind),
+                PlayableName(entry.Kind, entry.Id),
+                $"{Term("acquire")} • {PlayableKindText(entry.Kind)}",
+                OfferCardStats(entry.Kind, entry.Id, entry.Tier, cost),
+                human.IsReadyForCombat || blocked);
             var slot = entry.Slot;
             button.Pressed += () => ExecuteHuman(player => new AcquirePlayableCommand(player.Id, slot));
             _offerButtons.AddChild(button);
@@ -533,6 +516,8 @@ public partial class Main : Control
 
     private void RenderReserve(PlayerState human)
     {
+        if (_session is null) return;
+
         ClearChildren(_reserveButtons);
         if (human.PlayableReserve.Count == 0)
         {
@@ -542,7 +527,7 @@ public partial class Main : Control
 
         var choiceBlocked = human.PendingChoice is not null;
         UnitCombineDefinition? combine = null;
-        if (_session is not null && _interaction.Kind == PresentationInteractionKind.CombineComponents &&
+        if (_interaction.Kind == PresentationInteractionKind.CombineComponents &&
             _interaction.CombineId is UnitCombineId combineId)
         {
             combine = _session.Mod.Combines.GetRequired(combineId);
@@ -555,34 +540,29 @@ public partial class Main : Control
             {
                 var eligible = unit.Definition.Id == combine.SourceUnitId;
                 var selected = _interaction.IsSelected(unit.Id);
-                var button = new Button
-                {
-                    Text = Text(
-                        "ui.combineReserveEntry",
-                        ("selectedMark", selected ? "[x]" : "[ ]"),
-                        ("name", UnitName(unit.Definition.Id)),
-                        ("reserve", Term("reserve")),
-                        ("attack", unit.Attack),
-                        ("health", unit.Health)),
-                    Disabled = !eligible,
-                    SizeFlagsHorizontal = Control.SizeFlags.ExpandFill,
-                };
+                var button = CreatePresentationCard(
+                    ModPresentationEntityKind.Unit,
+                    unit.Definition.Id.Value,
+                    ModPresentationAssetSlots.Art,
+                    UnitName(unit.Definition.Id),
+                    $"{(selected ? "[x]" : "[ ]")} {Term("reserve")}",
+                    UnitCardStats(unit.Definition.Tier, unit.Attack, unit.Health),
+                    !eligible,
+                    selected);
                 button.Pressed += () => ToggleCombineUnit(unit, combine);
                 _reserveButtons.AddChild(button);
                 continue;
             }
 
             var verb = entry.Kind == PlayableKind.Unit ? Text("ui.deploy") : Text("ui.play");
-            var buttonNormal = new Button
-            {
-                Text = Text(
-                    "ui.reserveEntry",
-                    ("verb", verb),
-                    ("name", PlayableName(entry.Kind, entry.DefinitionId)),
-                    ("kind", PlayableKindText(entry.Kind))),
-                Disabled = human.IsReadyForCombat || choiceBlocked || _interaction.IsActive,
-                SizeFlagsHorizontal = Control.SizeFlags.ExpandFill,
-            };
+            var buttonNormal = CreatePresentationCard(
+                PlayableEntityKind(entry.Kind),
+                entry.DefinitionId,
+                PlayableAssetSlot(entry.Kind),
+                PlayableName(entry.Kind, entry.DefinitionId),
+                $"{verb} • {PlayableKindText(entry.Kind)}",
+                ReserveCardStats(entry.Kind, entry.DefinitionId, entry.Unit),
+                human.IsReadyForCombat || choiceBlocked || _interaction.IsActive);
             buttonNormal.Pressed += entry.Kind == PlayableKind.Unit
                 ? () => ExecuteHuman(player => new DeployUnitCommand(player.Id, slot))
                 : () => TryPlayAction(slot);
@@ -615,34 +595,28 @@ public partial class Main : Control
             {
                 var eligible = unit.Definition.Id == combine.SourceUnitId;
                 var selected = _interaction.IsSelected(unit.Id);
-                var selectionButton = new Button
-                {
-                    Text = Text(
-                        "ui.combineFieldEntry",
-                        ("selectedMark", selected ? "[x]" : "[ ]"),
-                        ("name", UnitName(unit.Definition.Id)),
-                        ("field", Term("field")),
-                        ("attack", unit.Attack),
-                        ("health", unit.Health)),
-                    Disabled = !eligible,
-                    SizeFlagsHorizontal = Control.SizeFlags.ExpandFill,
-                };
+                var selectionButton = CreatePresentationCard(
+                    ModPresentationEntityKind.Unit,
+                    unit.Definition.Id.Value,
+                    ModPresentationAssetSlots.Art,
+                    UnitName(unit.Definition.Id),
+                    $"{(selected ? "[x]" : "[ ]")} {Term("field")}",
+                    UnitCardStats(unit.Definition.Tier, unit.Attack, unit.Health),
+                    !eligible,
+                    selected);
                 selectionButton.Pressed += () => ToggleCombineUnit(unit, combine);
                 _fieldButtons.AddChild(selectionButton);
                 continue;
             }
 
-            var button = new Button
-            {
-                Text = Text(
-                    "ui.releaseUnit",
-                    ("release", Term("release")),
-                    ("name", UnitName(unit.Definition.Id)),
-                    ("attack", unit.Attack),
-                    ("health", unit.Health)),
-                Disabled = human.IsReadyForCombat || human.PendingChoice is not null || _interaction.IsActive,
-                SizeFlagsHorizontal = Control.SizeFlags.ExpandFill,
-            };
+            var button = CreatePresentationCard(
+                ModPresentationEntityKind.Unit,
+                unit.Definition.Id.Value,
+                ModPresentationAssetSlots.Art,
+                UnitName(unit.Definition.Id),
+                $"{Term("release")} • {Term("unit")}",
+                UnitCardStats(unit.Definition.Tier, unit.Attack, unit.Health),
+                human.IsReadyForCombat || human.PendingChoice is not null || _interaction.IsActive);
             button.Pressed += () => ExecuteHuman(player => new ReleaseUnitCommand(player.Id, capturedSlot));
             _fieldButtons.AddChild(button);
         }
