@@ -13,7 +13,11 @@ using Battlegrounds.Core.Randomness;
 
 namespace Battlegrounds.AI;
 
-public sealed record PreparationAiResult(int CommandsExecuted, bool PlayerReady, int Round);
+public sealed record PreparationAiResult(
+    int CommandsExecuted,
+    bool PlayerReady,
+    int Round,
+    PreparationAiCommandCounts CommandCounts);
 
 /// <summary>
 /// A deterministic, theme-neutral baseline agent. It never mutates match state directly:
@@ -90,6 +94,7 @@ public sealed class PreparationAiAgent
         strategy ??= PreparationAiStrategy.Balanced;
         var memory = new TurnMemory(match.Round);
         var executed = 0;
+        var commandCounts = PreparationAiCommandCounts.Zero;
 
         while (match.Phase == MatchPhase.Preparation && !player.IsReadyForCombat)
         {
@@ -105,10 +110,11 @@ public sealed class PreparationAiAgent
             }
 
             executed++;
+            commandCounts = commandCounts.Add(command);
             if (command is RefreshOfferCommand) memory.Refreshes++;
         }
 
-        return new PreparationAiResult(executed, player.IsReadyForCombat, match.Round);
+        return new PreparationAiResult(executed, player.IsReadyForCombat, match.Round, commandCounts);
     }
 
     private IPreparationCommand ChooseNextCommand(
