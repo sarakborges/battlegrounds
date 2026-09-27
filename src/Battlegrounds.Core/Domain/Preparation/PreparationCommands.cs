@@ -11,6 +11,9 @@ public sealed record AcquireUnitCommand(PlayerId PlayerId, int OfferSlot) : IPre
 public sealed record AcquirePlayableCommand(PlayerId PlayerId, int OfferSlot) : IPreparationCommand;
 public sealed record ReleaseUnitCommand(PlayerId PlayerId, int FieldSlot) : IPreparationCommand;
 public sealed record DeployUnitCommand(PlayerId PlayerId, int ReserveSlot) : IPreparationCommand;
+public sealed record ReorderFieldCommand(
+    PlayerId PlayerId,
+    IReadOnlyList<UnitInstanceId> UnitInstanceIds) : IPreparationCommand;
 public sealed record PlayActionCommand(PlayerId PlayerId, int ReserveSlot, UnitInstanceId? TargetUnitInstanceId = null) : IPreparationCommand;
 public sealed record CombineUnitsCommand(
     PlayerId PlayerId,
