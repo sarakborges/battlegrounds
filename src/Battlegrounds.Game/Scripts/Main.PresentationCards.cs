@@ -1,5 +1,7 @@
 using Battlegrounds.Content;
+using Battlegrounds.Core.Domain.Ids;
 using Battlegrounds.Core.Domain.Playables;
+using Battlegrounds.Core.Domain.Units;
 using Godot;
 
 namespace Battlegrounds.Game;
@@ -60,6 +62,40 @@ public partial class Main
             ("healthText", healthText),
             ("armor", Term("armor")),
             ("armorValue", armor));
+
+    private string OfferCardStats(PlayableKind kind, string id, int tier, int cost)
+    {
+        if (_session is null) return string.Empty;
+
+        return kind switch
+        {
+            PlayableKind.Unit => BuildUnitDefinitionStats(_session.Mod.Units.GetRequired(new UnitId(id))),
+            PlayableKind.Action => ActionCardStats(tier, cost),
+            _ => string.Empty,
+        };
+    }
+
+    private string ReserveCardStats(PlayableKind kind, string definitionId, UnitInstance? unit)
+    {
+        if (_session is null) return string.Empty;
+
+        return kind switch
+        {
+            PlayableKind.Unit when unit is not null => UnitCardStats(unit.Definition.Tier, unit.Attack, unit.Health),
+            PlayableKind.Action => BuildActionDefinitionStats(definitionId),
+            _ => string.Empty,
+        };
+    }
+
+    private string BuildUnitDefinitionStats(UnitDefinition definition) =>
+        UnitCardStats(definition.Tier, definition.BaseAttack, definition.BaseHealth);
+
+    private string BuildActionDefinitionStats(string id)
+    {
+        if (_session is null) return string.Empty;
+        var definition = _session.Mod.Actions.GetRequired(new ActionId(id));
+        return ActionCardStats(definition.Tier, definition.Cost);
+    }
 
     private ModPresentationEntityKind PlayableEntityKind(PlayableKind kind) => kind switch
     {
