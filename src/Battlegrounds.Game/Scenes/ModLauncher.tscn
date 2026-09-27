@@ -45,12 +45,12 @@ text = "Battlegrounds"
 [node name="Subtitle" type="Label" parent="Margin/Root"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 18
-text = "Mod selection"
+text = "Mod selection · launcher-r3 source"
 
 [node name="Status" type="Label" parent="Margin/Root"]
 unique_name_in_owner = true
 layout_mode = 2
-text = "Launcher C# script did not start. Use Godot 4.7.2 .NET and build the project."
+text = "Launcher C# assembly did not start. Build the project with Godot 4.7.2 .NET."
 
 [node name="RefreshButton" type="Button" parent="Margin/Root"]
 unique_name_in_owner = true
