@@ -13,6 +13,7 @@ internal sealed partial class PresentationCardButton : Button
     public PresentationCardButton()
     {
         Text = string.Empty;
+        ThemeTypeVariation = "CardButton";
         CustomMinimumSize = new Vector2(0, 104);
         SizeFlagsHorizontal = SizeFlags.ExpandFill;
         ClipContents = true;
