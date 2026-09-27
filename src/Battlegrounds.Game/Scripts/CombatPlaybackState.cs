@@ -1,4 +1,5 @@
 using Battlegrounds.Application;
+using Battlegrounds.Content;
 using Battlegrounds.Core.Domain.Combat;
 using Battlegrounds.Core.Domain.Ids;
 using Battlegrounds.Core.Domain.Match;
@@ -10,6 +11,7 @@ internal sealed class CombatPlaybackState
     private readonly List<CombatPlaybackUnitState> _leftUnits;
     private readonly List<CombatPlaybackUnitState> _rightUnits;
     private readonly Dictionary<UnitInstanceId, CombatPlaybackUnitState> _unitsById;
+    private readonly ModPresentationText _text;
     private int _nextTimelineIndex;
 
     public SessionCombatRecord Record { get; }
@@ -22,12 +24,17 @@ internal sealed class CombatPlaybackState
     public CombatTimelineEvent? CurrentEvent { get; private set; }
     public bool SettlementVisible { get; private set; }
     public bool IsComplete { get; private set; }
-    public string EventText { get; private set; } = "Combat ready.";
+    public string EventText { get; private set; }
 
-    private CombatPlaybackState(SessionCombatRecord record, CombatSettlement settlement)
+    private CombatPlaybackState(
+        SessionCombatRecord record,
+        CombatSettlement settlement,
+        ModPresentationText text)
     {
         Record = record;
         Settlement = settlement;
+        _text = text ?? throw new ArgumentNullException(nameof(text));
+        EventText = $"{Term("combat")} ready.";
         _leftUnits = record.StartingUnits
             .Where(unit => unit.PlayerId == LeftPlayerId)
             .Select(CombatPlaybackUnitState.FromSnapshot)
@@ -39,14 +46,18 @@ internal sealed class CombatPlaybackState
         _unitsById = _leftUnits.Concat(_rightUnits).ToDictionary(unit => unit.InstanceId);
     }
 
-    public static CombatPlaybackState? TryCreate(SessionCombatRecord record, PlayerId focusPlayerId)
+    public static CombatPlaybackState? TryCreate(
+        SessionCombatRecord record,
+        PlayerId focusPlayerId,
+        ModPresentationText text)
     {
         ArgumentNullException.ThrowIfNull(record);
+        ArgumentNullException.ThrowIfNull(text);
         var settlement = record.RoundResult.Settlements.FirstOrDefault(value =>
             value.LeftPlayerId == focusPlayerId ||
             value.RightPlayerId == focusPlayerId ||
             value.EliminatedOpponentSourcePlayerId == focusPlayerId);
-        return settlement is null ? null : new CombatPlaybackState(record, settlement);
+        return settlement is null ? null : new CombatPlaybackState(record, settlement, text);
     }
 
     public bool Advance()
@@ -120,13 +131,13 @@ internal sealed class CombatPlaybackState
                 ApplyBehaviorChanged(behavior);
                 break;
             case CombatResourceChangedTimelineEvent resource:
-                EventText = $"P{resource.PlayerId.Value} combat Resource {(resource.Delta >= 0 ? "+" : string.Empty)}{resource.Delta}.";
+                EventText = $"P{resource.PlayerId.Value} {Term("combat")} {Term("resource")} {(resource.Delta >= 0 ? "+" : string.Empty)}{resource.Delta}.";
                 break;
             case CombatPowerChangedTimelineEvent power:
-                EventText = $"P{power.PlayerId.Value} Power changed from {power.PreviousPowerId?.Value ?? "none"} to {power.PowerId.Value}.";
+                EventText = $"P{power.PlayerId.Value} {Term("power")} changed from {power.PreviousPowerId?.Value ?? "none"} to {power.PowerId.Value}.";
                 break;
             default:
-                EventText = $"Combat event {@event.Sequence}: {@event.Kind}.";
+                EventText = $"{Term("combat")} event {@event.Sequence}: {@event.Kind}.";
                 break;
         }
     }
@@ -141,7 +152,7 @@ internal sealed class CombatPlaybackState
             return;
         }
 
-        var source = trigger.SourcePowerId is PowerId powerId ? $"Power {powerId.Value}" : "combat source";
+        var source = trigger.SourcePowerId is PowerId powerId ? $"{Term("power")} {powerId.Value}" : $"{Term("combat")} source";
         EventText = $"P{trigger.SourcePlayerId.Value} {source} triggered {trigger.Trigger.Value}.";
     }
 
@@ -179,7 +190,7 @@ internal sealed class CombatPlaybackState
         var unit = GetOrCreateUnit(damage.PlayerId, damage.UnitInstanceId);
         unit.Health = damage.HealthAfter;
         unit.Highlight = "DAMAGE";
-        unit.Status = $"-{damage.Amount} Health";
+        unit.Status = $"-{damage.Amount} {Term("health")}";
         EventText = $"P{damage.PlayerId.Value} {unit.Name} takes {damage.Amount} damage ({damage.HealthBefore} → {damage.HealthAfter}).";
     }
 
@@ -234,7 +245,7 @@ internal sealed class CombatPlaybackState
     {
         if (_unitsById.TryGetValue(instanceId, out var existing)) return existing;
 
-        var created = new CombatPlaybackUnitState(playerId, instanceId, $"Unit #{instanceId.Value}", null, 0);
+        var created = new CombatPlaybackUnitState(playerId, instanceId, $"{Term("unit")} #{instanceId.Value}", null, 0);
         _unitsById[instanceId] = created;
         GetSide(playerId).Add(created);
         return created;
@@ -277,10 +288,12 @@ internal sealed class CombatPlaybackState
                 : "draw";
         var damage = Settlement.DamagedPlayerId is PlayerId damaged
             ? $" P{damaged.Value} takes {Settlement.PlayerDamage} player damage " +
-              $"({Settlement.ArmorAbsorbed} absorbed by Armor)."
+              $"({Settlement.ArmorAbsorbed} absorbed by {Term("armor")})."
             : " No player damage.";
-        return $"Combat complete: {winner}." + damage;
+        return $"{Term("combat")} complete: {winner}." + damage;
     }
+
+    private string Term(string key) => _text.Term(key);
 }
 
 internal sealed class CombatPlaybackUnitState
