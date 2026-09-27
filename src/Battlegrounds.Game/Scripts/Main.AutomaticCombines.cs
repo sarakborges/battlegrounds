@@ -64,7 +64,7 @@ public partial class Main
         {
             var command = new CombineUnitsCommand(human.Id, plan.Value.Definition.Id, plan.Value.InstanceIds);
             var result = SubmitHumanCommand(command, logFailure: false);
-            if (result is { Succeeded: true })
+            if (result.HasValue && result.Value.Succeeded)
             {
                 _automaticCombineFailureKey = null;
                 AppendLog(
@@ -125,11 +125,6 @@ public partial class Main
         PlayerState human,
         UnitCombineDefinition definition,
         IReadOnlyList<UnitInstanceId> instanceIds) =>
-        string.Join(
-            ':',
-            match.Round,
-            human.PlayableReserveCount,
-            human.Field.Count,
-            definition.Id.Value,
-            string.Join(',', instanceIds.Select(id => id.Value)));
+        $"{match.Round}:{human.PlayableReserveCount}:{human.Field.Count}:{definition.Id.Value}:" +
+        string.Join(",", instanceIds.Select(id => id.Value));
 }
