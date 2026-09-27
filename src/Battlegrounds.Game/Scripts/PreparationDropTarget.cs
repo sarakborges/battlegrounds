@@ -8,9 +8,15 @@ public enum PreparationDropTargetRole
     SellFieldUnit = 1,
 }
 
-public partial class PreparationDropTarget : PanelContainer
+public partial class PreparationDropTarget : Control
 {
     [Export] public PreparationDropTargetRole Role { get; set; }
+
+    public PreparationDropTarget()
+    {
+        MouseFilter = MouseFilterEnum.Stop;
+        FocusMode = FocusModeEnum.None;
+    }
 
     public override bool _CanDropData(Vector2 atPosition, Variant data)
     {
