@@ -9,6 +9,11 @@ internal sealed class ModPresentationTextureStore
     private readonly ModPresentationAssetCatalog _assets;
     private readonly Dictionary<string, Texture2D> _textures = new(StringComparer.Ordinal);
 
+    public ModPresentationTextureStore(string modDirectory)
+        : this(modDirectory, new ModPresentationAssetLoader().Load(modDirectory))
+    {
+    }
+
     public ModPresentationTextureStore(string modDirectory, ModPresentationAssetCatalog assets)
     {
         if (string.IsNullOrWhiteSpace(modDirectory)) throw new ArgumentException("Mod directory cannot be empty.", nameof(modDirectory));
