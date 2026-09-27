@@ -1,12 +1,14 @@
 <Project Sdk="Godot.NET.Sdk/4.7.2">
   <PropertyGroup>
     <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="../Battlegrounds.Core/Battlegrounds.Core.csproj" />
+    <ProjectReference Include="../Battlegrounds.Application/Battlegrounds.Application.csproj" />
     <ProjectReference Include="../Battlegrounds.Content/Battlegrounds.Content.csproj" />
+    <ProjectReference Include="../Battlegrounds.Core/Battlegrounds.Core.csproj" />
   </ItemGroup>
 </Project>

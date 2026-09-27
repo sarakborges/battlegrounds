@@ -220,6 +220,16 @@ See `AI.md` for ownership and determinism rules.
 
 See `APPLICATION.md` for the orchestration and ownership contract.
 
+## Godot presentation adapter
+
+`Battlegrounds.Game` now boots a validated mod and a deterministic `SinglePlayerSession` instead of acting as an isolated placeholder scene.
+
+The first playable presentation slice exposes human Leader selection plus ordinary Preparation commands for acquiring playables, deploying/releasing Units, refreshing, upgrading, freeze/unfreeze, untargeted Action/Power use and ending Preparation. The scene renders read-only match/player/offer/reserve/field state and textual combat settlements; AI decisions and matchmaking remain behind the Application boundary.
+
+`Main.cs` owns bootstrap, click-to-command translation, transient view state and rendering only. It does not edit `MatchState`/`PlayerState` or reproduce Core validation.
+
+See `GAME.md` for the Godot ownership and presentation contract.
+
 ## Mod validation is mandatory
 
 `ModLoader.Load(...)` validates the complete mod before creating a `ModPackage`. Invalid mods are rejected as a whole.
@@ -338,22 +348,24 @@ Read `ARCHITECTURE.md` before adding features. Its ownership, dependency, mutati
 - deterministic attack order, targeting, simultaneous damage, death resolution and winner/draw resolution;
 - deterministic framework-free AI using the same public commands as presentation;
 - framework-free single-player session orchestration over validated Content + Core + AI + matchmaking;
+- thin Godot presentation adapter over the Application boundary with a playable Preparation loop;
 - whole-mod validation before loading;
-- regression/invariant tests and CI.
+- regression/invariant tests and CI, including a Godot project build.
 
 ## Local development
 
 Open `src/Battlegrounds.Game/project.godot` with the .NET build of Godot 4.7.2.
 
-Run tests with:
+Run tests/build with:
 
 ```bash
 dotnet test tests/Battlegrounds.Core.Tests/Battlegrounds.Core.Tests.csproj
 dotnet test tests/Battlegrounds.Content.Tests/Battlegrounds.Content.Tests.csproj
 dotnet test tests/Battlegrounds.AI.Tests/Battlegrounds.AI.Tests.csproj
 dotnet test tests/Battlegrounds.Application.Tests/Battlegrounds.Application.Tests.csproj
+dotnet build src/Battlegrounds.Game/Battlegrounds.Game.csproj
 ```
 
 ## Next architectural slice
 
-Connect `Battlegrounds.Game` to `Battlegrounds.Application` through a thin Godot bootstrap/presentation adapter: load a validated mod through Content, create a deterministic `SinglePlayerSession`, expose human Leader selection and Preparation commands, and render read-only session/match state without moving gameplay rules or authoritative mutation into scene scripts.
+Add explicit Godot presentation interaction state for multi-step human intent: selected Unit targets for Actions/Powers, pending Unit/Action choice resolution, and explicit Unit-combine component selection. This state may own highlights and temporary selections only; every completed interaction must still submit the existing Core command through `SinglePlayerSession`, with no scene-owned gameplay resolution.
