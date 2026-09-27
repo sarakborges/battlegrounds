@@ -183,6 +183,7 @@ public sealed class MatchEngine
 
         ApplyPowerChanges(match, powerChanges);
         match.RecordEliminations(newlyEliminated, healthBeforeCombat);
+        match.RecordCombatPairings(materializedPairings, eliminatedOpponent);
         if (match.ActivePlayerCount <= 1)
         {
             match.Finish();
