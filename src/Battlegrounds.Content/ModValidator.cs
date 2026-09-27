@@ -37,6 +37,7 @@ public sealed class ModValidator
             .Concat(generationIssues)
             .Concat(actionIssues)
             .Concat(new PersistentUnitMutationModValidator().Validate(modDirectory))
+            .Concat(new UnitCombineModValidator().Validate(modDirectory))
             .ToArray();
 
         var preliminaryReport = new ModValidationReport(issues);
@@ -55,7 +56,10 @@ public sealed class ModValidator
              issue.Path.EndsWith(".target.limit", StringComparison.Ordinal)))
             return true;
         if (issue.Code == "INVALID_PARAMETER" && issue.Path.EndsWith(".count", StringComparison.Ordinal)) return true;
-        if (issue.Code == "UNSUPPORTED_TRIGGER" && issue.Message.Contains("afterEventCount", StringComparison.Ordinal)) return true;
+        if (issue.Code == "UNSUPPORTED_TRIGGER" &&
+            (issue.Message.Contains("afterEventCount", StringComparison.Ordinal) ||
+             issue.Message.Contains("onCombine", StringComparison.Ordinal)))
+            return true;
         return issue.Code == "INVALID_VALUE" && issue.Path.EndsWith(".target.scope", StringComparison.Ordinal);
     }
 
