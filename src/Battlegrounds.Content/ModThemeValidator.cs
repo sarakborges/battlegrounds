@@ -14,6 +14,9 @@ internal sealed partial class ModThemeValidator
 
     private static readonly HashSet<string> RootKeys = ["version", "colors", "typography", "spacing", "shape", "components", "screens"];
     private static readonly HashSet<string> TypographyKeys = ["fonts", "sizes"];
+    private static readonly HashSet<string> FontEntryKeys = ["asset"];
+    private static readonly HashSet<string> PaddingKeys = ["horizontal", "vertical"];
+    private static readonly HashSet<string> SliceKeys = ["left", "top", "right", "bottom"];
     private static readonly HashSet<string> StyleKeys = [
         "font", "fontSize", "textColor", "backgroundColor", "borderColor", "borderWidth", "radius",
         "padding", "backgroundAsset", "slice", "opacity", "states"
@@ -24,8 +27,8 @@ internal sealed partial class ModThemeValidator
     ];
     private static readonly HashSet<string> ScreenKeys = ["backgroundColor", "backgroundAsset"];
     private static readonly HashSet<string> StateNames = ["normal", "hover", "pressed", "disabled", "focus"];
-    private static readonly HashSet<string> ImageExtensions = [".png", ".jpg", ".jpeg", ".webp", ".svg"];
-    private static readonly HashSet<string> FontExtensions = [".ttf", ".otf", ".woff", ".woff2"];
+    private static readonly HashSet<string> ImageExtensions = new(StringComparer.OrdinalIgnoreCase) { ".png", ".jpg", ".jpeg", ".webp", ".svg" };
+    private static readonly HashSet<string> FontExtensions = new(StringComparer.OrdinalIgnoreCase) { ".ttf", ".otf", ".woff", ".woff2" };
 
     public IReadOnlyList<ModValidationIssue> Validate(string modDirectory)
     {
@@ -164,7 +167,7 @@ internal sealed partial class ModThemeValidator
                         issues.Add(new("INVALID_TYPE", ThemeFile, path, "Font entry must be an object."));
                         continue;
                     }
-                    ValidateUnknownKeys(pair.Value, ["asset"], path, issues);
+                    ValidateUnknownKeys(pair.Value, FontEntryKeys, path, issues);
                     if (!pair.Value.TryGetProperty("asset", out var asset) || asset.ValueKind != JsonValueKind.String || string.IsNullOrWhiteSpace(asset.GetString()))
                     {
                         issues.Add(new("MISSING_REQUIRED_KEY", ThemeFile, path + ".asset", "Font asset is required."));
@@ -255,7 +258,7 @@ internal sealed partial class ModThemeValidator
                 issues.Add(new("INVALID_TYPE", ThemeFile, path + ".padding", "padding must be an object."));
             else
             {
-                ValidateUnknownKeys(padding, ["horizontal", "vertical"], path + ".padding", issues);
+                ValidateUnknownKeys(padding, PaddingKeys, path + ".padding", issues);
                 ValidateRequiredReference(padding, "horizontal", spacing, path + ".padding", issues);
                 ValidateRequiredReference(padding, "vertical", spacing, path + ".padding", issues);
             }
@@ -372,7 +375,7 @@ internal sealed partial class ModThemeValidator
             issues.Add(new("INVALID_TYPE", ThemeFile, path, "slice must be an object."));
             return;
         }
-        ValidateUnknownKeys(slice, ["left", "top", "right", "bottom"], path, issues);
+        ValidateUnknownKeys(slice, SliceKeys, path, issues);
         foreach (var side in new[] { "left", "top", "right", "bottom" })
         {
             if (!slice.TryGetProperty(side, out var element))
