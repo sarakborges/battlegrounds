@@ -54,17 +54,23 @@ The console report aggregates:
 - match count and player count;
 - average match length in rounds;
 - total AI Preparation command count;
+- the global command mix for acquire, release, deploy, Action play, combine, refresh, upgrade, Power use, pending-choice resolution, freeze/unfreeze and end Preparation;
 - games, wins, win rate, average placement and average Preparation command count grouped by Leader;
 - the same aggregates grouped by `PreparationAiPersonality`;
-- the same aggregates grouped by `PreparationAiStrategy`.
+- the same aggregates grouped by `PreparationAiStrategy`;
+- average acquire, refresh and upgrade counts in the compact console tables for quick economic comparison.
 
-The JSON report additionally includes every match and every participant result with seed, Leader, personality, strategy, placement, final Tier, final Health and total Preparation command count. The CSV export emits one row per participant with the same core fields.
+`PreparationAiAgent` returns a typed `PreparationAiCommandCounts` observation for every completed AI Preparation turn. A command is counted only after `MatchEngine.ExecutePreparation(...)` accepts it, so failed attempts cannot inflate telemetry. The counters are observations only: they are never read by AI decision policy and never participate in authoritative gameplay mutation.
 
-The initial telemetry deliberately measures results and total AI activity without introducing privileged gameplay access. Per-command-type telemetry such as buy/release/refresh/upgrade counts can be added as an observation of commands already emitted by `PreparationAiAgent`; it must not alter decision policy or Core state ownership.
+The JSON report includes every match and every participant result with seed, Leader, personality, strategy, placement, final Tier, final Health, total Preparation command count and the full typed command breakdown. Group summaries also include per-category command averages, and the top-level report includes the total command mix across the run.
+
+The CSV export emits one row per participant with columns for total Preparation commands plus every command category. This makes it practical to analyze questions such as refresh rate by personality, upgrade frequency by strategy, combine usage, Power usage, or unexpectedly passive builds without reconstructing actions from final boards.
 
 ## Determinism
 
 For a fixed repository/mod version, simulator options and base seed, the run is deterministic. Each match gets a separate `SeededRandomSource` seeded with `baseSeed + matchIndex`. Leader offers/selections, personality and strategy assignment, Preparation initiative, AI tie-breaking, offer draws, matchmaking and combat all consume that match-local deterministic stream.
+
+Telemetry observes successful commands without consuming RNG, so adding or exporting counters does not change the deterministic gameplay sequence.
 
 Different simulator match seeds are independent match runs; one failed or changed match does not advance RNG state for later matches.
 
