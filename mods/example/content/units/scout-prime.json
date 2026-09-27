@@ -1,0 +1,18 @@
+{
+  "id": "scout-prime",
+  "name": "Scout Prime",
+  "tier": 2,
+  "attack": 3,
+  "health": 5,
+  "behaviors": [],
+  "types": ["organic"],
+  "tags": ["starter"],
+  "triggers": [
+    {
+      "event": "onCombine",
+      "effects": [
+        { "kind": "addResource", "amount": 1 }
+      ]
+    }
+  ]
+}
