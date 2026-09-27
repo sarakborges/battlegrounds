@@ -5,15 +5,23 @@
   "terminology": {
     "unit": "Unit",
     "units": "Units",
+    "action": "Action",
+    "actions": "Actions",
     "leader": "Leader",
     "leaders": "Leaders",
+    "power": "Power",
+    "powers": "Powers",
     "armor": "Armor",
+    "health": "Health",
     "resource": "Energy",
     "offer": "Exchange",
     "tier": "Level",
     "reserve": "Reserve",
     "field": "Field",
     "acquire": "Acquire",
-    "release": "Release"
+    "release": "Release",
+    "preparation": "Preparation",
+    "combat": "Combat",
+    "round": "Round"
   }
 }
