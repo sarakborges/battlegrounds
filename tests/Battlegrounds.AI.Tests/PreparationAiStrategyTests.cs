@@ -78,7 +78,7 @@ public sealed class PreparationAiStrategyTests
         var random = new MinimumRandomSource();
         var pool = new UnitPool(
             units,
-            [new UnitPoolEntry(alphaBruiser.Id, 1), new UnitPoolEntry(betaScout.Id, 1)]);
+            [new UnitPoolEntry(alphaBruiser.Id, 1), new UnitPoolEntry(betaScout.Id, 3)]);
         var engine = new MatchEngine(
             new MatchRules(2, 2),
             rules,
