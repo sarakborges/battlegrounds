@@ -27,8 +27,6 @@ public partial class ModLauncher : Control
         _status.Text = "Discovering mods...";
         GD.Print("[ModLauncher] C# launcher started.");
 
-        // Let the launcher render once before filesystem validation starts. This makes
-        // a missing C# runtime distinguishable from a slow or failing discovery pass.
         await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
         DiscoverMods();
     }
@@ -96,6 +94,8 @@ public partial class ModLauncher : Control
 
     private void SelectCandidate(ModDiscoveryEntry entry)
     {
+        GD.Print($"[ModLauncher] Selected '{entry.DisplayName}' ({entry.DirectoryName}), valid={entry.IsValid}.");
+
         if (!entry.IsValid)
         {
             ShowDiagnostics(entry);
@@ -114,15 +114,23 @@ public partial class ModLauncher : Control
 
     private void StartGame(ModDiscoveryEntry entry)
     {
+        _status.Text = $"Starting {entry.DisplayName}...";
+        _diagnostics.Text = string.Empty;
+
         try
         {
             var packedScene = ResourceLoader.Load<PackedScene>(GameplayScenePath)
                 ?? throw new InvalidOperationException($"Gameplay scene '{GameplayScenePath}' could not be loaded.");
             var game = packedScene.Instantiate<Main>();
-            game.ModPath = entry.DirectoryPath;
+
+            // Main owns Godot-path globalization. Keep this as a localized res:// path
+            // rather than feeding an absolute OS path back through GlobalizePath().
+            game.ModPath = CombineGodotPath(ModsRoot, entry.DirectoryName);
             game.Seed = Seed;
             game.ParticipantCount = ParticipantCount;
             game.Locale = Locale;
+
+            GD.Print($"[ModLauncher] Starting '{entry.DisplayName}' from '{game.ModPath}'.");
 
             var parent = GetParent() ?? throw new InvalidOperationException("Launcher has no scene-tree parent.");
             parent.AddChild(game);
@@ -135,6 +143,9 @@ public partial class ModLauncher : Control
             GD.PushError($"[ModLauncher] Could not start {entry.DisplayName}: {exception}");
         }
     }
+
+    private static string CombineGodotPath(string root, string child) =>
+        $"{root.TrimEnd('/', '\\')}/{child}";
 
     private static void ClearChildren(Node parent)
     {
