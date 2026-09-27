@@ -9,12 +9,15 @@ internal sealed partial class PresentationCardButton : Button
     private readonly Label _subtitle;
     private readonly Label _stats;
     private readonly Label _description;
+    private int _fieldDragIndex = -1;
+    private bool _fieldDragEnabled;
+    private Action<int, int>? _fieldDropHandler;
 
     public PresentationCardButton()
     {
         Text = string.Empty;
         ThemeTypeVariation = "CardButton";
-        CustomMinimumSize = new Vector2(92, 108);
+        CustomMinimumSize = new Vector2(92, 0);
         ClipContents = true;
 
         var margin = IgnoreMouse(new MarginContainer());
@@ -35,7 +38,7 @@ internal sealed partial class PresentationCardButton : Button
 
         _art = IgnoreMouse(new TextureRect
         {
-            CustomMinimumSize = new Vector2(0, 68),
+            CustomMinimumSize = new Vector2(0, 52),
             SizeFlagsHorizontal = SizeFlags.ExpandFill,
             SizeFlagsVertical = SizeFlags.ExpandFill,
             ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize,
@@ -67,6 +70,43 @@ internal sealed partial class PresentationCardButton : Button
         ApplyFootprintForParent();
     }
 
+    public override Variant _GetDragData(Vector2 atPosition)
+    {
+        if (!_fieldDragEnabled || _fieldDragIndex < 0 || _fieldDropHandler is null)
+            return default;
+
+        var preview = new Label
+        {
+            Text = _title.Text,
+            CustomMinimumSize = new Vector2(Mathf.Max(96.0f, Size.X * 0.8f), 36.0f),
+            HorizontalAlignment = HorizontalAlignment.Center,
+            VerticalAlignment = VerticalAlignment.Center,
+            ThemeTypeVariation = "HeadingLabel",
+            MouseFilter = MouseFilterEnum.Ignore,
+        };
+        SetDragPreview(preview);
+        return $"field:{_fieldDragIndex}";
+    }
+
+    public override bool _CanDropData(Vector2 atPosition, Variant data)
+    {
+        if (!_fieldDragEnabled || _fieldDropHandler is null || !TryReadFieldDragIndex(data, out var sourceIndex))
+            return false;
+
+        return sourceIndex != _fieldDragIndex;
+    }
+
+    public override void _DropData(Vector2 atPosition, Variant data)
+    {
+        if (!_fieldDragEnabled || _fieldDropHandler is null || !TryReadFieldDragIndex(data, out var sourceIndex))
+            return;
+
+        if (sourceIndex == _fieldDragIndex)
+            return;
+
+        _fieldDropHandler(sourceIndex, _fieldDragIndex);
+    }
+
     public void Configure(
         string title,
         string subtitle,
@@ -87,6 +127,14 @@ internal sealed partial class PresentationCardButton : Button
         _art.Visible = texture is not null;
     }
 
+    public void ConfigureFieldDrag(int index, bool enabled, Action<int, int> dropHandler)
+    {
+        _fieldDragIndex = index;
+        _fieldDragEnabled = enabled;
+        _fieldDropHandler = dropHandler;
+        MouseDefaultCursorShape = enabled ? CursorShape.Drag : CursorShape.Arrow;
+    }
+
     public void SetSelected(bool selected)
     {
         ToggleMode = true;
@@ -99,19 +147,19 @@ internal sealed partial class PresentationCardButton : Button
         switch (parentName)
         {
             case "LeaderButtons":
-                ApplyFootprint(new Vector2(156, 214), 142, showSubtitle: false, "leader");
+                ApplyFootprint(156, 118, showSubtitle: false, "leader");
                 break;
             case "OfferButtons":
-                ApplyFootprint(new Vector2(118, 172), 102, showSubtitle: false, "shop");
+                ApplyFootprint(118, 76, showSubtitle: false, "shop");
                 break;
             case "FieldButtons":
-                ApplyFootprint(new Vector2(138, 206), 126, showSubtitle: false, "board");
+                ApplyFootprint(138, 112, showSubtitle: false, "board");
                 break;
             case "ReserveButtons":
-                ApplyFootprint(new Vector2(90, 108), 58, showSubtitle: false, "reserve");
+                ApplyFootprint(90, 34, showSubtitle: false, "reserve");
                 break;
             case "InteractionButtons":
-                ApplyFootprint(new Vector2(124, 168), 96, showSubtitle: false, "choice");
+                ApplyFootprint(124, 82, showSubtitle: false, "choice");
                 break;
             default:
                 SetMeta("presentation_footprint", "default");
@@ -119,12 +167,23 @@ internal sealed partial class PresentationCardButton : Button
         }
     }
 
-    private void ApplyFootprint(Vector2 minimumSize, float artHeight, bool showSubtitle, string role)
+    private void ApplyFootprint(float minimumWidth, float artHeight, bool showSubtitle, string role)
     {
-        CustomMinimumSize = minimumSize;
+        CustomMinimumSize = new Vector2(minimumWidth, 0);
         _art.CustomMinimumSize = new Vector2(0, artHeight);
         _subtitle.Visible = showSubtitle && !string.IsNullOrWhiteSpace(_subtitle.Text);
         SetMeta("presentation_footprint", role);
+    }
+
+    private static bool TryReadFieldDragIndex(Variant data, out int index)
+    {
+        index = -1;
+        if (data.VariantType != Variant.Type.String)
+            return false;
+
+        var text = data.AsString();
+        return text.StartsWith("field:", StringComparison.Ordinal) &&
+               int.TryParse(text["field:".Length..], out index);
     }
 
     private static Label CreateLabel(string variation, bool wrap = false)
