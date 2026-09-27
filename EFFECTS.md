@@ -27,6 +27,36 @@ A transformed Unit that originally came from the shared pool returns its origina
 
 The Content boundary rejects these four effects from Combat-capable authored triggers. Combat receives only an isolated snapshot and never receives the persistent-mutation adapter.
 
+## Combine reward lifecycle
+
+`onCombine` is a neutral Preparation-only hook for the result of an explicit `CombineUnitsCommand`. It does not mean `onPlay`, `onSummon`, or `onDeath`, and combining does not synthesize any of those events for consumed or resulting Units.
+
+The combine operation first validates the complete explicit input set, removes all selected runtime instances, returns their still-owned pooled copies, creates the result as a `Generated` Unit, and places that result in Reserve. Only then does the result's optional `onCombine` reward execute.
+
+Current `onCombine` support is intentionally narrow: it is for direct post-combine rewards that can execute without an interactive target, condition, counter, or activation-limit context. Result stats, behaviors, tags, types, and ordinary triggers belong directly on the independently-authored result `UnitDefinition`. Detailed combine ordering and pool semantics are specified in `COMBINES.md`.
+
+Example:
+
+```json
+{
+  "id": "scout-merged",
+  "name": "Merged Scout",
+  "tier": 1,
+  "attack": 4,
+  "health": 6,
+  "triggers": [
+    {
+      "event": "onCombine",
+      "effects": [
+        { "kind": "addResource", "amount": 1 }
+      ]
+    }
+  ]
+}
+```
+
+Any random consequence produced by the reward still uses the normal injected deterministic Preparation RNG. The combine operation itself consumes no RNG because the caller supplies the exact runtime instance IDs to consume.
+
 ## Power lifecycle
 
 Powers are independent content entities under `content/powers/<id>.json`. A leader stores only its initial power id; the player's `LeaderState` owns the current power id and may change it during the match.
@@ -270,6 +300,8 @@ A logical effect action resolves in this order:
 13. after the original batch is complete, create the next death batch if new deaths are pending.
 
 This preserves the important Battlegrounds/Hearthstone invariants that simultaneous dead units cannot be targeted by each other's death effects, Deathrattle-like effects resolve before Reborn-like revival, and consequences of one death can affect listeners that observe a later death in the same batch.
+
+`onCombine` is entered only after the combine transaction described above has produced its Reserve result. Its reward effects then follow the ordinary effect-runtime consequence/death ordering where applicable.
 
 ## Counted friendly-death trigger
 
