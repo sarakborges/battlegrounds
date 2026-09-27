@@ -6,7 +6,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="../Battlegrounds.Core/Battlegrounds.Core.csproj" />
+    <ProjectReference Include="../Battlegrounds.Application/Battlegrounds.Application.csproj" />
     <ProjectReference Include="../Battlegrounds.Content/Battlegrounds.Content.csproj" />
+    <ProjectReference Include="../Battlegrounds.Core/Battlegrounds.Core.csproj" />
   </ItemGroup>
 </Project>
