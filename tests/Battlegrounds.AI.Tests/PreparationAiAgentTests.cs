@@ -6,6 +6,7 @@ using Battlegrounds.Core.Domain.Effects;
 using Battlegrounds.Core.Domain.Ids;
 using Battlegrounds.Core.Domain.Leaders;
 using Battlegrounds.Core.Domain.Match;
+using Battlegrounds.Core.Domain.Players;
 using Battlegrounds.Core.Domain.Powers;
 using Battlegrounds.Core.Domain.Preparation;
 using Battlegrounds.Core.Domain.Units;
@@ -183,6 +184,60 @@ public sealed class PreparationAiAgentTests
         Assert.Empty(player.ActionReserve);
         Assert.Equal(1, player.Leader!.GetUsesThisTurn(power.Id));
         Assert.True(player.IsReadyForCombat);
+    }
+
+    [Fact]
+    public void PlayPreparation_PersonalitiesChooseDifferentEconomicLinesFromSameState()
+    {
+        var tempo = PlayEconomicPersonality(PreparationAiPersonality.Tempo);
+        var greedy = PlayEconomicPersonality(PreparationAiPersonality.Greedy);
+        var roller = PlayEconomicPersonality(PreparationAiPersonality.Roller);
+
+        Assert.Equal(1, tempo.Tier);
+        Assert.Single(tempo.Field);
+        Assert.Equal(1, tempo.Resource);
+
+        Assert.Equal(2, greedy.Tier);
+        Assert.Empty(greedy.Field);
+        Assert.Equal(0, greedy.Resource);
+
+        Assert.Equal(1, roller.Tier);
+        Assert.Empty(roller.Field);
+        Assert.Equal(2, roller.Resource);
+    }
+
+    private static PlayerState PlayEconomicPersonality(PreparationAiPersonality personality)
+    {
+        var unit = new UnitDefinition(new UnitId("worker"), "Worker", 1, 2, 2);
+        var units = new UnitCatalog([unit]);
+        var rules = new PreparationRules(
+            startingResource: 5,
+            resourcePerRound: 0,
+            maximumResource: 10,
+            acquireCost: 3,
+            releaseValue: 1,
+            refreshCost: 1,
+            fieldCapacity: 7,
+            reserveCapacity: 10,
+            maximumTier: 2,
+            offerSizesByTier: [1, 1],
+            initialUpgradeCostsByTier: [5]);
+        var random = new MinimumRandomSource();
+        var pool = new UnitPool(units, [new UnitPoolEntry(unit.Id, 8)]);
+        var engine = new MatchEngine(
+            new MatchRules(2, 2),
+            rules,
+            new CombatRules(StartingSidePolicy.Random),
+            pool,
+            random,
+            unitCatalog: units);
+        var match = engine.CreateMatch([new PlayerId(0), new PlayerId(1)]);
+        engine.BeginMatch(match);
+        var agent = new PreparationAiAgent(rules, random);
+
+        agent.PlayPreparation(engine, match, new PlayerId(0), personality: personality);
+
+        return match.Players[0];
     }
 
     private static PreparationRules CreateRules() =>
