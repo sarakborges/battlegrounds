@@ -1,17 +1,17 @@
 using System.Collections.ObjectModel;
+using Battlegrounds.Core.Domain.Actions;
 using Battlegrounds.Core.Domain.Ids;
-using Battlegrounds.Core.Domain.Units;
 
 namespace Battlegrounds.Core.Domain.Choices;
 
-public sealed class PendingUnitChoice : PendingChoice
+public sealed class PendingActionChoice : PendingChoice
 {
-    private readonly ReadOnlyCollection<UnitDefinition> _options;
+    private readonly ReadOnlyCollection<ActionDefinition> _options;
 
-    public override PendingChoiceKind Kind => PendingChoiceKind.Unit;
-    public IReadOnlyList<UnitDefinition> Options => _options;
+    public override PendingChoiceKind Kind => PendingChoiceKind.Action;
+    public IReadOnlyList<ActionDefinition> Options => _options;
 
-    internal PendingUnitChoice(ChoiceId id, IEnumerable<UnitDefinition> options)
+    internal PendingActionChoice(ChoiceId id, IEnumerable<ActionDefinition> options)
         : base(id)
     {
         ArgumentNullException.ThrowIfNull(options);
@@ -21,7 +21,7 @@ public sealed class PendingUnitChoice : PendingChoice
         if (materialized.Any(option => option is null))
             throw new ArgumentException("Choice options cannot contain null values.", nameof(options));
         if (materialized.Select(option => option.Id).Distinct().Count() != materialized.Length)
-            throw new ArgumentException("Choice options must be unique by unit id.", nameof(options));
+            throw new ArgumentException("Choice options must be unique by action id.", nameof(options));
 
         _options = Array.AsReadOnly(materialized);
     }

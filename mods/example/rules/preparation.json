@@ -9,5 +9,6 @@
   "reserveCapacity": 10,
   "maximumTier": 6,
   "offerSizesByTier": [3, 4, 4, 5, 5, 6],
+  "actionOfferSizesByTier": [0, 0, 0, 0, 0, 0],
   "initialUpgradeCostsByTier": [5, 7, 8, 11, 11]
 }

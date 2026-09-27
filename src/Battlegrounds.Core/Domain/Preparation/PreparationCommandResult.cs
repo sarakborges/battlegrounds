@@ -15,6 +15,7 @@ public enum PreparationFailureCode
     InvalidOfferSlot,
     InvalidReserveSlot,
     InvalidFieldSlot,
+    InvalidActionTarget,
     MaximumTier,
     PowerUnavailable,
     PowerNotActivatable,
@@ -36,7 +37,5 @@ public readonly record struct PreparationCommandResult
     }
 
     public static PreparationCommandResult Success() => new(true, null);
-
-    public static PreparationCommandResult Failure(PreparationFailureCode failureCode) =>
-        new(false, failureCode);
+    public static PreparationCommandResult Failure(PreparationFailureCode failureCode) => new(false, failureCode);
 }

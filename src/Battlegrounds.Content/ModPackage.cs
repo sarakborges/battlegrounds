@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using Battlegrounds.Core.Domain.Actions;
 using Battlegrounds.Core.Domain.Behaviors;
 using Battlegrounds.Core.Domain.Combat;
 using Battlegrounds.Core.Domain.Ids;
@@ -27,6 +28,7 @@ public sealed class ModPackage
     public BehaviorCatalog Behaviors { get; }
     public LeaderCatalog Leaders { get; }
     public PowerCatalog Powers { get; }
+    public ActionCatalog Actions { get; }
     public UnitTypeCatalog UnitTypes { get; }
     public TagCatalog Tags { get; }
     public UnitCatalog Units { get; }
@@ -43,6 +45,7 @@ public sealed class ModPackage
         BehaviorCatalog behaviors,
         LeaderCatalog leaders,
         PowerCatalog powers,
+        ActionCatalog actions,
         UnitTypeCatalog unitTypes,
         TagCatalog tags,
         UnitCatalog units,
@@ -57,28 +60,21 @@ public sealed class ModPackage
         Behaviors = behaviors ?? throw new ArgumentNullException(nameof(behaviors));
         Leaders = leaders ?? throw new ArgumentNullException(nameof(leaders));
         Powers = powers ?? throw new ArgumentNullException(nameof(powers));
+        Actions = actions ?? throw new ArgumentNullException(nameof(actions));
         UnitTypes = unitTypes ?? throw new ArgumentNullException(nameof(unitTypes));
         Tags = tags ?? throw new ArgumentNullException(nameof(tags));
         Units = units ?? throw new ArgumentNullException(nameof(units));
-        _terminology = new ReadOnlyDictionary<string, string>(
-            new Dictionary<string, string>(terminology, StringComparer.Ordinal));
+        _terminology = new ReadOnlyDictionary<string, string>(new Dictionary<string, string>(terminology, StringComparer.Ordinal));
         _poolEntries = Array.AsReadOnly(poolEntries.ToArray());
     }
 
     public UnitPool CreateUnitPool() => new(Units, _poolEntries);
 
-    public LeaderSelectionState CreateLeaderSelection(
-        IEnumerable<PlayerId> playerIds,
-        IRandomSource randomSource)
+    public LeaderSelectionState CreateLeaderSelection(IEnumerable<PlayerId> playerIds, IRandomSource randomSource)
     {
         ArgumentNullException.ThrowIfNull(playerIds);
         ArgumentNullException.ThrowIfNull(randomSource);
-        return LeaderSelectionState.Create(
-            playerIds,
-            MatchRules,
-            LeaderSelectionRules,
-            Leaders,
-            randomSource);
+        return LeaderSelectionState.Create(playerIds, MatchRules, LeaderSelectionRules, Leaders, randomSource);
     }
 
     public PreparationEngine CreatePreparationEngine(IRandomSource randomSource)
@@ -90,11 +86,11 @@ public sealed class ModPackage
             randomSource,
             Units,
             Behaviors,
-            Powers);
+            Powers,
+            Actions);
     }
 
-    public CombatEngine CreateCombatEngine() =>
-        new(PreparationRules.FieldCapacity, Units, Behaviors);
+    public CombatEngine CreateCombatEngine() => new(PreparationRules.FieldCapacity, Units, Behaviors);
 
     public MatchEngine CreateMatchEngine(IRandomSource randomSource)
     {
@@ -108,6 +104,7 @@ public sealed class ModPackage
             Units,
             Behaviors,
             Leaders,
-            Powers);
+            Powers,
+            Actions);
     }
 }
