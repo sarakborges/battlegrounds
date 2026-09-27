@@ -44,9 +44,9 @@ The scene may substitute runtime values into validated named templates, but loca
 
 See `LOCALIZATION.md` for the package format and fallback contract.
 
-## Mod-owned presentation assets
+## Mod-owned presentation assets and cues
 
-Validated image references remain presentation data. `Battlegrounds.Content` validates `assets/presentation.json`; `Battlegrounds.Game` resolves those references through `ModPresentationTextureStore` and owns image decoding plus `Texture2D` caching.
+Validated media references and cue metadata remain presentation data. `Battlegrounds.Content` validates `assets/presentation.json`; `Battlegrounds.Game` resolves image references through `ModPresentationTextureStore` and presentation event roles through `ModPresentationCuePlayer`.
 
 The reusable `PresentationCardButton` composes:
 
@@ -58,9 +58,11 @@ The reusable `PresentationCardButton` composes:
 
 Missing art is not an error after validation when no asset reference was authored. The media region simply collapses and the same text/stat card remains usable. A failed runtime decode also degrades to the same text layout rather than changing gameplay state.
 
+Cards emit a stable `ui.select` presentation role when pressed. `ModPresentationCuePlayer` may map that role to an authored animation, authored duration and optional `.wav` file; if no cue exists, Godot uses a neutral fallback pulse. Cue playback is fire-and-forget presentation behavior and never changes which command the owning render method submits.
+
 `PresentationCardButton` is view-only. It stores no authoritative slot, Unit instance, affordability, targeting or selection legality. The owning render method still captures the existing mechanical ID/slot and wires the same command handler as before.
 
-See `PRESENTATION_ASSETS.md` for the asset path/type contract.
+See `PRESENTATION_ASSETS.md` for the media/cue path, type and role contract.
 
 ## Input translation
 
@@ -146,9 +148,11 @@ Playback starts from the frozen Unit snapshots and then consumes `CombatResult.T
 - combat Resource deltas;
 - Power replacement.
 
-Combat board rows now use the same `PresentationCardButton` and validated Unit art as Preparation. Godot builds a presentation-only `UnitInstanceId → UnitId` lookup from frozen starting snapshots plus immutable summon/revive events so runtime instances retain stable authored visual identity without adding media concerns to Core.
+Combat board rows use the same `PresentationCardButton` and validated Unit art as Preparation. Godot builds a presentation-only `UnitInstanceId → UnitId` lookup from frozen starting snapshots plus immutable summon/revive events so runtime instances retain stable authored visual identity without adding media concerns to Core.
 
-The current timeline event selects a visual cue only. Attackers/targets, Unit trigger sources, summons, stat changes, damage, destruction, revives and behavior changes receive short scale/fade tweens on their rendered cards. A death event renders a transient fading Unit card at the event's recorded board position even though `CombatPlaybackState` has already removed that Unit from its projected board. These cues never affect timeline order or state mutation; rebuilding the same playback without tweens yields the same board projection and settlement.
+The current timeline event maps to a stable Unit presentation role such as `combat.attack`, `combat.target`, `combat.summon`, `combat.stats`, `combat.damage`, `combat.destroy`, `combat.death`, `combat.revive`, `combat.trigger` or `combat.behavior`. `ModPresentationCuePlayer` applies authored animation/duration/audio when present and the previous neutral visual emphasis when absent. A death event still renders a transient Unit card at the event's recorded board position even though `CombatPlaybackState` has already removed that Unit from its projected board.
+
+Cue duration and audio duration do not control playback advancement. Auto-step timing, manual next and settlement skip remain independent; the same immutable event order and projected board are produced with audio disabled or animations omitted.
 
 After the final timeline event, playback shows the already-computed `CombatSettlement`, including winner/draw and player damage/Armor absorption. The overlay can auto-step, advance manually or skip directly to settlement. None of those controls call combat simulation again.
 
@@ -161,7 +165,7 @@ A full-screen presentation overlay blocks the underlying Preparation controls wh
 The current main screen reads:
 
 - validated mod presentation/localization data;
-- validated mod-owned portrait/art references;
+- validated mod-owned portrait/art/audio/cue references;
 - match phase and round;
 - each player's Leader, Health, Armor, Tier, readiness/elimination state;
 - the human Resource, upgrade cost and freeze state;
@@ -171,7 +175,7 @@ The current main screen reads:
 - validated combine definitions;
 - immutable session combat observations, event timelines and settlements.
 
-Rendering may create derived labels, cards, textures, ordering, buttons, highlights, formatted strings, playback cursors and short-lived tweens. Those values are view state only and are never written back into Core.
+Rendering may create derived labels, cards, textures, audio streams, ordering, buttons, highlights, formatted strings, playback cursors and short-lived tweens. Those values are view state only and are never written back into Core.
 
 ## CI contract
 
@@ -179,4 +183,4 @@ CI builds `Battlegrounds.Game` in addition to testing Core, Content, AI and Appl
 
 ## Next presentation boundary
 
-Extend mod-owned presentation metadata beyond static images. Add validated audio references and authored animation/cue metadata keyed by stable entity IDs and presentation event roles; `Battlegrounds.Content` should validate paths/types/schema, while Godot owns clip loading, playback and timeline-to-cue mapping. Audio duration, animation completion and missing optional media must never gate or alter simulation, settlement or authoritative Match state.
+The development scene still receives one exported `ModPath`, so a real user cannot inspect/select mods without changing editor configuration. The next boundary should introduce deterministic mod discovery and a Godot selection surface over lightweight Content-owned package summaries/validation diagnostics. Invalid packages should remain inspectable but must never become running sessions, and Application/Core must remain unaware of discovery directories or selection UI.
