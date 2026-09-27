@@ -135,6 +135,63 @@ public sealed class PreparationEngineTests
     }
 
     [Fact]
+    public void ReorderField_AppliesExactRuntimeUnitOrder()
+    {
+        var (match, engine, _) = CreateStartedMatch();
+        var player = match.Players[0];
+
+        Assert.True(engine.Execute(match, new AcquireUnitCommand(player.Id, 0)).Succeeded);
+        Assert.True(engine.Execute(match, new DeployUnitCommand(player.Id, 0)).Succeeded);
+        Assert.True(engine.Execute(match, new EndPreparationCommand(player.Id)).Succeeded);
+        Assert.True(engine.Execute(match, new EndPreparationCommand(match.Players[1].Id)).Succeeded);
+        engine.BeginPreparation(match);
+        Assert.True(engine.Execute(match, new AcquireUnitCommand(player.Id, 0)).Succeeded);
+        Assert.True(engine.Execute(match, new DeployUnitCommand(player.Id, 0)).Succeeded);
+
+        var original = player.Field.ToArray();
+        Assert.Equal(2, original.Length);
+        var revisionBefore = match.Revision;
+
+        var result = engine.Execute(
+            match,
+            new ReorderFieldCommand(player.Id, [original[1].Id, original[0].Id]));
+
+        Assert.True(result.Succeeded);
+        Assert.Equal(revisionBefore + 1, match.Revision);
+        Assert.Same(original[1], player.Field[0]);
+        Assert.Same(original[0], player.Field[1]);
+    }
+
+    [Fact]
+    public void ReorderField_RejectsDuplicateOrMissingRuntimeUnitsWithoutMutation()
+    {
+        var (match, engine, _) = CreateStartedMatch();
+        var player = match.Players[0];
+
+        Assert.True(engine.Execute(match, new AcquireUnitCommand(player.Id, 0)).Succeeded);
+        Assert.True(engine.Execute(match, new DeployUnitCommand(player.Id, 0)).Succeeded);
+        Assert.True(engine.Execute(match, new EndPreparationCommand(player.Id)).Succeeded);
+        Assert.True(engine.Execute(match, new EndPreparationCommand(match.Players[1].Id)).Succeeded);
+        engine.BeginPreparation(match);
+        Assert.True(engine.Execute(match, new AcquireUnitCommand(player.Id, 0)).Succeeded);
+        Assert.True(engine.Execute(match, new DeployUnitCommand(player.Id, 0)).Succeeded);
+
+        var original = player.Field.ToArray();
+        Assert.Equal(2, original.Length);
+        var revisionBefore = match.Revision;
+
+        var result = engine.Execute(
+            match,
+            new ReorderFieldCommand(player.Id, [original[0].Id, original[0].Id]));
+
+        Assert.False(result.Succeeded);
+        Assert.Equal(PreparationFailureCode.InvalidFieldOrder, result.FailureCode);
+        Assert.Equal(revisionBefore, match.Revision);
+        Assert.Same(original[0], player.Field[0]);
+        Assert.Same(original[1], player.Field[1]);
+    }
+
+    [Fact]
     public void EndPreparation_TransitionsToCombatOnlyWhenEveryPlayerIsReady()
     {
         var (match, engine, _) = CreateStartedMatch();
