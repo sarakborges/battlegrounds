@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "id": "warbands",
+  "name": "Warbands",
+  "terminology": {
+    "unit": "Minion",
+    "units": "Minions",
+    "action": "Tactic",
+    "actions": "Tactics",
+    "leader": "Hero",
+    "leaders": "Heroes",
+    "power": "Hero Power",
+    "powers": "Hero Powers",
+    "armor": "Armor",
+    "health": "Health",
+    "resource": "Gold",
+    "offer": "Tavern",
+    "tier": "Tavern Tier",
+    "reserve": "Hand",
+    "field": "Board",
+    "acquire": "Buy",
+    "release": "Sell",
+    "preparation": "Recruitment",
+    "combat": "Combat",
+    "round": "Round"
+  }
+}
