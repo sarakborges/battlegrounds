@@ -156,7 +156,7 @@ Combat `addResource`, power changes and scoped effect-history deltas leave Comba
 
 `CombatPairing` remains explicit: matchmaking is not hidden inside `MatchEngine`.
 
-`MatchState` now owns authoritative `CombatPairingHistory`. Only pairings that were actually resolved by `MatchEngine` are recorded. Eliminated-opponent entries preserve the exact archived opponent source used at the beginning of that combat round.
+`MatchState` owns authoritative `CombatPairingHistory`. Only pairings that were actually resolved by `MatchEngine` are recorded. Eliminated-opponent entries preserve the exact archived opponent source used at the beginning of that combat round.
 
 `HistoryAwareCombatPairingPolicy` is a neutral baseline policy outside the engine. It prefers less-repeated live opponents, then the least-recent prior meeting, with injected deterministic RNG for exact ties. When an odd active-player count requires an eliminated-opponent pairing, it distributes those assignments using the same history-aware principle.
 
@@ -209,6 +209,16 @@ The baseline `PreparationAiAgent` reads the same public state available to prese
 The baseline scoring is intentionally mechanical and theme-neutral. Tie-breaking uses injected `IRandomSource`, and a command-count safety budget prevents authored zero-cost loops from trapping AI control flow.
 
 See `AI.md` for ownership and determinism rules.
+
+## Single-player application/session
+
+`Battlegrounds.Application` is a framework-free orchestration layer over validated Content, Core and AI.
+
+`SinglePlayerSession` coordinates one human player plus AI opponents. AI Leader selection and Preparation use `PreparationAiAgent`; human input uses the same `IPreparationCommand` types; combat pairings come from `ICombatPairingPolicy`; and all authoritative mutation still enters through `MatchEngine`/Core.
+
+`AdvanceAutomated()` finishes active AI Preparations, waits if the human is not ready, and otherwise resolves exactly one combat round before returning control at the next Preparation or Finished state. Godot can therefore own animation/input timing without owning simulation.
+
+See `APPLICATION.md` for the orchestration and ownership contract.
 
 ## Mod validation is mandatory
 
@@ -282,10 +292,11 @@ mods/
 
 ```text
 src/
-  Battlegrounds.Core/       # deterministic framework-free domain/simulation
-  Battlegrounds.Content/    # mod filesystem + JSON loading/validation
-  Battlegrounds.AI/         # deterministic policy over public Core boundaries
-  Battlegrounds.Game/       # Godot presentation/input/audio/rendering
+  Battlegrounds.Core/         # deterministic framework-free domain/simulation
+  Battlegrounds.Content/      # mod filesystem + JSON loading/validation
+  Battlegrounds.AI/           # deterministic policy over public Core boundaries
+  Battlegrounds.Application/  # framework-free single-player use-case orchestration
+  Battlegrounds.Game/         # Godot presentation/input/audio/rendering
 
 mods/
   example/
@@ -294,6 +305,7 @@ tests/
   Battlegrounds.Core.Tests/
   Battlegrounds.Content.Tests/
   Battlegrounds.AI.Tests/
+  Battlegrounds.Application.Tests/
 ```
 
 Read `ARCHITECTURE.md` before adding features. Its ownership, dependency, mutation, determinism and mod-neutrality rules are mandatory.
@@ -325,6 +337,7 @@ Read `ARCHITECTURE.md` before adding features. Its ownership, dependency, mutati
 - immutable combat snapshots isolated from persistent Preparation state;
 - deterministic attack order, targeting, simultaneous damage, death resolution and winner/draw resolution;
 - deterministic framework-free AI using the same public commands as presentation;
+- framework-free single-player session orchestration over validated Content + Core + AI + matchmaking;
 - whole-mod validation before loading;
 - regression/invariant tests and CI.
 
@@ -338,8 +351,9 @@ Run tests with:
 dotnet test tests/Battlegrounds.Core.Tests/Battlegrounds.Core.Tests.csproj
 dotnet test tests/Battlegrounds.Content.Tests/Battlegrounds.Content.Tests.csproj
 dotnet test tests/Battlegrounds.AI.Tests/Battlegrounds.AI.Tests.csproj
+dotnet test tests/Battlegrounds.Application.Tests/Battlegrounds.Application.Tests.csproj
 ```
 
 ## Next architectural slice
 
-Introduce a framework-free single-player application/session layer that coordinates a validated mod package, Leader selection, human and AI participants, explicit matchmaking policy, Preparation progression and Combat resolution without taking authoritative mutation ownership away from Core. Godot remains presentation; AI remains a command policy; Content remains the untrusted mod boundary.
+Connect `Battlegrounds.Game` to `Battlegrounds.Application` through a thin Godot bootstrap/presentation adapter: load a validated mod through Content, create a deterministic `SinglePlayerSession`, expose human Leader selection and Preparation commands, and render read-only session/match state without moving gameplay rules or authoritative mutation into scene scripts.
