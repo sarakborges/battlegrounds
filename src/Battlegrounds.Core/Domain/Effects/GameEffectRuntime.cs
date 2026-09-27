@@ -354,6 +354,40 @@ internal sealed class GameEffectRuntime
                 break;
             }
 
+            case GenerateUnitToReserveEffectDefinition generate:
+            {
+                var generationWorld = GetGenerationWorld(generate.Kind);
+                var unitCatalog = _unitCatalog
+                    ?? throw new InvalidOperationException("generateUnitToReserve requires a UnitCatalog in the effect runtime.");
+                var count = _pipeline.EvaluateValue(generate.Count, BuildContext(source));
+                if (count <= 0)
+                {
+                    break;
+                }
+
+                generationWorld.GenerateUnitToReserve(
+                    source.OwnerPlayerId,
+                    unitCatalog.GetRequired(generate.UnitId),
+                    count);
+                break;
+            }
+
+            case GenerateUnitChoiceEffectDefinition choice:
+            {
+                var generationWorld = GetGenerationWorld(choice.Kind);
+                var unitCatalog = _unitCatalog
+                    ?? throw new InvalidOperationException("generateUnitChoice requires a UnitCatalog in the effect runtime.");
+                var candidates = unitCatalog.All
+                    .Where(candidate => choice.Query.Matches(candidate, source.Definition))
+                    .ToArray();
+                var options = SelectRandomDefinitions(candidates, choice.OptionCount, _randomSource);
+                if (options.Count > 0)
+                {
+                    generationWorld.QueueUnitChoice(source.OwnerPlayerId, options);
+                }
+                break;
+            }
+
             case AddBehaviorEffectDefinition addBehavior:
             {
                 var behaviorCatalog = _behaviorCatalog
@@ -393,6 +427,26 @@ internal sealed class GameEffectRuntime
                     resolved.Definition.Kind,
                     "Unsupported effect kind.");
         }
+    }
+
+    private IGenerationChoiceRuntimeWorld GetGenerationWorld(NativeEffectKey kind) =>
+        _world as IGenerationChoiceRuntimeWorld
+        ?? throw new InvalidOperationException($"Effect '{kind}' is not supported by this effect world.");
+
+    private static IReadOnlyList<UnitDefinition> SelectRandomDefinitions(
+        IReadOnlyList<UnitDefinition> candidates,
+        int count,
+        IRandomSource randomSource)
+    {
+        var remaining = candidates.ToList();
+        var result = new List<UnitDefinition>(Math.Min(count, remaining.Count));
+        while (remaining.Count > 0 && result.Count < count)
+        {
+            var index = randomSource.NextInt(0, remaining.Count);
+            result.Add(remaining[index]);
+            remaining.RemoveAt(index);
+        }
+        return result;
     }
 
     private IEnumerable<IEffectRuntimeUnit> GetCurrentTargets(
