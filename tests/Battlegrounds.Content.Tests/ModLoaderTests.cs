@@ -9,7 +9,7 @@ namespace Battlegrounds.Content.Tests;
 public sealed class ModLoaderTests
 {
     [Fact]
-    public void Load_ReadsRulesLeadersPowersTaxonomyBehaviorsTriggersUnitsAndPoolFromModDirectory()
+    public void Load_ReadsRulesLeadersPowersTaxonomyBehaviorsTriggersUnitsPoolAndPresentationFromModDirectory()
     {
         var path = Path.Combine(AppContext.BaseDirectory, "mods", "example");
 
@@ -18,6 +18,12 @@ public sealed class ModLoaderTests
         Assert.Equal("example", mod.Id);
         Assert.Equal("Energy", mod.Terminology["resource"]);
         Assert.Equal("Leader", mod.Terminology["leader"]);
+        Assert.Equal("en", mod.Presentation.DefaultLocale);
+        Assert.Equal("Energy", mod.Presentation.Resolve("en").Term("resource"));
+        Assert.Equal("Energia", mod.Presentation.Resolve("pt-BR").Term("resource"));
+        Assert.Equal("Escolha seu Líder", mod.Presentation.Resolve("pt-BR").Format(
+            "ui.chooseLeader",
+            ("leader", mod.Presentation.Resolve("pt-BR").Term("leader"))));
         Assert.Equal(2, mod.MatchRules.MinimumPlayers);
         Assert.Equal(8, mod.MatchRules.MaximumPlayers);
         Assert.Equal(30, mod.MatchRules.StartingHealth);
