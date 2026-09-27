@@ -108,7 +108,7 @@ public sealed class CombatTimelineTests
                 new TriggerDefinition(NativeTriggerKeys.OnCombatStart, [new AddResourceEffectDefinition(2)]),
                 new TriggerDefinition(NativeTriggerKeys.OnCombatEnd, [new SetPowerEffectDefinition(nextId)]),
             ]);
-        var next = new PowerDefinition(nextId, "Next", activation: null);
+        var next = new PowerDefinition(nextId, "Next", activation: null, triggers: []);
         var wall = new UnitDefinition(new UnitId("wall"), "Wall", 1, 0, 5);
         var units = new UnitCatalog([wall]);
         var input = new CombatInput(
