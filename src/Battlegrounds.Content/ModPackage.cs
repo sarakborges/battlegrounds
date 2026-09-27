@@ -2,6 +2,7 @@ using System.Collections.ObjectModel;
 using Battlegrounds.Core.Domain.Actions;
 using Battlegrounds.Core.Domain.Behaviors;
 using Battlegrounds.Core.Domain.Combat;
+using Battlegrounds.Core.Domain.Combines;
 using Battlegrounds.Core.Domain.Ids;
 using Battlegrounds.Core.Domain.Leaders;
 using Battlegrounds.Core.Domain.Match;
@@ -29,6 +30,7 @@ public sealed class ModPackage
     public LeaderCatalog Leaders { get; }
     public PowerCatalog Powers { get; }
     public ActionCatalog Actions { get; }
+    public UnitCombineCatalog UnitCombines { get; }
     public UnitTypeCatalog UnitTypes { get; }
     public TagCatalog Tags { get; }
     public UnitCatalog Units { get; }
@@ -46,6 +48,7 @@ public sealed class ModPackage
         LeaderCatalog leaders,
         PowerCatalog powers,
         ActionCatalog actions,
+        UnitCombineCatalog unitCombines,
         UnitTypeCatalog unitTypes,
         TagCatalog tags,
         UnitCatalog units,
@@ -61,6 +64,7 @@ public sealed class ModPackage
         Leaders = leaders ?? throw new ArgumentNullException(nameof(leaders));
         Powers = powers ?? throw new ArgumentNullException(nameof(powers));
         Actions = actions ?? throw new ArgumentNullException(nameof(actions));
+        UnitCombines = unitCombines ?? throw new ArgumentNullException(nameof(unitCombines));
         UnitTypes = unitTypes ?? throw new ArgumentNullException(nameof(unitTypes));
         Tags = tags ?? throw new ArgumentNullException(nameof(tags));
         Units = units ?? throw new ArgumentNullException(nameof(units));
@@ -87,7 +91,8 @@ public sealed class ModPackage
             Units,
             Behaviors,
             Powers,
-            Actions);
+            Actions,
+            UnitCombines);
     }
 
     public CombatEngine CreateCombatEngine() => new(PreparationRules.FieldCapacity, Units, Behaviors);
@@ -105,6 +110,7 @@ public sealed class ModPackage
             Behaviors,
             Leaders,
             Powers,
-            Actions);
+            Actions,
+            UnitCombines);
     }
 }
