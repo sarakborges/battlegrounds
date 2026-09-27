@@ -13,6 +13,30 @@ public partial class Main
     private Label _hudTierValue = null!;
     private Label _hudResourceValue = null!;
     private PanelContainer _hudArmorBadge = null!;
+    private bool _hudBound;
+    private string? _hudSignature;
+
+    public override void _Process(double delta)
+    {
+        if (!_hudBound)
+        {
+            BindHudNodes();
+            _hudBound = true;
+        }
+
+        if (_session?.Match is not MatchState match ||
+            !match.TryGetPlayer(_session.HumanPlayerId, out var human))
+        {
+            return;
+        }
+
+        var signature = BuildHudSignature(match, human);
+        if (string.Equals(signature, _hudSignature, StringComparison.Ordinal))
+            return;
+
+        _hudSignature = signature;
+        RenderSemanticHud(match, human);
+    }
 
     private void BindHudNodes()
     {
@@ -98,7 +122,7 @@ public partial class Main
             row.AddThemeConstantOverride("separation", 6);
             margin.AddChild(row);
 
-            var rankLabel = new Label
+            row.AddChild(new Label
             {
                 Text = (rank + 1).ToString(),
                 CustomMinimumSize = new Vector2(20, 0),
@@ -106,8 +130,7 @@ public partial class Main
                 VerticalAlignment = VerticalAlignment.Center,
                 ThemeTypeVariation = "CaptionLabel",
                 MouseFilter = Control.MouseFilterEnum.Ignore,
-            };
-            row.AddChild(rankLabel);
+            });
 
             var identity = new VBoxContainer
             {
@@ -140,27 +163,32 @@ public partial class Main
             stats.AddThemeConstantOverride("separation", 0);
             row.AddChild(stats);
 
-            var health = new Label
+            stats.AddChild(new Label
             {
                 Text = player.Health.ToString(),
                 HorizontalAlignment = HorizontalAlignment.Right,
                 ThemeTypeVariation = "HealthValueLabel",
                 TooltipText = $"{Term("health")}: {player.Health}",
                 MouseFilter = Control.MouseFilterEnum.Ignore,
-            };
-            stats.AddChild(health);
-
-            var tier = new Label
+            });
+            stats.AddChild(new Label
             {
                 Text = player.Tier.ToString(),
                 HorizontalAlignment = HorizontalAlignment.Right,
                 ThemeTypeVariation = "TierValueLabel",
                 TooltipText = $"{Term("tier")}: {player.Tier}",
                 MouseFilter = Control.MouseFilterEnum.Ignore,
-            };
-            stats.AddChild(tier);
+            });
 
             _opponentEntries.AddChild(entry);
         }
+    }
+
+    private static string BuildHudSignature(MatchState match, PlayerState human)
+    {
+        var players = string.Join(';', match.Players
+            .OrderBy(player => player.Id.Value)
+            .Select(player => $"{player.Id.Value}:{player.Health}:{player.Leader?.Armor ?? 0}:{player.Tier}:{player.IsReadyForCombat}:{player.IsEliminated}:{player.Leader?.Definition.Id.Value}"));
+        return $"{match.Round}:{match.Phase}:{human.Resource}:{players}";
     }
 }
