@@ -43,13 +43,46 @@ public partial class Main
     private void BindHudNodes()
     {
         _opponentEntries = GetNode<VBoxContainer>("%OpponentEntries");
-        _hudHeroPortrait = GetNode<TextureRect>("%HudHeroPortrait");
         _hudHeroName = GetNode<Label>("%HudHeroName");
         _hudHealthValue = GetNode<Label>("%HudHealthValue");
         _hudArmorValue = GetNode<Label>("%HudArmorValue");
         _hudTierValue = GetNode<Label>("%HudTierValue");
         _hudResourceValue = GetNode<Label>("%HudResourceValue");
         _hudArmorBadge = GetNode<PanelContainer>("%HudArmorBadge");
+        _hudHeroPortrait = EnsureHeroPortraitSlot();
+    }
+
+    private TextureRect EnsureHeroPortraitSlot()
+    {
+        var heroDock = GetNode<HBoxContainer>("Margin/Shell/CenterStage/PreparationPanel/HeroDock");
+        heroDock.CustomMinimumSize = new Vector2(0, 108);
+
+        var existing = heroDock.GetNodeOrNull<PanelContainer>("HeroPortraitFrame");
+        if (existing is not null && existing.GetNodeOrNull<TextureRect>("Portrait") is TextureRect existingPortrait)
+            return existingPortrait;
+
+        var frame = new PanelContainer
+        {
+            Name = "HeroPortraitFrame",
+            CustomMinimumSize = new Vector2(88, 88),
+            ThemeTypeVariation = "HeroPortraitFrame",
+            MouseFilter = Control.MouseFilterEnum.Ignore,
+        };
+        var portrait = new TextureRect
+        {
+            Name = "Portrait",
+            CustomMinimumSize = new Vector2(88, 88),
+            ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize,
+            StretchMode = TextureRect.StretchModeEnum.KeepAspectCovered,
+            MouseFilter = Control.MouseFilterEnum.Ignore,
+        };
+        frame.AddChild(portrait);
+
+        var heroCore = heroDock.GetNode<Control>("HeroCore");
+        var insertAt = heroCore.GetIndex();
+        heroDock.AddChild(frame);
+        heroDock.MoveChild(frame, insertAt);
+        return portrait;
     }
 
     private void RenderSemanticHud(MatchState match, PlayerState human)
