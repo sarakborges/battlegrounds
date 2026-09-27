@@ -32,51 +32,58 @@ offset_right = -64.0
 offset_bottom = -48.0
 grow_horizontal = 2
 grow_vertical = 2
+mouse_filter = 1
 
 [node name="Root" type="VBoxContainer" parent="Margin"]
 layout_mode = 2
 theme_override_constants/separation = 14
+mouse_filter = 1
 
 [node name="Title" type="Label" parent="Margin/Root"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 32
 text = "Battlegrounds"
+mouse_filter = 2
 
 [node name="Subtitle" type="Label" parent="Margin/Root"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 18
-text = "Mod selection · launcher-r3 source"
+text = "Mod selection · launcher-r4 source"
+mouse_filter = 2
 
 [node name="Status" type="Label" parent="Margin/Root"]
 unique_name_in_owner = true
 layout_mode = 2
 text = "Launcher C# assembly did not start. Build the project with Godot 4.7.2 .NET."
+mouse_filter = 2
 
 [node name="RefreshButton" type="Button" parent="Margin/Root"]
 unique_name_in_owner = true
 layout_mode = 2
 text = "Refresh mods"
+mouse_filter = 0
 
 [node name="DividerA" type="HSeparator" parent="Margin/Root"]
 layout_mode = 2
+mouse_filter = 2
 
-[node name="ModScroll" type="ScrollContainer" parent="Margin/Root"]
-layout_mode = 2
-size_flags_vertical = 3
-
-[node name="ModButtons" type="VBoxContainer" parent="Margin/Root/ModScroll"]
+[node name="ModButtons" type="VBoxContainer" parent="Margin/Root"]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
+size_flags_vertical = 3
 theme_override_constants/separation = 8
+mouse_filter = 1
 
 [node name="DividerB" type="HSeparator" parent="Margin/Root"]
 layout_mode = 2
+mouse_filter = 2
 
 [node name="DiagnosticsTitle" type="Label" parent="Margin/Root"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 18
 text = "Validation diagnostics"
+mouse_filter = 2
 
 [node name="Diagnostics" type="RichTextLabel" parent="Margin/Root"]
 unique_name_in_owner = true
@@ -86,3 +93,4 @@ size_flags_vertical = 3
 scroll_active = true
 fit_content = false
 text = ""
+mouse_filter = 1
