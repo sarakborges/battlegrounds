@@ -49,7 +49,7 @@ public partial class Main
         EnsureCombatPlaybackUi();
         _combatOverlay!.Visible = true;
         RenderCombatPlayback();
-        AppendLog($"Playing resolved combat round {record.Round} from immutable session data.");
+        AppendLog($"Playing resolved {Term("combat")} {Term("round")} {record.Round} from immutable session data.");
     }
 
     private void EnsureCombatPlaybackUi()
@@ -84,7 +84,10 @@ public partial class Main
         root.AddThemeConstantOverride("separation", 12);
         margin.AddChild(root);
 
-        _combatTitle = new Label { Text = "Combat playback" };
+        _combatTitle = new Label
+        {
+            Text = Text("ui.combatPlayback", ("combat", Term("combat"))),
+        };
         _combatTitle.AddThemeFontSizeOverride("font_size", 26);
         root.AddChild(_combatTitle);
 
@@ -117,14 +120,18 @@ public partial class Main
         right.AddChild(_combatRightUnits);
         boards.AddChild(right);
 
-        _combatEvent = new Label { Text = "Combat ready." };
+        _combatEvent = new Label();
         _combatEvent.AddThemeFontSizeOverride("font_size", 17);
         root.AddChild(_combatEvent);
 
         var controls = new HBoxContainer();
         controls.AddThemeConstantOverride("separation", 8);
-        _combatNextButton = new Button { Text = "Next", SizeFlagsHorizontal = Control.SizeFlags.ExpandFill };
-        _combatSkipButton = new Button { Text = "Skip to settlement" };
+        _combatNextButton = new Button
+        {
+            Text = Text("ui.next"),
+            SizeFlagsHorizontal = Control.SizeFlags.ExpandFill,
+        };
+        _combatSkipButton = new Button { Text = Text("ui.skipSettlement") };
         _combatNextButton.Pressed += AdvanceCombatPlayback;
         _combatSkipButton.Pressed += SkipCombatPlayback;
         controls.AddChild(_combatNextButton);
@@ -139,12 +146,16 @@ public partial class Main
         var playback = _combatPlayback;
         var timeline = playback.Settlement.CombatResult.Timeline;
         var shownEvent = playback.CurrentEvent?.Sequence ?? 0;
-        _combatTitle!.Text = $"Round {playback.Record.Round} combat • already resolved by Core";
+        _combatTitle!.Text = Text(
+            "ui.combatResolvedTitle",
+            ("round", Term("round")),
+            ("roundValue", playback.Record.Round),
+            ("combat", Term("combat")));
         _combatProgress!.Text = playback.SettlementVisible
-            ? $"Settlement • {timeline.Count} timeline event(s)"
+            ? Text("ui.combatSettlementProgress", ("events", timeline.Count))
             : shownEvent == 0
-                ? $"Initial boards • {timeline.Count} event(s) queued"
-                : $"Event {shownEvent}/{timeline.Count} • {playback.CurrentEvent!.Kind}";
+                ? Text("ui.combatInitialBoards", ("events", timeline.Count))
+                : Text("ui.combatEventProgress", ("current", shownEvent), ("events", timeline.Count)) + $" • {playback.CurrentEvent!.Kind}";
         _combatLeftHeader!.Text = FormatCombatSide(playback.LeftPlayerId, archived: false);
         _combatRightHeader!.Text = FormatCombatSide(
             playback.RightPlayerId,
@@ -154,22 +165,27 @@ public partial class Main
         RenderCombatUnits(_combatLeftUnits!, playback.LeftUnits);
         RenderCombatUnits(_combatRightUnits!, playback.RightUnits);
 
-        _combatNextButton!.Text = playback.SettlementVisible ? "Continue" : "Next event";
-        _combatSkipButton!.Visible = !playback.SettlementVisible;
+        _combatNextButton!.Text = playback.SettlementVisible ? Text("ui.continue") : Text("ui.next");
+        _combatSkipButton!.Text = Text("ui.skipSettlement");
+        _combatSkipButton.Visible = !playback.SettlementVisible;
     }
 
     private string FormatCombatSide(PlayerId playerId, bool archived)
     {
-        var actor = _session is not null && playerId == _session.HumanPlayerId ? "YOU" : archived ? "ARCHIVED" : "AI";
-        return $"P{playerId.Value} [{actor}]";
+        var key = _session is not null && playerId == _session.HumanPlayerId
+            ? "ui.sideYou"
+            : archived
+                ? "ui.sideArchived"
+                : "ui.sideAi";
+        return Text(key, ("player", playerId.Value));
     }
 
-    private static void RenderCombatUnits(VBoxContainer container, IReadOnlyList<CombatPlaybackUnitState> units)
+    private void RenderCombatUnits(VBoxContainer container, IReadOnlyList<CombatPlaybackUnitState> units)
     {
         ClearChildren(container);
         if (units.Count == 0)
         {
-            AddMutedLabel(container, "Empty field");
+            AddMutedLabel(container, Text("ui.emptyField", ("field", Term("field"))));
             return;
         }
 
@@ -219,7 +235,7 @@ public partial class Main
     private void FinishCombatPlayback()
     {
         if (_combatPlayback is not null)
-            AppendLog($"Finished combat playback for round {_combatPlayback.Record.Round}.");
+            AppendLog($"Finished {Term("combat")} playback for {Term("round")} {_combatPlayback.Record.Round}.");
         _combatPlayback = null;
         _combatPlaybackAccumulator = 0;
         if (_combatOverlay is not null) _combatOverlay.Visible = false;
