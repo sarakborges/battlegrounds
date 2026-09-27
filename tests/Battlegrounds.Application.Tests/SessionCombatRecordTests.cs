@@ -33,7 +33,7 @@ public sealed class SessionCombatRecordTests
         Assert.Same(advance.CombatRound, record.RoundResult);
         Assert.Equal(advance.Pairings, record.Pairings);
 
-        var snapshot = Assert.Single(record.StartingUnits.Where(unit => unit.InstanceId == humanUnit.Id));
+        var snapshot = Assert.Single(record.StartingUnits, unit => unit.InstanceId == humanUnit.Id);
         Assert.Equal(human, snapshot.PlayerId);
         Assert.Equal(humanUnit.Definition.Id, snapshot.UnitId);
         Assert.Equal(humanUnit.Definition.Name, snapshot.Name);
