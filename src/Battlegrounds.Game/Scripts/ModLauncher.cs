@@ -5,7 +5,7 @@ namespace Battlegrounds.Game;
 
 public partial class ModLauncher : Control
 {
-    private const string LauncherRevision = "launcher-r3";
+    private const string LauncherRevision = "launcher-r4";
 
     [Export] public string ModsRoot { get; set; } = "res://../../mods";
     [Export] public string GameplayScenePath { get; set; } = "res://Scenes/Main.tscn";
@@ -86,12 +86,13 @@ public partial class ModLauncher : Control
         {
             Text = $"{entry.DisplayName}  ·  {id}  ·  {state}",
             SizeFlagsHorizontal = SizeFlags.ExpandFill,
+            MouseFilter = MouseFilterEnum.Stop,
+            FocusMode = FocusModeEnum.All,
             TooltipText = entry.IsValid
                 ? "Start a local single-player match with this mod."
                 : "Inspect validation diagnostics for this mod.",
         };
 
-        // ButtonDown gives immediate visible proof that pointer input reached the dynamic button.
         button.ButtonDown += () =>
         {
             _status.Text = $"Pressed {entry.DisplayName}... [{LauncherRevision}]";
