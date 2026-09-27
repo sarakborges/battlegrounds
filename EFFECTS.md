@@ -2,6 +2,31 @@
 
 Effects and triggers are game-domain mechanics. They are not owned by Preparation or Combat. Both phases execute authored mechanics through the shared `GameEffectRuntime` and provide only the state adapter appropriate to that phase.
 
+## Persistent unit mutations
+
+Four effects intentionally mutate authoritative Unit state and are therefore valid only in Preparation-only contexts:
+
+- `transformUnit`: preserves the runtime instance identity and field position, replaces its authored Unit definition, resets definition-derived stats/behaviors, and clears prior named modifiers;
+- `copyUnitToReserve`: creates a new `Generated` reserve Unit carrying the target's current definition, stats, runtime behaviors, and named modifiers;
+- `applyUnitModifier`: applies a persistent Attack/Health contribution under a neutral `modifierKey`; applying the same key again replaces the previous contribution;
+- `removeUnitModifier`: removes that key and reverses the stored contribution.
+
+Example:
+
+```json
+{
+  "kind": "applyUnitModifier",
+  "target": { "scope": "selected" },
+  "modifierKey": "training-aura",
+  "attack": 2,
+  "health": 3
+}
+```
+
+A transformed Unit that originally came from the shared pool returns its original pooled definition immediately, then becomes `Generated`. This prevents its transformed definition from being returned to the pool and prevents a later release/death from returning the original copy twice. Copies created by `copyUnitToReserve` are also `Generated` and never consume or return pool copies.
+
+The Content boundary rejects these four effects from Combat-capable authored triggers. Combat receives only an isolated snapshot and never receives the persistent-mutation adapter.
+
 ## Power lifecycle
 
 Powers are independent content entities under `content/powers/<id>.json`. A leader stores only its initial power id; the player's `LeaderState` owns the current power id and may change it during the match.
