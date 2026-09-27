@@ -175,6 +175,9 @@ public sealed class PreparationAiAgent
         };
         if (strategic is not null) return strategic;
 
+        var reorder = TryCreateReorderFieldCommand(player, strategy);
+        if (reorder is not null) return reorder;
+
         if (!player.IsOfferFrozen && player.PlayableOfferCount > 0)
             return new FreezeOfferCommand(player.Id);
 
@@ -300,6 +303,23 @@ public sealed class PreparationAiAgent
         }
 
         return new ReleaseUnitCommand(player.Id, weakestFieldIndex);
+    }
+
+    private static ReorderFieldCommand? TryCreateReorderFieldCommand(
+        PlayerState player,
+        PreparationAiStrategy strategy)
+    {
+        if (player.Field.Count < 2) return null;
+
+        var desiredOrder = player.Field
+            .OrderByDescending(unit => ScoreUnitInstance(unit, strategy))
+            .ThenBy(unit => unit.Id.Value)
+            .Select(unit => unit.Id)
+            .ToArray();
+        var currentOrder = player.Field.Select(unit => unit.Id);
+        return currentOrder.SequenceEqual(desiredOrder)
+            ? null
+            : new ReorderFieldCommand(player.Id, desiredOrder);
     }
 
     private PlayActionCommand? TryCreatePlayActionCommand(MatchState match, PlayerState player)
