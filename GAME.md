@@ -20,7 +20,7 @@ Battlegrounds.Application
 
 ## Main scene bootstrap
 
-`Main.cs` currently provides the first playable vertical slice. Its exported bootstrap values are:
+`Main.cs` provides the current playable vertical slice. Its exported bootstrap values are:
 
 - `ModPath`: validated mod directory, defaulting to the repository `mods/example` fixture while developing locally;
 - `Seed`: deterministic single-player session seed;
@@ -32,9 +32,9 @@ Player `0` is the local human and the remaining generated player IDs are AI-cont
 
 ## Input translation
 
-The scene does not edit `MatchState` or `PlayerState`. Buttons create ordinary Core commands and send them through `SinglePlayerSession.ExecuteHumanPreparation(...)`.
+The scene does not edit `MatchState` or `PlayerState`. Completed interactions create ordinary Core commands and send them through `SinglePlayerSession.ExecuteHumanPreparation(...)`.
 
-The first presentation surface covers:
+The current presentation surface covers:
 
 - human Leader selection from the authoritative `LeaderSelectionState` offer;
 - generic playable acquisition through `AcquirePlayableCommand`;
@@ -42,17 +42,55 @@ The first presentation surface covers:
 - offer refresh;
 - tier upgrade;
 - freeze/unfreeze;
-- untargeted Power activation;
-- untargeted Action play;
+- untargeted and selected-target Power activation;
+- untargeted and selected-target Action play;
+- pending Unit/Action choice resolution;
+- explicit Unit-combine recipe and component selection;
 - ending Preparation.
 
 Rejected commands are displayed as presentation feedback. The UI does not reproduce affordability, capacity, phase, target or readiness validation.
 
-Targeted Actions/Powers, pending-choice interaction and explicit combine selection are intentionally not reimplemented as ad-hoc UI rules. They need a presentation interaction-state slice that still derives legal intent from the public domain state and submits the existing commands.
+## Multi-step presentation interaction state
+
+`PresentationInteractionState` owns temporary UI intent only. It may remember:
+
+- that an Action is waiting for a selected target and which reserve slot initiated it;
+- that a Power is waiting for a selected target;
+- that the user is choosing a combine recipe;
+- which exact `UnitInstanceId` values are highlighted as combine components.
+
+It never mutates domain objects and never resolves an effect itself.
+
+### Selected targets
+
+Godot deliberately does not parse effect selectors to decide whether an Action or Power needs a target. It first submits the ordinary command without a target.
+
+If Core returns `InvalidActionTarget` or `InvalidPowerTarget`, presentation enters target-selection mode. Candidate Field Units are rendered as buttons and the selected `UnitInstanceId` is resubmitted through the same command type. Core remains the source of truth for whether that target is legal.
+
+This keeps type/tag selector semantics, phase legality and effect validation out of the scene.
+
+### Pending choices
+
+`PlayerState.PendingChoice` is authoritative read-only state. While a pending choice exists, unrelated Preparation controls are disabled.
+
+Godot renders the authored options and resolves the selected index only through:
+
+- `ResolveUnitChoiceCommand`;
+- `ResolveActionChoiceCommand`.
+
+The scene never removes the pending choice or inserts the generated playable itself.
+
+### Unit combines
+
+Available recipe presentation is derived from the validated mod combine catalog plus the human player's read-only Reserve/Field state.
+
+After choosing a recipe, the user explicitly toggles exact owned Unit instances. Presentation stores only those selected IDs. Confirmation submits one `CombineUnitsCommand` containing the selected `UnitInstanceId` values.
+
+Core still validates the recipe, copy count and instances, consumes components, returns pool ownership and creates the result. Godot never performs those mutations.
 
 ## Automated advancement
 
-After input, the scene asks `SinglePlayerSession.AdvanceAutomated()` to run AI Preparation and, when all active players are ready, resolve one combat round through the Application boundary.
+After successful input, the scene asks `SinglePlayerSession.AdvanceAutomated()` to run AI Preparation and, when all active players are ready, resolve one combat round through the Application boundary.
 
 The returned `CombatRoundResult` is currently rendered as a textual session log. Combat animation timing is presentation-owned, but simulation is already complete and immutable from the scene's perspective.
 
@@ -67,9 +105,11 @@ The current main screen reads:
 - the human Resource, upgrade cost and freeze state;
 - generic playable offer and reserve views;
 - human Field state;
+- pending-choice state;
+- validated combine definitions;
 - combat settlements returned from Application.
 
-Rendering may create derived labels, ordering and highlights. Those values are view state only and are never written back into Core.
+Rendering may create derived labels, ordering, buttons and highlights. Those values are view state only and are never written back into Core.
 
 ## CI contract
 
@@ -77,4 +117,6 @@ CI builds `Battlegrounds.Game` in addition to testing Core, Content, AI and Appl
 
 ## Next presentation boundary
 
-The next Godot slice should add explicit interaction state for mechanics that require multi-step human intent: selected Unit targets, pending Unit/Action choices and combine component selection. That state belongs to presentation and must end by submitting the existing Core commands rather than introducing scene-owned gameplay resolution.
+The next Godot slice should add combat playback over immutable combat result data. `CombatResult.Attacks` already exposes an ordered `CombatAttack` sequence with attacker/target IDs, damage, barrier/lethal flags, health-after values, death and revive information.
+
+Presentation should turn that sequence into a playback queue/view model and animate it without rerunning combat, changing authoritative state, or delaying Core settlement. Preparation for the next round may already exist authoritatively while the scene is still displaying the completed prior combat.

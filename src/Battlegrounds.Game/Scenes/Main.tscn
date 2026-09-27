@@ -84,6 +84,38 @@ layout_mode = 2
 theme_override_font_sizes/font_size = 17
 text = ""
 
+[node name="InteractionPanel" type="VBoxContainer" parent="Margin/Root/PreparationPanel"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_constants/separation = 6
+visible = false
+
+[node name="InteractionPrompt" type="Label" parent="Margin/Root/PreparationPanel/InteractionPanel"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_font_sizes/font_size = 16
+text = ""
+
+[node name="InteractionButtons" type="VBoxContainer" parent="Margin/Root/PreparationPanel/InteractionPanel"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_constants/separation = 4
+
+[node name="InteractionActions" type="HBoxContainer" parent="Margin/Root/PreparationPanel/InteractionPanel"]
+layout_mode = 2
+theme_override_constants/separation = 6
+
+[node name="ConfirmInteractionButton" type="Button" parent="Margin/Root/PreparationPanel/InteractionPanel/InteractionActions"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Confirm"
+visible = false
+
+[node name="CancelInteractionButton" type="Button" parent="Margin/Root/PreparationPanel/InteractionPanel/InteractionActions"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Cancel"
+
 [node name="Columns" type="HBoxContainer" parent="Margin/Root/PreparationPanel"]
 layout_mode = 2
 size_flags_vertical = 3
@@ -154,6 +186,11 @@ text = "Freeze offer"
 unique_name_in_owner = true
 layout_mode = 2
 text = "Use power"
+
+[node name="CombineButton" type="Button" parent="Margin/Root/PreparationPanel/Actions"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Combine units"
 
 [node name="EndPreparationButton" type="Button" parent="Margin/Root/PreparationPanel/Actions"]
 unique_name_in_owner = true
