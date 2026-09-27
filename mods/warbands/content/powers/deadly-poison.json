@@ -1,6 +1,6 @@
 {
-  "id": "pack-instinct",
-  "name": "Pack Instinct",
+  "id": "deadly-poison",
+  "name": "Deadly Poison",
   "activation": {
     "cost": 1,
     "maxUsesPerTurn": 1
@@ -12,7 +12,7 @@
         {
           "kind": "modifyStats",
           "target": { "scope": "selected" },
-          "attack": 2
+          "attack": 3
         }
       ]
     }

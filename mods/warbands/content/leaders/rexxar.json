@@ -1,0 +1,7 @@
+{
+  "id": "rexxar",
+  "name": "Rexxar",
+  "healthModifier": 0,
+  "armor": 4,
+  "initialPowerId": "bestial-wrath"
+}

@@ -1,7 +1,0 @@
-{
-  "id": "morvane-necromancer",
-  "name": "Morvane the Necromancer",
-  "healthModifier": -2,
-  "armor": 6,
-  "initialPowerId": "grave-blessing"
-}

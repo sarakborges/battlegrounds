@@ -1,0 +1,20 @@
+{
+  "id": "fireblast",
+  "name": "Fireblast",
+  "activation": {
+    "cost": 1,
+    "maxUsesPerTurn": 1
+  },
+  "triggers": [
+    {
+      "event": "onActivate",
+      "effects": [
+        {
+          "kind": "dealDamage",
+          "target": { "scope": "selected" },
+          "amount": 1
+        }
+      ]
+    }
+  ]
+}
