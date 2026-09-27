@@ -372,6 +372,22 @@ public sealed class CombatEngine
                 sourceUnitInstanceId,
                 sourcePowerId));
 
+        public void RecordResolvedTrigger(IEffectRuntimeUnit source, NativeTriggerKey trigger, int triggerIndex)
+        {
+            PowerId? sourcePowerId = source is CombatPowerRuntimeUnit powerSource ? powerSource.PowerId : null;
+            UnitInstanceId? sourceUnitInstanceId = source is CombatPowerRuntimeUnit ? null : source.InstanceId;
+            if (_timeline.LastOrDefault() is CombatTriggerTimelineEvent previous &&
+                previous.SourcePlayerId == source.OwnerPlayerId &&
+                previous.Trigger == trigger &&
+                previous.SourceUnitInstanceId == sourceUnitInstanceId &&
+                previous.SourcePowerId == sourcePowerId)
+            {
+                return;
+            }
+
+            RecordTrigger(source.OwnerPlayerId, trigger, sourceUnitInstanceId, sourcePowerId);
+        }
+
         public CombatPowerRuntimeUnit CreatePowerSource(SideState side, PowerDefinition power)
         {
             while (_nextSyntheticInstanceId > 0 && TryGetUnit(new UnitInstanceId(_nextSyntheticInstanceId), out _))
