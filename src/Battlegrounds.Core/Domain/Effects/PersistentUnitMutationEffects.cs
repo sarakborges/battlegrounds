@@ -43,21 +43,14 @@ public sealed record ApplyUnitModifierEffectDefinition : EffectDefinition
     {
         Target = target ?? throw new ArgumentNullException(nameof(target));
         if (string.IsNullOrWhiteSpace(modifierKey)) throw new ArgumentException("Modifier key cannot be empty.", nameof(modifierKey));
-        if (attackDelta is null && healthDelta is null)
-            throw new ArgumentException("A modifier requires attack and/or health.");
+        if (attackDelta is null && healthDelta is null) throw new ArgumentException("A modifier requires attack and/or health.");
         ModifierKey = modifierKey;
         AttackDelta = attackDelta ?? new ConstantEffectValueExpression(0);
         HealthDelta = healthDelta ?? new ConstantEffectValueExpression(0);
     }
 
-    public ApplyUnitModifierEffectDefinition(
-        EffectTargetSelector target,
-        string modifierKey,
-        int attackDelta,
-        int healthDelta)
-        : this(target, modifierKey, new ConstantEffectValueExpression(attackDelta), new ConstantEffectValueExpression(healthDelta))
-    {
-    }
+    public ApplyUnitModifierEffectDefinition(EffectTargetSelector target, string modifierKey, int attackDelta, int healthDelta)
+        : this(target, modifierKey, new ConstantEffectValueExpression(attackDelta), new ConstantEffectValueExpression(healthDelta)) { }
 }
 
 public sealed record RemoveUnitModifierEffectDefinition : EffectDefinition
@@ -74,10 +67,10 @@ public sealed record RemoveUnitModifierEffectDefinition : EffectDefinition
     }
 }
 
-internal interface IPersistentUnitMutationWorld
+internal interface IPersistentUnitMutationRuntime
 {
-    void TransformUnit(IEffectRuntimeUnit unit, UnitDefinition definition);
-    int CopyUnitsToReserve(PlayerId ownerPlayerId, IReadOnlyList<IEffectRuntimeUnit> units);
-    void ApplyModifier(IEffectRuntimeUnit unit, string key, int attackDelta, int healthDelta);
-    bool RemoveModifier(IEffectRuntimeUnit unit, string key);
+    void TransformUnit(UnitInstanceId unitId, UnitDefinition definition);
+    int CopyUnitsToReserve(PlayerId ownerPlayerId, IReadOnlyList<UnitInstanceId> unitIds);
+    void ApplyModifier(UnitInstanceId unitId, string key, int attackDelta, int healthDelta);
+    bool RemoveModifier(UnitInstanceId unitId, string key);
 }
