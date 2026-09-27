@@ -7,6 +7,10 @@ namespace Battlegrounds.Game;
 /// dynamic card children out as a compact centered horizontal row. The container
 /// owns only geometry; visual styling remains in the mod-driven theme layer.
 ///
+/// Row geometry is inferred from its semantic scene name so shop, board, reserve,
+/// and leader choices can have different silhouettes without coupling gameplay code
+/// to presentation sizing.
+///
 /// The Field row additionally decorates its cards with small ordering controls.
 /// Those controls submit ordinary Core commands through Main; this node never
 /// mutates gameplay state or treats child order as authoritative.
@@ -23,7 +27,9 @@ public partial class HorizontalCardRow : VBoxContainer
 
     public override void _Ready()
     {
+        ApplySemanticGeometry();
         SetProcess(IsFieldRow);
+        QueueSort();
     }
 
     public override void _Process(double delta)
@@ -64,6 +70,41 @@ public partial class HorizontalCardRow : VBoxContainer
         {
             FitChildInRect(child, new Rect2(x, y, cardWidth, cardHeight));
             x += cardWidth + Gap;
+        }
+    }
+
+    private void ApplySemanticGeometry()
+    {
+        switch (Name.ToString())
+        {
+            case "LeaderButtons":
+                Gap = 18.0f;
+                PreferredCardWidth = 164.0f;
+                MinimumCardWidth = 116.0f;
+                PreferredCardHeight = 224.0f;
+                Padding = 10.0f;
+                break;
+            case "OfferButtons":
+                Gap = 10.0f;
+                PreferredCardWidth = 124.0f;
+                MinimumCardWidth = 88.0f;
+                PreferredCardHeight = 180.0f;
+                Padding = 6.0f;
+                break;
+            case "FieldButtons":
+                Gap = 8.0f;
+                PreferredCardWidth = 152.0f;
+                MinimumCardWidth = 102.0f;
+                PreferredCardHeight = 224.0f;
+                Padding = 8.0f;
+                break;
+            case "ReserveButtons":
+                Gap = 4.0f;
+                PreferredCardWidth = 96.0f;
+                MinimumCardWidth = 70.0f;
+                PreferredCardHeight = 112.0f;
+                Padding = 2.0f;
+                break;
         }
     }
 
