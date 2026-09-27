@@ -37,6 +37,7 @@ public sealed class ModLoader
         if (!report.IsValid) throw new ModValidationException(report);
 
         var manifest = ReadRequired<ModManifest>(Path.Combine(modDirectory, "mod.json"));
+        var presentation = ModPresentationLoader.Load(modDirectory, manifest.Terminology);
         var setupRulesData = ReadRequired<SetupRulesData>(Path.Combine(modDirectory, "rules", "setup.json"));
         var matchRulesData = ReadRequired<MatchRulesData>(Path.Combine(modDirectory, "rules", "match.json"));
         var preparationRulesData = ReadRequired<PreparationRulesData>(Path.Combine(modDirectory, "rules", "preparation.json"));
@@ -109,6 +110,7 @@ public sealed class ModLoader
             manifest.Id,
             manifest.Name,
             manifest.Terminology,
+            presentation,
             leaderSelectionRules,
             matchRules,
             preparationRules,

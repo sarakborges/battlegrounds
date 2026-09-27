@@ -41,6 +41,16 @@ The session:
 
 The session never edits Health, Resource, offers, reserves, fields, Leaders, placements, history or phase directly.
 
+## Validated mod presentation pass-through
+
+`SinglePlayerSession.Mod` exposes the same validated `ModPackage` supplied at creation time. That package now includes the immutable `ModPresentationCatalog` loaded by Content.
+
+Application does not select locales, format templates, translate terminology or inspect localized text. Different presentation clients can resolve the same package for different locales while session orchestration remains framework- and language-independent.
+
+Localized strings never influence AI, matchmaking, commands, targeting, random choices or lifecycle transitions.
+
+See `LOCALIZATION.md` for the presentation package contract.
+
 ## Human input boundary
 
 Presentation constructs ordinary `IPreparationCommand` values using the human `PlayerId` and submits them through:
@@ -86,7 +96,7 @@ See `COMBAT_TIMELINE.md` for the Core result-event contract.
 
 The same injected `IRandomSource` is shared by Leader offers, AI tie-breaking, offer generation, combat and matchmaking. The seed overload creates one `SeededRandomSource` for the entire session.
 
-Given the same validated mod, participant IDs, human commands and seed, application orchestration follows the same deterministic Core/AI sequence.
+Given the same validated mod, participant IDs, human commands and seed, application orchestration follows the same deterministic Core/AI sequence. Locale selection does not participate in this deterministic gameplay stream.
 
 ## Current odd-player constraint
 
@@ -104,7 +114,7 @@ Presentation may own:
 - input mapping;
 - animations and combat playback timing;
 - audio;
-- localization rendering;
+- locale selection and localization rendering;
 - selection/highlight state;
 - view models derived from authoritative read-only state;
 - playback cursors over immutable `SessionCombatRecord` / `CombatResult` data.

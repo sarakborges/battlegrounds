@@ -65,7 +65,7 @@ theme_override_constants/separation = 8
 unique_name_in_owner = true
 layout_mode = 2
 theme_override_font_sizes/font_size = 20
-text = "Choose your Leader"
+text = ""
 
 [node name="LeaderButtons" type="VBoxContainer" parent="Margin/Root/LeaderPanel"]
 unique_name_in_owner = true
@@ -108,13 +108,13 @@ theme_override_constants/separation = 6
 [node name="ConfirmInteractionButton" type="Button" parent="Margin/Root/PreparationPanel/InteractionPanel/InteractionActions"]
 unique_name_in_owner = true
 layout_mode = 2
-text = "Confirm"
+text = ""
 visible = false
 
 [node name="CancelInteractionButton" type="Button" parent="Margin/Root/PreparationPanel/InteractionPanel/InteractionActions"]
 unique_name_in_owner = true
 layout_mode = 2
-text = "Cancel"
+text = ""
 
 [node name="Columns" type="HBoxContainer" parent="Margin/Root/PreparationPanel"]
 layout_mode = 2
@@ -128,7 +128,7 @@ size_flags_horizontal = 3
 [node name="Title" type="Label" parent="Margin/Root/PreparationPanel/Columns/OfferColumn"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 18
-text = "Offer"
+text = ""
 
 [node name="OfferButtons" type="VBoxContainer" parent="Margin/Root/PreparationPanel/Columns/OfferColumn"]
 unique_name_in_owner = true
@@ -142,7 +142,7 @@ size_flags_horizontal = 3
 [node name="Title" type="Label" parent="Margin/Root/PreparationPanel/Columns/ReserveColumn"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 18
-text = "Reserve"
+text = ""
 
 [node name="ReserveButtons" type="VBoxContainer" parent="Margin/Root/PreparationPanel/Columns/ReserveColumn"]
 unique_name_in_owner = true
@@ -156,7 +156,7 @@ size_flags_horizontal = 3
 [node name="Title" type="Label" parent="Margin/Root/PreparationPanel/Columns/FieldColumn"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 18
-text = "Field"
+text = ""
 
 [node name="FieldButtons" type="VBoxContainer" parent="Margin/Root/PreparationPanel/Columns/FieldColumn"]
 unique_name_in_owner = true
@@ -170,40 +170,40 @@ theme_override_constants/separation = 8
 [node name="RefreshButton" type="Button" parent="Margin/Root/PreparationPanel/Actions"]
 unique_name_in_owner = true
 layout_mode = 2
-text = "Refresh"
+text = ""
 
 [node name="UpgradeButton" type="Button" parent="Margin/Root/PreparationPanel/Actions"]
 unique_name_in_owner = true
 layout_mode = 2
-text = "Upgrade tier"
+text = ""
 
 [node name="FreezeButton" type="Button" parent="Margin/Root/PreparationPanel/Actions"]
 unique_name_in_owner = true
 layout_mode = 2
-text = "Freeze offer"
+text = ""
 
 [node name="PowerButton" type="Button" parent="Margin/Root/PreparationPanel/Actions"]
 unique_name_in_owner = true
 layout_mode = 2
-text = "Use power"
+text = ""
 
 [node name="CombineButton" type="Button" parent="Margin/Root/PreparationPanel/Actions"]
 unique_name_in_owner = true
 layout_mode = 2
-text = "Combine units"
+text = ""
 
 [node name="EndPreparationButton" type="Button" parent="Margin/Root/PreparationPanel/Actions"]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
-text = "End Preparation"
+text = ""
 
 [node name="DividerB" type="HSeparator" parent="Margin/Root"]
 layout_mode = 2
 
 [node name="LogTitle" type="Label" parent="Margin/Root"]
 layout_mode = 2
-text = "Session log"
+text = ""
 
 [node name="Log" type="RichTextLabel" parent="Margin/Root"]
 unique_name_in_owner = true

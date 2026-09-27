@@ -22,6 +22,7 @@ public sealed class ModPackage
     public string Id { get; }
     public string Name { get; }
     public IReadOnlyDictionary<string, string> Terminology => _terminology;
+    public ModPresentationCatalog Presentation { get; }
     public LeaderSelectionRules LeaderSelectionRules { get; }
     public MatchRules MatchRules { get; }
     public PreparationRules PreparationRules { get; }
@@ -40,6 +41,7 @@ public sealed class ModPackage
         string id,
         string name,
         IReadOnlyDictionary<string, string> terminology,
+        ModPresentationCatalog presentation,
         LeaderSelectionRules leaderSelectionRules,
         MatchRules matchRules,
         PreparationRules preparationRules,
@@ -55,6 +57,7 @@ public sealed class ModPackage
     {
         Id = id;
         Name = name;
+        Presentation = presentation ?? throw new ArgumentNullException(nameof(presentation));
         LeaderSelectionRules = leaderSelectionRules ?? throw new ArgumentNullException(nameof(leaderSelectionRules));
         MatchRules = matchRules;
         PreparationRules = preparationRules;

@@ -95,6 +95,7 @@ public partial class Main : Control
             var modDirectory = ProjectSettings.GlobalizePath(ModPath);
             var mod = new ModLoader().Load(modDirectory);
             ValidateParticipantCount(mod);
+            InitializePresentation(mod);
 
             var humanPlayerId = new PlayerId(0);
             var aiPlayerIds = Enumerable.Range(1, ParticipantCount - 1).Select(value => new PlayerId(value)).ToArray();
@@ -106,7 +107,7 @@ public partial class Main : Control
         }
         catch (Exception exception)
         {
-            _status.Text = "Bootstrap failed";
+            _status.Text = _presentationText is null ? "Bootstrap failed" : Text("ui.bootstrapFailed");
             _leaderPrompt.Text = exception.Message;
             _leaderPanel.Visible = true;
             _preparationPanel.Visible = false;
@@ -148,8 +149,12 @@ public partial class Main : Control
 
         _leaderPanel.Visible = true;
         _preparationPanel.Visible = false;
-        _status.Text = $"{_session.Mod.Name} • Seed {Seed} • Leader selection";
-        _leaderPrompt.Text = "Choose your Leader";
+        _status.Text = Text(
+            "ui.leaderSelectionStatus",
+            ("mod", _session.Mod.Name),
+            ("seed", Seed),
+            ("leader", Term("leader")));
+        _leaderPrompt.Text = Text("ui.chooseLeader", ("leader", Term("leader")));
         _matchSummary.Text = string.Empty;
         ClearChildren(_leaderButtons);
 
@@ -158,13 +163,18 @@ public partial class Main : Control
             var definition = _session.Mod.Leaders.GetRequired(leaderId);
             var healthText = definition.HealthModifier switch
             {
-                > 0 => $"+{definition.HealthModifier} Health",
-                < 0 => $"{definition.HealthModifier} Health",
-                _ => "base Health",
+                > 0 => Text("ui.healthModifierPositive", ("value", definition.HealthModifier), ("health", Term("health"))),
+                < 0 => Text("ui.healthModifierNegative", ("value", definition.HealthModifier), ("health", Term("health"))),
+                _ => Text("ui.healthBase", ("health", Term("health"))),
             };
             var button = new Button
             {
-                Text = $"{definition.Name}  •  {healthText}  •  {definition.StartingArmor} Armor",
+                Text = Text(
+                    "ui.leaderOption",
+                    ("name", definition.Name),
+                    ("healthText", healthText),
+                    ("armorValue", definition.StartingArmor),
+                    ("armor", Term("armor"))),
                 SizeFlagsHorizontal = Control.SizeFlags.ExpandFill,
             };
             button.Pressed += () => SelectLeader(leaderId);
@@ -181,17 +191,17 @@ public partial class Main : Control
             var result = _session.SelectHumanLeader(leaderId);
             if (!result.Succeeded)
             {
-                AppendLog($"Leader selection rejected: {result.FailureCode}.");
+                AppendLog($"{Term("leader")} selection rejected: {result.FailureCode}.");
                 return;
             }
 
-            AppendLog($"Selected Leader '{_session.Mod.Leaders.GetRequired(leaderId).Name}'.");
+            AppendLog($"Selected {Term("leader")} '{_session.Mod.Leaders.GetRequired(leaderId).Name}'.");
             AdvanceAutomation(prepareFollowingRound: false);
             Render();
         }
         catch (Exception exception)
         {
-            AppendLog($"Leader selection failed: {exception.Message}");
+            AppendLog($"{Term("leader")} selection failed: {exception.Message}");
         }
     }
 
@@ -201,7 +211,12 @@ public partial class Main : Control
 
         _leaderPanel.Visible = false;
         _preparationPanel.Visible = true;
-        _status.Text = $"{_session.Mod.Name} • Round {match.Round} • {match.Phase}";
+        _status.Text = Text(
+            "ui.matchStatus",
+            ("mod", _session.Mod.Name),
+            ("round", Term("round")),
+            ("roundValue", match.Round),
+            ("phase", PhaseText(match.Phase)));
         _matchSummary.Text = BuildMatchSummary(match);
 
         if (!match.TryGetPlayer(_session.HumanPlayerId, out var human))
@@ -226,23 +241,51 @@ public partial class Main : Control
             .OrderBy(player => player.Id.Value)
             .Select(player =>
             {
-                var actor = player.Id == _session.HumanPlayerId ? "YOU" : "AI";
-                var leader = player.Leader?.Definition.Name ?? "No Leader";
+                var actor = player.Id == _session.HumanPlayerId ? Text("ui.you") : Text("ui.ai");
+                var leader = player.Leader?.Definition.Name ?? Text("ui.noLeader", ("leader", Term("leader")));
                 var armor = player.Leader?.Armor ?? 0;
-                var state = player.IsEliminated ? "ELIMINATED" : player.IsReadyForCombat ? "READY" : "ACTIVE";
-                return $"P{player.Id.Value} [{actor}] {leader}  •  HP {player.Health}  •  Armor {armor}  •  Tier {player.Tier}  •  {state}";
+                var state = player.IsEliminated
+                    ? Text("ui.eliminated")
+                    : player.IsReadyForCombat
+                        ? Text("ui.ready")
+                        : Text("ui.active");
+                return Text(
+                    "ui.playerSummary",
+                    ("player", player.Id.Value),
+                    ("actor", actor),
+                    ("leaderName", leader),
+                    ("health", Term("health")),
+                    ("healthValue", player.Health),
+                    ("armor", Term("armor")),
+                    ("armorValue", armor),
+                    ("tier", Term("tier")),
+                    ("tierValue", player.Tier),
+                    ("state", state));
             });
 
         return string.Join('\n', lines);
     }
 
-    private static string BuildHumanSummary(PlayerState player)
+    private string BuildHumanSummary(PlayerState player)
     {
-        var upgrade = player.UpgradeCost is null ? "MAX" : player.UpgradeCost.Value.ToString();
-        var choice = player.PendingChoice is null ? string.Empty : $"  •  Pending {player.PendingChoice.Kind} choice";
-        return $"Resource {player.Resource}  •  Tier {player.Tier}  •  Upgrade {upgrade}  •  " +
-               $"Offer {(player.IsOfferFrozen ? "Frozen" : "Open")}  •  " +
-               $"Reserve {player.PlayableReserveCount}  •  Field {player.Field.Count}{choice}";
+        var upgrade = player.UpgradeCost is null ? Text("ui.maximum") : player.UpgradeCost.Value.ToString();
+        var choice = player.PendingChoice is null
+            ? string.Empty
+            : Text("ui.pendingChoiceSuffix", ("kind", ChoiceKindText(player.PendingChoice.Kind)));
+        return Text(
+            "ui.humanSummary",
+            ("resource", Term("resource")),
+            ("resourceValue", player.Resource),
+            ("tier", Term("tier")),
+            ("tierValue", player.Tier),
+            ("upgrade", upgrade),
+            ("offer", Term("offer")),
+            ("offerState", player.IsOfferFrozen ? Text("ui.frozen") : Text("ui.open")),
+            ("reserve", Term("reserve")),
+            ("reserveCount", player.PlayableReserveCount),
+            ("field", Term("field")),
+            ("fieldCount", player.Field.Count),
+            ("choice", choice));
     }
 
     private void RenderInteraction(PlayerState human, MatchState match)
@@ -255,7 +298,7 @@ public partial class Main : Control
         if (human.PendingChoice is PendingChoice pendingChoice)
         {
             _interactionPanel.Visible = true;
-            _interactionPrompt.Text = $"Resolve pending {pendingChoice.Kind} choice before continuing.";
+            _interactionPrompt.Text = Text("ui.resolvePendingChoice", ("kind", ChoiceKindText(pendingChoice.Kind)));
             RenderPendingChoice(pendingChoice);
             return;
         }
@@ -272,11 +315,17 @@ public partial class Main : Control
         switch (_interaction.Kind)
         {
             case PresentationInteractionKind.ActionTarget:
-                _interactionPrompt.Text = "Choose a Unit target for the Action. Core will validate the selected target.";
+                _interactionPrompt.Text = Text(
+                    "ui.actionTargetPrompt",
+                    ("unit", Term("unit")),
+                    ("action", Term("action")));
                 RenderTargetCandidates(match);
                 break;
             case PresentationInteractionKind.PowerTarget:
-                _interactionPrompt.Text = "Choose a Unit target for the Power. Core will validate the selected target.";
+                _interactionPrompt.Text = Text(
+                    "ui.powerTargetPrompt",
+                    ("unit", Term("unit")),
+                    ("power", Term("power")));
                 RenderTargetCandidates(match);
                 break;
             case PresentationInteractionKind.CombineRecipe:
@@ -302,7 +351,14 @@ public partial class Main : Control
                     var capturedIndex = index;
                     var button = new Button
                     {
-                        Text = $"Choose {option.Name}  •  Unit  •  T{option.Tier}  •  {option.BaseAttack}/{option.BaseHealth}",
+                        Text = Text(
+                            "ui.chooseUnitOption",
+                            ("name", option.Name),
+                            ("unit", Term("unit")),
+                            ("tier", Term("tier")),
+                            ("tierValue", option.Tier),
+                            ("attack", option.BaseAttack),
+                            ("healthValue", option.BaseHealth)),
                         SizeFlagsHorizontal = Control.SizeFlags.ExpandFill,
                     };
                     button.Pressed += () => ResolveChoice(unitChoice, capturedIndex);
@@ -316,7 +372,13 @@ public partial class Main : Control
                     var capturedIndex = index;
                     var button = new Button
                     {
-                        Text = $"Choose {option.Name}  •  Action  •  T{option.Tier}  •  Cost {option.Cost}",
+                        Text = Text(
+                            "ui.chooseActionOption",
+                            ("name", option.Name),
+                            ("action", Term("action")),
+                            ("tier", Term("tier")),
+                            ("tierValue", option.Tier),
+                            ("cost", option.Cost)),
                         SizeFlagsHorizontal = Control.SizeFlags.ExpandFill,
                     };
                     button.Pressed += () => ResolveChoice(actionChoice, capturedIndex);
@@ -355,7 +417,12 @@ public partial class Main : Control
                 var capturedUnitId = unit.Id;
                 var button = new Button
                 {
-                    Text = $"Target P{player.Id.Value} • {unit.Definition.Name} • {unit.Attack}/{unit.Health}",
+                    Text = Text(
+                        "ui.targetCandidate",
+                        ("player", player.Id.Value),
+                        ("name", unit.Definition.Name),
+                        ("attack", unit.Attack),
+                        ("health", unit.Health)),
                     SizeFlagsHorizontal = Control.SizeFlags.ExpandFill,
                 };
                 button.Pressed += () => SubmitSelectedTarget(capturedUnitId);
@@ -364,7 +431,9 @@ public partial class Main : Control
         }
 
         if (count == 0)
-            AddMutedLabel(_interactionButtons, "No Field Units are currently available as target candidates.");
+            AddMutedLabel(
+                _interactionButtons,
+                Text("ui.noTargetCandidates", ("field", Term("field")), ("units", Term("units"))));
     }
 
     private void RenderCombineRecipes(PlayerState human)
@@ -372,16 +441,18 @@ public partial class Main : Control
         if (_session is null) return;
 
         var available = GetAvailableCombines(human);
-        _interactionPrompt.Text = available.Count == 0
-            ? "No combine recipe currently has enough owned source copies."
-            : "Choose a combine recipe, then explicitly select the component instances to consume.";
+        _interactionPrompt.Text = available.Count == 0 ? Text("ui.noCombine") : Text("ui.chooseCombineRecipe");
 
         foreach (var definition in available)
         {
             var result = _session.Mod.Units.GetRequired(definition.ResultUnitId);
             var button = new Button
             {
-                Text = $"{definition.Name} • {definition.RequiredCopies} copies → {result.Name}",
+                Text = Text(
+                    "ui.combineRecipe",
+                    ("name", definition.Name),
+                    ("copies", definition.RequiredCopies),
+                    ("result", result.Name)),
                 SizeFlagsHorizontal = Control.SizeFlags.ExpandFill,
             };
             button.Pressed += () => SelectCombineRecipe(definition.Id);
@@ -395,12 +466,20 @@ public partial class Main : Control
 
         var definition = _session.Mod.Combines.GetRequired(combineId);
         var selected = _interaction.SelectedUnits.Count;
-        _interactionPrompt.Text =
-            $"{definition.Name}: select exactly {definition.RequiredCopies} owned '{definition.SourceUnitId.Value}' instances in Reserve/Field. " +
-            $"Selected {selected}/{definition.RequiredCopies}.";
-        AddMutedLabel(_interactionButtons, "Click eligible Unit rows below to toggle component selection.");
+        _interactionPrompt.Text = Text(
+            "ui.combineComponentsPrompt",
+            ("name", definition.Name),
+            ("required", definition.RequiredCopies),
+            ("source", definition.SourceUnitId.Value),
+            ("reserve", Term("reserve")),
+            ("field", Term("field")),
+            ("selected", selected));
+        AddMutedLabel(_interactionButtons, Text("ui.combineComponentsHint", ("unit", Term("unit"))));
         _confirmInteractionButton.Visible = true;
-        _confirmInteractionButton.Text = $"Combine {selected}/{definition.RequiredCopies}";
+        _confirmInteractionButton.Text = Text(
+            "ui.combineConfirm",
+            ("selected", selected),
+            ("required", definition.RequiredCopies));
         _confirmInteractionButton.Disabled = selected != definition.RequiredCopies;
     }
 
@@ -424,7 +503,7 @@ public partial class Main : Control
         ClearChildren(_offerButtons);
         if (human.PlayableOffer.Count == 0)
         {
-            AddMutedLabel(_offerButtons, "No offer entries.");
+            AddMutedLabel(_offerButtons, Text("ui.noOfferEntries", ("offer", Term("offer"))));
             return;
         }
 
@@ -434,7 +513,14 @@ public partial class Main : Control
             var cost = entry.Cost ?? _session.Mod.PreparationRules.AcquireCost;
             var button = new Button
             {
-                Text = $"Acquire {entry.Name}  •  {entry.Kind}  •  T{entry.Tier}  •  Cost {cost}",
+                Text = Text(
+                    "ui.acquireEntry",
+                    ("acquire", Term("acquire")),
+                    ("name", entry.Name),
+                    ("kind", PlayableKindText(entry.Kind)),
+                    ("tier", Term("tier")),
+                    ("tierValue", entry.Tier),
+                    ("cost", cost)),
                 Disabled = human.IsReadyForCombat || blocked,
                 SizeFlagsHorizontal = Control.SizeFlags.ExpandFill,
             };
@@ -449,7 +535,7 @@ public partial class Main : Control
         ClearChildren(_reserveButtons);
         if (human.PlayableReserve.Count == 0)
         {
-            AddMutedLabel(_reserveButtons, "Reserve is empty.");
+            AddMutedLabel(_reserveButtons, Text("ui.reserveEmpty", ("reserve", Term("reserve"))));
             return;
         }
 
@@ -470,7 +556,13 @@ public partial class Main : Control
                 var selected = _interaction.IsSelected(unit.Id);
                 var button = new Button
                 {
-                    Text = $"{(selected ? "[x]" : "[ ]")} {unit.Definition.Name} • Reserve • {unit.Attack}/{unit.Health}",
+                    Text = Text(
+                        "ui.combineReserveEntry",
+                        ("selectedMark", selected ? "[x]" : "[ ]"),
+                        ("name", unit.Definition.Name),
+                        ("reserve", Term("reserve")),
+                        ("attack", unit.Attack),
+                        ("health", unit.Health)),
                     Disabled = !eligible,
                     SizeFlagsHorizontal = Control.SizeFlags.ExpandFill,
                 };
@@ -479,10 +571,14 @@ public partial class Main : Control
                 continue;
             }
 
-            var verb = entry.Kind == PlayableKind.Unit ? "Deploy" : "Play";
+            var verb = entry.Kind == PlayableKind.Unit ? Text("ui.deploy") : Text("ui.play");
             var buttonNormal = new Button
             {
-                Text = $"{verb} {entry.Name}  •  {entry.Kind}",
+                Text = Text(
+                    "ui.reserveEntry",
+                    ("verb", verb),
+                    ("name", entry.Name),
+                    ("kind", PlayableKindText(entry.Kind))),
                 Disabled = human.IsReadyForCombat || choiceBlocked || _interaction.IsActive,
                 SizeFlagsHorizontal = Control.SizeFlags.ExpandFill,
             };
@@ -498,7 +594,7 @@ public partial class Main : Control
         ClearChildren(_fieldButtons);
         if (human.Field.Count == 0)
         {
-            AddMutedLabel(_fieldButtons, "Field is empty.");
+            AddMutedLabel(_fieldButtons, Text("ui.fieldEmpty", ("field", Term("field"))));
             return;
         }
 
@@ -520,7 +616,13 @@ public partial class Main : Control
                 var selected = _interaction.IsSelected(unit.Id);
                 var selectionButton = new Button
                 {
-                    Text = $"{(selected ? "[x]" : "[ ]")} {unit.Definition.Name} • Field • {unit.Attack}/{unit.Health}",
+                    Text = Text(
+                        "ui.combineFieldEntry",
+                        ("selectedMark", selected ? "[x]" : "[ ]"),
+                        ("name", unit.Definition.Name),
+                        ("field", Term("field")),
+                        ("attack", unit.Attack),
+                        ("health", unit.Health)),
                     Disabled = !eligible,
                     SizeFlagsHorizontal = Control.SizeFlags.ExpandFill,
                 };
@@ -531,7 +633,12 @@ public partial class Main : Control
 
             var button = new Button
             {
-                Text = $"Release {unit.Definition.Name}  •  {unit.Attack}/{unit.Health}",
+                Text = Text(
+                    "ui.releaseUnit",
+                    ("release", Term("release")),
+                    ("name", unit.Definition.Name),
+                    ("attack", unit.Attack),
+                    ("health", unit.Health)),
                 Disabled = human.IsReadyForCombat || human.PendingChoice is not null || _interaction.IsActive,
                 SizeFlagsHorizontal = Control.SizeFlags.ExpandFill,
             };
@@ -550,7 +657,9 @@ public partial class Main : Control
         _powerButton.Disabled = !canAct || human.Leader?.CurrentPowerId is null;
         _combineButton.Disabled = !canAct;
         _endPreparationButton.Disabled = !canAct;
-        _freezeButton.Text = human.IsOfferFrozen ? "Unfreeze offer" : "Freeze offer";
+        _freezeButton.Text = human.IsOfferFrozen
+            ? Text("ui.unfreezeOffer", ("offer", Term("offer")))
+            : Text("ui.freezeOffer", ("offer", Term("offer")));
     }
 
     private void ToggleFreeze()
@@ -571,7 +680,7 @@ public partial class Main : Control
             result.Value.FailureCode == PreparationFailureCode.InvalidActionTarget)
         {
             _interaction.BeginActionTarget(reserveSlot);
-            AppendLog("Action requires a selected Unit target.");
+            AppendLog($"{Term("action")} requires a selected {Term("unit")} target.");
         }
         else if (result.HasValue && !result.Value.Succeeded)
         {
@@ -591,7 +700,7 @@ public partial class Main : Control
             result.Value.FailureCode == PreparationFailureCode.InvalidPowerTarget)
         {
             _interaction.BeginPowerTarget();
-            AppendLog("Power requires a selected Unit target.");
+            AppendLog($"{Term("power")} requires a selected {Term("unit")} target.");
         }
         else if (result.HasValue && !result.Value.Succeeded)
         {
@@ -720,11 +829,11 @@ public partial class Main : Control
 
         var result = _session.AdvanceAutomated();
         if (result.AiPreparationsCompleted > 0)
-            AppendLog($"AI completed {result.AiPreparationsCompleted} Preparation turn(s).");
+            AppendLog($"AI completed {result.AiPreparationsCompleted} {Term("preparation")} turn(s).");
 
         if (result.CombatRound is null) return;
 
-        AppendLog($"Resolved combat round {result.Round - (result.Phase == MatchPhase.Preparation ? 1 : 0)} with {result.Pairings.Count} pairing(s).");
+        AppendLog($"Resolved {Term("combat")} {Term("round")} {result.Round - (result.Phase == MatchPhase.Preparation ? 1 : 0)} with {result.Pairings.Count} pairing(s).");
         foreach (var settlement in result.CombatRound.Settlements)
         {
             var opponent = settlement.RightPlayerId is not null
@@ -746,7 +855,7 @@ public partial class Main : Control
         {
             var prep = _session.AdvanceAutomated();
             if (prep.AiPreparationsCompleted > 0)
-                AppendLog($"AI prepared for round {prep.Round}.");
+                AppendLog($"AI prepared for {Term("round")} {prep.Round}.");
         }
     }
 

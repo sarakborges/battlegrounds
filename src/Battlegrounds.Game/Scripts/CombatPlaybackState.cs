@@ -1,4 +1,5 @@
 using Battlegrounds.Application;
+using Battlegrounds.Content;
 using Battlegrounds.Core.Domain.Combat;
 using Battlegrounds.Core.Domain.Ids;
 using Battlegrounds.Core.Domain.Match;
@@ -10,6 +11,7 @@ internal sealed class CombatPlaybackState
     private readonly List<CombatPlaybackUnitState> _leftUnits;
     private readonly List<CombatPlaybackUnitState> _rightUnits;
     private readonly Dictionary<UnitInstanceId, CombatPlaybackUnitState> _unitsById;
+    private readonly ModPresentationText _text;
     private int _nextTimelineIndex;
 
     public SessionCombatRecord Record { get; }
@@ -22,12 +24,17 @@ internal sealed class CombatPlaybackState
     public CombatTimelineEvent? CurrentEvent { get; private set; }
     public bool SettlementVisible { get; private set; }
     public bool IsComplete { get; private set; }
-    public string EventText { get; private set; } = "Combat ready.";
+    public string EventText { get; private set; }
 
-    private CombatPlaybackState(SessionCombatRecord record, CombatSettlement settlement)
+    private CombatPlaybackState(
+        SessionCombatRecord record,
+        CombatSettlement settlement,
+        ModPresentationText text)
     {
         Record = record;
         Settlement = settlement;
+        _text = text ?? throw new ArgumentNullException(nameof(text));
+        EventText = Text("ui.combatReady", ("combat", Term("combat")));
         _leftUnits = record.StartingUnits
             .Where(unit => unit.PlayerId == LeftPlayerId)
             .Select(CombatPlaybackUnitState.FromSnapshot)
@@ -39,14 +46,18 @@ internal sealed class CombatPlaybackState
         _unitsById = _leftUnits.Concat(_rightUnits).ToDictionary(unit => unit.InstanceId);
     }
 
-    public static CombatPlaybackState? TryCreate(SessionCombatRecord record, PlayerId focusPlayerId)
+    public static CombatPlaybackState? TryCreate(
+        SessionCombatRecord record,
+        PlayerId focusPlayerId,
+        ModPresentationText text)
     {
         ArgumentNullException.ThrowIfNull(record);
+        ArgumentNullException.ThrowIfNull(text);
         var settlement = record.RoundResult.Settlements.FirstOrDefault(value =>
             value.LeftPlayerId == focusPlayerId ||
             value.RightPlayerId == focusPlayerId ||
             value.EliminatedOpponentSourcePlayerId == focusPlayerId);
-        return settlement is null ? null : new CombatPlaybackState(record, settlement);
+        return settlement is null ? null : new CombatPlaybackState(record, settlement, text);
     }
 
     public bool Advance()
@@ -120,13 +131,30 @@ internal sealed class CombatPlaybackState
                 ApplyBehaviorChanged(behavior);
                 break;
             case CombatResourceChangedTimelineEvent resource:
-                EventText = $"P{resource.PlayerId.Value} combat Resource {(resource.Delta >= 0 ? "+" : string.Empty)}{resource.Delta}.";
+            {
+                var delta = (resource.Delta >= 0 ? "+" : string.Empty) + resource.Delta;
+                EventText = Text(
+                    "ui.combatResourceChanged",
+                    ("player", resource.PlayerId.Value),
+                    ("combat", Term("combat")),
+                    ("resource", Term("resource")),
+                    ("delta", delta));
                 break;
+            }
             case CombatPowerChangedTimelineEvent power:
-                EventText = $"P{power.PlayerId.Value} Power changed from {power.PreviousPowerId?.Value ?? "none"} to {power.PowerId.Value}.";
+                EventText = Text(
+                    "ui.combatPowerChanged",
+                    ("player", power.PlayerId.Value),
+                    ("power", Term("power")),
+                    ("previous", power.PreviousPowerId?.Value ?? "—"),
+                    ("next", power.PowerId.Value));
                 break;
             default:
-                EventText = $"Combat event {@event.Sequence}: {@event.Kind}.";
+                EventText = Text(
+                    "ui.combatGenericEvent",
+                    ("combat", Term("combat")),
+                    ("sequence", @event.Sequence),
+                    ("kind", @event.Kind));
                 break;
         }
     }
@@ -135,23 +163,38 @@ internal sealed class CombatPlaybackState
     {
         if (trigger.SourceUnitInstanceId is UnitInstanceId unitId && _unitsById.TryGetValue(unitId, out var unit))
         {
-            unit.Highlight = "TRIGGER";
+            unit.Highlight = "◆";
             unit.Status = trigger.Trigger.Value;
-            EventText = $"P{trigger.SourcePlayerId.Value} {unit.Name} triggered {trigger.Trigger.Value}.";
+            EventText = Text(
+                "ui.combatUnitTriggered",
+                ("player", trigger.SourcePlayerId.Value),
+                ("name", unit.Name),
+                ("trigger", trigger.Trigger.Value));
             return;
         }
 
-        var source = trigger.SourcePowerId is PowerId powerId ? $"Power {powerId.Value}" : "combat source";
-        EventText = $"P{trigger.SourcePlayerId.Value} {source} triggered {trigger.Trigger.Value}.";
+        var source = trigger.SourcePowerId is PowerId powerId
+            ? Text("ui.combatPowerSource", ("power", Term("power")), ("id", powerId.Value))
+            : Text("ui.combatSource", ("combat", Term("combat")));
+        EventText = Text(
+            "ui.combatSourceTriggered",
+            ("player", trigger.SourcePlayerId.Value),
+            ("source", source),
+            ("trigger", trigger.Trigger.Value));
     }
 
     private void ApplyAttackStarted(CombatAttackStartedTimelineEvent attack)
     {
         var attacker = GetOrCreateUnit(attack.AttackerPlayerId, attack.AttackerInstanceId);
         var target = GetOrCreateUnit(attack.TargetPlayerId, attack.TargetInstanceId);
-        attacker.Highlight = "ATTACK";
-        target.Highlight = "TARGET";
-        EventText = $"P{attack.AttackerPlayerId.Value} {attacker.Name} attacks P{attack.TargetPlayerId.Value} {target.Name}.";
+        attacker.Highlight = "→";
+        target.Highlight = "◎";
+        EventText = Text(
+            "ui.combatAttackStarted",
+            ("attackerPlayer", attack.AttackerPlayerId.Value),
+            ("attacker", attacker.Name),
+            ("targetPlayer", attack.TargetPlayerId.Value),
+            ("target", target.Name));
     }
 
     private void ApplySummon(CombatUnitSummonedTimelineEvent summon)
@@ -159,9 +202,12 @@ internal sealed class CombatPlaybackState
         var unit = CombatPlaybackUnitState.FromSnapshot(summon.PlayerId, summon.Unit);
         _unitsById[unit.InstanceId] = unit;
         InsertOnBoard(unit, summon.Position);
-        unit.Highlight = "SUMMON";
-        unit.Status = "summoned";
-        EventText = $"P{summon.PlayerId.Value} summoned {unit.Name} at position {summon.Position + 1}.";
+        unit.Highlight = "+";
+        EventText = Text(
+            "ui.combatSummoned",
+            ("player", summon.PlayerId.Value),
+            ("name", unit.Name),
+            ("position", summon.Position + 1));
     }
 
     private void ApplyStatsChanged(CombatUnitStatsChangedTimelineEvent stats)
@@ -169,36 +215,51 @@ internal sealed class CombatPlaybackState
         var unit = GetOrCreateUnit(stats.PlayerId, stats.UnitInstanceId);
         unit.Attack = stats.AttackAfter;
         unit.Health = stats.HealthAfter;
-        unit.Highlight = "EFFECT";
+        unit.Highlight = "Δ";
         unit.Status = $"{stats.AttackBefore}/{stats.HealthBefore} → {stats.AttackAfter}/{stats.HealthAfter}";
-        EventText = $"{unit.Name} stats changed to {stats.AttackAfter}/{stats.HealthAfter}.";
+        EventText = Text(
+            "ui.combatStatsChanged",
+            ("name", unit.Name),
+            ("attack", stats.AttackAfter),
+            ("health", stats.HealthAfter));
     }
 
     private void ApplyDamage(CombatUnitDamagedTimelineEvent damage)
     {
         var unit = GetOrCreateUnit(damage.PlayerId, damage.UnitInstanceId);
         unit.Health = damage.HealthAfter;
-        unit.Highlight = "DAMAGE";
-        unit.Status = $"-{damage.Amount} Health";
-        EventText = $"P{damage.PlayerId.Value} {unit.Name} takes {damage.Amount} damage ({damage.HealthBefore} → {damage.HealthAfter}).";
+        unit.Highlight = "−";
+        unit.Status = $"-{damage.Amount} {Term("health")}";
+        EventText = Text(
+            "ui.combatDamageTaken",
+            ("player", damage.PlayerId.Value),
+            ("name", unit.Name),
+            ("amount", damage.Amount),
+            ("before", damage.HealthBefore),
+            ("after", damage.HealthAfter));
     }
 
     private void ApplyDestroyed(CombatUnitDestroyedTimelineEvent destroyed)
     {
         var unit = GetOrCreateUnit(destroyed.PlayerId, destroyed.UnitInstanceId);
         unit.Health = destroyed.HealthAfter;
-        unit.Highlight = "DESTROY";
-        unit.Status = "destroyed";
-        EventText = $"P{destroyed.PlayerId.Value} {unit.Name} was destroyed.";
+        unit.Highlight = "×";
+        EventText = Text(
+            "ui.combatDestroyed",
+            ("player", destroyed.PlayerId.Value),
+            ("name", unit.Name));
     }
 
     private void ApplyDied(CombatUnitDiedTimelineEvent died)
     {
         var unit = GetOrCreateUnit(died.PlayerId, died.UnitInstanceId);
         unit.IsAlive = false;
-        unit.Status = "died";
         RemoveFromBoard(unit);
-        EventText = $"P{died.PlayerId.Value} {unit.Name} died from position {died.Position + 1}.";
+        EventText = Text(
+            "ui.combatDied",
+            ("player", died.PlayerId.Value),
+            ("name", unit.Name),
+            ("position", died.Position + 1));
     }
 
     private void ApplyRevived(CombatUnitRevivedTimelineEvent revived)
@@ -217,24 +278,37 @@ internal sealed class CombatPlaybackState
 
         unit.IsAlive = true;
         InsertOnBoard(unit, revived.Position);
-        unit.Highlight = "REVIVE";
-        unit.Status = "revived";
-        EventText = $"P{revived.PlayerId.Value} {unit.Name} revived at position {revived.Position + 1}.";
+        unit.Highlight = "↻";
+        EventText = Text(
+            "ui.combatRevived",
+            ("player", revived.PlayerId.Value),
+            ("name", unit.Name),
+            ("position", revived.Position + 1));
     }
 
     private void ApplyBehaviorChanged(CombatBehaviorChangedTimelineEvent behavior)
     {
         var unit = GetOrCreateUnit(behavior.PlayerId, behavior.UnitInstanceId);
-        unit.Highlight = "BEHAVIOR";
-        unit.Status = $"{behavior.Handler.Value} {behavior.Change.ToString().ToLowerInvariant()}";
-        EventText = $"P{behavior.PlayerId.Value} {unit.Name}: behavior {behavior.Handler.Value} {behavior.Change.ToString().ToLowerInvariant()}.";
+        unit.Highlight = "◇";
+        unit.Status = behavior.Handler.Value;
+        EventText = Text(
+            "ui.combatBehaviorChanged",
+            ("player", behavior.PlayerId.Value),
+            ("name", unit.Name),
+            ("behavior", behavior.Handler.Value),
+            ("change", behavior.Change.ToString().ToLowerInvariant()));
     }
 
     private CombatPlaybackUnitState GetOrCreateUnit(PlayerId playerId, UnitInstanceId instanceId)
     {
         if (_unitsById.TryGetValue(instanceId, out var existing)) return existing;
 
-        var created = new CombatPlaybackUnitState(playerId, instanceId, $"Unit #{instanceId.Value}", null, 0);
+        var created = new CombatPlaybackUnitState(
+            playerId,
+            instanceId,
+            Text("ui.combatUnitFallback", ("unit", Term("unit")), ("instance", instanceId.Value)),
+            null,
+            0);
         _unitsById[instanceId] = created;
         GetSide(playerId).Add(created);
         return created;
@@ -269,18 +343,31 @@ internal sealed class CombatPlaybackState
     {
         var opponent = Settlement.RightPlayerId is PlayerId right
             ? $"P{right.Value}"
-            : $"archived P{Settlement.EliminatedOpponentSourcePlayerId?.Value}";
+            : Text("ui.archivedPlayer", ("player", Settlement.EliminatedOpponentSourcePlayerId?.Value));
         var winner = Settlement.EliminatedOpponentWon
             ? opponent
             : Settlement.WinnerPlayerId is PlayerId winnerId
                 ? $"P{winnerId.Value}"
-                : "draw";
+                : Text("ui.draw");
         var damage = Settlement.DamagedPlayerId is PlayerId damaged
-            ? $" P{damaged.Value} takes {Settlement.PlayerDamage} player damage " +
-              $"({Settlement.ArmorAbsorbed} absorbed by Armor)."
-            : " No player damage.";
-        return $"Combat complete: {winner}." + damage;
+            ? Text(
+                "ui.playerDamage",
+                ("player", damaged.Value),
+                ("damage", Settlement.PlayerDamage),
+                ("absorbed", Settlement.ArmorAbsorbed),
+                ("armor", Term("armor")))
+            : Text("ui.noPlayerDamage");
+        return Text(
+            "ui.combatComplete",
+            ("combat", Term("combat")),
+            ("winner", winner),
+            ("damage", damage));
     }
+
+    private string Term(string key) => _text.Term(key);
+
+    private string Text(string key, params (string Name, object? Value)[] values) =>
+        _text.Format(key, values);
 }
 
 internal sealed class CombatPlaybackUnitState
