@@ -132,6 +132,10 @@ internal static class SimulatorProgram
         PrintGroup("Leaders", report.Leaders);
         PrintGroup("Personalities", report.Personalities);
         PrintGroup("Strategies", report.Strategies);
+        PrintUnits(report.EntityTelemetry.Units);
+        PrintActions(report.EntityTelemetry.Actions);
+        PrintCombines(report.EntityTelemetry.Combines);
+        PrintTiers(report.EntityTelemetry.Tiers);
     }
 
     private static void PrintCommandCounts(PreparationAiCommandCounts counts)
@@ -162,6 +166,51 @@ internal static class SimulatorProgram
             Console.WriteLine(
                 $"  {summary.Id,-26} {summary.Games,5} {summary.Wins,6} {summary.WinRate * 100,6:F1} {summary.AveragePlacement,10:F2} {summary.AveragePreparationCommands,10:F1} {summary.AverageCommands.Acquires,5:F1} {summary.AverageCommands.Refreshes,6:F1} {summary.AverageCommands.Upgrades,5:F1}");
         }
+        Console.WriteLine();
+    }
+
+    private static void PrintUnits(IReadOnlyList<SimulationUnitSummary> units)
+    {
+        Console.WriteLine("Units (buy rate)");
+        Console.WriteLine("  id                         tier   offer   buys   buy%   sell   deploy   finalP   final#   win%   avg place");
+        foreach (var unit in units.OrderByDescending(value => value.AcquireRate).ThenByDescending(value => value.OfferAppearances).ThenBy(value => value.Id, StringComparer.Ordinal))
+        {
+            var averagePlacement = unit.AveragePlacementWhenOnFinalBoard?.ToString("F2", CultureInfo.InvariantCulture) ?? "-";
+            Console.WriteLine(
+                $"  {unit.Id,-26} {unit.Tier,4} {unit.OfferAppearances,7} {unit.Acquires,6} {unit.AcquireRate * 100,6:F1} {unit.Releases,6} {unit.Deploys,8} {unit.FinalBoardPlayers,8} {unit.FinalBoardCopies,8} {unit.FinalBoardWinRate * 100,6:F1} {averagePlacement,10}");
+        }
+        Console.WriteLine();
+    }
+
+    private static void PrintActions(IReadOnlyList<SimulationActionSummary> actions)
+    {
+        if (actions.Count == 0) return;
+        Console.WriteLine("Actions (acquire/use rate)");
+        Console.WriteLine("  id                         tier   offer   buys   buy%   plays   play/buy");
+        foreach (var action in actions.OrderByDescending(value => value.AcquireRate).ThenByDescending(value => value.OfferAppearances).ThenBy(value => value.Id, StringComparer.Ordinal))
+        {
+            Console.WriteLine(
+                $"  {action.Id,-26} {action.Tier,4} {action.OfferAppearances,7} {action.Acquires,6} {action.AcquireRate * 100,6:F1} {action.Plays,7} {action.PlaysPerAcquire,10:F2}");
+        }
+        Console.WriteLine();
+    }
+
+    private static void PrintCombines(IReadOnlyList<SimulationCombineSummary> combines)
+    {
+        if (combines.Count == 0) return;
+        Console.WriteLine("Combines");
+        Console.WriteLine("  id                         source                     -> result                     exec");
+        foreach (var combine in combines.OrderByDescending(value => value.Executions).ThenBy(value => value.Id, StringComparer.Ordinal))
+            Console.WriteLine($"  {combine.Id,-26} {combine.SourceUnitId,-26} -> {combine.ResultUnitId,-26} {combine.Executions,5}");
+        Console.WriteLine();
+    }
+
+    private static void PrintTiers(IReadOnlyList<SimulationTierSummary> tiers)
+    {
+        Console.WriteLine("Tier distribution");
+        Console.WriteLine("  tier   unit offer   unit buys   action offer   action buys   final units");
+        foreach (var tier in tiers)
+            Console.WriteLine($"  {tier.Tier,4} {tier.UnitOfferAppearances,12} {tier.UnitAcquires,11} {tier.ActionOfferAppearances,14} {tier.ActionAcquires,13} {tier.FinalBoardUnitCopies,13}");
         Console.WriteLine();
     }
 
@@ -216,7 +265,59 @@ internal static class SimulatorProgram
 
         File.WriteAllLines(path, lines, Encoding.UTF8);
         Console.WriteLine($"CSV: {path}");
+        WriteEntityCsvFiles(report.EntityTelemetry, path);
     }
+
+    private static void WriteEntityCsvFiles(SimulationEntityReport telemetry, string playerCsvPath)
+    {
+        var unitsPath = SidecarCsvPath(playerCsvPath, "units");
+        var actionsPath = SidecarCsvPath(playerCsvPath, "actions");
+        var combinesPath = SidecarCsvPath(playerCsvPath, "combines");
+        var tiersPath = SidecarCsvPath(playerCsvPath, "tiers");
+
+        File.WriteAllLines(unitsPath,
+            new[] { "id,name,tier,offerAppearances,acquires,acquireRate,releases,deploys,finalBoardPlayers,finalBoardCopies,winnerFinalBoards,finalBoardWinRate,averagePlacementWhenOnFinalBoard" }
+                .Concat(telemetry.Units.Select(unit => string.Join(',',
+                    Csv(unit.Id), Csv(unit.Name), unit.Tier,
+                    unit.OfferAppearances, unit.Acquires, F(unit.AcquireRate), unit.Releases, unit.Deploys,
+                    unit.FinalBoardPlayers, unit.FinalBoardCopies, unit.WinnerFinalBoards, F(unit.FinalBoardWinRate),
+                    unit.AveragePlacementWhenOnFinalBoard is double placement ? F(placement) : string.Empty))),
+            Encoding.UTF8);
+
+        File.WriteAllLines(actionsPath,
+            new[] { "id,name,tier,offerAppearances,acquires,acquireRate,plays,playsPerAcquire" }
+                .Concat(telemetry.Actions.Select(action => string.Join(',',
+                    Csv(action.Id), Csv(action.Name), action.Tier,
+                    action.OfferAppearances, action.Acquires, F(action.AcquireRate), action.Plays, F(action.PlaysPerAcquire)))),
+            Encoding.UTF8);
+
+        File.WriteAllLines(combinesPath,
+            new[] { "id,name,sourceUnitId,requiredCopies,resultUnitId,executions" }
+                .Concat(telemetry.Combines.Select(combine => string.Join(',',
+                    Csv(combine.Id), Csv(combine.Name), Csv(combine.SourceUnitId), combine.RequiredCopies, Csv(combine.ResultUnitId), combine.Executions))),
+            Encoding.UTF8);
+
+        File.WriteAllLines(tiersPath,
+            new[] { "tier,unitOfferAppearances,unitAcquires,actionOfferAppearances,actionAcquires,finalBoardUnitCopies" }
+                .Concat(telemetry.Tiers.Select(tier => string.Join(',',
+                    tier.Tier, tier.UnitOfferAppearances, tier.UnitAcquires, tier.ActionOfferAppearances, tier.ActionAcquires, tier.FinalBoardUnitCopies))),
+            Encoding.UTF8);
+
+        Console.WriteLine($"Unit CSV: {unitsPath}");
+        Console.WriteLine($"Action CSV: {actionsPath}");
+        Console.WriteLine($"Combine CSV: {combinesPath}");
+        Console.WriteLine($"Tier CSV: {tiersPath}");
+    }
+
+    private static string SidecarCsvPath(string path, string suffix)
+    {
+        var fullPath = Path.GetFullPath(path);
+        var extension = Path.GetExtension(fullPath);
+        var basePath = extension.Length == 0 ? fullPath : fullPath[..^extension.Length];
+        return $"{basePath}.{suffix}.csv";
+    }
+
+    private static string F(double value) => value.ToString("0.######", CultureInfo.InvariantCulture);
 
     private static string Csv(string value) =>
         value.IndexOfAny([',', '"', '\n', '\r']) >= 0
@@ -245,7 +346,7 @@ internal static class SimulatorProgram
         Console.WriteLine("  --max-commands <n>    AI safety limit per Preparation. Default: 128");
         Console.WriteLine("  --max-rounds <n>      Match safety limit. Default: 200");
         Console.WriteLine("  --json <path>         Write full report as JSON");
-        Console.WriteLine("  --csv <path>          Write one row per simulated player as CSV");
+        Console.WriteLine("  --csv <path>          Write player CSV plus .units/.actions/.combines/.tiers CSV sidecars");
         Console.WriteLine("  -h, --help            Show this help");
     }
 
