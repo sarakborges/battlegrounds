@@ -1,17 +1,59 @@
 {
   "leaders": {
     "steady": {
-      "portrait": "assets/leaders/steady.svg"
+      "portrait": "assets/leaders/steady.svg",
+      "cues": {
+        "ui.select": {
+          "animation": "pulse",
+          "durationSeconds": 0.16
+        }
+      }
     }
   },
   "units": {
     "scout": {
-      "art": "assets/units/scout.svg"
+      "art": "assets/units/scout.svg",
+      "cues": {
+        "ui.select": {
+          "animation": "pulse",
+          "durationSeconds": 0.16
+        },
+        "combat.attack": {
+          "animation": "lunge",
+          "durationSeconds": 0.2
+        },
+        "combat.summon": {
+          "animation": "pop",
+          "durationSeconds": 0.24
+        },
+        "combat.damage": {
+          "animation": "shake",
+          "durationSeconds": 0.18
+        },
+        "combat.death": {
+          "animation": "fade",
+          "durationSeconds": 0.32
+        },
+        "combat.revive": {
+          "animation": "pop",
+          "durationSeconds": 0.28
+        },
+        "combat.trigger": {
+          "animation": "pulse",
+          "durationSeconds": 0.22
+        }
+      }
     }
   },
   "actions": {
     "training": {
-      "art": "assets/actions/training.svg"
+      "art": "assets/actions/training.svg",
+      "cues": {
+        "ui.select": {
+          "animation": "pulse",
+          "durationSeconds": 0.16
+        }
+      }
     }
   }
 }
