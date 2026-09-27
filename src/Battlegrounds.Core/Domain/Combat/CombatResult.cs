@@ -13,6 +13,7 @@ public enum CombatEndReason
 public sealed class CombatResult
 {
     private readonly ReadOnlyCollection<CombatAttack> _attacks;
+    private readonly ReadOnlyCollection<CombatTimelineEvent> _timeline;
     private readonly ReadOnlyCollection<CombatSurvivor> _leftSurvivors;
     private readonly ReadOnlyCollection<CombatSurvivor> _rightSurvivors;
     private readonly ReadOnlyDictionary<PlayerId, int> _resourceDeltas;
@@ -24,6 +25,7 @@ public sealed class CombatResult
     public CombatEndReason EndReason { get; }
     public int AttackCount => _attacks.Count;
     public IReadOnlyList<CombatAttack> Attacks => _attacks;
+    public IReadOnlyList<CombatTimelineEvent> Timeline => _timeline;
     public IReadOnlyList<CombatSurvivor> LeftSurvivors => _leftSurvivors;
     public IReadOnlyList<CombatSurvivor> RightSurvivors => _rightSurvivors;
     public IReadOnlyDictionary<PlayerId, int> ResourceDeltas => _resourceDeltas;
@@ -38,11 +40,13 @@ public sealed class CombatResult
         IEnumerable<CombatSurvivor> rightSurvivors,
         IReadOnlyDictionary<PlayerId, int>? resourceDeltas = null,
         IReadOnlyDictionary<PlayerId, PowerId>? powerChanges = null,
-        IReadOnlyDictionary<PlayerId, EffectHistoryDelta>? historyDeltas = null)
+        IReadOnlyDictionary<PlayerId, EffectHistoryDelta>? historyDeltas = null,
+        IEnumerable<CombatTimelineEvent>? timeline = null)
     {
         WinnerPlayerId = winnerPlayerId;
         EndReason = endReason;
         _attacks = Array.AsReadOnly(attacks.ToArray());
+        _timeline = Array.AsReadOnly((timeline ?? []).ToArray());
         _leftSurvivors = Array.AsReadOnly(leftSurvivors.ToArray());
         _rightSurvivors = Array.AsReadOnly(rightSurvivors.ToArray());
         _resourceDeltas = new ReadOnlyDictionary<PlayerId, int>(
