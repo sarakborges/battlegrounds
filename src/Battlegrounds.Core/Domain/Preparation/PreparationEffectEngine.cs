@@ -208,11 +208,16 @@ internal sealed class PreparationEffectEngine
         {
             foreach (var player in _match.Players)
             {
-                if (player.TryGetFieldUnit(instanceId, out var found) ||
-                    player.Reserve.FirstOrDefault(candidate => candidate.Id == instanceId) is { } foundReserve)
+                if (player.TryGetFieldUnit(instanceId, out var fieldUnit))
                 {
-                    var resolved = found ?? foundReserve;
-                    unit = Wrap(resolved, player.Id);
+                    unit = Wrap(fieldUnit, player.Id);
+                    return true;
+                }
+
+                var reserveUnit = player.Reserve.FirstOrDefault(candidate => candidate.Id == instanceId);
+                if (reserveUnit is not null)
+                {
+                    unit = Wrap(reserveUnit, player.Id);
                     return true;
                 }
             }
