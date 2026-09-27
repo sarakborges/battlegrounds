@@ -1,0 +1,25 @@
+{
+  "id": "siege-colossus",
+  "name": "Siege Colossus",
+  "tier": 6,
+  "attack": 12,
+  "health": 12,
+  "behaviors": ["guarded", "warded"],
+  "types": ["machine"],
+  "tags": ["elite"],
+  "triggers": [
+    {
+      "event": "onCombatStart",
+      "effects": [
+        {
+          "kind": "modifyStats",
+          "target": { "scope": "self" },
+          "health": {
+            "kind": "unitCount",
+            "query": { "scope": "friendly", "typeId": "machine" }
+          }
+        }
+      ]
+    }
+  ]
+}

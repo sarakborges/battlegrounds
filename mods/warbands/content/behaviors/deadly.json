@@ -1,0 +1,5 @@
+{
+  "id": "deadly",
+  "name": "Deadly",
+  "handler": "lethalFirstDamagePerCombat"
+}

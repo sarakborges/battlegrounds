@@ -1,0 +1,22 @@
+{
+  "id": "moonfang-alpha",
+  "name": "Moonfang Alpha",
+  "tier": 3,
+  "attack": 4,
+  "health": 4,
+  "behaviors": [],
+  "types": ["beast"],
+  "tags": [],
+  "triggers": [
+    {
+      "event": "onCombatStart",
+      "effects": [
+        {
+          "kind": "modifyStats",
+          "target": { "scope": "friendly", "selection": "all", "typeId": "beast" },
+          "attack": 1
+        }
+      ]
+    }
+  ]
+}

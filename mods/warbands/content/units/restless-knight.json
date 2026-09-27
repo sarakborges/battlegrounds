@@ -1,0 +1,19 @@
+{
+  "id": "restless-knight",
+  "name": "Restless Knight",
+  "tier": 2,
+  "attack": 3,
+  "health": 3,
+  "behaviors": [],
+  "types": ["undead"],
+  "tags": [],
+  "triggers": [
+    {
+      "event": "afterFriendlyDeaths",
+      "count": 2,
+      "effects": [
+        { "kind": "modifyStats", "target": { "scope": "self" }, "attack": 1, "health": 1 }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,11 @@
+{
+  "id": "scrapbot",
+  "name": "Scrapbot",
+  "tier": 1,
+  "attack": 2,
+  "health": 2,
+  "behaviors": ["warded"],
+  "types": ["machine"],
+  "tags": ["starter"],
+  "triggers": []
+}

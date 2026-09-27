@@ -1,0 +1,20 @@
+{
+  "id": "field-repairs",
+  "name": "Field Repairs",
+  "activation": {
+    "cost": 1,
+    "maxUsesPerTurn": 1
+  },
+  "triggers": [
+    {
+      "event": "onActivate",
+      "effects": [
+        {
+          "kind": "modifyStats",
+          "target": { "scope": "selected" },
+          "health": 3
+        }
+      ]
+    }
+  ]
+}

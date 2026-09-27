@@ -1,0 +1,25 @@
+{
+  "id": "pack-hunter",
+  "name": "Pack Hunter",
+  "tier": 2,
+  "attack": 3,
+  "health": 2,
+  "behaviors": [],
+  "types": ["beast"],
+  "tags": [],
+  "triggers": [
+    {
+      "event": "onCombatStart",
+      "effects": [
+        {
+          "kind": "modifyStats",
+          "target": { "scope": "self" },
+          "attack": {
+            "kind": "unitCount",
+            "query": { "scope": "friendly", "typeId": "beast" }
+          }
+        }
+      ]
+    }
+  ]
+}

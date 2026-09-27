@@ -1,0 +1,21 @@
+{
+  "id": "war-cry",
+  "name": "War Cry",
+  "activation": {
+    "cost": 1,
+    "maxUsesPerTurn": 1
+  },
+  "triggers": [
+    {
+      "event": "onActivate",
+      "effects": [
+        {
+          "kind": "modifyStats",
+          "target": { "scope": "selected" },
+          "attack": 1,
+          "health": 1
+        }
+      ]
+    }
+  ]
+}

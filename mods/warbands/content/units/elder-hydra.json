@@ -1,0 +1,22 @@
+{
+  "id": "elder-hydra",
+  "name": "Elder Hydra",
+  "tier": 6,
+  "attack": 10,
+  "health": 9,
+  "behaviors": ["double-strike"],
+  "types": ["beast"],
+  "tags": ["elite"],
+  "triggers": [
+    {
+      "event": "onAttack",
+      "effects": [
+        {
+          "kind": "dealDamage",
+          "target": { "scope": "enemy", "selection": "random" },
+          "amount": 2
+        }
+      ]
+    }
+  ]
+}

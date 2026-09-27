@@ -1,0 +1,19 @@
+{
+  "id": "death-herald",
+  "name": "Death Herald",
+  "tier": 5,
+  "attack": 6,
+  "health": 8,
+  "behaviors": [],
+  "types": ["undead"],
+  "tags": ["elite"],
+  "triggers": [
+    {
+      "event": "afterFriendlyDeaths",
+      "count": 1,
+      "effects": [
+        { "kind": "modifyStats", "target": { "scope": "self" }, "attack": 1 }
+      ]
+    }
+  ]
+}

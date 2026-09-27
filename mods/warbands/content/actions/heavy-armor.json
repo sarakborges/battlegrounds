@@ -1,0 +1,13 @@
+{
+  "id": "heavy-armor",
+  "name": "Heavy Armor",
+  "tier": 2,
+  "cost": 2,
+  "effects": [
+    {
+      "kind": "modifyStats",
+      "target": { "scope": "selected" },
+      "health": 3
+    }
+  ]
+}

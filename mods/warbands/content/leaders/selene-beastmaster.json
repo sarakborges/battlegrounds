@@ -1,0 +1,7 @@
+{
+  "id": "selene-beastmaster",
+  "name": "Selene the Beastmaster",
+  "healthModifier": 0,
+  "armor": 2,
+  "initialPowerId": "pack-instinct"
+}

@@ -1,0 +1,20 @@
+{
+  "id": "pack-instinct",
+  "name": "Pack Instinct",
+  "activation": {
+    "cost": 1,
+    "maxUsesPerTurn": 1
+  },
+  "triggers": [
+    {
+      "event": "onActivate",
+      "effects": [
+        {
+          "kind": "modifyStats",
+          "target": { "scope": "selected" },
+          "attack": 2
+        }
+      ]
+    }
+  ]
+}

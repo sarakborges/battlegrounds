@@ -1,0 +1,11 @@
+{
+  "id": "thornhide-bear",
+  "name": "Thornhide Bear",
+  "tier": 4,
+  "attack": 5,
+  "health": 8,
+  "behaviors": ["guarded", "warded"],
+  "types": ["beast"],
+  "tags": [],
+  "triggers": []
+}

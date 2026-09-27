@@ -1,0 +1,18 @@
+{
+  "id": "goblin-tinkerer",
+  "name": "Goblin Tinkerer",
+  "tier": 1,
+  "attack": 1,
+  "health": 3,
+  "behaviors": [],
+  "types": ["machine"],
+  "tags": ["starter"],
+  "triggers": [
+    {
+      "event": "onPlay",
+      "effects": [
+        { "kind": "addResource", "amount": 1 }
+      ]
+    }
+  ]
+}

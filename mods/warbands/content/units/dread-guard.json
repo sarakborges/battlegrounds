@@ -1,0 +1,11 @@
+{
+  "id": "dread-guard",
+  "name": "Dread Guard",
+  "tier": 4,
+  "attack": 6,
+  "health": 6,
+  "behaviors": ["guarded", "returning"],
+  "types": ["undead"],
+  "tags": [],
+  "triggers": []
+}

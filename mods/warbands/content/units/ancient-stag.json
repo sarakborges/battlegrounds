@@ -1,0 +1,23 @@
+{
+  "id": "ancient-stag",
+  "name": "Ancient Stag",
+  "tier": 5,
+  "attack": 7,
+  "health": 9,
+  "behaviors": [],
+  "types": ["beast"],
+  "tags": ["elite"],
+  "triggers": [
+    {
+      "event": "onCombatStart",
+      "effects": [
+        {
+          "kind": "modifyStats",
+          "target": { "scope": "friendly", "selection": "all", "typeId": "beast" },
+          "attack": 1,
+          "health": 1
+        }
+      ]
+    }
+  ]
+}

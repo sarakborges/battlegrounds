@@ -1,0 +1,18 @@
+{
+  "id": "bomb-lobber",
+  "name": "Bomb Lobber",
+  "tier": 3,
+  "attack": 4,
+  "health": 3,
+  "behaviors": [],
+  "types": ["machine"],
+  "tags": [],
+  "triggers": [
+    {
+      "event": "onAttack",
+      "effects": [
+        { "kind": "dealDamage", "target": { "scope": "enemy", "selection": "random" }, "amount": 1 }
+      ]
+    }
+  ]
+}

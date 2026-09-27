@@ -1,0 +1,24 @@
+{
+  "id": "bonecaller",
+  "name": "Bonecaller",
+  "tier": 4,
+  "attack": 4,
+  "health": 6,
+  "behaviors": [],
+  "types": ["undead"],
+  "tags": [],
+  "triggers": [
+    {
+      "event": "afterFriendlyDeaths",
+      "count": 2,
+      "effects": [
+        {
+          "kind": "modifyStats",
+          "target": { "scope": "friendly", "selection": "lowestAttack", "limit": 1, "typeId": "undead" },
+          "attack": 1,
+          "health": 1
+        }
+      ]
+    }
+  ]
+}

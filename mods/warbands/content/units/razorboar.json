@@ -1,0 +1,11 @@
+{
+  "id": "razorboar",
+  "name": "Razorboar",
+  "tier": 1,
+  "attack": 1,
+  "health": 4,
+  "behaviors": ["guarded"],
+  "types": ["beast"],
+  "tags": ["starter"],
+  "triggers": []
+}

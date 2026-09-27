@@ -1,0 +1,7 @@
+{
+  "id": "scrap-fusion",
+  "name": "Scrap Fusion",
+  "sourceUnitId": "scrapbot",
+  "requiredCopies": 3,
+  "resultUnitId": "scrap-titan"
+}
