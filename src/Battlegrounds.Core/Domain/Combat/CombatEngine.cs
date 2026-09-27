@@ -102,6 +102,7 @@ public sealed class CombatEngine
                 var attackerRebirthsBefore = attacker.RebirthCount;
                 var targetRebirthsBefore = target.RebirthCount;
 
+                world.RecordAttackStarted(attacker, target);
                 var damageToTarget = ApplyAttackDamage(world, attacker, target);
                 var damageToAttacker = ApplyAttackDamage(world, target, attacker);
 
@@ -180,7 +181,8 @@ public sealed class CombatEngine
             world.Right.GetSurvivors(),
             world.ResourceDeltas,
             world.PowerChanges,
-            world.HistoryDeltas);
+            world.HistoryDeltas,
+            world.Timeline);
     }
 
     private void ProcessPhaseEvent(
@@ -211,6 +213,7 @@ public sealed class CombatEngine
             return;
         }
 
+        world.RecordTrigger(side.PlayerId, eventKey, null, powerId);
         runtime.Process(new GameEffectEvent(eventKey, world.CreatePowerSource(side, power)));
     }
 
@@ -227,6 +230,10 @@ public sealed class CombatEngine
                 continue;
             }
 
+            if (unit.Definition.Triggers.Any(trigger => trigger.Event == eventKey))
+            {
+                world.RecordTrigger(unit.OwnerPlayerId, eventKey, unit.InstanceId, null);
+            }
             runtime.Process(new GameEffectEvent(eventKey, unit));
         }
     }
@@ -312,13 +319,16 @@ public sealed class CombatEngine
         private readonly Dictionary<PlayerId, int> _resourceDeltas = [];
         private readonly Dictionary<PlayerId, PowerId> _powerChanges = [];
         private readonly Dictionary<PlayerId, CombatEffectHistoryState> _histories;
+        private readonly List<CombatTimelineEvent> _timeline = [];
         private long _nextInstanceId;
         private long _nextSyntheticInstanceId = long.MaxValue;
+        private int _nextTimelineSequence;
 
         public SideState Left { get; }
         public SideState Right { get; }
         public IReadOnlyDictionary<PlayerId, int> ResourceDeltas => _resourceDeltas;
         public IReadOnlyDictionary<PlayerId, PowerId> PowerChanges => _powerChanges;
+        public IReadOnlyList<CombatTimelineEvent> Timeline => _timeline;
         public IReadOnlyDictionary<PlayerId, EffectHistoryDelta> HistoryDeltas =>
             _histories.ToDictionary(pair => pair.Key, pair => pair.Value.CreateDelta());
 
@@ -341,6 +351,26 @@ public sealed class CombatEngine
             var ids = input.Left.Units.Concat(input.Right.Units).Select(unit => unit.InstanceId.Value).ToArray();
             _nextInstanceId = ids.Length == 0 ? 1 : ids.Max() + 1;
         }
+
+        public void RecordAttackStarted(CombatRuntimeUnit attacker, CombatRuntimeUnit target) =>
+            _timeline.Add(new CombatAttackStartedTimelineEvent(
+                NextTimelineSequence(),
+                attacker.OwnerPlayerId,
+                attacker.InstanceId,
+                target.OwnerPlayerId,
+                target.InstanceId));
+
+        public void RecordTrigger(
+            PlayerId sourcePlayerId,
+            NativeTriggerKey trigger,
+            UnitInstanceId? sourceUnitInstanceId,
+            PowerId? sourcePowerId) =>
+            _timeline.Add(new CombatTriggerTimelineEvent(
+                NextTimelineSequence(),
+                sourcePlayerId,
+                trigger,
+                sourceUnitInstanceId,
+                sourcePowerId));
 
         public CombatPowerRuntimeUnit CreatePowerSource(SideState side, PowerDefinition power)
         {
@@ -399,21 +429,94 @@ public sealed class CombatEngine
             return listeners;
         }
 
-        public void ModifyStats(IEffectRuntimeUnit unit, int attackDelta, int healthDelta) =>
-            GetUnit(unit).ModifyStats(attackDelta, healthDelta);
+        public void ModifyStats(IEffectRuntimeUnit unit, int attackDelta, int healthDelta)
+        {
+            var runtimeUnit = GetUnit(unit);
+            var attackBefore = runtimeUnit.Attack;
+            var healthBefore = runtimeUnit.Health;
+            runtimeUnit.ModifyStats(attackDelta, healthDelta);
+            if (runtimeUnit.Attack == attackBefore && runtimeUnit.Health == healthBefore) return;
+            _timeline.Add(new CombatUnitStatsChangedTimelineEvent(
+                NextTimelineSequence(),
+                runtimeUnit.OwnerPlayerId,
+                runtimeUnit.InstanceId,
+                attackBefore,
+                runtimeUnit.Attack,
+                healthBefore,
+                runtimeUnit.Health));
+        }
 
-        public bool TryConsumeBehavior(IEffectRuntimeUnit unit, NativeBehaviorKey handler) =>
-            unit is CombatRuntimeUnit runtimeUnit && runtimeUnit.RemoveBehavior(handler);
+        public bool TryConsumeBehavior(IEffectRuntimeUnit unit, NativeBehaviorKey handler)
+        {
+            if (unit is not CombatRuntimeUnit runtimeUnit) return false;
+            var behavior = runtimeUnit.FindBehavior(handler);
+            if (behavior is null || !runtimeUnit.RemoveBehavior(handler)) return false;
+            _timeline.Add(new CombatBehaviorChangedTimelineEvent(
+                NextTimelineSequence(),
+                runtimeUnit.OwnerPlayerId,
+                runtimeUnit.InstanceId,
+                behavior.Id,
+                behavior.Handler,
+                CombatBehaviorChangeKind.Consumed));
+            return true;
+        }
 
-        public bool AddBehavior(IEffectRuntimeUnit unit, BehaviorDefinition behavior) =>
-            GetUnit(unit).AddBehavior(behavior);
+        public bool AddBehavior(IEffectRuntimeUnit unit, BehaviorDefinition behavior)
+        {
+            var runtimeUnit = GetUnit(unit);
+            if (!runtimeUnit.AddBehavior(behavior)) return false;
+            _timeline.Add(new CombatBehaviorChangedTimelineEvent(
+                NextTimelineSequence(),
+                runtimeUnit.OwnerPlayerId,
+                runtimeUnit.InstanceId,
+                behavior.Id,
+                behavior.Handler,
+                CombatBehaviorChangeKind.Added));
+            return true;
+        }
 
-        public bool RemoveBehavior(IEffectRuntimeUnit unit, BehaviorId behaviorId) =>
-            GetUnit(unit).RemoveBehavior(behaviorId);
+        public bool RemoveBehavior(IEffectRuntimeUnit unit, BehaviorId behaviorId)
+        {
+            var runtimeUnit = GetUnit(unit);
+            var behavior = runtimeUnit.FindBehavior(behaviorId);
+            if (behavior is null || !runtimeUnit.RemoveBehavior(behaviorId)) return false;
+            _timeline.Add(new CombatBehaviorChangedTimelineEvent(
+                NextTimelineSequence(),
+                runtimeUnit.OwnerPlayerId,
+                runtimeUnit.InstanceId,
+                behavior.Id,
+                behavior.Handler,
+                CombatBehaviorChangeKind.Removed));
+            return true;
+        }
 
-        public void TakeDamage(IEffectRuntimeUnit unit, int amount) => GetUnit(unit).TakeDamage(amount);
+        public void TakeDamage(IEffectRuntimeUnit unit, int amount)
+        {
+            var runtimeUnit = GetUnit(unit);
+            var healthBefore = runtimeUnit.Health;
+            runtimeUnit.TakeDamage(amount);
+            _timeline.Add(new CombatUnitDamagedTimelineEvent(
+                NextTimelineSequence(),
+                runtimeUnit.OwnerPlayerId,
+                runtimeUnit.InstanceId,
+                amount,
+                healthBefore,
+                runtimeUnit.Health));
+        }
 
-        public void Destroy(IEffectRuntimeUnit unit) => GetUnit(unit).Destroy();
+        public void Destroy(IEffectRuntimeUnit unit)
+        {
+            var runtimeUnit = GetUnit(unit);
+            var healthBefore = runtimeUnit.Health;
+            runtimeUnit.Destroy();
+            if (runtimeUnit.Health == healthBefore) return;
+            _timeline.Add(new CombatUnitDestroyedTimelineEvent(
+                NextTimelineSequence(),
+                runtimeUnit.OwnerPlayerId,
+                runtimeUnit.InstanceId,
+                healthBefore,
+                runtimeUnit.Health));
+        }
 
         public IReadOnlyList<IEffectRuntimeUnit> Summon(
             IEffectRuntimeUnit source,
@@ -421,6 +524,8 @@ public sealed class CombatEngine
             int count)
         {
             var side = GetSide(source.OwnerPlayerId);
+            var sourcePowerId = source is CombatPowerRuntimeUnit powerSource ? powerSource.PowerId : null;
+            var sourceUnitInstanceId = source is CombatPowerRuntimeUnit ? null : source.InstanceId;
             var insertionIndex = source is CombatPowerRuntimeUnit
                 ? side.UnitCount
                 : ResolveSummonIndex(source, side);
@@ -433,13 +538,20 @@ public sealed class CombatEngine
                     side.PlayerId,
                     definition);
                 insertionIndex = Math.Clamp(insertionIndex, 0, side.UnitCount);
-                side.InsertAt(insertionIndex, unit);
+                var insertedAt = insertionIndex;
+                side.InsertAt(insertedAt, unit);
                 insertionIndex++;
                 if (source is not CombatPowerRuntimeUnit)
                 {
                     _summonCursors[source.InstanceId] = insertionIndex;
                 }
                 summoned.Add(unit);
+                _timeline.Add(new CombatUnitSummonedTimelineEvent(
+                    NextTimelineSequence(),
+                    unit.Snapshot(),
+                    insertedAt,
+                    sourceUnitInstanceId,
+                    sourcePowerId));
             }
 
             return summoned;
@@ -448,6 +560,7 @@ public sealed class CombatEngine
         public void AdjustResource(PlayerId playerId, int amount)
         {
             _resourceDeltas[playerId] = _resourceDeltas.GetValueOrDefault(playerId) + amount;
+            _timeline.Add(new CombatResourceChangedTimelineEvent(NextTimelineSequence(), playerId, amount));
         }
 
         public void SetPower(PlayerId playerId, PowerId powerId)
@@ -458,8 +571,14 @@ public sealed class CombatEngine
             }
 
             var side = GetSide(playerId);
+            var previousPowerId = side.CurrentPowerId;
             side.SetPower(powerId);
             _powerChanges[playerId] = powerId;
+            _timeline.Add(new CombatPowerChangedTimelineEvent(
+                NextTimelineSequence(),
+                playerId,
+                previousPowerId,
+                powerId));
         }
 
         public EffectHistorySnapshot GetHistory(PlayerId playerId) =>
@@ -504,11 +623,15 @@ public sealed class CombatEngine
                 return null;
             }
 
-            var insertionIndex = ResolveSummonIndex(unit, side);
+            var insertionIndex = Math.Clamp(ResolveSummonIndex(unit, side), 0, side.UnitCount);
             unit.ResetForReborn();
-            side.InsertAt(Math.Clamp(insertionIndex, 0, side.UnitCount), unit);
+            side.InsertAt(insertionIndex, unit);
             unit.RebirthCount++;
             _summonCursors[unit.InstanceId] = insertionIndex + 1;
+            _timeline.Add(new CombatUnitRevivedTimelineEvent(
+                NextTimelineSequence(),
+                unit.Snapshot(),
+                insertionIndex));
             return unit;
         }
 
@@ -532,6 +655,12 @@ public sealed class CombatEngine
                 _summonCursors[unit.InstanceId] = index;
                 side.RemoveAt(index);
                 unit.DeathCount++;
+                _timeline.Add(new CombatUnitDiedTimelineEvent(
+                    NextTimelineSequence(),
+                    unit.OwnerPlayerId,
+                    unit.InstanceId,
+                    unit.Definition.Id,
+                    index));
                 result.Add(unit);
             }
         }
@@ -556,6 +685,8 @@ public sealed class CombatEngine
 
             return side.UnitCount;
         }
+
+        private int NextTimelineSequence() => ++_nextTimelineSequence;
 
         private SideState GetSide(PlayerId playerId)
         {
@@ -753,6 +884,12 @@ public sealed class CombatEngine
 
         public bool Has(NativeBehaviorKey handler) => _behaviors.Any(behavior => behavior.Handler == handler);
 
+        public BehaviorDefinition? FindBehavior(NativeBehaviorKey handler) =>
+            _behaviors.FirstOrDefault(behavior => behavior.Handler == handler);
+
+        public BehaviorDefinition? FindBehavior(BehaviorId behaviorId) =>
+            _behaviors.FirstOrDefault(behavior => behavior.Id == behaviorId);
+
         public bool RemoveBehavior(NativeBehaviorKey handler)
         {
             var index = _behaviors.FindIndex(behavior => behavior.Handler == handler);
@@ -797,6 +934,16 @@ public sealed class CombatEngine
             _behaviors.AddRange(
                 _initialBehaviors.Where(behavior => behavior.Handler != NativeBehaviorKeys.ReviveOnce));
         }
+
+        public CombatUnitSnapshot Snapshot() =>
+            new(
+                InstanceId,
+                Definition.Id,
+                Definition.Tier,
+                Attack,
+                Health,
+                _behaviors.Select(behavior => new CombatBehaviorSnapshot(behavior.Id, behavior.Handler)),
+                Definition);
     }
 
     private sealed class CombatPowerRuntimeUnit : IEffectRuntimeUnit
