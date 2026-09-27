@@ -250,7 +250,7 @@ Godot resolves the selected mod's `ModPresentationCatalog` using the exported lo
 
 Validated image metadata remains outside Core. `ModPresentationTextureStore` is the Godot-side runtime boundary for loading mod-relative images into cached `Texture2D` instances. Reusable `PresentationCardButton` controls now render Leader choices plus Unit/Action pending choices, Offer, Reserve and Field entries from the same stable IDs, composing optional portrait/art, localized name/description and localized mechanical stat lines. Missing media collapses to a text/stat layout; cards still submit the same existing slots/IDs/commands and never become gameplay authority.
 
-Resolved human combat is displayed through a full-screen presentation-owned playback overlay. `CombatPlaybackState` starts from the immutable session snapshots and consumes `CombatResult.Timeline` in order, so combat-local summons, triggers, buffs/debuffs, effect damage/destruction, deaths/revives, behavior changes and Power/Resource transitions are rendered from immutable Core output rather than reconstructed in Godot. Playback may auto-step, advance manually or skip to settlement; none of those controls rerun combat or mutate Core state.
+Resolved human combat is displayed through a full-screen presentation-owned playback overlay. `CombatPlaybackState` starts from the immutable session snapshots and consumes `CombatResult.Timeline` in order, so combat-local summons, triggers, buffs/debuffs, effect damage/destruction, deaths/revives, behavior changes and Power/Resource transitions are rendered from immutable Core output rather than reconstructed in Godot. Combat board Units now reuse the same validated Unit art/card identity as Preparation, while the current immutable timeline event drives presentation-only scale/fade emphasis for attackers, targets, summons, damage, destruction, deaths, revives, stat changes, behavior changes and Unit trigger sources. Playback may auto-step, advance manually or skip to settlement; none of those controls or visual tweens rerun combat, alter event order or mutate Core state.
 
 See `GAME.md` for the Godot ownership contract, `LOCALIZATION.md` for the presentation string contract and `PRESENTATION_ASSETS.md` for asset metadata/runtime ownership.
 
@@ -387,7 +387,7 @@ Read `ARCHITECTURE.md` before adding features. Its ownership, dependency, mutati
 - reusable Godot Leader/Unit/Action presentation cards combining optional art, localized names/descriptions and mechanical stats while preserving existing command wiring;
 - thin Godot presentation adapter over the Application boundary with a playable localized Preparation loop;
 - explicit Godot multi-step interaction state for selected targets, pending choices and combine components;
-- deterministic Godot combat playback over the Core event timeline with manual/automatic stepping, settlement skip and mod-owned presentation vocabulary/entity names;
+- deterministic Godot combat playback over the Core event timeline with visual Unit cards, mod-owned art, presentation-only event tweens, manual/automatic stepping and settlement skip;
 - whole-mod validation before loading;
 - regression/invariant tests and CI, including a Godot project build.
 
@@ -407,4 +407,4 @@ dotnet build src/Battlegrounds.Game/Battlegrounds.Game.csproj
 
 ## Next architectural slice
 
-Reuse the same mod-owned visual identity in deterministic combat playback. Render combat board Units from `CombatPlaybackState` with the validated Unit art/card presentation, and let timeline events drive presentation-only emphasis/animation cues for attacks, summons, damage, deaths, revives and trigger sources. Playback must remain a pure consumer of the already-resolved immutable timeline: no animation timing or visual state may influence simulation, settlement or authoritative Match state.
+Extend mod-owned presentation metadata beyond static images without coupling timing or media playback to gameplay. Add validated audio references and authored animation/cue metadata keyed by stable entity IDs and presentation event roles; let `Battlegrounds.Content` validate paths/types/schema and expose immutable metadata, while Godot maps the already-resolved combat timeline and UI interactions to audio/animation playback. Missing media/cues must remain optional fallbacks, and Core/Application must not depend on clip duration, animation completion, filesystem paths or engine resources.
