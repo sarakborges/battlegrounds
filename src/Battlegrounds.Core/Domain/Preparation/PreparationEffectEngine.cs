@@ -226,8 +226,13 @@ internal sealed class PreparationEffectEngine
         public void TakeDamage(IEffectRuntimeUnit unit, int amount) => GetUnit(unit).TakeDamage(amount);
         public void Destroy(IEffectRuntimeUnit unit) => GetUnit(unit).Destroy();
 
-        public void TransformUnit(IEffectRuntimeUnit unit, UnitDefinition definition) =>
-            GetUnit(unit).Transform(definition);
+        public void TransformUnit(IEffectRuntimeUnit unit, UnitDefinition definition)
+        {
+            var target = GetUnit(unit);
+            if (target.PoolReturnDefinition is not null)
+                _unitPool.ReturnUnit(target.PoolReturnDefinition);
+            target.Transform(definition);
+        }
 
         public int CopyUnitsToReserve(PlayerId ownerPlayerId, IReadOnlyList<IEffectRuntimeUnit> units)
         {
