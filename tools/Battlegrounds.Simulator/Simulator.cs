@@ -26,7 +26,8 @@ public sealed record SimulationPlayerResult(
     int FinalTier,
     int FinalHealth,
     long PreparationCommands,
-    PreparationAiCommandCounts CommandCounts);
+    PreparationAiCommandCounts CommandCounts,
+    SimulationPlayerEntityTelemetry EntityTelemetry);
 
 public sealed record SimulationMatchResult(
     int MatchIndex,
@@ -67,6 +68,7 @@ public sealed record SimulationReport(
     double AverageRounds,
     long TotalPreparationCommands,
     PreparationAiCommandCounts TotalCommandCounts,
+    SimulationEntityReport EntityTelemetry,
     IReadOnlyList<SimulationGroupSummary> Leaders,
     IReadOnlyList<SimulationGroupSummary> Personalities,
     IReadOnlyList<SimulationGroupSummary> Strategies,
@@ -93,6 +95,7 @@ public sealed class SimulationRunner
         var totalCommandCounts = players.Aggregate(
             PreparationAiCommandCounts.Zero,
             (sum, player) => sum + player.CommandCounts);
+        var entityTelemetry = SimulationEntityReportBuilder.Build(mod, players);
 
         return new SimulationReport(
             mod.Id,
@@ -103,6 +106,7 @@ public sealed class SimulationRunner
             results.Average(result => result.Rounds),
             totalCommandCounts.Total,
             totalCommandCounts,
+            entityTelemetry,
             Summarize(players, player => player.LeaderId),
             Summarize(players, player => player.Personality),
             Summarize(players, player => player.Strategy),
@@ -128,6 +132,7 @@ public sealed class SimulationRunner
             mod.Combines);
         var engine = mod.CreateMatchEngine(random);
         var pairingPolicy = new HistoryAwareCombatPairingPolicy();
+        var entityTracker = new SimulationEntityTracker();
 
         var personalities = playerIds
             .OrderBy(id => id.Value)
@@ -172,13 +177,15 @@ public sealed class SimulationRunner
                 if (!match.TryGetPlayer(playerId, out var player) || player.IsEliminated)
                     continue;
 
+                entityTracker.BeginPreparationTurn(player);
                 var result = agent.PlayPreparation(
                     engine,
                     match,
                     playerId,
                     options.MaximumCommandsPerPreparation,
                     personalities[playerId],
-                    strategies[playerId]);
+                    strategies[playerId],
+                    entityTracker);
                 commandCounts[playerId] += result.CommandCounts;
             }
 
@@ -214,7 +221,8 @@ public sealed class SimulationRunner
                     player.Tier,
                     player.Health,
                     telemetry.Total,
-                    telemetry);
+                    telemetry,
+                    entityTracker.BuildPlayerTelemetry(player));
             })
             .ToArray();
 
