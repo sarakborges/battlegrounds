@@ -7,7 +7,7 @@ using Battlegrounds.Core.Domain.Units;
 
 namespace Battlegrounds.Core.Domain.Players;
 
-public sealed class PlayerState
+public sealed partial class PlayerState
 {
     private readonly List<UnitInstance> _reserve = [];
     private readonly List<UnitInstance> _field = [];

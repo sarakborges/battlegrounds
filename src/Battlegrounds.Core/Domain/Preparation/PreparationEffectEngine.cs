@@ -180,7 +180,7 @@ internal sealed class PreparationEffectEngine
         return (_runtimeWorld!, _runtime!);
     }
 
-    private sealed class PreparationEffectWorld : IEffectRuntimeWorld
+    private sealed class PreparationEffectWorld : IEffectRuntimeWorld, IGenerationChoiceRuntimeWorld
     {
         private readonly MatchState _match;
         private readonly PreparationRules _rules;
@@ -297,6 +297,39 @@ internal sealed class PreparationEffectEngine
             }
 
             return summoned;
+        }
+
+        public int GenerateUnitToReserve(PlayerId playerId, UnitDefinition definition, int count)
+        {
+            if (count <= 0)
+            {
+                return 0;
+            }
+
+            var player = GetPlayer(playerId);
+            var available = Math.Max(
+                0,
+                _rules.ReserveCapacity - player.Reserve.Count - player.PendingChoiceCount);
+            var generatedCount = Math.Min(count, available);
+            for (var index = 0; index < generatedCount; index++)
+            {
+                player.AddToReserve(_match.CreateUnit(definition, UnitInstanceOrigin.Generated));
+            }
+
+            return generatedCount;
+        }
+
+        public bool QueueUnitChoice(PlayerId playerId, IReadOnlyList<UnitDefinition> options)
+        {
+            ArgumentNullException.ThrowIfNull(options);
+            var player = GetPlayer(playerId);
+            if (options.Count == 0 ||
+                player.Reserve.Count + player.PendingChoiceCount >= _rules.ReserveCapacity)
+            {
+                return false;
+            }
+
+            return player.QueueUnitChoice(options);
         }
 
         public void AdjustResource(PlayerId playerId, int amount)
