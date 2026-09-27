@@ -59,13 +59,17 @@ A command enters telemetry only after `MatchEngine.ExecutePreparation(...)` succ
 
 Telemetry is deliberately one-way observation. The AI policy never reads these counters, they consume no RNG, and Core does not know they exist. This allows headless simulation and diagnostics to measure behavior without giving the AI privileged information or changing the deterministic gameplay sequence.
 
+For richer analysis, `PlayPreparation` also accepts an optional `IPreparationAiCommandObserver`. `BeforeCommand(...)` receives the public `PlayerState` immediately before the command is submitted so a diagnostic consumer can snapshot visible entity identity. `AfterAcceptedCommand(...)` runs only after Core accepts that command. The observer is optional, does not change the command or result, and must remain observation-only: it must not participate in scoring, consume gameplay RNG or create a second mutation path.
+
+The simulator uses this hook to measure Unit/Action Offer exposure, acquisitions, releases, deploys, Action plays and combine executions. It never exposes or reads hidden Unit-pool remaining-copy counts through this observer.
+
 ## Determinism
 
 Tie-breaking, personality assignment and strategy assignment use injected `IRandomSource` values. The same state plus the same RNG sequence produces the same decisions and assignments.
 
 `PlayPreparation` has a command-count safety budget. This is an AI control-flow guard against authored zero-cost generation loops; it is unrelated to combat attack resolution and does not add an attack limit to Combat. Personality-specific refresh preferences are additionally bounded, so a zero-cost refresh rule cannot create an unbounded personality loop before the general safety budget is reached.
 
-Command telemetry does not consume RNG or influence scoring, so enabling downstream reporting does not change AI decisions.
+Command telemetry and optional observation hooks do not consume RNG or influence scoring, so enabling downstream reporting does not change AI decisions.
 
 ## Ownership
 
