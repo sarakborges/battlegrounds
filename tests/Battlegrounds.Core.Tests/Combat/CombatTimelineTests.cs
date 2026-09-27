@@ -53,7 +53,7 @@ public sealed class CombatTimelineTests
     }
 
     [Fact]
-    public void Resolve_DeathSummonCarriesCombatLocalIdentityAndPosition()
+    public void Resolve_DeathSummonCarriesCombatLocalIdentityAndTriggerAttribution()
     {
         var token = new UnitDefinition(new UnitId("token"), "Token", 1, 5, 5);
         var victim = new UnitDefinition(
@@ -76,11 +76,16 @@ public sealed class CombatTimelineTests
             .Resolve(input, new CombatRules(StartingSidePolicy.Random), new MinimumRandomSource());
 
         var death = Assert.Single(result.Timeline, @event => @event is CombatUnitDiedTimelineEvent died && died.UnitInstanceId == new UnitInstanceId(1));
+        var deathTrigger = Assert.Single(result.Timeline, @event =>
+            @event is CombatTriggerTimelineEvent trigger &&
+            trigger.Trigger == NativeTriggerKeys.OnDeath &&
+            trigger.SourceUnitInstanceId == new UnitInstanceId(1));
         var summoned = Assert.Single(result.Timeline, @event => @event is CombatUnitSummonedTimelineEvent value && value.Unit.UnitId == token.Id);
         var deathEvent = Assert.IsType<CombatUnitDiedTimelineEvent>(death);
         var summonEvent = Assert.IsType<CombatUnitSummonedTimelineEvent>(summoned);
 
-        Assert.True(deathEvent.Sequence < summonEvent.Sequence);
+        Assert.True(deathEvent.Sequence < deathTrigger.Sequence);
+        Assert.True(deathTrigger.Sequence < summonEvent.Sequence);
         Assert.Equal(new PlayerId(0), summonEvent.PlayerId);
         Assert.Equal(token.Id, summonEvent.Unit.UnitId);
         Assert.Equal("Token", summonEvent.Unit.Definition?.Name);
