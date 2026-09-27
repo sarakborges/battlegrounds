@@ -15,6 +15,7 @@ public enum PreparationFailureCode
     InvalidOfferSlot,
     InvalidReserveSlot,
     InvalidFieldSlot,
+    InvalidFieldOrder,
     InvalidActionTarget,
     CombineUnavailable,
     InvalidCombineUnits,
