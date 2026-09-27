@@ -171,7 +171,7 @@ public partial class Main : Control
             {
                 Text = Text(
                     "ui.leaderOption",
-                    ("name", definition.Name),
+                    ("name", LeaderName(definition.Id)),
                     ("healthText", healthText),
                     ("armorValue", definition.StartingArmor),
                     ("armor", Term("armor"))),
@@ -195,7 +195,7 @@ public partial class Main : Control
                 return;
             }
 
-            AppendLog($"Selected {Term("leader")} '{_session.Mod.Leaders.GetRequired(leaderId).Name}'.");
+            AppendLog($"Selected {Term("leader")} '{LeaderName(leaderId)}'.");
             AdvanceAutomation(prepareFollowingRound: false);
             Render();
         }
@@ -242,7 +242,9 @@ public partial class Main : Control
             .Select(player =>
             {
                 var actor = player.Id == _session.HumanPlayerId ? Text("ui.you") : Text("ui.ai");
-                var leader = player.Leader?.Definition.Name ?? Text("ui.noLeader", ("leader", Term("leader")));
+                var leader = player.Leader is null
+                    ? Text("ui.noLeader", ("leader", Term("leader")))
+                    : LeaderName(player.Leader.Definition.Id);
                 var armor = player.Leader?.Armor ?? 0;
                 var state = player.IsEliminated
                     ? Text("ui.eliminated")
@@ -353,7 +355,7 @@ public partial class Main : Control
                     {
                         Text = Text(
                             "ui.chooseUnitOption",
-                            ("name", option.Name),
+                            ("name", UnitName(option.Id)),
                             ("unit", Term("unit")),
                             ("tier", Term("tier")),
                             ("tierValue", option.Tier),
@@ -374,7 +376,7 @@ public partial class Main : Control
                     {
                         Text = Text(
                             "ui.chooseActionOption",
-                            ("name", option.Name),
+                            ("name", ActionName(option.Id)),
                             ("action", Term("action")),
                             ("tier", Term("tier")),
                             ("tierValue", option.Tier),
@@ -420,7 +422,7 @@ public partial class Main : Control
                     Text = Text(
                         "ui.targetCandidate",
                         ("player", player.Id.Value),
-                        ("name", unit.Definition.Name),
+                        ("name", UnitName(unit.Definition.Id)),
                         ("attack", unit.Attack),
                         ("health", unit.Health)),
                     SizeFlagsHorizontal = Control.SizeFlags.ExpandFill,
@@ -445,14 +447,13 @@ public partial class Main : Control
 
         foreach (var definition in available)
         {
-            var result = _session.Mod.Units.GetRequired(definition.ResultUnitId);
             var button = new Button
             {
                 Text = Text(
                     "ui.combineRecipe",
-                    ("name", definition.Name),
+                    ("name", CombineName(definition.Id)),
                     ("copies", definition.RequiredCopies),
-                    ("result", result.Name)),
+                    ("result", UnitName(definition.ResultUnitId))),
                 SizeFlagsHorizontal = Control.SizeFlags.ExpandFill,
             };
             button.Pressed += () => SelectCombineRecipe(definition.Id);
@@ -468,9 +469,9 @@ public partial class Main : Control
         var selected = _interaction.SelectedUnits.Count;
         _interactionPrompt.Text = Text(
             "ui.combineComponentsPrompt",
-            ("name", definition.Name),
+            ("name", CombineName(definition.Id)),
             ("required", definition.RequiredCopies),
-            ("source", definition.SourceUnitId.Value),
+            ("source", UnitName(definition.SourceUnitId)),
             ("reserve", Term("reserve")),
             ("field", Term("field")),
             ("selected", selected));
@@ -516,7 +517,7 @@ public partial class Main : Control
                 Text = Text(
                     "ui.acquireEntry",
                     ("acquire", Term("acquire")),
-                    ("name", entry.Name),
+                    ("name", PlayableName(entry.Kind, entry.Id)),
                     ("kind", PlayableKindText(entry.Kind)),
                     ("tier", Term("tier")),
                     ("tierValue", entry.Tier),
@@ -559,7 +560,7 @@ public partial class Main : Control
                     Text = Text(
                         "ui.combineReserveEntry",
                         ("selectedMark", selected ? "[x]" : "[ ]"),
-                        ("name", unit.Definition.Name),
+                        ("name", UnitName(unit.Definition.Id)),
                         ("reserve", Term("reserve")),
                         ("attack", unit.Attack),
                         ("health", unit.Health)),
@@ -577,7 +578,7 @@ public partial class Main : Control
                 Text = Text(
                     "ui.reserveEntry",
                     ("verb", verb),
-                    ("name", entry.Name),
+                    ("name", PlayableName(entry.Kind, entry.DefinitionId)),
                     ("kind", PlayableKindText(entry.Kind))),
                 Disabled = human.IsReadyForCombat || choiceBlocked || _interaction.IsActive,
                 SizeFlagsHorizontal = Control.SizeFlags.ExpandFill,
@@ -619,7 +620,7 @@ public partial class Main : Control
                     Text = Text(
                         "ui.combineFieldEntry",
                         ("selectedMark", selected ? "[x]" : "[ ]"),
-                        ("name", unit.Definition.Name),
+                        ("name", UnitName(unit.Definition.Id)),
                         ("field", Term("field")),
                         ("attack", unit.Attack),
                         ("health", unit.Health)),
@@ -636,7 +637,7 @@ public partial class Main : Control
                 Text = Text(
                     "ui.releaseUnit",
                     ("release", Term("release")),
-                    ("name", unit.Definition.Name),
+                    ("name", UnitName(unit.Definition.Id)),
                     ("attack", unit.Attack),
                     ("health", unit.Health)),
                 Disabled = human.IsReadyForCombat || human.PendingChoice is not null || _interaction.IsActive,
@@ -752,7 +753,7 @@ public partial class Main : Control
     {
         if (!_interaction.IsSelected(unit.Id) && _interaction.SelectedUnits.Count >= definition.RequiredCopies)
         {
-            AppendLog($"{definition.Name} already has {definition.RequiredCopies} selected components.");
+            AppendLog($"{CombineName(definition.Id)} already has {definition.RequiredCopies} selected components.");
             return;
         }
 
