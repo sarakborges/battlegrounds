@@ -13,6 +13,7 @@ internal sealed partial class PresentationCardButton : Button
     public PresentationCardButton()
     {
         Text = string.Empty;
+        ThemeTypeVariation = "CardButton";
         CustomMinimumSize = new Vector2(0, 104);
         SizeFlagsHorizontal = SizeFlags.ExpandFill;
         ClipContents = true;
@@ -47,10 +48,10 @@ internal sealed partial class PresentationCardButton : Button
         copy.AddThemeConstantOverride("separation", 2);
         row.AddChild(copy);
 
-        _title = CreateLabel(18);
-        _subtitle = CreateLabel(13);
-        _stats = CreateLabel(14);
-        _description = CreateLabel(12, wrap: true);
+        _title = CreateLabel("HeadingLabel");
+        _subtitle = CreateLabel("CaptionLabel");
+        _stats = CreateLabel("BodyLabel");
+        _description = CreateLabel("CaptionLabel", wrap: true);
 
         copy.AddChild(_title);
         copy.AddChild(_subtitle);
@@ -83,13 +84,13 @@ internal sealed partial class PresentationCardButton : Button
         ButtonPressed = selected;
     }
 
-    private static Label CreateLabel(int fontSize, bool wrap = false)
+    private static Label CreateLabel(string variation, bool wrap = false)
     {
         var label = IgnoreMouse(new Label
         {
             SizeFlagsHorizontal = SizeFlags.ExpandFill,
+            ThemeTypeVariation = variation,
         });
-        label.AddThemeFontSizeOverride("font_size", fontSize);
         if (wrap)
             label.AutowrapMode = TextServer.AutowrapMode.WordSmart;
         return label;

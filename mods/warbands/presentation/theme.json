@@ -1,0 +1,159 @@
+{
+  "version": 1,
+  "colors": {
+    "background": "#15100D",
+    "surface": "#211915",
+    "surfaceRaised": "#30241D",
+    "surfaceHover": "#3B2C22",
+    "surfacePressed": "#17100D",
+    "text": "#F3E7D5",
+    "textMuted": "#B9A68F",
+    "textDisabled": "#796D60",
+    "primary": "#B95E2F",
+    "primaryHover": "#D6743E",
+    "primaryPressed": "#8F4322",
+    "primaryText": "#FFF3DE",
+    "border": "#584334",
+    "focus": "#E4AF62",
+    "danger": "#A93E35",
+    "success": "#759B54"
+  },
+  "typography": {
+    "fonts": {},
+    "sizes": {
+      "caption": 12,
+      "body": 15,
+      "button": 15,
+      "heading": 20,
+      "title": 31
+    }
+  },
+  "spacing": {
+    "xs": 4,
+    "sm": 8,
+    "md": 12,
+    "lg": 20,
+    "xl": 32
+  },
+  "shape": {
+    "small": 3,
+    "medium": 7,
+    "large": 12
+  },
+  "components": {
+    "button": {
+      "fontSize": "button",
+      "textColor": "text",
+      "backgroundColor": "surfaceRaised",
+      "borderColor": "border",
+      "borderWidth": 1,
+      "radius": "medium",
+      "padding": {
+        "horizontal": "md",
+        "vertical": "sm"
+      },
+      "states": {
+        "hover": {
+          "backgroundColor": "surfaceHover"
+        },
+        "pressed": {
+          "backgroundColor": "surfacePressed"
+        },
+        "disabled": {
+          "textColor": "textDisabled",
+          "opacity": 0.55
+        },
+        "focus": {
+          "borderColor": "focus",
+          "borderWidth": 2
+        }
+      }
+    },
+    "button.primary": {
+      "textColor": "primaryText",
+      "backgroundColor": "primary",
+      "backgroundAsset": "assets/ui/button-primary.svg",
+      "slice": {
+        "left": 14,
+        "top": 14,
+        "right": 14,
+        "bottom": 14
+      },
+      "states": {
+        "hover": {
+          "backgroundColor": "primaryHover"
+        },
+        "pressed": {
+          "backgroundColor": "primaryPressed"
+        },
+        "disabled": {
+          "opacity": 0.5
+        }
+      }
+    },
+    "card": {
+      "fontSize": "body",
+      "textColor": "text",
+      "backgroundColor": "surface",
+      "borderColor": "border",
+      "borderWidth": 1,
+      "radius": "large",
+      "padding": {
+        "horizontal": "md",
+        "vertical": "sm"
+      },
+      "states": {
+        "hover": {
+          "backgroundColor": "surfaceRaised",
+          "borderColor": "primary"
+        },
+        "pressed": {
+          "backgroundColor": "surfacePressed"
+        },
+        "focus": {
+          "borderColor": "focus",
+          "borderWidth": 2
+        }
+      }
+    },
+    "input": {
+      "fontSize": "body",
+      "textColor": "text",
+      "backgroundColor": "surface",
+      "borderColor": "border",
+      "borderWidth": 1,
+      "radius": "medium",
+      "padding": {
+        "horizontal": "md",
+        "vertical": "sm"
+      },
+      "states": {
+        "focus": {
+          "borderColor": "focus",
+          "borderWidth": 2
+        }
+      }
+    },
+    "panel": {
+      "backgroundColor": "surface",
+      "borderColor": "border",
+      "borderWidth": 1,
+      "radius": "large",
+      "padding": {
+        "horizontal": "lg",
+        "vertical": "lg"
+      }
+    }
+  },
+  "screens": {
+    "launcher": {
+      "backgroundColor": "background"
+    },
+    "preparation": {
+      "backgroundColor": "background"
+    },
+    "combat": {
+      "backgroundColor": "#0D0907"
+    }
+  }
+}

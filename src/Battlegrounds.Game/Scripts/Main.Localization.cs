@@ -18,6 +18,7 @@ public partial class Main
         ArgumentNullException.ThrowIfNull(mod);
         var requestedLocale = string.IsNullOrWhiteSpace(Locale) ? TranslationServer.GetLocale() : Locale;
         _presentationText = mod.Presentation.Resolve(requestedLocale);
+        InitializeTheme();
         ApplyStaticPresentationText();
         AppendLog($"Presentation locale: {_presentationText.Locale}.");
     }
