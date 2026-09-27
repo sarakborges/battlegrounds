@@ -41,7 +41,8 @@ public partial class Main
             return;
 
         _observedCombatSequence = record.Sequence;
-        var playback = CombatPlaybackState.TryCreate(record, _session.HumanPlayerId);
+        var text = _presentationText ?? _session.Mod.Presentation.Resolve(null);
+        var playback = CombatPlaybackState.TryCreate(record, _session.HumanPlayerId, text);
         if (playback is null) return;
 
         _combatPlayback = playback;
