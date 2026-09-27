@@ -52,11 +52,30 @@ public sealed class GenerationChoiceTests
     }
 
     [Fact]
-    public void Preparation_BlocksOtherCommandsUntilCurrentChoiceIsResolved()
+    public void Preparation_PlayCanGenerateReserveUnitAndQueueChoiceWithoutConsumingPool()
     {
-        var poolUnit = new UnitDefinition(new UnitId("pool-unit"), "Pool Unit", 1, 1, 1);
+        var choiceTag = new TagDefinition(new TagId("choice"), "Choice");
         var generated = new UnitDefinition(new UnitId("generated"), "Generated", 1, 2, 2);
-        var catalog = new UnitCatalog([poolUnit, generated]);
+        var alpha = new UnitDefinition(new UnitId("alpha"), "Alpha", 1, 2, 2, tags: [choiceTag]);
+        var beta = new UnitDefinition(new UnitId("beta"), "Beta", 1, 3, 3, tags: [choiceTag]);
+        var source = new UnitDefinition(
+            new UnitId("source"),
+            "Source",
+            1,
+            1,
+            1,
+            triggers:
+            [
+                new TriggerDefinition(
+                    NativeTriggerKeys.OnPlay,
+                    [
+                        new GenerateUnitToReserveEffectDefinition(generated.Id),
+                        new GenerateUnitChoiceEffectDefinition(
+                            new UnitDefinitionQuery(requiredTagId: choiceTag.Id),
+                            optionCount: 2),
+                    ]),
+            ]);
+        var catalog = new UnitCatalog([source, generated, alpha, beta]);
         var rules = new PreparationRules(
             startingResource: 3,
             resourcePerRound: 1,
@@ -69,14 +88,24 @@ public sealed class GenerationChoiceTests
             maximumTier: 2,
             offerSizesByTier: [1, 1],
             initialUpgradeCostsByTier: [5]);
-        var pool = new UnitPool(catalog, [new UnitPoolEntry(poolUnit.Id, 10)]);
+        var pool = new UnitPool(catalog, [new UnitPoolEntry(source.Id, 10)]);
         var engine = new PreparationEngine(rules, pool, new MinimumRandomSource(), catalog, null);
         var match = MatchState.Create([new PlayerId(0), new PlayerId(1)], new MatchRules(2, 2));
 
         engine.BeginPreparation(match);
         var player = match.Players.Single(value => value.Id == new PlayerId(0));
-        Assert.True(player.QueueUnitChoice([generated]));
+        Assert.True(engine.Execute(match, new AcquireUnitCommand(player.Id, 0)).Succeeded);
+        Assert.True(engine.Execute(match, new DeployUnitCommand(player.Id, 0)).Succeeded);
+
+        var directlyGenerated = Assert.Single(player.Reserve);
+        Assert.Equal(generated.Id, directlyGenerated.Definition.Id);
+        Assert.Equal(UnitInstanceOrigin.Generated, directlyGenerated.Origin);
         var choice = Assert.IsType<Battlegrounds.Core.Domain.Choices.PendingUnitChoice>(player.PendingChoice);
+        Assert.Collection(
+            choice.Options,
+            option => Assert.Equal(alpha.Id, option.Id),
+            option => Assert.Equal(beta.Id, option.Id));
+        Assert.Equal(8, pool.GetAvailableCopies(source.Id));
 
         var blocked = engine.Execute(match, new RefreshOfferCommand(player.Id));
         Assert.False(blocked.Succeeded);
@@ -86,9 +115,10 @@ public sealed class GenerationChoiceTests
 
         Assert.True(resolved.Succeeded);
         Assert.Null(player.PendingChoice);
-        var reserveUnit = Assert.Single(player.Reserve);
-        Assert.Equal(generated.Id, reserveUnit.Definition.Id);
-        Assert.Equal(UnitInstanceOrigin.Generated, reserveUnit.Origin);
+        Assert.Equal(2, player.Reserve.Count);
+        Assert.Equal(alpha.Id, player.Reserve[1].Definition.Id);
+        Assert.Equal(UnitInstanceOrigin.Generated, player.Reserve[1].Origin);
+        Assert.Equal(8, pool.GetAvailableCopies(source.Id));
     }
 
     private sealed class FakeUnit : IEffectRuntimeUnit
