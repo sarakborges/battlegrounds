@@ -74,7 +74,8 @@ public sealed class PreparationAiAgent
         MatchEngine engine,
         MatchState match,
         PlayerId playerId,
-        int maximumCommands = 128)
+        int maximumCommands = 128,
+        PreparationAiPersonality personality = PreparationAiPersonality.Tempo)
     {
         ArgumentNullException.ThrowIfNull(engine);
         ArgumentNullException.ThrowIfNull(match);
@@ -93,7 +94,7 @@ public sealed class PreparationAiAgent
             if (executed >= maximumCommands)
                 throw new InvalidOperationException($"AI exceeded its {maximumCommands}-command Preparation safety budget.");
 
-            var command = ChooseNextCommand(match, player, memory);
+            var command = ChooseNextCommand(match, player, memory, personality);
             var result = engine.ExecutePreparation(match, command);
             if (!result.Succeeded)
             {
@@ -102,13 +103,17 @@ public sealed class PreparationAiAgent
             }
 
             executed++;
-            if (command is RefreshOfferCommand) memory.HasRefreshed = true;
+            if (command is RefreshOfferCommand) memory.Refreshes++;
         }
 
         return new PreparationAiResult(executed, player.IsReadyForCombat, match.Round);
     }
 
-    private IPreparationCommand ChooseNextCommand(MatchState match, PlayerState player, TurnMemory memory)
+    private IPreparationCommand ChooseNextCommand(
+        MatchState match,
+        PlayerState player,
+        TurnMemory memory,
+        PreparationAiPersonality personality)
     {
         if (memory.Round != match.Round)
             throw new InvalidOperationException("AI turn memory belongs to a different round.");
@@ -149,26 +154,80 @@ public sealed class PreparationAiAgent
         var action = TryCreatePlayActionCommand(match, player);
         if (action is not null) return action;
 
+        var strategic = personality switch
+        {
+            PreparationAiPersonality.Tempo => TryCreateTempoCommand(match, player, memory),
+            PreparationAiPersonality.Greedy => TryCreateGreedyCommand(match, player, memory),
+            PreparationAiPersonality.Roller => TryCreateRollerCommand(match, player, memory),
+            _ => throw new ArgumentOutOfRangeException(nameof(personality), personality, "Unsupported AI personality."),
+        };
+        if (strategic is not null) return strategic;
+
+        if (!player.IsOfferFrozen && player.PlayableOfferCount > 0)
+            return new FreezeOfferCommand(player.Id);
+
+        return new EndPreparationCommand(player.Id);
+    }
+
+    private IPreparationCommand? TryCreateTempoCommand(MatchState match, PlayerState player, TurnMemory memory)
+    {
         var power = TryCreatePowerCommand(match, player);
         if (power is not null) return power;
 
         var acquire = TryCreateAcquireCommand(player);
         if (acquire is not null) return acquire;
 
-        if (player.UpgradeCost is int upgradeCost &&
-            player.Tier < _rules.MaximumTier &&
-            player.Resource >= upgradeCost)
+        var upgrade = TryCreateUpgradeCommand(player);
+        if (upgrade is not null) return upgrade;
+
+        return TryCreateRefreshCommand(player, memory, maximumRefreshes: 1);
+    }
+
+    private IPreparationCommand? TryCreateGreedyCommand(MatchState match, PlayerState player, TurnMemory memory)
+    {
+        var upgrade = TryCreateUpgradeCommand(player);
+        if (upgrade is not null) return upgrade;
+
+        var power = TryCreatePowerCommand(match, player);
+        if (power is not null) return power;
+
+        var acquire = TryCreateAcquireCommand(player);
+        if (acquire is not null) return acquire;
+
+        return TryCreateRefreshCommand(player, memory, maximumRefreshes: 1);
+    }
+
+    private IPreparationCommand? TryCreateRollerCommand(MatchState match, PlayerState player, TurnMemory memory)
+    {
+        var power = TryCreatePowerCommand(match, player);
+        if (power is not null) return power;
+
+        var refresh = TryCreateRefreshCommand(player, memory, maximumRefreshes: 3);
+        if (refresh is not null) return refresh;
+
+        var acquire = TryCreateAcquireCommand(player);
+        if (acquire is not null) return acquire;
+
+        return TryCreateUpgradeCommand(player);
+    }
+
+    private UpgradeTierCommand? TryCreateUpgradeCommand(PlayerState player)
+    {
+        if (player.UpgradeCost is not int upgradeCost ||
+            player.Tier >= _rules.MaximumTier ||
+            player.Resource < upgradeCost)
         {
-            return new UpgradeTierCommand(player.Id);
+            return null;
         }
 
-        if (!memory.HasRefreshed && player.Resource >= _rules.RefreshCost)
-            return new RefreshOfferCommand(player.Id);
+        return new UpgradeTierCommand(player.Id);
+    }
 
-        if (!player.IsOfferFrozen && player.PlayableOfferCount > 0)
-            return new FreezeOfferCommand(player.Id);
-
-        return new EndPreparationCommand(player.Id);
+    private RefreshOfferCommand? TryCreateRefreshCommand(PlayerState player, TurnMemory memory, int maximumRefreshes)
+    {
+        if (memory.Refreshes >= maximumRefreshes || player.Resource < _rules.RefreshCost)
+            return null;
+        return new RefreshOfferCommand(player.Id);
     }
 
     private CombineUnitsCommand? TryCreateCombineCommand(PlayerState player)
@@ -363,7 +422,7 @@ public sealed class PreparationAiAgent
     private sealed class TurnMemory
     {
         public int Round { get; }
-        public bool HasRefreshed { get; set; }
+        public int Refreshes { get; set; }
         public TurnMemory(int round) => Round = round;
     }
 
