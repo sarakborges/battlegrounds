@@ -1,0 +1,7 @@
+{
+  "id": "fizzik-tinkerer",
+  "name": "Fizzik the Tinkerer",
+  "healthModifier": 0,
+  "armor": 3,
+  "initialPowerId": "field-repairs"
+}

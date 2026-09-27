@@ -1,0 +1,7 @@
+{
+  "id": "wolf-pack",
+  "name": "Wolf Pack",
+  "sourceUnitId": "wolf-cub",
+  "requiredCopies": 3,
+  "resultUnitId": "dire-packlord"
+}

@@ -1,0 +1,18 @@
+{
+  "id": "grave-ghoul",
+  "name": "Grave Ghoul",
+  "tier": 1,
+  "attack": 2,
+  "health": 2,
+  "behaviors": [],
+  "types": ["undead"],
+  "tags": ["starter"],
+  "triggers": [
+    {
+      "event": "onDeath",
+      "effects": [
+        { "kind": "addResource", "amount": 1 }
+      ]
+    }
+  ]
+}

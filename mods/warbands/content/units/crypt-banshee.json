@@ -1,0 +1,11 @@
+{
+  "id": "crypt-banshee",
+  "name": "Crypt Banshee",
+  "tier": 3,
+  "attack": 4,
+  "health": 5,
+  "behaviors": ["warded"],
+  "types": ["undead"],
+  "tags": [],
+  "triggers": []
+}

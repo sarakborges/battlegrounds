@@ -23,5 +23,7 @@ jobs:
         run: dotnet test tests/Battlegrounds.Application.Tests/Battlegrounds.Application.Tests.csproj --configuration Release
       - name: Smoke-test headless simulator
         run: dotnet run --project tools/Battlegrounds.Simulator/Battlegrounds.Simulator.csproj --configuration Release -- --mod mods/example --matches 2 --players 2 --seed 17
+      - name: Smoke-test Warbands playable mod
+        run: dotnet run --project tools/Battlegrounds.Simulator/Battlegrounds.Simulator.csproj --configuration Release -- --mod mods/warbands --matches 4 --players 4 --seed 23
       - name: Build Godot presentation adapter
         run: dotnet build src/Battlegrounds.Game/Battlegrounds.Game.csproj --configuration Release

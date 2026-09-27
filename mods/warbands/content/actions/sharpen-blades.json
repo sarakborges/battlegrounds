@@ -1,0 +1,13 @@
+{
+  "id": "sharpen-blades",
+  "name": "Sharpen Blades",
+  "tier": 3,
+  "cost": 2,
+  "effects": [
+    {
+      "kind": "modifyStats",
+      "target": { "scope": "selected" },
+      "attack": 3
+    }
+  ]
+}

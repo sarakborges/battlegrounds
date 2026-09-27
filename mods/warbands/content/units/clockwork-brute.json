@@ -1,0 +1,11 @@
+{
+  "id": "clockwork-brute",
+  "name": "Clockwork Brute",
+  "tier": 4,
+  "attack": 7,
+  "health": 7,
+  "behaviors": ["guarded"],
+  "types": ["machine"],
+  "tags": [],
+  "triggers": []
+}

@@ -1,0 +1,11 @@
+{
+  "id": "bloodmane-raptor",
+  "name": "Bloodmane Raptor",
+  "tier": 4,
+  "attack": 6,
+  "health": 4,
+  "behaviors": ["double-strike"],
+  "types": ["beast"],
+  "tags": [],
+  "triggers": []
+}

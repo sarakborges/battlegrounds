@@ -1,0 +1,7 @@
+{
+  "id": "grave-oath",
+  "name": "Grave Oath",
+  "sourceUnitId": "bone-squire",
+  "requiredCopies": 3,
+  "resultUnitId": "grave-champion"
+}

@@ -1,0 +1,24 @@
+{
+  "id": "dire-packlord",
+  "name": "Dire Packlord",
+  "tier": 1,
+  "attack": 5,
+  "health": 5,
+  "behaviors": [],
+  "types": ["beast"],
+  "tags": ["elite"],
+  "triggers": [
+    {
+      "event": "onCombine",
+      "effects": [
+        { "kind": "addResource", "amount": 1 }
+      ]
+    },
+    {
+      "event": "onCombatStart",
+      "effects": [
+        { "kind": "modifyStats", "target": { "scope": "friendly", "selection": "all", "typeId": "beast" }, "attack": 1, "health": 1 }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,14 @@
+{
+  "id": "battle-training",
+  "name": "Battle Training",
+  "tier": 1,
+  "cost": 2,
+  "effects": [
+    {
+      "kind": "modifyStats",
+      "target": { "scope": "selected" },
+      "attack": 1,
+      "health": 1
+    }
+  ]
+}

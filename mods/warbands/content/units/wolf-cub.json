@@ -1,0 +1,11 @@
+{
+  "id": "wolf-cub",
+  "name": "Wolf Cub",
+  "tier": 1,
+  "attack": 2,
+  "health": 2,
+  "behaviors": [],
+  "types": ["beast"],
+  "tags": ["starter"],
+  "triggers": []
+}

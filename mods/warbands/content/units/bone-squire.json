@@ -1,0 +1,11 @@
+{
+  "id": "bone-squire",
+  "name": "Bone Squire",
+  "tier": 1,
+  "attack": 1,
+  "health": 3,
+  "behaviors": ["returning"],
+  "types": ["undead"],
+  "tags": ["starter"],
+  "triggers": []
+}

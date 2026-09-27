@@ -1,0 +1,14 @@
+{
+  "id": "veteran-drill",
+  "name": "Veteran Drill",
+  "tier": 4,
+  "cost": 3,
+  "effects": [
+    {
+      "kind": "modifyStats",
+      "target": { "scope": "selected" },
+      "attack": 2,
+      "health": 2
+    }
+  ]
+}

@@ -1,0 +1,18 @@
+{
+  "id": "junkyard-foreman",
+  "name": "Junkyard Foreman",
+  "tier": 4,
+  "attack": 5,
+  "health": 6,
+  "behaviors": [],
+  "types": ["machine"],
+  "tags": [],
+  "triggers": [
+    {
+      "event": "onCombatStart",
+      "effects": [
+        { "kind": "modifyStats", "target": { "scope": "friendly", "selection": "all", "typeId": "machine" }, "health": 1 }
+      ]
+    }
+  ]
+}

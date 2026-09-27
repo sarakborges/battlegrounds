@@ -1,0 +1,11 @@
+{
+  "id": "war-machine",
+  "name": "War Machine",
+  "tier": 5,
+  "attack": 8,
+  "health": 6,
+  "behaviors": ["double-strike"],
+  "types": ["machine"],
+  "tags": ["elite"],
+  "triggers": []
+}
