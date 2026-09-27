@@ -216,7 +216,7 @@ See `AI.md` for ownership and determinism rules.
 
 `SinglePlayerSession` coordinates one human player plus AI opponents. AI Leader selection and Preparation use `PreparationAiAgent`; human input uses the same `IPreparationCommand` types; combat pairings come from `ICombatPairingPolicy`; and all authoritative mutation still enters through `MatchEngine`/Core.
 
-`AdvanceAutomated()` finishes active AI Preparations, waits if the human is not ready, and otherwise resolves exactly one combat round before returning control at the next Preparation or Finished state. Godot can therefore own animation/input timing without owning simulation.
+`AdvanceAutomated()` finishes active AI Preparations, waits if the human is not ready, and otherwise resolves exactly one combat round before returning control at the next Preparation or Finished state. Immediately before resolution, the session freezes the paired starting Unit views; after Core returns, `LastCombat` exposes a `SessionCombatRecord` containing those immutable snapshots plus the authoritative `CombatRoundResult`. Presentation can therefore keep showing the completed combat after the Match has already advanced without owning or delaying simulation.
 
 See `APPLICATION.md` for the orchestration and ownership contract.
 
@@ -228,7 +228,7 @@ The playable Preparation surface now covers Leader selection, generic acquire/de
 
 Multi-step intent is stored only in `PresentationInteractionState`. Targeted Actions/Powers first submit without a target; when Core reports `InvalidActionTarget`/`InvalidPowerTarget`, Godot enters target-selection mode and resubmits the chosen `UnitInstanceId`. Combine selection stores exact highlighted component IDs and finishes with the existing `CombineUnitsCommand`.
 
-The scene renders read-only match/player/offer/reserve/field/choice state and textual combat settlements; AI decisions, target legality, combine mutation and matchmaking remain behind Application/Core boundaries.
+Resolved human combat is displayed through a full-screen presentation-owned playback overlay. `CombatPlaybackState` starts from the immutable session snapshots and consumes `CombatResult.Attacks` in order, showing reciprocal damage, health-after values, barrier/lethal outcomes, deaths/revives and the final `CombatSettlement`. Playback may auto-step, advance manually or skip to settlement; none of those controls rerun combat or mutate Core state.
 
 See `GAME.md` for the Godot ownership and presentation contract.
 
@@ -350,8 +350,10 @@ Read `ARCHITECTURE.md` before adding features. Its ownership, dependency, mutati
 - deterministic attack order, targeting, simultaneous damage, death resolution and winner/draw resolution;
 - deterministic framework-free AI using the same public commands as presentation;
 - framework-free single-player session orchestration over validated Content + Core + AI + matchmaking;
+- immutable session combat observations that freeze starting boards before authoritative settlement advances the Match;
 - thin Godot presentation adapter over the Application boundary with a playable Preparation loop;
 - explicit Godot multi-step interaction state for selected targets, pending choices and combine components;
+- deterministic Godot combat playback over ordered `CombatAttack` results with manual/automatic stepping and settlement skip;
 - whole-mod validation before loading;
 - regression/invariant tests and CI, including a Godot project build.
 
@@ -371,4 +373,4 @@ dotnet build src/Battlegrounds.Game/Battlegrounds.Game.csproj
 
 ## Next architectural slice
 
-Add deterministic Godot combat playback over immutable `CombatResult` data. Build a presentation-owned playback queue/view model from the ordered `CombatAttack` sequence and animate attacker/target damage, barrier/lethal outcomes, deaths/revives and the final settlement without rerunning combat or delaying authoritative Core settlement. The next Preparation may already exist in Core while Godot is still displaying the completed combat.
+Extend Combat's immutable result surface with a neutral ordered event timeline suitable for replay and presentation, not only strike summaries. Make combat-local Unit identity and visible non-attack transitions explicit — summons, trigger-driven stat changes/damage/destruction, Power lifecycle effects and similar events — while preserving the existing rule that Combat resolves exactly once in Core and Godot only consumes immutable result data.

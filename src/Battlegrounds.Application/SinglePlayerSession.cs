@@ -27,12 +27,14 @@ public sealed class SinglePlayerSession
     private readonly MatchEngine _matchEngine;
     private readonly PlayerId[] _aiPlayerIds;
     private readonly int _aiMaximumCommands;
+    private long _combatResolutionSequence;
 
     public ModPackage Mod { get; }
     public PlayerId HumanPlayerId { get; }
     public IReadOnlyList<PlayerId> AiPlayerIds => _aiPlayerIds;
     public LeaderSelectionState LeaderSelection { get; }
     public MatchState? Match { get; private set; }
+    public SessionCombatRecord? LastCombat { get; private set; }
     public bool HasStarted => Match is not null;
 
     private SinglePlayerSession(
@@ -172,8 +174,60 @@ public sealed class SinglePlayerSession
             return CreateAdvanceResult(match, aiPreparationsCompleted, [], null);
 
         var pairings = _pairingPolicy.CreatePairings(match, _randomSource);
+        var combatRoundNumber = match.Round;
+        var startingUnits = CaptureStartingCombatUnits(match, pairings);
         var combatRound = _matchEngine.ResolveCombatRound(match, pairings);
+        LastCombat = new SessionCombatRecord(
+            ++_combatResolutionSequence,
+            combatRoundNumber,
+            pairings,
+            startingUnits,
+            combatRound);
         return CreateAdvanceResult(match, aiPreparationsCompleted, pairings, combatRound);
+    }
+
+    private SessionCombatUnitSnapshot[] CaptureStartingCombatUnits(
+        MatchState match,
+        IReadOnlyList<CombatPairing> pairings)
+    {
+        var units = new List<SessionCombatUnitSnapshot>();
+        var livePlayerIds = pairings
+            .SelectMany(pairing => pairing.RightPlayerId is PlayerId right
+                ? new[] { pairing.LeftPlayerId, right }
+                : new[] { pairing.LeftPlayerId })
+            .Distinct()
+            .ToArray();
+
+        foreach (var playerId in livePlayerIds)
+        {
+            if (!match.TryGetPlayer(playerId, out var player))
+                throw new InvalidOperationException($"Combat player '{playerId}' is missing from the match.");
+
+            units.AddRange(player.Field.Select(unit => new SessionCombatUnitSnapshot(
+                player.Id,
+                unit.Id,
+                unit.Definition.Id,
+                unit.Definition.Name,
+                unit.Definition.Tier,
+                unit.Attack,
+                unit.Health)));
+        }
+
+        if (pairings.Any(pairing => pairing.UsesEliminatedOpponent))
+        {
+            var archived = match.LatestEliminatedOpponent
+                ?? throw new InvalidOperationException("Eliminated-opponent pairing has no archived opponent snapshot.");
+            units.AddRange(archived.Participant.Units.Select(unit => new SessionCombatUnitSnapshot(
+                archived.SourcePlayerId,
+                unit.InstanceId,
+                unit.UnitId,
+                unit.Definition?.Name ?? Mod.Units.GetRequired(unit.UnitId).Name,
+                unit.Tier,
+                unit.Attack,
+                unit.Health)));
+        }
+
+        return units.ToArray();
     }
 
     private MatchState GetStartedMatch() =>

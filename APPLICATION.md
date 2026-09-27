@@ -35,6 +35,7 @@ The session:
 - accepts human Preparation commands only for the configured human `PlayerId`;
 - runs each active AI player's Preparation through `PreparationAiAgent.PlayPreparation(...)`;
 - asks `ICombatPairingPolicy` for explicit `CombatPairing` values;
+- captures a read-only observation of the paired starting fields immediately before combat resolution;
 - resolves combat only through `MatchEngine.ResolveCombatRound(...)`;
 - stops automated advancement after one resolved combat round, returning control at the next Preparation or Finished state.
 
@@ -61,6 +62,22 @@ A command for an AI-controlled player is rejected by the application boundary be
 
 This makes UI timing a presentation concern. Godot may animate, delay or step through returned combat results without changing simulation ownership.
 
+## Immutable combat observation
+
+When a combat round is about to resolve, the session freezes the paired starting Unit views into `SessionCombatUnitSnapshot` values before calling Core. After Core returns, the session publishes a `SessionCombatRecord` through `LastCombat`.
+
+A record contains:
+
+- a monotonically increasing session-local sequence number;
+- the combat round number;
+- the explicit `CombatPairing` values used;
+- immutable starting Unit identity/stats for live and eliminated-opponent participants;
+- the authoritative `CombatRoundResult` returned by `MatchEngine`.
+
+This is a client/replay observation, not a second gameplay model. The snapshots are never read back into Core, never drive settlement and never replace `MatchState`. They exist so presentation can keep showing an already-resolved combat after Core has moved to the next lifecycle state.
+
+`LastCombat` is intentionally only the most recent observation. Long-term replay/history persistence is a separate concern from the live single-player session boundary.
+
 ## Determinism
 
 The same injected `IRandomSource` is shared by Leader offers, AI tie-breaking, offer generation, combat and matchmaking. The seed overload creates one `SeededRandomSource` for the entire session.
@@ -85,6 +102,7 @@ Presentation may own:
 - audio;
 - localization rendering;
 - selection/highlight state;
-- view models derived from authoritative read-only state.
+- view models derived from authoritative read-only state;
+- playback cursors over immutable `SessionCombatRecord` / `CombatResult` data.
 
 Presentation must not own gameplay mutation, AI decisions, combat pairing rules or mod validation.

@@ -24,7 +24,8 @@ Battlegrounds.Application
 
 - `ModPath`: validated mod directory, defaulting to the repository `mods/example` fixture while developing locally;
 - `Seed`: deterministic single-player session seed;
-- `ParticipantCount`: one human plus AI opponents. It must satisfy the selected mod's player-count rules and is currently required to be even because round one has no eliminated-opponent snapshot.
+- `ParticipantCount`: one human plus AI opponents. It must satisfy the selected mod's player-count rules and is currently required to be even because round one has no eliminated-opponent snapshot;
+- `CombatPlaybackStepSeconds`: presentation-only delay between automatic playback steps.
 
 Bootstrap uses `ModLoader.Load(...)` before session creation. Invalid mod data therefore never becomes a running session.
 
@@ -92,9 +93,29 @@ Core still validates the recipe, copy count and instances, consumes components, 
 
 After successful input, the scene asks `SinglePlayerSession.AdvanceAutomated()` to run AI Preparation and, when all active players are ready, resolve one combat round through the Application boundary.
 
-The returned `CombatRoundResult` is currently rendered as a textual session log. Combat animation timing is presentation-owned, but simulation is already complete and immutable from the scene's perspective.
+Combat settlement completes before presentation playback starts. The Application layer publishes the latest immutable `SessionCombatRecord`, which contains frozen starting Unit views plus the authoritative `CombatRoundResult`. The Match may therefore already be in the next Preparation or Finished state while Godot is still displaying the prior combat.
 
 After a resolved non-terminal combat, the scene may ask the session to prepare AI players for the next round. It does not directly ready those players or choose their commands.
+
+## Deterministic combat playback
+
+`CombatPlaybackState` is a presentation-only mutable view model built from one immutable `SessionCombatRecord`.
+
+Playback starts from the frozen Unit snapshots and consumes `CombatResult.Attacks` strictly in sequence order. Each step updates only local visual state for:
+
+- attacker/target highlighting;
+- reciprocal damage;
+- health-after values;
+- barrier-loss markers;
+- lethal-trigger markers;
+- death state;
+- death → revive state.
+
+After the final attack, playback shows the already-computed `CombatSettlement`, including winner/draw and player damage/Armor absorption. The overlay can auto-step, advance manually or skip directly to settlement. None of those controls call combat simulation again.
+
+A full-screen presentation overlay blocks the underlying Preparation controls while playback is visible. Closing playback simply returns to rendering the authoritative session state that already exists underneath.
+
+Combat-local Units that did not exist in the starting snapshot can still appear later through their runtime `UnitInstanceId`; until Core exposes a richer combat event/identity timeline, those late runtime Units use a generic playback label.
 
 ## Read-only rendering
 
@@ -107,9 +128,9 @@ The current main screen reads:
 - human Field state;
 - pending-choice state;
 - validated combine definitions;
-- combat settlements returned from Application.
+- immutable session combat observations and settlements.
 
-Rendering may create derived labels, ordering, buttons and highlights. Those values are view state only and are never written back into Core.
+Rendering may create derived labels, ordering, buttons, highlights and playback cursors. Those values are view state only and are never written back into Core.
 
 ## CI contract
 
@@ -117,6 +138,6 @@ CI builds `Battlegrounds.Game` in addition to testing Core, Content, AI and Appl
 
 ## Next presentation boundary
 
-The next Godot slice should add combat playback over immutable combat result data. `CombatResult.Attacks` already exposes an ordered `CombatAttack` sequence with attacker/target IDs, damage, barrier/lethal flags, health-after values, death and revive information.
+The next combat-presentation slice should extend the immutable Core result surface beyond strike summaries into a neutral ordered combat event timeline suitable for replay/animation.
 
-Presentation should turn that sequence into a playback queue/view model and animate it without rerunning combat, changing authoritative state, or delaying Core settlement. Preparation for the next round may already exist authoritatively while the scene is still displaying the completed prior combat.
+That timeline should make combat-local Unit identity and non-attack events explicit — for example summons, trigger-driven stat changes/damage/destruction, Power lifecycle effects and other visible state transitions — while preserving the current rule that simulation resolves once in Core and presentation only consumes immutable result data.
