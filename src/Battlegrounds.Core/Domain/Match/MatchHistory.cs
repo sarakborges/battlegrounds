@@ -11,6 +11,15 @@ public sealed record MatchElimination(
     int HealthBeforeCombat,
     int HealthAfterCombat);
 
+public sealed record MatchCombatPairing(
+    int Round,
+    PlayerId LeftPlayerId,
+    PlayerId? RightPlayerId,
+    PlayerId? EliminatedOpponentSourcePlayerId)
+{
+    public bool UsesEliminatedOpponent => EliminatedOpponentSourcePlayerId is not null;
+}
+
 public sealed class EliminatedOpponentSnapshot
 {
     public PlayerId SourcePlayerId { get; }

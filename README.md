@@ -11,6 +11,7 @@ Examples:
 | Core concept | A mod may display it as |
 | --- | --- |
 | `Unit` | Minion, Digimon, Fighter, Creature |
+| `Action` | Spell, Technique, Item, Tactic |
 | `Leader` | Hero, Tamer, Trainer, Commander |
 | `Power` | Hero Power, Ability, Skill, Technique |
 | `Resource` | Gold, Data, Credits, Energy |
@@ -19,13 +20,14 @@ Examples:
 | `Reserve` | Hand, Bench, Roster |
 | `Field` | Board, Arena, Team |
 | `UnitType` | Beast, Demon, Vaccine, Machine |
+| `UnitCombine` | Triple, Golden, Fusion, Evolution |
 | `EliminatedOpponentSnapshot` | Ghost, Echo, Kel'Thuzad-like dummy, etc. |
 
 The Core must never encode fandom-specific display terminology into IDs, commands, rules or algorithms. There is intentionally no hardcoded `Standard` gameplay preset in Core.
 
 ## One authored entity per file
 
-Mod content never uses giant catalog arrays such as `units.json`, `leaders.json`, `powers.json`, `types.json` or `behaviors.json`.
+Mod content never uses giant catalog arrays such as `units.json`, `actions.json`, `leaders.json`, `powers.json`, `combines.json`, `types.json` or `behaviors.json`.
 
 Every authored entity with its own ID lives in its own file:
 
@@ -40,6 +42,10 @@ content/
   units/
     scout.json
     guard.json
+  actions/
+    training.json
+  combines/
+    scout-upgrade.json
   types/
     organic.json
     construct.json
@@ -52,7 +58,7 @@ content/
 
 The file name is part of the validation contract: `content/units/guard.json` must contain `"id": "guard"`. A mismatch rejects the whole mod.
 
-This rule applies to future ID-addressable content too: artifacts, spells, quests, anomalies, or other authored entities should each have their own file rather than being accumulated into one array document.
+This rule applies to future ID-addressable content too: artifacts, quests, anomalies, or other authored entities should each have their own file rather than being accumulated into one array document.
 
 Aggregate files are reserved for genuinely package-global configuration, such as `mod.json`, `rules/*.json` and `content/pool.json`.
 
@@ -64,21 +70,35 @@ Leaders are authored under `content/leaders/<id>.json` and define stable identit
 
 Powers are independent authored entities under `content/powers/<id>.json`. A leader does **not** own or embed a power definition. `LeaderDefinition.InitialPowerId` only selects the starting power; `LeaderState.CurrentPowerId` is mutable runtime state and may change during the match.
 
-A power currently defines:
-
-- stable `PowerId` and display name;
-- `cost` in the mod's generic Resource;
-- `maxUsesPerTurn`;
-- optional `maxUsesPerMatch`;
-- ordered shared `effects`.
+Powers reuse the shared trigger/effect system. Active powers opt into an `activation` block and execute `onActivate`; passive and active powers may also respond to lifecycle events such as `onMatchStart`, `onTurnStart`, `onTurnEnd`, `onCombatStart` and `onCombatEnd`.
 
 `UsePowerCommand` activates the player's current power during Preparation. Usage is tracked per `PowerId`, so replacing a power and later returning to it does not erase its usage history. Per-turn counts reset when a new Preparation round begins.
 
-Power effects run through the same `GameEffectRuntime` as unit-triggered effects. There is no power-specific effect language. Powers may use `selected` targeting for an explicit Field unit chosen by UI/AI, and the neutral `setPower` effect can replace `LeaderState.CurrentPowerId` without mutating the immutable `LeaderDefinition`.
+Power effects run through the same `GameEffectRuntime` as Unit and Action effects. There is no power-specific effect language. Powers may use `selected` targeting for an explicit Field unit chosen by UI/AI during `onActivate`, and the neutral `setPower` effect can replace `LeaderState.CurrentPowerId` without mutating the immutable `LeaderDefinition`.
 
-`PlayerState` owns a `LeaderState`. Armor is mutable runtime state and absorbs player damage before Health. A player is eliminated only when Health reaches zero.
+Leader setup is explicit and deterministic. `LeaderSelectionState` creates mod-driven offers from `LeaderSelectionRules`, stores selections by `PlayerId`, and produces validated `PlayerSetup` values only when every player has selected.
 
-Match creation from a real mod uses explicit `PlayerSetup(PlayerId, LeaderId)` values. The Core resolves the selected ID through the mod's validated `LeaderCatalog`; callers cannot invent Health or Armor values outside the authored leader definition.
+## Generic playables, Actions and pending choices
+
+The Preparation offer can contain Units and Actions through one generic playable surface.
+
+`ActionDefinition` is immutable authored content under `content/actions/<id>.json`. `ActionInstance` is consumable runtime state in the player's reserve. `PlayActionCommand` executes ordered effects through the same `GameEffectRuntime` used everywhere else.
+
+Unit and Action generation can create immediate results or queue a pending choice. A player may have only one pending choice at a time; unrelated Preparation commands are rejected until it is resolved through the explicit Unit/Action choice command.
+
+Presentation and AI consume the generic read-only `PlayableOffer` and `PlayableReserve` surfaces. They do not own a second copy of state.
+
+See `PLAYABLES.md` and `GENERATION.md` for detailed semantics.
+
+## Generic Unit combines
+
+Unit combining is mod-defined rather than hardcoded as a themed Triple/Golden system.
+
+Each recipe under `content/combines/<id>.json` identifies a source `UnitId`, exact required-copy count and result `UnitId`. `CombineUnitsCommand` contains the exact runtime `UnitInstanceId` values to consume, so Core never silently decides which owned copies disappear.
+
+Components may come from Reserve and/or Field. Still-owned pooled inputs return their copies exactly once, the result is created as `Generated`, and the result's optional `onCombine` reward runs only after the atomic combine mutation completes.
+
+See `COMBINES.md` for the ordering and pool-ownership contract.
 
 ## Native behaviors, mod-defined identities
 
@@ -94,32 +114,13 @@ Current native handlers:
 
 ## Shared triggers and effects
 
-Battlecry-like, Deathrattle-like, summon, damage, destroy, buff and power mechanics belong to the shared game domain, not to a specific phase.
+Battlecry-like, Deathrattle-like, summon, damage, destroy, buff, Action and Power mechanics belong to the shared game domain, not to a specific phase.
 
-Current triggers:
+Current trigger families include Unit events such as `onPlay`, `onCombine`, `onSummon`, `onAttack`, `onDamage`, `onDeath` and counted `afterFriendlyDeaths`, plus shared lifecycle events such as `onMatchStart`, `onTurnStart`, `onTurnEnd`, `onCombatStart`, `onCombatEnd` and active-power `onActivate`.
 
-- `onPlay`
-- `onDeath`
-- `onSummon`
-- `onAttack`
-- `onDamage`
-- `onCombatStart`
-- `onCombatEnd`
-- `onTurnStart`
-- `onTurnEnd`
-- `afterFriendlyDeaths` — counted Avenge-like listener; requires positive `count`.
+Effects include stat modification, damage, destruction, explicit trigger activation, summon, behavior mutation, resource adjustment, power replacement, Unit/Action generation and choices, persistent Unit transform/copy, and named persistent Unit modifiers.
 
-Current effects:
-
-- `modifyStats`
-- `dealDamage`
-- `destroyUnit`
-- `triggerEvent`
-- `summonUnit`
-- `addBehavior`
-- `removeBehavior`
-- `addResource`
-- `setPower`
+Numeric effect parameters may be dynamic expressions. Target selection and conditions are composable. Scoped event history supports counted conditions and activation limits without introducing a global event bus.
 
 `GameEffectRuntime` owns deterministic trigger/effect ordering. Preparation supplies a persistent authoritative state adapter; Combat supplies an isolated combat-local adapter.
 
@@ -149,11 +150,26 @@ The current native post-combat damage policy is `winnerTierPlusSurvivorTiers`: w
 
 Player damage is applied to Leader Armor first and Health second. `CombatSettlement` reports incoming damage, Armor absorbed, Armor after and Health after so UI/replay consumers do not need to reconstruct the calculation.
 
-Combat `addResource` effects leave combat as result deltas and are applied after the next Preparation resource baseline and before `onTurnStart`.
+Combat `addResource`, power changes and scoped effect-history deltas leave Combat as explicit result data and are settled by `MatchEngine` rather than mutating persistent state from inside the simulator.
 
-## Odd-player combat and eliminated-opponent snapshots
+## Matchmaking policy and combat pairing history
 
 `CombatPairing` remains explicit: matchmaking is not hidden inside `MatchEngine`.
+
+`MatchState` now owns authoritative `CombatPairingHistory`. Only pairings that were actually resolved by `MatchEngine` are recorded. Eliminated-opponent entries preserve the exact archived opponent source used at the beginning of that combat round.
+
+`HistoryAwareCombatPairingPolicy` is a neutral baseline policy outside the engine. It prefers less-repeated live opponents, then the least-recent prior meeting, with injected deterministic RNG for exact ties. When an odd active-player count requires an eliminated-opponent pairing, it distributes those assignments using the same history-aware principle.
+
+Callers still make the boundary explicit:
+
+```csharp
+var pairings = pairingPolicy.CreatePairings(match, randomSource);
+var roundResult = matchEngine.ResolveCombatRound(match, pairings);
+```
+
+See `MATCHMAKING.md` for the contract.
+
+## Odd-player combat and eliminated-opponent snapshots
 
 When the number of active players is odd, exactly one pairing must use:
 
@@ -161,7 +177,7 @@ When the number of active players is odd, exactly one pairing must use:
 CombatPairing.VersusEliminatedOpponent(playerId)
 ```
 
-The opponent is the immutable `EliminatedOpponentSnapshot` from the **most recently eliminated player before that combat round started**. It preserves that player's Field and Tier.
+The opponent is the immutable `EliminatedOpponentSnapshot` from the **most recently eliminated player before that combat round started**. It preserves that player's Field, Tier, current Power and effect-history snapshot relevant to Combat.
 
 The archived opponent:
 
@@ -184,13 +200,23 @@ Players eliminated during the same combat round are ranked for displayed placeme
 
 When the match finishes, the remaining player receives placement 1. Consumers can query placement through `MatchState.TryGetPlacement(...)`.
 
+## Deterministic AI
+
+`Battlegrounds.AI` is a framework-free policy layer that depends only on `Battlegrounds.Core`.
+
+The baseline `PreparationAiAgent` reads the same public state available to presentation code and expresses every decision through normal Core boundaries: Leader selection, pending choices, combines, deploy/release, Actions, Powers, acquisition, upgrades, refresh/freeze and end Preparation.
+
+The baseline scoring is intentionally mechanical and theme-neutral. Tie-breaking uses injected `IRandomSource`, and a command-count safety budget prevents authored zero-cost loops from trapping AI control flow.
+
+See `AI.md` for ownership and determinism rules.
+
 ## Mod validation is mandatory
 
 `ModLoader.Load(...)` validates the complete mod before creating a `ModPackage`. Invalid mods are rejected as a whole.
 
 `ModLoader.Validate(...)` and `ModValidator.Validate(...)` return a structured report suitable for UI, including the actual file, JSON path, issue code, severity and message.
 
-Validation covers required global files/content directories, required and unknown keys, JSON types/ranges, one-object-per-entity-file structure, entity ID/file-name agreement, duplicate IDs/references, cross-file references, unsupported native handlers/triggers/effects/policies, taxonomy references, leader starting values, leader → initial-power references, power → power references, and conditional effect/trigger parameters.
+Validation covers required global files/content directories, required and unknown keys, JSON types/ranges, one-object-per-entity-file structure, entity ID/file-name agreement, duplicate IDs/references, cross-file references, unsupported native handlers/triggers/effects/policies, taxonomy references, leader starting values, Leader → initial-Power references, persistent-effect phase legality, Action/choice/generation rules and Unit-combine references/constraints.
 
 Examples of required rules:
 
@@ -221,6 +247,7 @@ mods/
       match.json
       preparation.json
       combat.json
+      setup.json
     content/
       leaders/
         <leader-id>.json
@@ -234,6 +261,10 @@ mods/
         <tag-id>.json
       units/
         <unit-id>.json
+      actions/
+        <action-id>.json
+      combines/
+        <combine-id>.json
       pool.json
     assets/                 # future
     localization/           # future
@@ -253,6 +284,7 @@ mods/
 src/
   Battlegrounds.Core/       # deterministic framework-free domain/simulation
   Battlegrounds.Content/    # mod filesystem + JSON loading/validation
+  Battlegrounds.AI/         # deterministic policy over public Core boundaries
   Battlegrounds.Game/       # Godot presentation/input/audio/rendering
 
 mods/
@@ -261,6 +293,7 @@ mods/
 tests/
   Battlegrounds.Core.Tests/
   Battlegrounds.Content.Tests/
+  Battlegrounds.AI.Tests/
 ```
 
 Read `ARCHITECTURE.md` before adding features. Its ownership, dependency, mutation, determinism and mod-neutrality rules are mandatory.
@@ -268,24 +301,30 @@ Read `ARCHITECTURE.md` before adding features. Its ownership, dependency, mutati
 ## Current foundation
 
 - authoritative `MatchState` lifecycle (`Setup → Preparation → Combat → Finished`), Health, elimination, placement and history;
+- deterministic Leader offers/selection and explicit `PlayerSetup` creation;
 - neutral `LeaderDefinition`, `LeaderCatalog`, `LeaderState`, Health modifiers and Armor;
-- independent `PowerDefinition`/`PowerCatalog`, leader initial-power references and mutable current-power state;
-- active power cost/usage limits, selected targets and runtime `setPower` replacement;
-- explicit player-to-leader setup through validated `LeaderId` values;
+- independent trigger-based `PowerDefinition`/`PowerCatalog`, active/passive lifecycle events and mutable current-power state;
 - `MatchEngine` round orchestration, explicit pairings, post-combat settlement and odd-player eliminated-opponent combat;
+- authoritative combat pairing history plus a history-aware pairing policy outside `MatchEngine`;
 - immutable eliminated-player combat snapshots using the latest prior elimination;
 - mod-driven starting Health, starting-side policy and post-combat damage policy;
-- authoritative `PlayerState` with read-only `Reserve`, `Field` and `Offer` views;
-- immutable `UnitDefinition` separated from mutable `UnitInstance`;
-- deterministic catalogs for units, leaders, powers, behaviors, types and tags;
+- authoritative `PlayerState` with read-only Unit/Action offer and reserve views;
+- immutable `UnitDefinition` / `ActionDefinition` separated from mutable runtime instances;
+- deterministic catalogs for Units, Actions, Leaders, Powers, combines, behaviors, types and tags;
 - one authored ID-addressable entity per JSON file;
-- authoritative shared `UnitPool`;
-- preparation commands for acquire, release, deploy, refresh, tier upgrade, power use, freeze/unfreeze and end preparation;
+- authoritative shared `UnitPool` with explicit ownership on transform/copy/combine paths;
+- generic generation, pending Unit/Action choices and explicit resolution commands;
+- generic Action acquisition/play through the shared effect runtime;
+- explicit mod-defined Unit combines and `onCombine` reward lifecycle;
+- persistent Unit transform/copy and named modifier effects limited to Preparation-capable contexts;
+- dynamic effect values, expressive targets/conditions and scoped event history/activation limits;
+- preparation commands for acquire, release, deploy, Action play, combine, refresh, tier upgrade, Power use, choice resolution, freeze/unfreeze and end Preparation;
 - deterministic injected RNG;
 - shared phase-neutral `GameEffectRuntime`;
 - deterministic death waves, counted friendly-death listeners, Deathrattle-like effects, Reborn-like behavior and summons;
 - immutable combat snapshots isolated from persistent Preparation state;
 - deterministic attack order, targeting, simultaneous damage, death resolution and winner/draw resolution;
+- deterministic framework-free AI using the same public commands as presentation;
 - whole-mod validation before loading;
 - regression/invariant tests and CI.
 
@@ -298,8 +337,9 @@ Run tests with:
 ```bash
 dotnet test tests/Battlegrounds.Core.Tests/Battlegrounds.Core.Tests.csproj
 dotnet test tests/Battlegrounds.Content.Tests/Battlegrounds.Content.Tests.csproj
+dotnet test tests/Battlegrounds.AI.Tests/Battlegrounds.AI.Tests.csproj
 ```
 
 ## Next architectural slice
 
-Expand power/leader lifecycle events and match setup rules (leader availability, offers and selection) while continuing to reuse the shared effect runtime. Matchmaking policy/history remains separate from combat pairing execution.
+Introduce a framework-free single-player application/session layer that coordinates a validated mod package, Leader selection, human and AI participants, explicit matchmaking policy, Preparation progression and Combat resolution without taking authoritative mutation ownership away from Core. Godot remains presentation; AI remains a command policy; Content remains the untrusted mod boundary.
