@@ -46,6 +46,7 @@ public sealed class ModValidator
             .Concat(new PersistentUnitMutationModValidator().Validate(modDirectory))
             .Concat(new UnitCombineModValidator().Validate(modDirectory))
             .Concat(new PresentationModValidator().Validate(modDirectory))
+            .Concat(new PresentationAssetModValidator().Validate(modDirectory))
             .ToArray();
 
         var preliminaryReport = new ModValidationReport(issues);
