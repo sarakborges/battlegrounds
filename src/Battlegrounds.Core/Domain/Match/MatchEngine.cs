@@ -100,7 +100,8 @@ public sealed class MatchEngine
             unitCatalog,
             behaviorCatalog,
             powerCatalog,
-            actionCatalog);
+            actionCatalog,
+            unitCatalog?.Combines);
 
         _combatEngine = unitCatalog is not null && behaviorCatalog is not null
             ? new CombatEngine(preparationRules.FieldCapacity, unitCatalog, behaviorCatalog, powerCatalog)
