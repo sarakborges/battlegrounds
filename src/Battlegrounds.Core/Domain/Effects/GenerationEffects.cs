@@ -135,6 +135,10 @@ internal interface IGenerationChoiceRuntimeWorld
 {
     int GenerateUnitToReserve(PlayerId playerId, UnitDefinition definition, int count);
     bool QueueUnitChoice(PlayerId playerId, IReadOnlyList<UnitDefinition> options);
-    int GenerateActionToReserve(PlayerId playerId, ActionDefinition definition, int count);
-    bool QueueActionChoice(PlayerId playerId, IReadOnlyList<ActionDefinition> options);
+
+    int GenerateActionToReserve(PlayerId playerId, ActionDefinition definition, int count) =>
+        throw new InvalidOperationException("This generation world does not support Actions.");
+
+    bool QueueActionChoice(PlayerId playerId, IReadOnlyList<ActionDefinition> options) =>
+        throw new InvalidOperationException("This generation world does not support Action choices.");
 }
