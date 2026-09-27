@@ -1,0 +1,7 @@
+{
+  "id": "scout-merge",
+  "name": "Scout Merge",
+  "sourceUnitId": "scout",
+  "requiredCopies": 3,
+  "resultUnitId": "scout-merged"
+}
