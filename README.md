@@ -35,7 +35,9 @@ The default locale must be complete for required UI templates. Secondary locales
 
 `mods/example` currently demonstrates `en` and `pt-BR` presentation data, including localized authored entity names and an optional description.
 
-See `LOCALIZATION.md` for the format, fallback and ownership contract.
+Presentation media follows the same ownership rule. An optional `assets/presentation.json` maps stable Leader, Unit and Action IDs to mod-relative portrait/art slots. `Battlegrounds.Content` validates entity references, slots, path containment, file existence and media extension before exposing an immutable `ModPresentationAssetCatalog`; `Battlegrounds.Game` owns runtime image decoding, texture caching and rendering. Missing asset entries are valid presentation fallbacks and never change gameplay identity or rules.
+
+See `LOCALIZATION.md` for the text format/fallback contract and `PRESENTATION_ASSETS.md` for presentation-media metadata and path ownership.
 
 ## One authored entity per file
 
@@ -72,7 +74,7 @@ The file name is part of the validation contract: `content/units/guard.json` mus
 
 This rule applies to future ID-addressable content too: artifacts, quests, anomalies, or other authored entities should each have their own file rather than being accumulated into one array document.
 
-Aggregate files are reserved for genuinely package-global configuration, such as `mod.json`, `rules/*.json`, `content/pool.json` and `localization/presentation.json`.
+Aggregate files are reserved for genuinely package-global configuration, such as `mod.json`, `rules/*.json`, `content/pool.json`, `localization/presentation.json` and `assets/presentation.json`.
 
 ## Leaders and powers
 
@@ -246,9 +248,11 @@ Multi-step intent is stored only in `PresentationInteractionState`. Targeted Act
 
 Godot resolves the selected mod's `ModPresentationCatalog` using the exported locale or Godot's system locale. Preparation labels, summaries, concept vocabulary, authored Leader/Power/Unit/Action/combine names and combat playback text are rendered from mod-owned presentation data with Content-owned fallback instead of hardcoded engine English or locale-dependent gameplay identity.
 
+Validated image metadata remains outside Core. `ModPresentationTextureStore` is the Godot-side runtime boundary for loading mod-relative images into cached `Texture2D` instances and applying them to presentation controls; Content only exposes validated ID/slot/path metadata.
+
 Resolved human combat is displayed through a full-screen presentation-owned playback overlay. `CombatPlaybackState` starts from the immutable session snapshots and consumes `CombatResult.Timeline` in order, so combat-local summons, triggers, buffs/debuffs, effect damage/destruction, deaths/revives, behavior changes and Power/Resource transitions are rendered from immutable Core output rather than reconstructed in Godot. Playback may auto-step, advance manually or skip to settlement; none of those controls rerun combat or mutate Core state.
 
-See `GAME.md` for the Godot ownership contract and `LOCALIZATION.md` for the presentation string contract.
+See `GAME.md` for the Godot ownership contract, `LOCALIZATION.md` for the presentation string contract and `PRESENTATION_ASSETS.md` for asset metadata/runtime ownership.
 
 ## Mod validation is mandatory
 
@@ -256,7 +260,7 @@ See `GAME.md` for the Godot ownership contract and `LOCALIZATION.md` for the pre
 
 `ModLoader.Validate(...)` and `ModValidator.Validate(...)` return a structured report suitable for UI, including the actual file, JSON path, issue code, severity and message.
 
-Validation covers required global files/content directories, required and unknown keys, JSON types/ranges, one-object-per-entity-file structure, entity ID/file-name agreement, duplicate IDs/references, cross-file references, unsupported native handlers/triggers/effects/policies, taxonomy references, leader starting values, Leader → initial-Power references, persistent-effect phase legality, Action/choice/generation rules, Unit-combine references/constraints, required presentation terminology, locale identifiers, default-locale completeness, localization string shape and stable authored-entity localization references.
+Validation covers required global files/content directories, required and unknown keys, JSON types/ranges, one-object-per-entity-file structure, entity ID/file-name agreement, duplicate IDs/references, cross-file references, unsupported native handlers/triggers/effects/policies, taxonomy references, leader starting values, Leader → initial-Power references, persistent-effect phase legality, Action/choice/generation rules, Unit-combine references/constraints, required presentation terminology, locale identifiers, default-locale completeness, localization string shape, stable authored-entity localization references, and presentation-asset entity/slot/path/type/existence constraints.
 
 Examples of required rules:
 
@@ -309,7 +313,11 @@ mods/
     localization/
       presentation.json
       <locale>.json
-    assets/                 # future
+    assets/
+      presentation.json
+      leaders/
+      units/
+      actions/
 ```
 
 `Battlegrounds.Content` owns filesystem/JSON loading and validation. `Battlegrounds.Core` never reads files or JSON directly. `mods/example` is only a neutral schema/integration fixture.
@@ -374,6 +382,8 @@ Read `ARCHITECTURE.md` before adding features. Its ownership, dependency, mutati
 - immutable session combat observations that freeze starting boards before authoritative settlement advances the Match;
 - validated mod-owned presentation terminology/locales with deterministic fallback and immutable `ModPresentationCatalog`;
 - stable localized authored display keys for Leaders, Powers, Units, Actions, behaviors, types, tags and combines, with content-file name fallback and optional descriptions;
+- validated ID-keyed Leader portrait and Unit/Action art metadata with an immutable `ModPresentationAssetCatalog` and optional per-entity fallback;
+- Godot-owned runtime external-image decoding/texture caching through `ModPresentationTextureStore`, with no asset filesystem dependency in Core;
 - thin Godot presentation adapter over the Application boundary with a playable localized Preparation loop;
 - explicit Godot multi-step interaction state for selected targets, pending choices and combine components;
 - deterministic Godot combat playback over the Core event timeline with manual/automatic stepping, settlement skip and mod-owned presentation vocabulary/entity names;
@@ -396,4 +406,4 @@ dotnet build src/Battlegrounds.Game/Battlegrounds.Game.csproj
 
 ## Next architectural slice
 
-Add mod-owned binary presentation metadata and assets without coupling filesystem/presentation concerns to Core. Define stable ID-keyed references for authored portraits, Unit/Action art and future audio/animation metadata; let `Battlegrounds.Content` validate paths/types and expose immutable presentation metadata, while Godot owns loading/rendering and gameplay continues to depend only on mechanical IDs and definitions.
+Consume the validated presentation metadata in reusable Godot visual components instead of text-only controls. Add stable presentation cards for Leader choices and Unit/Action offer/reserve/field entries that compose portrait/art, localized names/descriptions and mechanical stats while preserving the existing command/interaction boundaries; missing media must degrade deterministically to text/layout fallback, and no visual state may become authoritative gameplay state.
