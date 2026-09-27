@@ -6,7 +6,7 @@ config_version=5
 [application]
 
 config/name="Battlegrounds"
-run/main_scene="res://Scenes/Main.tscn"
+run/main_scene="res://Scenes/ModLauncher.tscn"
 
 [display]
 

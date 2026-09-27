@@ -1,0 +1,88 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource path="res://Scripts/ModLauncher.cs" type="Script" id="1_launcher"]
+
+[node name="ModLauncher" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_launcher")
+
+[node name="Background" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(0.055, 0.063, 0.082, 1)
+
+[node name="Margin" type="MarginContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 64.0
+offset_top = 48.0
+offset_right = -64.0
+offset_bottom = -48.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Root" type="VBoxContainer" parent="Margin"]
+layout_mode = 2
+theme_override_constants/separation = 14
+
+[node name="Title" type="Label" parent="Margin/Root"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 32
+text = "Battlegrounds"
+
+[node name="Subtitle" type="Label" parent="Margin/Root"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 18
+text = "Mod selection"
+
+[node name="Status" type="Label" parent="Margin/Root"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Discovering mods..."
+
+[node name="RefreshButton" type="Button" parent="Margin/Root"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Refresh mods"
+
+[node name="DividerA" type="HSeparator" parent="Margin/Root"]
+layout_mode = 2
+
+[node name="ModScroll" type="ScrollContainer" parent="Margin/Root"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="ModButtons" type="VBoxContainer" parent="Margin/Root/ModScroll"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 8
+
+[node name="DividerB" type="HSeparator" parent="Margin/Root"]
+layout_mode = 2
+
+[node name="DiagnosticsTitle" type="Label" parent="Margin/Root"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 18
+text = "Validation diagnostics"
+
+[node name="Diagnostics" type="RichTextLabel" parent="Margin/Root"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 180)
+layout_mode = 2
+size_flags_vertical = 3
+scroll_active = true
+fit_content = false
+text = ""
