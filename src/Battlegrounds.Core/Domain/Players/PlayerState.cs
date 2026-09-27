@@ -171,6 +171,21 @@ public sealed partial class PlayerState
         _field.Insert(fieldSlot, unit);
     }
 
+    internal void ReorderField(IReadOnlyList<UnitInstanceId> orderedUnitIds)
+    {
+        ArgumentNullException.ThrowIfNull(orderedUnitIds);
+        if (orderedUnitIds.Count != _field.Count || orderedUnitIds.Distinct().Count() != _field.Count)
+            throw new InvalidOperationException("Field reorder must contain every field Unit exactly once.");
+
+        var byId = _field.ToDictionary(unit => unit.Id);
+        if (orderedUnitIds.Any(id => !byId.ContainsKey(id)))
+            throw new InvalidOperationException("Field reorder may only contain Units currently on this player's Field.");
+
+        _field.Clear();
+        foreach (var id in orderedUnitIds)
+            _field.Add(byId[id]);
+    }
+
     internal int IndexOfFieldUnit(UnitInstanceId instanceId) =>
         _field.FindIndex(unit => unit.Id == instanceId);
 
