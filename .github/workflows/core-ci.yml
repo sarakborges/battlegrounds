@@ -17,3 +17,5 @@ jobs:
         run: dotnet test tests/Battlegrounds.Core.Tests/Battlegrounds.Core.Tests.csproj --configuration Release
       - name: Test mod content boundary
         run: dotnet test tests/Battlegrounds.Content.Tests/Battlegrounds.Content.Tests.csproj --configuration Release
+      - name: Test AI command policy
+        run: dotnet test tests/Battlegrounds.AI.Tests/Battlegrounds.AI.Tests.csproj --configuration Release
