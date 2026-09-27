@@ -222,11 +222,13 @@ See `APPLICATION.md` for the orchestration and ownership contract.
 
 ## Godot presentation adapter
 
-`Battlegrounds.Game` now boots a validated mod and a deterministic `SinglePlayerSession` instead of acting as an isolated placeholder scene.
+`Battlegrounds.Game` boots a validated mod and deterministic `SinglePlayerSession` and keeps Godot on the presentation side of the architecture boundary.
 
-The first playable presentation slice exposes human Leader selection plus ordinary Preparation commands for acquiring playables, deploying/releasing Units, refreshing, upgrading, freeze/unfreeze, untargeted Action/Power use and ending Preparation. The scene renders read-only match/player/offer/reserve/field state and textual combat settlements; AI decisions and matchmaking remain behind the Application boundary.
+The playable Preparation surface now covers Leader selection, generic acquire/deploy/release, refresh, upgrade, freeze/unfreeze, Action/Power activation, pending Unit/Action choices, explicit Unit-combine component selection and ending Preparation.
 
-`Main.cs` owns bootstrap, click-to-command translation, transient view state and rendering only. It does not edit `MatchState`/`PlayerState` or reproduce Core validation.
+Multi-step intent is stored only in `PresentationInteractionState`. Targeted Actions/Powers first submit without a target; when Core reports `InvalidActionTarget`/`InvalidPowerTarget`, Godot enters target-selection mode and resubmits the chosen `UnitInstanceId`. Combine selection stores exact highlighted component IDs and finishes with the existing `CombineUnitsCommand`.
+
+The scene renders read-only match/player/offer/reserve/field/choice state and textual combat settlements; AI decisions, target legality, combine mutation and matchmaking remain behind Application/Core boundaries.
 
 See `GAME.md` for the Godot ownership and presentation contract.
 
@@ -349,6 +351,7 @@ Read `ARCHITECTURE.md` before adding features. Its ownership, dependency, mutati
 - deterministic framework-free AI using the same public commands as presentation;
 - framework-free single-player session orchestration over validated Content + Core + AI + matchmaking;
 - thin Godot presentation adapter over the Application boundary with a playable Preparation loop;
+- explicit Godot multi-step interaction state for selected targets, pending choices and combine components;
 - whole-mod validation before loading;
 - regression/invariant tests and CI, including a Godot project build.
 
@@ -368,4 +371,4 @@ dotnet build src/Battlegrounds.Game/Battlegrounds.Game.csproj
 
 ## Next architectural slice
 
-Add explicit Godot presentation interaction state for multi-step human intent: selected Unit targets for Actions/Powers, pending Unit/Action choice resolution, and explicit Unit-combine component selection. This state may own highlights and temporary selections only; every completed interaction must still submit the existing Core command through `SinglePlayerSession`, with no scene-owned gameplay resolution.
+Add deterministic Godot combat playback over immutable `CombatResult` data. Build a presentation-owned playback queue/view model from the ordered `CombatAttack` sequence and animate attacker/target damage, barrier/lethal outcomes, deaths/revives and the final settlement without rerunning combat or delaying authoritative Core settlement. The next Preparation may already exist in Core while Godot is still displaying the completed combat.
