@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.Text;
 using System.Text.Json;
+using Battlegrounds.AI;
 using Battlegrounds.Content;
 using Battlegrounds.Simulator;
 
@@ -108,13 +109,14 @@ internal static class SimulatorProgram
 
     private static int ChooseDefaultPlayerCount(ModPackage mod)
     {
-        for (var value = mod.MatchRules.MinimumPlayers; value <= mod.MatchRules.MaximumPlayers; value++)
-        {
-            if (value % 2 == 0) return value;
-        }
-
-        throw new InvalidOperationException(
-            $"Mod '{mod.Id}' has no supported even player count under the current round-one combat contract.");
+        var candidates = Enumerable
+            .Range(mod.MatchRules.MinimumPlayers, mod.MatchRules.MaximumPlayers - mod.MatchRules.MinimumPlayers + 1)
+            .Where(value => value % 2 == 0)
+            .OrderBy(value => value)
+            .ToArray();
+        if (candidates.Length == 0)
+            throw new InvalidOperationException($"Mod '{mod.Id}' has no supported even player count under the current round-one combat contract.");
+        return candidates[0];
     }
 
     private static void PrintReport(SimulationReport report)
@@ -126,19 +128,39 @@ internal static class SimulatorProgram
         Console.WriteLine($"Average rounds: {report.AverageRounds:F2}");
         Console.WriteLine($"Preparation commands: {report.TotalPreparationCommands}");
         Console.WriteLine();
+        PrintCommandCounts(report.TotalCommandCounts);
         PrintGroup("Leaders", report.Leaders);
         PrintGroup("Personalities", report.Personalities);
         PrintGroup("Strategies", report.Strategies);
     }
 
+    private static void PrintCommandCounts(PreparationAiCommandCounts counts)
+    {
+        Console.WriteLine("Command mix");
+        Console.WriteLine($"  acquire:        {counts.Acquires}");
+        Console.WriteLine($"  release:        {counts.Releases}");
+        Console.WriteLine($"  deploy:         {counts.Deploys}");
+        Console.WriteLine($"  action:         {counts.ActionsPlayed}");
+        Console.WriteLine($"  combine:        {counts.Combines}");
+        Console.WriteLine($"  refresh:        {counts.Refreshes}");
+        Console.WriteLine($"  upgrade:        {counts.Upgrades}");
+        Console.WriteLine($"  power:          {counts.PowersUsed}");
+        Console.WriteLine($"  unit choice:    {counts.UnitChoicesResolved}");
+        Console.WriteLine($"  action choice:  {counts.ActionChoicesResolved}");
+        Console.WriteLine($"  freeze:         {counts.Freezes}");
+        Console.WriteLine($"  unfreeze:       {counts.Unfreezes}");
+        Console.WriteLine($"  end:            {counts.Ends}");
+        Console.WriteLine();
+    }
+
     private static void PrintGroup(string title, IReadOnlyList<SimulationGroupSummary> summaries)
     {
         Console.WriteLine(title);
-        Console.WriteLine("  id                         games   wins   win%   avg place   avg cmds");
+        Console.WriteLine("  id                         games   wins   win%   avg place   avg cmds   buy   roll   upg");
         foreach (var summary in summaries)
         {
             Console.WriteLine(
-                $"  {summary.Id,-26} {summary.Games,5} {summary.Wins,6} {summary.WinRate * 100,6:F1} {summary.AveragePlacement,10:F2} {summary.AveragePreparationCommands,10:F1}");
+                $"  {summary.Id,-26} {summary.Games,5} {summary.Wins,6} {summary.WinRate * 100,6:F1} {summary.AveragePlacement,10:F2} {summary.AveragePreparationCommands,10:F1} {summary.AverageCommands.Acquires,5:F1} {summary.AverageCommands.Refreshes,6:F1} {summary.AverageCommands.Upgrades,5:F1}");
         }
         Console.WriteLine();
     }
@@ -156,13 +178,14 @@ internal static class SimulatorProgram
         EnsureParentDirectory(path);
         var lines = new List<string>
         {
-            "match,seed,player,leader,personality,strategy,placement,rounds,finalTier,finalHealth,preparationCommands"
+            "match,seed,player,leader,personality,strategy,placement,rounds,finalTier,finalHealth,preparationCommands,acquires,releases,deploys,actionsPlayed,combines,refreshes,upgrades,powersUsed,unitChoicesResolved,actionChoicesResolved,freezes,unfreezes,ends"
         };
 
         foreach (var match in report.MatchResults)
         {
             foreach (var player in match.Players)
             {
+                var counts = player.CommandCounts;
                 lines.Add(string.Join(',',
                     player.MatchIndex.ToString(CultureInfo.InvariantCulture),
                     player.Seed.ToString(CultureInfo.InvariantCulture),
@@ -174,7 +197,20 @@ internal static class SimulatorProgram
                     player.Rounds.ToString(CultureInfo.InvariantCulture),
                     player.FinalTier.ToString(CultureInfo.InvariantCulture),
                     player.FinalHealth.ToString(CultureInfo.InvariantCulture),
-                    player.PreparationCommands.ToString(CultureInfo.InvariantCulture)));
+                    player.PreparationCommands.ToString(CultureInfo.InvariantCulture),
+                    counts.Acquires.ToString(CultureInfo.InvariantCulture),
+                    counts.Releases.ToString(CultureInfo.InvariantCulture),
+                    counts.Deploys.ToString(CultureInfo.InvariantCulture),
+                    counts.ActionsPlayed.ToString(CultureInfo.InvariantCulture),
+                    counts.Combines.ToString(CultureInfo.InvariantCulture),
+                    counts.Refreshes.ToString(CultureInfo.InvariantCulture),
+                    counts.Upgrades.ToString(CultureInfo.InvariantCulture),
+                    counts.PowersUsed.ToString(CultureInfo.InvariantCulture),
+                    counts.UnitChoicesResolved.ToString(CultureInfo.InvariantCulture),
+                    counts.ActionChoicesResolved.ToString(CultureInfo.InvariantCulture),
+                    counts.Freezes.ToString(CultureInfo.InvariantCulture),
+                    counts.Unfreezes.ToString(CultureInfo.InvariantCulture),
+                    counts.Ends.ToString(CultureInfo.InvariantCulture)));
             }
         }
 
