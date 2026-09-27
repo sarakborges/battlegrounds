@@ -3,17 +3,12 @@ using Godot;
 namespace Battlegrounds.Game;
 
 /// <summary>
-/// Keeps the presentation adapter's existing VBoxContainer contract while laying
-/// dynamic card children out as a compact centered horizontal row. The container
-/// owns only geometry; visual styling remains in the mod-driven theme layer.
+/// Keeps dynamic presentation cards in a compact centered horizontal row while the
+/// surrounding scene owns the row height. The row reports no content-driven minimum
+/// height so cards never inflate the vertical HUD by being interpreted as a VBox stack.
 ///
-/// Row geometry is inferred from its semantic scene name so shop, board, reserve,
-/// and leader choices can have different silhouettes without coupling gameplay code
-/// to presentation sizing.
-///
-/// The Field row additionally decorates its cards with small ordering controls.
-/// Those controls submit ordinary Core commands through Main; this node never
-/// mutates gameplay state or treats child order as authoritative.
+/// The Field row configures native Godot drag/drop on its cards. Reordering still
+/// submits ordinary Core commands through Main; visual child order is not authoritative.
 /// </summary>
 public partial class HorizontalCardRow : VBoxContainer
 {
@@ -32,10 +27,12 @@ public partial class HorizontalCardRow : VBoxContainer
         QueueSort();
     }
 
+    public override Vector2 _GetMinimumSize() => Vector2.Zero;
+
     public override void _Process(double delta)
     {
         if (!IsFieldRow) return;
-        DecorateFieldCards();
+        ConfigureFieldDragAndDrop();
     }
 
     public override void _Notification(int what)
@@ -81,34 +78,34 @@ public partial class HorizontalCardRow : VBoxContainer
                 Gap = 18.0f;
                 PreferredCardWidth = 164.0f;
                 MinimumCardWidth = 116.0f;
-                PreferredCardHeight = 224.0f;
-                Padding = 10.0f;
+                PreferredCardHeight = 200.0f;
+                Padding = 8.0f;
                 break;
             case "OfferButtons":
                 Gap = 10.0f;
                 PreferredCardWidth = 124.0f;
                 MinimumCardWidth = 88.0f;
-                PreferredCardHeight = 180.0f;
-                Padding = 6.0f;
+                PreferredCardHeight = 142.0f;
+                Padding = 4.0f;
                 break;
             case "FieldButtons":
                 Gap = 8.0f;
                 PreferredCardWidth = 152.0f;
                 MinimumCardWidth = 102.0f;
-                PreferredCardHeight = 224.0f;
-                Padding = 8.0f;
+                PreferredCardHeight = 204.0f;
+                Padding = 6.0f;
                 break;
             case "ReserveButtons":
                 Gap = 4.0f;
                 PreferredCardWidth = 96.0f;
                 MinimumCardWidth = 70.0f;
-                PreferredCardHeight = 112.0f;
+                PreferredCardHeight = 70.0f;
                 Padding = 2.0f;
                 break;
         }
     }
 
-    private void DecorateFieldCards()
+    private void ConfigureFieldDragAndDrop()
     {
         var main = FindMain();
         if (main is null) return;
@@ -117,76 +114,11 @@ public partial class HorizontalCardRow : VBoxContainer
             .OfType<PresentationCardButton>()
             .Where(card => !card.IsQueuedForDeletion())
             .ToArray();
+        var enabled = main.CanReorderHumanField && cards.Length > 1;
 
-        foreach (var card in cards)
-        {
-            var index = card.GetIndex();
-            RemoveChild(card);
-
-            var wrapper = new HBoxContainer
-            {
-                SizeFlagsHorizontal = SizeFlags.ExpandFill,
-                SizeFlagsVertical = SizeFlags.ExpandFill,
-            };
-            wrapper.AddThemeConstantOverride("separation", 2);
-
-            var left = CreateOrderButton("←");
-            var right = CreateOrderButton("→");
-            card.SizeFlagsHorizontal = SizeFlags.ExpandFill;
-            card.SizeFlagsVertical = SizeFlags.ExpandFill;
-
-            wrapper.AddChild(left);
-            wrapper.AddChild(card);
-            wrapper.AddChild(right);
-            AddChild(wrapper);
-            MoveChild(wrapper, index);
-
-            left.Pressed += () => MoveFieldCard(main, wrapper, -1);
-            right.Pressed += () => MoveFieldCard(main, wrapper, 1);
-        }
-
-        UpdateFieldOrderButtons(main);
+        for (var index = 0; index < cards.Length; index++)
+            cards[index].ConfigureFieldDrag(index, enabled, main.ReorderHumanField);
     }
-
-    private void UpdateFieldOrderButtons(Main main)
-    {
-        var wrappers = CurrentFieldWrappers();
-        var canReorder = main.CanReorderHumanField && wrappers.Length > 1;
-        for (var index = 0; index < wrappers.Length; index++)
-        {
-            var buttons = wrappers[index].GetChildren().OfType<Button>().ToArray();
-            if (buttons.Length < 2) continue;
-
-            var left = buttons[0];
-            var right = buttons[^1];
-            left.Visible = canReorder;
-            right.Visible = canReorder;
-            left.Disabled = !canReorder || index == 0;
-            right.Disabled = !canReorder || index == wrappers.Length - 1;
-        }
-    }
-
-    private void MoveFieldCard(Main main, HBoxContainer wrapper, int offset)
-    {
-        var wrappers = CurrentFieldWrappers();
-        var index = Array.IndexOf(wrappers, wrapper);
-        if (index < 0) return;
-        main.ReorderHumanField(index, offset);
-    }
-
-    private HBoxContainer[] CurrentFieldWrappers() =>
-        GetChildren()
-            .OfType<HBoxContainer>()
-            .Where(wrapper => !wrapper.IsQueuedForDeletion())
-            .ToArray();
-
-    private static Button CreateOrderButton(string text) => new()
-    {
-        Text = text,
-        CustomMinimumSize = new Vector2(18, 0),
-        SizeFlagsVertical = SizeFlags.ExpandFill,
-        FocusMode = FocusModeEnum.None,
-    };
 
     private Main? FindMain()
     {

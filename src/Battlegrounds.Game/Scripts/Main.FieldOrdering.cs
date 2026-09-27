@@ -19,11 +19,10 @@ public partial class Main
         }
     }
 
-    internal void ReorderHumanField(int fromIndex, int offset)
+    internal void ReorderHumanField(int fromIndex, int toIndex)
     {
         if (!CanReorderHumanField || !TryGetHuman(out var human)) return;
 
-        var toIndex = fromIndex + offset;
         if (fromIndex < 0 || fromIndex >= human.Field.Count ||
             toIndex < 0 || toIndex >= human.Field.Count ||
             fromIndex == toIndex)
@@ -31,8 +30,10 @@ public partial class Main
             return;
         }
 
-        var order = human.Field.Select(unit => unit.Id).ToArray();
-        (order[fromIndex], order[toIndex]) = (order[toIndex], order[fromIndex]);
+        var order = human.Field.Select(unit => unit.Id).ToList();
+        var moved = order[fromIndex];
+        order.RemoveAt(fromIndex);
+        order.Insert(toIndex, moved);
         SubmitHumanCommand(new ReorderFieldCommand(human.Id, order));
         Render();
     }
