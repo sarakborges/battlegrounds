@@ -49,38 +49,44 @@ public partial class Main
             _ => ModThemeInteractionRoles.DropTargetInvalid,
         };
 
-        if (_modTheme is null || !_modTheme.Components.TryGetValue(role, out var style))
-            throw new InvalidOperationException($"Resolved presentation theme is missing required component role '{role}'.");
+        var style = RequireInteractionStyle(role);
+        var opacity = Mathf.Clamp((float)(style.Opacity ?? 1.0), 0.0f, 1.0f);
+
+        if (!ResolveThemeColor(style.BackgroundColor, out var background))
+            throw new InvalidOperationException($"Resolved presentation theme is missing required '{role}.backgroundColor'.");
+        if (!ResolveThemeColor(style.BorderColor, out var border))
+            throw new InvalidOperationException($"Resolved presentation theme is missing required '{role}.borderColor'.");
+        if (style.BorderWidth is not int width)
+            throw new InvalidOperationException($"Resolved presentation theme is missing required '{role}.borderWidth'.");
+        if (style.Radius is not string radiusToken ||
+            _modTheme?.Radii.TryGetValue(radiusToken, out var radius) != true)
+            throw new InvalidOperationException($"Resolved presentation theme is missing required '{role}.radius'.");
 
         var box = new StyleBoxFlat
         {
-            BgColor = new Color(0, 0, 0, 0),
+            BgColor = new Color(background, background.A * opacity),
+            BorderColor = new Color(border, border.A * opacity),
+            BorderWidthLeft = width,
+            BorderWidthTop = width,
+            BorderWidthRight = width,
+            BorderWidthBottom = width,
+            CornerRadiusTopLeft = radius,
+            CornerRadiusTopRight = radius,
+            CornerRadiusBottomLeft = radius,
+            CornerRadiusBottomRight = radius,
+            ShadowColor = new Color(border, border.A * opacity),
+            ShadowSize = Mathf.RoundToInt(width * ResolveThemeMetric(ModThemeMetricKeys.Drag.DropTargetShadowScale, 0.0f, 16.0f)),
+            ShadowOffset = Vector2.Zero,
         };
-
-        var opacity = Mathf.Clamp((float)(style.Opacity ?? 1.0), 0.0f, 1.0f);
-        if (ResolveThemeColor(style.BackgroundColor, out var background))
-            box.BgColor = new Color(background, background.A * opacity);
-        if (ResolveThemeColor(style.BorderColor, out var border))
-            box.BorderColor = new Color(border, border.A * opacity);
-        if (style.BorderWidth is int width)
-        {
-            box.BorderWidthLeft = width;
-            box.BorderWidthTop = width;
-            box.BorderWidthRight = width;
-            box.BorderWidthBottom = width;
-        }
-        if (style.Radius is not null && _modTheme.Radii.TryGetValue(style.Radius, out var radius))
-        {
-            box.CornerRadiusTopLeft = radius;
-            box.CornerRadiusTopRight = radius;
-            box.CornerRadiusBottomLeft = radius;
-            box.CornerRadiusBottomRight = radius;
-        }
-
-        box.ShadowColor = box.BorderColor;
-        box.ShadowSize = Math.Max(1, box.BorderWidthLeft * 3);
-        box.ShadowOffset = Vector2.Zero;
         return box;
+    }
+
+    private ModThemeStyle RequireInteractionStyle(string role)
+    {
+        if (_modTheme is not null && _modTheme.Components.TryGetValue(role, out var style))
+            return style;
+
+        throw new InvalidOperationException($"Resolved presentation theme is missing required component role '{role}'.");
     }
 
     private bool TryResolveDropTargetPadding(string role, out float padding)
