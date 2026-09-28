@@ -8,8 +8,6 @@ namespace Battlegrounds.Game;
 
 public partial class Main
 {
-    [Export] public double CombatPlaybackStepSeconds { get; set; } = 0.9;
-
     private long _observedCombatSequence;
     private double _combatPlaybackAccumulator;
     private CombatPlaybackState? _combatPlayback;
@@ -46,7 +44,10 @@ public partial class Main
         if (_combatPlayback is null || _combatOverlay?.Visible != true) return;
 
         _combatPlaybackAccumulator += delta;
-        var interval = Math.Max(0.1, CombatPlaybackStepSeconds);
+        var interval = ResolvePresentationMetric(
+            ModThemeMetricKeys.Motion.CombatPlaybackStepSeconds,
+            0.05f,
+            10.0f);
         if (_combatPlaybackAccumulator < interval) return;
 
         _combatPlaybackAccumulator = 0;
@@ -67,6 +68,7 @@ public partial class Main
         BuildCombatUnitDefinitionIndex(playback);
         _combatPlaybackAccumulator = 0;
         EnsureCombatPlaybackUi();
+        RefreshCombatThemeState();
         _combatOverlay!.Visible = true;
         ApplyScreenTheme(ModThemeScreenRoles.Combat);
         RenderCombatPlayback();
@@ -111,10 +113,6 @@ public partial class Main
         AddChild(_combatOverlay);
 
         var margin = new MarginContainer();
-        margin.AddThemeConstantOverride("margin_left", 32);
-        margin.AddThemeConstantOverride("margin_top", 24);
-        margin.AddThemeConstantOverride("margin_right", 32);
-        margin.AddThemeConstantOverride("margin_bottom", 24);
         _combatOverlay.AddChild(margin);
 
         var root = new VBoxContainer
@@ -122,7 +120,6 @@ public partial class Main
             SizeFlagsHorizontal = Control.SizeFlags.ExpandFill,
             SizeFlagsVertical = Control.SizeFlags.ExpandFill,
         };
-        root.AddThemeConstantOverride("separation", 12);
         margin.AddChild(root);
 
         _combatTitle = new Label
@@ -143,7 +140,6 @@ public partial class Main
             SizeFlagsHorizontal = Control.SizeFlags.ExpandFill,
             SizeFlagsVertical = Control.SizeFlags.ExpandFill,
         };
-        boards.AddThemeConstantOverride("separation", 24);
         root.AddChild(boards);
 
         var left = new VBoxContainer { SizeFlagsHorizontal = Control.SizeFlags.ExpandFill };
@@ -152,7 +148,6 @@ public partial class Main
             ThemeTypeVariation = "HeadingLabel",
         };
         _combatLeftUnits = new VBoxContainer();
-        _combatLeftUnits.AddThemeConstantOverride("separation", 6);
         left.AddChild(_combatLeftHeader);
         left.AddChild(_combatLeftUnits);
         boards.AddChild(left);
@@ -163,7 +158,6 @@ public partial class Main
             ThemeTypeVariation = "HeadingLabel",
         };
         _combatRightUnits = new VBoxContainer();
-        _combatRightUnits.AddThemeConstantOverride("separation", 6);
         right.AddChild(_combatRightHeader);
         right.AddChild(_combatRightUnits);
         boards.AddChild(right);
@@ -176,7 +170,6 @@ public partial class Main
         root.AddChild(_combatEvent);
 
         var controls = new HBoxContainer();
-        controls.AddThemeConstantOverride("separation", 8);
         _combatNextButton = new Button
         {
             Text = Text("ui.next"),
@@ -340,18 +333,18 @@ public partial class Main
     {
         if (cue == CombatVisualCue.None) return;
 
-        var (role, fallbackAnimation, duration) = cue switch
+        var (role, fallbackAnimation) = cue switch
         {
-            CombatVisualCue.Trigger => (ModPresentationCueRoles.CombatTrigger, ModPresentationAnimation.Pulse, 0.24),
-            CombatVisualCue.Attacker => (ModPresentationCueRoles.CombatAttack, ModPresentationAnimation.Lunge, 0.24),
-            CombatVisualCue.Target => (ModPresentationCueRoles.CombatTarget, ModPresentationAnimation.Shake, 0.22),
-            CombatVisualCue.Summon => (ModPresentationCueRoles.CombatSummon, ModPresentationAnimation.Pop, 0.28),
-            CombatVisualCue.StatsChanged => (ModPresentationCueRoles.CombatStats, ModPresentationAnimation.Pulse, 0.24),
-            CombatVisualCue.Damage => (ModPresentationCueRoles.CombatDamage, ModPresentationAnimation.Shake, 0.22),
-            CombatVisualCue.Destroyed => (ModPresentationCueRoles.CombatDestroy, ModPresentationAnimation.Shake, 0.22),
-            CombatVisualCue.Death => (ModPresentationCueRoles.CombatDeath, ModPresentationAnimation.Fade, 0.36),
-            CombatVisualCue.Revive => (ModPresentationCueRoles.CombatRevive, ModPresentationAnimation.Pop, 0.28),
-            CombatVisualCue.Behavior => (ModPresentationCueRoles.CombatBehavior, ModPresentationAnimation.Pulse, 0.24),
+            CombatVisualCue.Trigger => (ModPresentationCueRoles.CombatTrigger, ModPresentationAnimation.Pulse),
+            CombatVisualCue.Attacker => (ModPresentationCueRoles.CombatAttack, ModPresentationAnimation.Lunge),
+            CombatVisualCue.Target => (ModPresentationCueRoles.CombatTarget, ModPresentationAnimation.Shake),
+            CombatVisualCue.Summon => (ModPresentationCueRoles.CombatSummon, ModPresentationAnimation.Pop),
+            CombatVisualCue.StatsChanged => (ModPresentationCueRoles.CombatStats, ModPresentationAnimation.Pulse),
+            CombatVisualCue.Damage => (ModPresentationCueRoles.CombatDamage, ModPresentationAnimation.Shake),
+            CombatVisualCue.Destroyed => (ModPresentationCueRoles.CombatDestroy, ModPresentationAnimation.Shake),
+            CombatVisualCue.Death => (ModPresentationCueRoles.CombatDeath, ModPresentationAnimation.Fade),
+            CombatVisualCue.Revive => (ModPresentationCueRoles.CombatRevive, ModPresentationAnimation.Pop),
+            CombatVisualCue.Behavior => (ModPresentationCueRoles.CombatBehavior, ModPresentationAnimation.Pulse),
             _ => throw new ArgumentOutOfRangeException(nameof(cue), cue, null),
         };
 
@@ -360,8 +353,7 @@ public partial class Main
             ModPresentationEntityKind.Unit,
             unitId?.Value ?? "__unknown-combat-unit",
             role,
-            fallbackAnimation,
-            duration);
+            fallbackAnimation);
     }
 
     private void AdvanceCombatPlayback()
