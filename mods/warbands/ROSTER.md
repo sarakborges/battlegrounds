@@ -22,9 +22,9 @@ The current roster is 13 classes x 4 Heroes = 52 Heroes.
 
 ## Current mechanical policy
 
-Roster identity is deliberately separated from balance iteration. For now, all four Heroes in a class share that class's Hero Power, and every Hero keeps the same baseline Health modifier and Armor. This makes the expanded roster presentation-complete without pretending that 52 distinct powers have already been designed and balanced.
+Roster identity is deliberately separated from balance iteration. Most Heroes still inherit the class baseline Power, while a first set of Heroes now has distinct mechanics to exercise the generic economy, generation and event-history systems. Every Hero still keeps the same baseline Health modifier and Armor for now.
 
-The class power mapping is:
+Distinct current exceptions are Varian Wrynn (`strategic-command`), Jaina Proudmoore (`arcane-momentum`), Khadgar (`arcane-market`), Hemet Nesingwary (`hunting-trophies`), Magatha Grimtotem (`ruthless-bargain`) and Valeera Sanguinar (`shadow-cache`). Other Heroes currently use the class baseline mapping:
 
 - Warrior -> `commanding-shout`
 - Mage -> `fireblast`

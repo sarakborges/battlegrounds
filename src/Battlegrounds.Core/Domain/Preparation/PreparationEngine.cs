@@ -53,7 +53,7 @@ public sealed class PreparationEngine
         _actionCatalog = actionCatalog;
         _combineCatalog = combineCatalog;
         _effectEngine = new PreparationEffectEngine(
-            _rules, _unitPool, _randomSource, unitCatalog, behaviorCatalog, powerCatalog, actionCatalog);
+            _rules, _unitPool, _randomSource, unitCatalog, behaviorCatalog, powerCatalog, actionCatalog, RefreshOfferFromEffect);
     }
 
     public void BeginPreparation(MatchState match, IReadOnlyDictionary<PlayerId, int>? resourceAdjustments = null)
@@ -168,6 +168,7 @@ public sealed class PreparationEngine
         player.TakeOfferedAction(actionSlot);
         player.AddActionToReserve(match.CreateAction(definition));
         player.SpendResource(definition.Cost);
+        _effectEngine.ProcessGameEvent(match, player, NativeGameEventKeys.ActionAcquired);
         return PreparationCommandResult.Success();
     }
 
@@ -253,6 +254,7 @@ public sealed class PreparationEngine
             return PreparationCommandResult.Failure(PreparationFailureCode.InvalidActionTarget);
 
         action = player.RemoveActionFromReserve(actionSlot);
+        _effectEngine.ProcessGameEvent(match, player, NativeGameEventKeys.ActionPlayed);
         _effectEngine.ProcessAction(match, player, action, command.TargetUnitInstanceId);
         return PreparationCommandResult.Success();
     }
@@ -298,14 +300,19 @@ public sealed class PreparationEngine
     private PreparationCommandResult RefreshOffer(MatchState match, PlayerState player)
     {
         if (!player.CanAfford(_rules.RefreshCost)) return PreparationCommandResult.Failure(PreparationFailureCode.InsufficientResource);
+        player.SpendResource(_rules.RefreshCost);
+        RefreshOfferFromEffect(player);
+        _effectEngine.ProcessGameEvent(match, player, NativeGameEventKeys.OfferRefreshed);
+        return PreparationCommandResult.Success();
+    }
+
+    private void RefreshOfferFromEffect(PlayerState player)
+    {
         var unitOffer = _unitPool.ExchangeOffer(player.Offer.ToArray(), player.Tier, _rules.GetUnitOfferSize(player.Tier), _randomSource);
         var actionOffer = DrawActionOffer(player.Tier, _rules.GetActionOfferSize(player.Tier));
-        player.SpendResource(_rules.RefreshCost);
         player.ReplaceOffer(ValidateUnitOffer(unitOffer, player.Tier));
         player.ReplaceActionOffer(actionOffer);
         player.ClearOfferFrozen();
-        _effectEngine.ProcessGameEvent(match, player, NativeGameEventKeys.OfferRefreshed);
-        return PreparationCommandResult.Success();
     }
 
     private PreparationCommandResult UpgradeTier(MatchState match, PlayerState player)

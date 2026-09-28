@@ -318,6 +318,28 @@ public sealed record AddResourceEffectDefinition : EffectDefinition
     }
 }
 
+public sealed record AdjustUpgradeCostEffectDefinition : EffectDefinition
+{
+    public override NativeEffectKey Kind => NativeEffectKeys.AdjustUpgradeCost;
+    public EffectValueExpression Amount { get; }
+
+    public AdjustUpgradeCostEffectDefinition(int amount)
+        : this(new ConstantEffectValueExpression(amount))
+    {
+        if (amount == 0) throw new ArgumentOutOfRangeException(nameof(amount));
+    }
+
+    public AdjustUpgradeCostEffectDefinition(EffectValueExpression amount)
+    {
+        Amount = amount ?? throw new ArgumentNullException(nameof(amount));
+    }
+}
+
+public sealed record RefreshOfferEffectDefinition : EffectDefinition
+{
+    public override NativeEffectKey Kind => NativeEffectKeys.RefreshOffer;
+}
+
 public sealed record SetPowerEffectDefinition : EffectDefinition
 {
     public override NativeEffectKey Kind => NativeEffectKeys.SetPower;

@@ -1,0 +1,20 @@
+{
+  "id": "ruthless-bargain",
+  "name": "Ruthless Bargain",
+  "triggers": [
+    {
+      "event": "afterEventCount",
+      "count": 2,
+      "counter": {
+        "event": "unitReleased",
+        "scope": "turn"
+      },
+      "effects": [
+        {
+          "kind": "addResource",
+          "amount": 1
+        }
+      ]
+    }
+  ]
+}

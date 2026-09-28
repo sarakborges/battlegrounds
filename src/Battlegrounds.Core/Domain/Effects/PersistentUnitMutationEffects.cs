@@ -34,12 +34,14 @@ public sealed record ApplyUnitModifierEffectDefinition : EffectDefinition
     public string ModifierKey { get; }
     public EffectValueExpression AttackDelta { get; }
     public EffectValueExpression HealthDelta { get; }
+    public UnitModifierDuration Duration { get; }
 
     public ApplyUnitModifierEffectDefinition(
         EffectTargetSelector target,
         string modifierKey,
         EffectValueExpression? attackDelta,
-        EffectValueExpression? healthDelta)
+        EffectValueExpression? healthDelta,
+        UnitModifierDuration duration = UnitModifierDuration.Persistent)
     {
         Target = target ?? throw new ArgumentNullException(nameof(target));
         if (string.IsNullOrWhiteSpace(modifierKey)) throw new ArgumentException("Modifier key cannot be empty.", nameof(modifierKey));
@@ -47,10 +49,16 @@ public sealed record ApplyUnitModifierEffectDefinition : EffectDefinition
         ModifierKey = modifierKey;
         AttackDelta = attackDelta ?? new ConstantEffectValueExpression(0);
         HealthDelta = healthDelta ?? new ConstantEffectValueExpression(0);
+        Duration = duration;
     }
 
-    public ApplyUnitModifierEffectDefinition(EffectTargetSelector target, string modifierKey, int attackDelta, int healthDelta)
-        : this(target, modifierKey, new ConstantEffectValueExpression(attackDelta), new ConstantEffectValueExpression(healthDelta)) { }
+    public ApplyUnitModifierEffectDefinition(
+        EffectTargetSelector target,
+        string modifierKey,
+        int attackDelta,
+        int healthDelta,
+        UnitModifierDuration duration = UnitModifierDuration.Persistent)
+        : this(target, modifierKey, new ConstantEffectValueExpression(attackDelta), new ConstantEffectValueExpression(healthDelta), duration) { }
 }
 
 public sealed record RemoveUnitModifierEffectDefinition : EffectDefinition
@@ -71,6 +79,6 @@ internal interface IPersistentUnitMutationWorld
 {
     void TransformUnit(IEffectRuntimeUnit unit, UnitDefinition definition);
     int CopyUnitsToReserve(PlayerId ownerPlayerId, IReadOnlyList<IEffectRuntimeUnit> units);
-    void ApplyModifier(IEffectRuntimeUnit unit, string key, int attackDelta, int healthDelta);
+    void ApplyModifier(IEffectRuntimeUnit unit, string key, int attackDelta, int healthDelta, UnitModifierDuration duration);
     bool RemoveModifier(IEffectRuntimeUnit unit, string key);
 }

@@ -1,0 +1,23 @@
+{
+  "id": "shadow-cache",
+  "name": "Shadow Cache",
+  "activation": {
+    "cost": 1,
+    "maxUsesPerTurn": 1
+  },
+  "triggers": [
+    {
+      "event": "onActivate",
+      "effects": [
+        {
+          "kind": "generateActionChoice",
+          "actionQuery": {
+            "minimumTier": 1,
+            "maximumTier": 3
+          },
+          "optionCount": 2
+        }
+      ]
+    }
+  ]
+}

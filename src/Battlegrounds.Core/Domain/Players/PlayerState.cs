@@ -240,6 +240,13 @@ public sealed partial class PlayerState
         return true;
     }
 
+    internal void AdjustUpgradeCost(int amount)
+    {
+        if (UpgradeCost is null || amount == 0) return;
+        var next = (long)UpgradeCost.Value + amount;
+        UpgradeCost = (int)Math.Clamp(next, 0, int.MaxValue);
+    }
+
     internal void UpgradeTier(PreparationRules rules)
     {
         if (Tier >= rules.MaximumTier || UpgradeCost is null)
@@ -263,6 +270,11 @@ public sealed partial class PlayerState
     }
 
     internal void ClearOfferFrozen() => IsOfferFrozen = false;
+
+    internal void ExpireUnitModifiers(UnitModifierDuration duration)
+    {
+        foreach (var unit in _reserve.Concat(_field)) unit.ExpireModifiers(duration);
+    }
 
     internal void MarkReadyForCombat()
     {

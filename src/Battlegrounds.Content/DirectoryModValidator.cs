@@ -678,9 +678,13 @@ internal sealed class DirectoryModValidator
                     issues.Add(new("UNKNOWN_REFERENCE", file, path + ".behaviorId", $"Unknown behavior '{behaviorId}'."));
                 break;
             case "addResource":
+            case "adjustUpgradeCost":
                 ValidateKeys(effect, file, path, ["kind", "amount"], ["kind"], issues);
                 if (!effect.TryGetProperty("amount", out _))
                     issues.Add(new("MISSING_REQUIRED_PARAMETER", file, path + ".amount", "Effect requires 'amount'."));
+                break;
+            case "refreshOffer":
+                ValidateKeys(effect, file, path, ["kind"], ["kind"], issues);
                 break;
             case "transformUnit":
             case "copyUnitToReserve":

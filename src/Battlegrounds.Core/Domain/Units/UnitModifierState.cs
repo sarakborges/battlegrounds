@@ -1,12 +1,23 @@
 namespace Battlegrounds.Core.Domain.Units;
 
+public enum UnitModifierDuration
+{
+    Persistent,
+    UntilCombatEnd,
+}
+
 public sealed record UnitModifierState
 {
     public string Key { get; }
     public int AttackDelta { get; }
     public int HealthDelta { get; }
+    public UnitModifierDuration Duration { get; }
 
-    public UnitModifierState(string key, int attackDelta, int healthDelta)
+    public UnitModifierState(
+        string key,
+        int attackDelta,
+        int healthDelta,
+        UnitModifierDuration duration = UnitModifierDuration.Persistent)
     {
         if (string.IsNullOrWhiteSpace(key))
             throw new ArgumentException("Modifier key cannot be empty.", nameof(key));
@@ -16,5 +27,6 @@ public sealed record UnitModifierState
         Key = key;
         AttackDelta = attackDelta;
         HealthDelta = healthDelta;
+        Duration = duration;
     }
 }

@@ -23,6 +23,7 @@ public sealed class ModValidator
             .Concat(statefulIssues)
             .Concat(generationIssues)
             .Concat(actionIssues)
+            .Concat(new PreparationEconomyEffectModValidator().Validate(modDirectory))
             .Concat(new PersistentUnitMutationModValidator().Validate(modDirectory))
             .Concat(new UnitCombineModValidator().Validate(modDirectory))
             .Concat(new PresentationModValidator().Validate(modDirectory))

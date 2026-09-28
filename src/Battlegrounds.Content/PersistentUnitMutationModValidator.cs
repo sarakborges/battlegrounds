@@ -135,12 +135,17 @@ internal sealed class PersistentUnitMutationModValidator
                     ValidateKeys(effect, file, effectPath, ["kind", "target"], ["kind", "target"], issues);
                     break;
                 case "applyUnitModifier":
-                    ValidateKeys(effect, file, effectPath, ["kind", "target", "modifierKey", "attack", "health"], ["kind", "target", "modifierKey"], issues);
+                    ValidateKeys(effect, file, effectPath, ["kind", "target", "modifierKey", "attack", "health", "duration"], ["kind", "target", "modifierKey"], issues);
                     ValidateModifierKey(effect, file, effectPath, issues);
                     if (!effect.TryGetProperty("attack", out _) && !effect.TryGetProperty("health", out _))
                         issues.Add(new("MISSING_REQUIRED_PARAMETER", file, effectPath, "applyUnitModifier requires attack and/or health."));
                     ValidateOptionalValueShape(effect, "attack", file, effectPath, issues);
                     ValidateOptionalValueShape(effect, "health", file, effectPath, issues);
+                    if (effect.TryGetProperty("duration", out var duration) &&
+                        (duration.ValueKind != JsonValueKind.String || duration.GetString() is not ("persistent" or "untilCombatEnd")))
+                    {
+                        issues.Add(new("INVALID_VALUE", file, effectPath + ".duration", "duration must be 'persistent' or 'untilCombatEnd'."));
+                    }
                     break;
                 case "removeUnitModifier":
                     ValidateKeys(effect, file, effectPath, ["kind", "target", "modifierKey"], ["kind", "target", "modifierKey"], issues);

@@ -5,7 +5,9 @@
   "attack": 3,
   "health": 2,
   "behaviors": [],
-  "types": ["beast"],
+  "types": [
+    "beast"
+  ],
   "tags": [],
   "triggers": [
     {
@@ -13,11 +15,34 @@
       "effects": [
         {
           "kind": "modifyStats",
-          "target": { "scope": "self" },
+          "target": {
+            "scope": "self"
+          },
           "attack": {
             "kind": "unitCount",
-            "query": { "scope": "friendly", "typeId": "beast" }
+            "query": {
+              "scope": "friendly",
+              "typeId": "beast"
+            }
           }
+        }
+      ]
+    },
+    {
+      "event": "afterEventCount",
+      "count": 1,
+      "counter": {
+        "event": "unitAcquired",
+        "scope": "turn",
+        "typeId": "beast"
+      },
+      "effects": [
+        {
+          "kind": "modifyStats",
+          "target": {
+            "scope": "self"
+          },
+          "attack": 1
         }
       ]
     }

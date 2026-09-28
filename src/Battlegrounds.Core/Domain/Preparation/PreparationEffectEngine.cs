@@ -19,6 +19,7 @@ internal sealed partial class PreparationEffectEngine
     private readonly BehaviorCatalog? _behaviorCatalog;
     private readonly PowerCatalog? _powerCatalog;
     private readonly ActionCatalog? _actionCatalog;
+    private readonly Action<PlayerState> _refreshOffer;
     private MatchState? _runtimeMatch;
     private int _runtimeRound = -1;
     private PreparationEffectWorld? _runtimeWorld;
@@ -32,7 +33,8 @@ internal sealed partial class PreparationEffectEngine
         UnitCatalog? unitCatalog,
         BehaviorCatalog? behaviorCatalog,
         PowerCatalog? powerCatalog = null,
-        ActionCatalog? actionCatalog = null)
+        ActionCatalog? actionCatalog = null,
+        Action<PlayerState>? refreshOffer = null)
     {
         _rules = rules ?? throw new ArgumentNullException(nameof(rules));
         _unitPool = unitPool ?? throw new ArgumentNullException(nameof(unitPool));
@@ -41,6 +43,7 @@ internal sealed partial class PreparationEffectEngine
         _behaviorCatalog = behaviorCatalog;
         _powerCatalog = powerCatalog;
         _actionCatalog = actionCatalog;
+        _refreshOffer = refreshOffer ?? (_ => throw new InvalidOperationException("Offer refresh effects require PreparationEngine orchestration."));
     }
 
     public void ProcessGameEvent(MatchState match, PlayerState owner, NativeGameEventKey @event, UnitDefinition? unit = null)
@@ -173,19 +176,20 @@ internal sealed partial class PreparationEffectEngine
         {
             _runtimeMatch = match;
             _runtimeRound = match.Round;
-            _runtimeWorld = new PreparationEffectWorld(match, _rules, _unitPool, _powerCatalog, CreatePowerSource);
+            _runtimeWorld = new PreparationEffectWorld(match, _rules, _unitPool, _powerCatalog, CreatePowerSource, _refreshOffer);
             _runtime = new GameEffectRuntime(_runtimeWorld, _randomSource, _unitCatalog, _behaviorCatalog, _actionCatalog);
         }
         return (_runtimeWorld!, _runtime!);
     }
 
-    private sealed class PreparationEffectWorld : IEffectRuntimeWorld, IGenerationChoiceRuntimeWorld, IPersistentUnitMutationWorld
+    private sealed class PreparationEffectWorld : IEffectRuntimeWorld, IGenerationChoiceRuntimeWorld, IPersistentUnitMutationWorld, IPreparationEconomyEffectWorld
     {
         private readonly MatchState _match;
         private readonly PreparationRules _rules;
         private readonly IUnitPool _unitPool;
         private readonly PowerCatalog? _powerCatalog;
         private readonly Func<PlayerState, PowerDefinition, PowerRuntimeUnit> _powerSourceFactory;
+        private readonly Action<PlayerState> _refreshOffer;
         private readonly Dictionary<UnitInstanceId, PreparationRuntimeUnit> _wrappers = [];
         private readonly Dictionary<UnitInstanceId, (PlayerId OwnerId, int Index)> _deathPositions = [];
         private readonly Dictionary<UnitInstanceId, int> _summonCursors = [];
@@ -195,13 +199,15 @@ internal sealed partial class PreparationEffectEngine
             PreparationRules rules,
             IUnitPool unitPool,
             PowerCatalog? powerCatalog,
-            Func<PlayerState, PowerDefinition, PowerRuntimeUnit> powerSourceFactory)
+            Func<PlayerState, PowerDefinition, PowerRuntimeUnit> powerSourceFactory,
+            Action<PlayerState> refreshOffer)
         {
             _match = match ?? throw new ArgumentNullException(nameof(match));
             _rules = rules ?? throw new ArgumentNullException(nameof(rules));
             _unitPool = unitPool ?? throw new ArgumentNullException(nameof(unitPool));
             _powerCatalog = powerCatalog;
             _powerSourceFactory = powerSourceFactory ?? throw new ArgumentNullException(nameof(powerSourceFactory));
+            _refreshOffer = refreshOffer ?? throw new ArgumentNullException(nameof(refreshOffer));
         }
 
         public IReadOnlyList<IEffectRuntimeUnit> Units =>
@@ -270,8 +276,8 @@ internal sealed partial class PreparationEffectEngine
             return count;
         }
 
-        public void ApplyModifier(IEffectRuntimeUnit unit, string key, int attackDelta, int healthDelta) =>
-            GetUnit(unit).ApplyModifier(key, attackDelta, healthDelta);
+        public void ApplyModifier(IEffectRuntimeUnit unit, string key, int attackDelta, int healthDelta, UnitModifierDuration duration) =>
+            GetUnit(unit).ApplyModifier(key, attackDelta, healthDelta, duration);
 
         public bool RemoveModifier(IEffectRuntimeUnit unit, string key) =>
             GetUnit(unit).RemoveModifier(key);
@@ -333,6 +339,10 @@ internal sealed partial class PreparationEffectEngine
         }
 
         public void AdjustResource(PlayerId playerId, int amount) => GetPlayer(playerId).AdjustResource(amount, _rules.MaximumResource);
+
+        public void AdjustUpgradeCost(PlayerId playerId, int amount) => GetPlayer(playerId).AdjustUpgradeCost(amount);
+
+        public void RefreshOffer(PlayerId playerId) => _refreshOffer(GetPlayer(playerId));
 
         public void SetPower(PlayerId playerId, PowerId powerId)
         {

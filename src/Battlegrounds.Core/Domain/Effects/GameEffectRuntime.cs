@@ -17,6 +17,12 @@ internal interface IEffectRuntimeUnit
     bool IsAlive { get; }
 }
 
+internal interface IPreparationEconomyEffectWorld
+{
+    void AdjustUpgradeCost(PlayerId playerId, int amount);
+    void RefreshOffer(PlayerId playerId);
+}
+
 internal interface IEffectRuntimeWorld
 {
     IReadOnlyList<IEffectRuntimeUnit> Units { get; }
@@ -290,7 +296,7 @@ internal sealed class GameEffectRuntime
                 {
                     var attack = _pipeline.EvaluateValue(modifier.AttackDelta, context, target.InstanceId);
                     var health = _pipeline.EvaluateValue(modifier.HealthDelta, context, target.InstanceId);
-                    if (attack != 0 || health != 0) mutationWorld.ApplyModifier(target, modifier.ModifierKey, attack, health);
+                    if (attack != 0 || health != 0) mutationWorld.ApplyModifier(target, modifier.ModifierKey, attack, health, modifier.Duration);
                 }
                 break;
             }
@@ -314,6 +320,19 @@ internal sealed class GameEffectRuntime
             {
                 var amount = _pipeline.EvaluateValue(addResource.Amount, BuildContext(source));
                 if (amount != 0) _world.AdjustResource(source.OwnerPlayerId, amount);
+                break;
+            }
+            case AdjustUpgradeCostEffectDefinition adjustUpgradeCost:
+            {
+                var amount = _pipeline.EvaluateValue(adjustUpgradeCost.Amount, BuildContext(source));
+                if (amount != 0) GetPreparationEconomyWorld(adjustUpgradeCost.Kind).AdjustUpgradeCost(source.OwnerPlayerId, amount);
+                break;
+            }
+            case RefreshOfferEffectDefinition refreshOffer:
+            {
+                var economy = GetPreparationEconomyWorld(refreshOffer.Kind);
+                economy.RefreshOffer(source.OwnerPlayerId);
+                RecordGameEventCore(source.OwnerPlayerId, NativeGameEventKeys.OfferRefreshed, null, queue);
                 break;
             }
             case SetPowerEffectDefinition setPower:
@@ -344,6 +363,10 @@ internal sealed class GameEffectRuntime
 
     private IPersistentUnitMutationWorld GetPersistentMutationWorld(NativeEffectKey kind) =>
         _world as IPersistentUnitMutationWorld
+        ?? throw new InvalidOperationException($"Effect '{kind}' is not supported by this effect world.");
+
+    private IPreparationEconomyEffectWorld GetPreparationEconomyWorld(NativeEffectKey kind) =>
+        _world as IPreparationEconomyEffectWorld
         ?? throw new InvalidOperationException($"Effect '{kind}' is not supported by this effect world.");
 
     private static IReadOnlyList<T> SelectRandomDefinitions<T>(IReadOnlyList<T> candidates, int count, IRandomSource randomSource)

@@ -353,6 +353,60 @@ public sealed class PreparationEffectExecutionTests
         Assert.Equal(MatchPhase.Preparation, setup.Match.Phase);
     }
 
+    [Fact]
+    public void OnPlay_AdjustUpgradeCostMutatesCurrentPlayerEconomy()
+    {
+        var source = new UnitDefinition(
+            new UnitId("economist"),
+            "Economist",
+            1,
+            1,
+            1,
+            triggers:
+            [
+                new TriggerDefinition(
+                    NativeTriggerKeys.OnPlay,
+                    [new AdjustUpgradeCostEffectDefinition(-2)]),
+            ]);
+
+        var setup = CreateStartedMatch([source], [source], startingResource: 10, acquireCost: 0);
+        var player = setup.Match.Players[0];
+        var before = Assert.IsType<int>(player.UpgradeCost);
+        AcquireById(setup.Engine, setup.Match, player.Id, source.Id);
+        Assert.True(setup.Engine.Execute(setup.Match, new DeployUnitCommand(player.Id, 0)).Succeeded);
+        Assert.Equal(Math.Max(0, before - 2), player.UpgradeCost);
+    }
+
+    [Fact]
+    public void OnPlay_RefreshOfferEffectRerollsWithoutRefreshCostAndClearsFreeze()
+    {
+        var source = new UnitDefinition(
+            new UnitId("refresh-source"),
+            "Refresh Source",
+            1,
+            1,
+            1,
+            triggers:
+            [
+                new TriggerDefinition(NativeTriggerKeys.OnPlay, [new RefreshOfferEffectDefinition()]),
+            ]);
+        var a = new UnitDefinition(new UnitId("a"), "A", 1, 1, 1);
+        var b = new UnitDefinition(new UnitId("b"), "B", 1, 1, 1);
+        var c = new UnitDefinition(new UnitId("c"), "C", 1, 1, 1);
+
+        var setup = CreateStartedMatch([source, a, b, c], [source, a, b, c], startingResource: 10, acquireCost: 0);
+        var player = setup.Match.Players[0];
+        AcquireById(setup.Engine, setup.Match, player.Id, source.Id);
+        Assert.True(setup.Engine.Execute(setup.Match, new FreezeOfferCommand(player.Id)).Succeeded);
+        var resourceBefore = player.Resource;
+
+        Assert.True(setup.Engine.Execute(setup.Match, new DeployUnitCommand(player.Id, 0)).Succeeded);
+
+        Assert.Equal(resourceBefore, player.Resource);
+        Assert.False(player.IsOfferFrozen);
+        Assert.Equal(3, player.PlayableOffer.Count);
+    }
+
     private static void AcquireById(
         PreparationEngine engine,
         MatchState match,

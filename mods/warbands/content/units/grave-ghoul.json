@@ -5,13 +5,39 @@
   "attack": 2,
   "health": 2,
   "behaviors": [],
-  "types": ["undead"],
-  "tags": ["starter"],
+  "types": [
+    "undead"
+  ],
+  "tags": [
+    "starter"
+  ],
   "triggers": [
     {
       "event": "onDeath",
       "effects": [
-        { "kind": "addResource", "amount": 1 }
+        {
+          "kind": "addResource",
+          "amount": 1
+        }
+      ]
+    },
+    {
+      "event": "afterEventCount",
+      "count": 1,
+      "counter": {
+        "event": "unitReleased",
+        "scope": "turn",
+        "typeId": "undead"
+      },
+      "effects": [
+        {
+          "kind": "modifyStats",
+          "target": {
+            "scope": "self"
+          },
+          "attack": 1,
+          "health": 1
+        }
       ]
     }
   ]

@@ -3,5 +3,5 @@
   "name": "Jaina Proudmoore",
   "healthModifier": 0,
   "armor": 4,
-  "initialPowerId": "fireblast"
+  "initialPowerId": "arcane-momentum"
 }
