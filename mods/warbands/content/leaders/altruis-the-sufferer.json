@@ -1,0 +1,7 @@
+{
+  "id": "altruis-the-sufferer",
+  "name": "Altruis the Sufferer",
+  "healthModifier": 0,
+  "armor": 4,
+  "initialPowerId": "metamorphosis"
+}

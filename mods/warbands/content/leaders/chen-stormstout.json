@@ -1,0 +1,7 @@
+{
+  "id": "chen-stormstout",
+  "name": "Chen Stormstout",
+  "healthModifier": 0,
+  "armor": 4,
+  "initialPowerId": "inner-balance"
+}

@@ -1,0 +1,7 @@
+{
+  "id": "first-arcanist-thalyssra",
+  "name": "First Arcanist Thalyssra",
+  "healthModifier": 0,
+  "armor": 4,
+  "initialPowerId": "fireblast"
+}

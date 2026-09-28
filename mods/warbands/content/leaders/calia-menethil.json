@@ -1,0 +1,7 @@
+{
+  "id": "calia-menethil",
+  "name": "Calia Menethil",
+  "healthModifier": 0,
+  "armor": 4,
+  "initialPowerId": "power-word-fortitude"
+}

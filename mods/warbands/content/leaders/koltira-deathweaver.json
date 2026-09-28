@@ -1,0 +1,7 @@
+{
+  "id": "koltira-deathweaver",
+  "name": "Koltira Deathweaver",
+  "healthModifier": 0,
+  "armor": 4,
+  "initialPowerId": "death-coil"
+}

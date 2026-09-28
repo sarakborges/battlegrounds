@@ -1,0 +1,7 @@
+{
+  "id": "grand-magister-rommath",
+  "name": "Grand Magister Rommath",
+  "healthModifier": 0,
+  "armor": 4,
+  "initialPowerId": "fireblast"
+}

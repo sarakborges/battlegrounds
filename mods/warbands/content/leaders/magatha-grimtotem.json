@@ -1,0 +1,7 @@
+{
+  "id": "magatha-grimtotem",
+  "name": "Magatha Grimtotem",
+  "healthModifier": 0,
+  "armor": 4,
+  "initialPowerId": "ancestral-strength"
+}

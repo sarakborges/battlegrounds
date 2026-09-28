@@ -1,0 +1,7 @@
+{
+  "id": "garona-halforcen",
+  "name": "Garona Halforcen",
+  "healthModifier": 0,
+  "armor": 4,
+  "initialPowerId": "deadly-poison"
+}

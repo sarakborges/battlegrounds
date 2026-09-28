@@ -1,0 +1,7 @@
+{
+  "id": "farseer-nobundo",
+  "name": "Farseer Nobundo",
+  "healthModifier": 0,
+  "armor": 4,
+  "initialPowerId": "ancestral-strength"
+}

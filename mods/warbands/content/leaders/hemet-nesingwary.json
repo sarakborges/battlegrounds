@@ -1,0 +1,7 @@
+{
+  "id": "hemet-nesingwary",
+  "name": "Hemet Nesingwary",
+  "healthModifier": 0,
+  "armor": 4,
+  "initialPowerId": "bestial-wrath"
+}

@@ -1,0 +1,7 @@
+{
+  "id": "kayn-sunfury",
+  "name": "Kayn Sunfury",
+  "healthModifier": 0,
+  "armor": 4,
+  "initialPowerId": "metamorphosis"
+}

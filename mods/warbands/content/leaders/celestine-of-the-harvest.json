@@ -1,0 +1,7 @@
+{
+  "id": "celestine-of-the-harvest",
+  "name": "Celestine of the Harvest",
+  "healthModifier": 0,
+  "armor": 4,
+  "initialPowerId": "mark-of-the-wild"
+}

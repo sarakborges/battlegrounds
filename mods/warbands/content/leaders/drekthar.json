@@ -1,0 +1,7 @@
+{
+  "id": "drekthar",
+  "name": "Drek'Thar",
+  "healthModifier": 0,
+  "armor": 4,
+  "initialPowerId": "ancestral-strength"
+}

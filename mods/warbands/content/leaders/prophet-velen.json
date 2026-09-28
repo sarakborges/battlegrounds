@@ -1,0 +1,7 @@
+{
+  "id": "prophet-velen",
+  "name": "Prophet Velen",
+  "healthModifier": 0,
+  "armor": 4,
+  "initialPowerId": "power-word-fortitude"
+}

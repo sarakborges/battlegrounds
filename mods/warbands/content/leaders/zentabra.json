@@ -1,0 +1,7 @@
+{
+  "id": "zentabra",
+  "name": "Zen'tabra",
+  "healthModifier": 0,
+  "armor": 4,
+  "initialPowerId": "mark-of-the-wild"
+}

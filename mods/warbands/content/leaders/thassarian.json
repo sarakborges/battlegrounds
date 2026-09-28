@@ -1,0 +1,7 @@
+{
+  "id": "thassarian",
+  "name": "Thassarian",
+  "healthModifier": 0,
+  "armor": 4,
+  "initialPowerId": "death-coil"
+}

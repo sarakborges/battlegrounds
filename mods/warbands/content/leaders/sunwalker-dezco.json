@@ -1,0 +1,7 @@
+{
+  "id": "sunwalker-dezco",
+  "name": "Sunwalker Dezco",
+  "healthModifier": 0,
+  "armor": 4,
+  "initialPowerId": "blessing-of-light"
+}

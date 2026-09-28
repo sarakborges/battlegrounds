@@ -1,0 +1,21 @@
+{
+  "id": "inner-balance",
+  "name": "Inner Balance",
+  "activation": {
+    "cost": 1,
+    "maxUsesPerTurn": 1
+  },
+  "triggers": [
+    {
+      "event": "onActivate",
+      "effects": [
+        {
+          "kind": "modifyStats",
+          "target": { "scope": "selected" },
+          "attack": 1,
+          "health": 2
+        }
+      ]
+    }
+  ]
+}

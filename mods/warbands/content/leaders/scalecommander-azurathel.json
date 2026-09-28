@@ -1,0 +1,7 @@
+{
+  "id": "scalecommander-azurathel",
+  "name": "Scalecommander Azurathel",
+  "healthModifier": 0,
+  "armor": 4,
+  "initialPowerId": "draconic-legacy"
+}

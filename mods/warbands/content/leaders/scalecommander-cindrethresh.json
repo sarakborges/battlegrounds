@@ -1,0 +1,7 @@
+{
+  "id": "scalecommander-cindrethresh",
+  "name": "Scalecommander Cindrethresh",
+  "healthModifier": 0,
+  "armor": 4,
+  "initialPowerId": "draconic-legacy"
+}

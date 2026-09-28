@@ -1,0 +1,7 @@
+{
+  "id": "scalecommander-sarkareth",
+  "name": "Scalecommander Sarkareth",
+  "healthModifier": 0,
+  "armor": 4,
+  "initialPowerId": "draconic-legacy"
+}

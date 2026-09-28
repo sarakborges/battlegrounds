@@ -1,0 +1,7 @@
+{
+  "id": "leona-darkstrider",
+  "name": "Leona Darkstrider",
+  "healthModifier": 0,
+  "armor": 4,
+  "initialPowerId": "metamorphosis"
+}

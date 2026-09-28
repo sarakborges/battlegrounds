@@ -3,5 +3,5 @@
   "name": "Nekros Skullcrusher",
   "healthModifier": 0,
   "armor": 4,
-  "initialPowerId": "death-coil"
+  "initialPowerId": "fel-infusion"
 }
