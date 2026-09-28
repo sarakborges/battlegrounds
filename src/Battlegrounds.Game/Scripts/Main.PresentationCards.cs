@@ -108,6 +108,33 @@ public partial class Main
     private string BuildUnitDefinitionStats(UnitDefinition definition) =>
         UnitCardStats(definition.Tier, definition.BaseAttack, definition.BaseHealth);
 
+    private string BuildUnitInspectDetails(UnitDefinition definition, UnitInstance? unit = null)
+    {
+        var lines = new List<string>();
+
+        if (definition.Types.Count > 0)
+            lines.Add(string.Join(" • ", definition.Types.Select(type => type.Name)));
+
+        var behaviors = unit is null ? definition.Behaviors : unit.Behaviors;
+        if (behaviors.Count > 0)
+            lines.Add(string.Join(" · ", behaviors.Select(behavior => behavior.Name)));
+
+        if (definition.Tags.Count > 0)
+            lines.Add(string.Join(" · ", definition.Tags.Select(tag => tag.Name)));
+
+        if (unit is not null && unit.Modifiers.Count > 0)
+        {
+            lines.Add(string.Join(
+                "\n",
+                unit.Modifiers.Select(modifier =>
+                    $"{modifier.Key}: {FormatSigned(modifier.AttackDelta)}/{FormatSigned(modifier.HealthDelta)}")));
+        }
+
+        return string.Join("\n", lines.Where(line => !string.IsNullOrWhiteSpace(line)));
+    }
+
+    private static string FormatSigned(int value) => value > 0 ? $"+{value}" : value.ToString();
+
     private string BuildActionDefinitionStats(string id)
     {
         if (_session is null) return string.Empty;
