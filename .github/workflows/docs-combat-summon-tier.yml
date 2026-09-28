@@ -1,0 +1,48 @@
+name: Document combat summon survivor tiers
+
+on:
+  push:
+    branches: [combat-summon-tier-settlement]
+
+permissions:
+  contents: write
+
+jobs:
+  docs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - name: Update post-combat tier docs
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          replacements = {
+              'README.md': (
+                  'The current native post-combat damage policy is `winnerTierPlusSurvivorTiers`: winner Tier plus the Tiers of surviving units. Draws deal zero player damage. Generated/token survivors not present in the starting combat snapshot use their combat survivor Tier, currently Tier 1 by default.',
+                  'The current native post-combat damage policy is `winnerTierPlusSurvivorTiers`: winner Tier plus the Tiers of surviving units. Draws deal zero player damage. Starting survivors retain the Tier frozen in `CombatInput`; generated/token survivors carry the authored Tier of their combat runtime definition into `CombatResult`.'
+              ),
+              'ARCHITECTURE.md': (
+                  'The current policy `winnerTierPlusSurvivorTiers` uses winner Tier plus surviving unit Tiers; draw deals zero. Generated/token survivors not present in the initial combat snapshot currently default to Tier 1.',
+                  'The current policy `winnerTierPlusSurvivorTiers` uses winner Tier plus surviving unit Tiers; draw deals zero. Starting survivors retain the Tier frozen in the combat input, while generated/token survivors carry the authored Tier of their combat runtime definition into `CombatResult`.'
+              ),
+          }
+
+          for filename, (old, new) in replacements.items():
+              path = Path(filename)
+              text = path.read_text()
+              if text.count(old) != 1:
+                  raise SystemExit(f'{filename}: expected exactly one stale tier sentence, got {text.count(old)}')
+              path.write_text(text.replace(old, new))
+          PY
+      - name: Commit docs directly to main
+        shell: bash
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add README.md ARCHITECTURE.md
+          git commit -m 'Document authored tiers for combat summons'
+          git push origin HEAD:main
