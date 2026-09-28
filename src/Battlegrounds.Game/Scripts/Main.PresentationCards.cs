@@ -36,6 +36,7 @@ public partial class Main
             Disabled = disabled,
         };
         card.Configure(title, subtitle, stats, description, texture);
+        card.ConfigureIdentity(entityKind, entityId);
         ApplyPresentationCardLayout(card);
         if (selected)
             card.SetSelected(true);
@@ -47,6 +48,48 @@ public partial class Main
             ModPresentationAnimation.Pulse,
             ResolvePresentationMetric(ModThemeMetricKeys.Motion.UiSelectDurationSeconds, 0.05f, 5.0f));
         return card;
+    }
+
+    internal void ConfigureCompactTokenForParent(
+        PresentationCardButton card,
+        ModPresentationEntityKind entityKind,
+        string entityId)
+    {
+        if (_session is null || entityKind != ModPresentationEntityKind.Unit)
+            return;
+
+        var parentName = card.GetParent()?.Name.ToString();
+        if (parentName == "OfferButtons")
+        {
+            var definition = _session.Mod.Units.GetRequired(new UnitId(entityId));
+            card.ConfigureToken(
+                definition.Tier,
+                definition.BaseAttack,
+                definition.BaseHealth,
+                BuildUnitInspectDetails(definition));
+            return;
+        }
+
+        if (parentName != "FieldButtons" ||
+            _session.Match is not { } match ||
+            !match.TryGetPlayer(_session.HumanPlayerId, out var human))
+        {
+            return;
+        }
+
+        var fieldIndex = card.GetIndex();
+        if (fieldIndex < 0 || fieldIndex >= human.Field.Count)
+            return;
+
+        var unit = human.Field[fieldIndex];
+        if (!string.Equals(unit.Definition.Id.Value, entityId, StringComparison.Ordinal))
+            return;
+
+        card.ConfigureToken(
+            tier: null,
+            unit.Attack,
+            unit.Health,
+            BuildUnitInspectDetails(unit.Definition, unit));
     }
 
     private void PlayPresentationCue(
