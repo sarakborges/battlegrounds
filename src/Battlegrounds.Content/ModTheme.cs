@@ -159,10 +159,16 @@ public sealed class ModThemeLoader
     public ModThemeCatalog Load(string modDirectory)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(modDirectory);
-        var issues = new ModThemeValidator().Validate(modDirectory);
-        if (issues.Count > 0) throw new ModValidationException(new ModValidationReport(issues));
+        var issues = new ModThemeValidator().Validate(modDirectory)
+            .Where(issue => !IsMetricsRootCompatibilityIssue(issue))
+            .Concat(new ModThemeMetricsValidator().Validate(modDirectory))
+            .ToArray();
+        if (issues.Length > 0) throw new ModValidationException(new ModValidationReport(issues));
         return LoadValidated(modDirectory);
     }
+
+    internal static bool IsMetricsRootCompatibilityIssue(ModValidationIssue issue) =>
+        issue.Code == "UNKNOWN_KEY" && issue.File == "presentation/theme.json" && issue.Path == "$.metrics";
 
     internal static ModThemeCatalog LoadValidated(string modDirectory)
     {
