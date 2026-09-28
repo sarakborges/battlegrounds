@@ -14,6 +14,7 @@ internal sealed class ActionModValidator
     [
         "modifyStats", "dealDamage", "destroyUnit", "triggerEvent", "summonUnit",
         "generateUnitToReserve", "generateUnitChoice", "generateActionToReserve", "generateActionChoice",
+        "transformUnit", "copyUnitToReserve", "applyUnitModifier", "removeUnitModifier",
         "addBehavior", "removeBehavior", "addResource", "setPower",
     ];
 

@@ -700,6 +700,12 @@ internal sealed class DirectoryModValidator
                 if (RequireParameterInt(file, effect, "amount", path, issues, out var amount) && amount == 0)
                     issues.Add(new("INVALID_VALUE", file, path + ".amount", "amount cannot be zero."));
                 break;
+            case "transformUnit":
+            case "copyUnitToReserve":
+            case "applyUnitModifier":
+            case "removeUnitModifier":
+                // Persistent mutation schemas are owned by PersistentUnitMutationModValidator.
+                break;
             case "generateUnitToReserve":
             case "generateUnitChoice":
             case "generateActionToReserve":

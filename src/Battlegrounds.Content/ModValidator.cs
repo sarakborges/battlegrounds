@@ -10,18 +10,18 @@ public sealed class ModValidator
         var powerIssues = new PowerLifecycleModValidator().Validate(modDirectory)
             .Where(issue => !IsSupersededEffectSchemaIssue(issue))
             .Where(issue => !IsSupersededStaticEffectValueIssue(issue))
-            .Where(issue => !IsSupersededPersistentMutationIssue(issue));
+;
 
         var advancedIssues = new AdvancedEffectModValidator().Validate(modDirectory)
-            .Where(issue => !IsSupersededPersistentMutationIssue(issue));
+;
         var dynamicIssues = new DynamicEffectValueModValidator().Validate(modDirectory)
-            .Where(issue => !IsSupersededPersistentMutationIssue(issue));
+;
         var statefulIssues = new StatefulEffectModValidator().Validate(modDirectory)
-            .Where(issue => !IsSupersededPersistentMutationIssue(issue));
+;
         var generationIssues = new GenerationChoiceModValidator().Validate(modDirectory)
-            .Where(issue => !IsSupersededPersistentMutationIssue(issue));
+;
         var actionIssues = new ActionModValidator().Validate(modDirectory)
-            .Where(issue => !IsSupersededPersistentMutationIssue(issue));
+;
         var themeIssues = new ModThemeValidator().Validate(modDirectory)
             .Concat(new ModThemeMetricsValidator().Validate(modDirectory))
             .Concat(new ModThemeRoleValidator().Validate(modDirectory));
@@ -48,7 +48,6 @@ public sealed class ModValidator
     private static bool IsSupersededBaseIssue(ModValidationIssue issue) =>
         IsSupersededEffectSchemaIssue(issue) ||
         IsSupersededStaticEffectValueIssue(issue) ||
-        IsSupersededPersistentMutationIssue(issue) ||
         IsSpecializedValidatorOwnedSchemaIssue(issue);
 
     private static bool IsSpecializedValidatorOwnedSchemaIssue(ModValidationIssue issue)
@@ -91,17 +90,4 @@ public sealed class ModValidator
         return issue.Code == "INVALID_VALUE" && issue.Message.StartsWith("modifyStats requires", StringComparison.Ordinal);
     }
 
-    private static bool IsSupersededPersistentMutationIssue(ModValidationIssue issue)
-    {
-        if (!issue.Path.Contains(".effects[", StringComparison.Ordinal)) return false;
-
-        if (issue.Code == "UNSUPPORTED_EFFECT" &&
-            (issue.Message.Contains("transformUnit", StringComparison.Ordinal) ||
-             issue.Message.Contains("copyUnitToReserve", StringComparison.Ordinal) ||
-             issue.Message.Contains("applyUnitModifier", StringComparison.Ordinal) ||
-             issue.Message.Contains("removeUnitModifier", StringComparison.Ordinal)))
-            return true;
-
-        return issue.Code == "UNKNOWN_KEY" && issue.Path.EndsWith(".modifierKey", StringComparison.Ordinal);
-    }
 }

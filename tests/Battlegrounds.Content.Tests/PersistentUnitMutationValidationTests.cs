@@ -35,6 +35,121 @@ public sealed class PersistentUnitMutationValidationTests
     }
 
     [Fact]
+    public void Validate_AcceptsPersistentMutationAcrossPreparationSurfaces()
+    {
+        var path = CreateTempMod();
+        try
+        {
+            File.WriteAllText(
+                Path.Combine(path, "content", "actions", "mutation-lab.json"),
+                """
+                {
+                  "id": "mutation-lab",
+                  "name": "Mutation Lab",
+                  "tier": 1,
+                  "cost": 0,
+                  "effects": [
+                    {
+                      "kind": "applyUnitModifier",
+                      "target": { "scope": "selected" },
+                      "modifierKey": "action-boost",
+                      "attack": 1
+                    },
+                    {
+                      "kind": "copyUnitToReserve",
+                      "target": { "scope": "selected" }
+                    },
+                    {
+                      "kind": "removeUnitModifier",
+                      "target": { "scope": "selected" },
+                      "modifierKey": "action-boost"
+                    },
+                    {
+                      "kind": "transformUnit",
+                      "target": { "scope": "selected" },
+                      "unitId": "guard"
+                    }
+                  ]
+                }
+                """);
+
+            WriteScout(
+                path,
+                """
+                {
+                  "event": "onPlay",
+                  "effects": [
+                    {
+                      "kind": "applyUnitModifier",
+                      "target": { "scope": "self" },
+                      "modifierKey": "unit-boost",
+                      "health": 1
+                    },
+                    {
+                      "kind": "copyUnitToReserve",
+                      "target": { "scope": "self" }
+                    },
+                    {
+                      "kind": "removeUnitModifier",
+                      "target": { "scope": "self" },
+                      "modifierKey": "unit-boost"
+                    },
+                    {
+                      "kind": "transformUnit",
+                      "target": { "scope": "self" },
+                      "unitId": "guard"
+                    }
+                  ]
+                }
+                """);
+
+            File.WriteAllText(
+                Path.Combine(path, "content", "powers", "quiet-aura.json"),
+                """
+                {
+                  "id": "quiet-aura",
+                  "name": "Quiet Aura",
+                  "triggers": [
+                    {
+                      "event": "onTurnStart",
+                      "effects": [
+                        {
+                          "kind": "applyUnitModifier",
+                          "target": { "scope": "friendly", "selection": "leftmost", "limit": 1 },
+                          "modifierKey": "power-boost",
+                          "attack": 1
+                        },
+                        {
+                          "kind": "copyUnitToReserve",
+                          "target": { "scope": "friendly", "selection": "rightmost", "limit": 1 }
+                        },
+                        {
+                          "kind": "removeUnitModifier",
+                          "target": { "scope": "friendly", "selection": "all" },
+                          "modifierKey": "power-boost"
+                        },
+                        {
+                          "kind": "transformUnit",
+                          "target": { "scope": "friendly", "selection": "lowestAttack", "limit": 1 },
+                          "unitId": "guard"
+                        }
+                      ]
+                    }
+                  ]
+                }
+                """);
+
+            var report = new ModValidator().Validate(path);
+
+            Assert.True(report.IsValid);
+        }
+        finally
+        {
+            Directory.Delete(path, recursive: true);
+        }
+    }
+
+    [Fact]
     public void Validate_RejectsPersistentMutationFromCombatTrigger()
     {
         var path = CreateTempMod();

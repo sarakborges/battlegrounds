@@ -290,6 +290,12 @@ internal sealed class PowerLifecycleModValidator
                 }
                 break;
 
+            case "transformUnit":
+            case "copyUnitToReserve":
+            case "applyUnitModifier":
+            case "removeUnitModifier":
+                // Persistent mutation schemas are owned by PersistentUnitMutationModValidator.
+                break;
             case "generateUnitToReserve":
             case "generateUnitChoice":
             case "generateActionToReserve":
