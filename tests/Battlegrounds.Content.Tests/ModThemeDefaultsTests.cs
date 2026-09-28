@@ -14,7 +14,9 @@ public sealed class ModThemeDefaultsTests
         Assert.Equal(8, theme.Metrics[ModThemeMetricKeys.Layout.OuterMargin]);
         Assert.Equal(64, theme.Metrics[ModThemeMetricKeys.Launcher.MarginHorizontal]);
         Assert.Equal(92, theme.Metrics[ModThemeMetricKeys.Card.MinimumWidth(ModThemeMetricKeys.Card.DefaultRole)]);
+        Assert.Equal(3, theme.Metrics[ModThemeMetricKeys.Drag.DropTargetShadowScale]);
         Assert.Equal(0.12, theme.Components[ModThemeInteractionRoles.DragPreview].Opacity);
+        Assert.Equal("#00000000", theme.Components[ModThemeInteractionRoles.DropTargetValid].BackgroundColor);
         Assert.Empty(theme.Fonts);
         Assert.DoesNotContain(theme.Components.Values, style => !string.IsNullOrWhiteSpace(style.BackgroundAsset));
         Assert.DoesNotContain(theme.Screens.Values, screen => !string.IsNullOrWhiteSpace(screen.BackgroundAsset));
