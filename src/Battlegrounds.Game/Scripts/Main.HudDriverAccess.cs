@@ -6,5 +6,6 @@ public partial class Main
     {
         RefreshSemanticHud();
         RefreshTavernHud();
+        RefreshPreparationPresentationPolish();
     }
 }
