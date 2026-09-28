@@ -421,8 +421,14 @@ dotnet test tests/Battlegrounds.Application.Tests/Battlegrounds.Application.Test
 dotnet build src/Battlegrounds.Game/Battlegrounds.Game.csproj
 ```
 
-## Next playable slice
+## Current focus
 
-Build the first content-rich mod that is worth replaying, rather than extending the generic engine speculatively. Target roughly 20–30 Units, 4–6 Leaders/Powers, several combines, and 2–3 clear archetypes/synergy packages across a meaningful Tier curve. Use real repeated matches against the existing AI to expose balance problems, missing presentation affordances and concrete mechanical gaps.
+The immediate priority is to close structural and presentation debt before doing another content or balance pass. Prefer work that can be reviewed and validated headlessly while making the engine consistently mod-driven:
 
-New Core abstractions should be added only when authored content for this playable mod demonstrates a real mechanical need. Prefer solving balance, content variety, readability and moment-to-moment decisions with the systems that already exist before expanding the engine surface again.
+- remove remaining hardcoded presentation values and package-specific special cases that belong to mod contracts;
+- keep theme, layout and interaction semantics in validated mod data with stable engine fallbacks;
+- make validator ownership explicit and reduce compatibility filters or duplicated schema responsibility;
+- clean stale branches, pull requests and documentation that describe behavior no longer present;
+- add Core abstractions only for demonstrated neutral mechanical gaps, never for speculative content needs.
+
+When manual testing is available, use it to validate feel, readability and input behavior rather than as a prerequisite for this cleanup. Content expansion and balance work can resume after these boundaries are coherent enough that mod presentation changes do not require engine-code changes.
