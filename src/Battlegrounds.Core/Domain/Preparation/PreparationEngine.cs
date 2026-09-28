@@ -188,8 +188,27 @@ public sealed class PreparationEngine
             return PreparationCommandResult.Failure(PreparationFailureCode.InvalidReserveSlot);
         if (player.Field.Count >= _rules.FieldCapacity)
             return PreparationCommandResult.Failure(PreparationFailureCode.FieldFull);
-        var unit = player.DeployFromReserve(command.ReserveSlot);
-        _effectEngine.ProcessPlayedUnit(match, player, unit);
+
+        var unit = player.Reserve[command.ReserveSlot];
+        var selectedSelectors = unit.Definition.Triggers
+            .Where(trigger => trigger.Event == NativeTriggerKeys.OnPlay)
+            .SelectMany(trigger => trigger.Effects)
+            .Select(GetTargetSelector)
+            .Where(selector => selector?.Scope == EffectTargetScope.Selected)
+            .Cast<EffectTargetSelector>()
+            .ToArray();
+        if (selectedSelectors.Length > 0)
+        {
+            if (command.TargetUnitInstanceId is null ||
+                !TryGetFieldUnit(match, command.TargetUnitInstanceId.Value, out var selected) ||
+                selectedSelectors.Any(selector => !MatchesSelector(selected, selector)))
+                return PreparationCommandResult.Failure(PreparationFailureCode.InvalidDeployTarget);
+        }
+        else if (command.TargetUnitInstanceId is not null)
+            return PreparationCommandResult.Failure(PreparationFailureCode.InvalidDeployTarget);
+
+        unit = player.DeployFromReserve(command.ReserveSlot);
+        _effectEngine.ProcessPlayedUnit(match, player, unit, command.TargetUnitInstanceId);
         return PreparationCommandResult.Success();
     }
 

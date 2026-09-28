@@ -307,6 +307,13 @@ public partial class Main : Control
 
         switch (_interaction.Kind)
         {
+            case PresentationInteractionKind.DeployTarget:
+                _interactionPrompt.Text = Text(
+                    "ui.actionTargetPrompt",
+                    ("unit", Term("unit")),
+                    ("action", Term("unit")));
+                RenderTargetCandidates(match);
+                break;
             case PresentationInteractionKind.ActionTarget:
                 _interactionPrompt.Text = Text(
                     "ui.actionTargetPrompt",
@@ -558,7 +565,7 @@ public partial class Main : Control
                 ReserveCardStats(entry.Kind, entry.DefinitionId, entry.Unit),
                 human.IsReadyForCombat || choiceBlocked || _interaction.IsActive);
             buttonNormal.Pressed += entry.Kind == PlayableKind.Unit
-                ? () => ExecuteHuman(player => new DeployUnitCommand(player.Id, slot))
+                ? () => TryDeployUnit(slot)
                 : () => TryPlayAction(slot);
             _reserveButtons.AddChild(buttonNormal);
         }
@@ -639,6 +646,26 @@ public partial class Main : Control
                 : new FreezeOfferCommand(player.Id));
     }
 
+    private void TryDeployUnit(int reserveSlot)
+    {
+        if (!TryGetHuman(out var human)) return;
+
+        var command = new DeployUnitCommand(human.Id, reserveSlot);
+        var result = SubmitHumanCommand(command, logFailure: false);
+        if (result.HasValue && !result.Value.Succeeded &&
+            result.Value.FailureCode == PreparationFailureCode.InvalidDeployTarget)
+        {
+            _interaction.BeginDeployTarget(reserveSlot);
+            AppendLog($"{Term("unit")} requires a selected {Term("unit")} target.");
+        }
+        else if (result.HasValue && !result.Value.Succeeded)
+        {
+            AppendLog($"{command.GetType().Name} rejected: {result.Value.FailureCode}.");
+        }
+
+        Render();
+    }
+
     private void TryPlayAction(int reserveSlot)
     {
         if (!TryGetHuman(out var human)) return;
@@ -685,6 +712,8 @@ public partial class Main : Control
 
         IPreparationCommand command = _interaction.Kind switch
         {
+            PresentationInteractionKind.DeployTarget when _interaction.UnitReserveSlot is int unitReserveSlot =>
+                new DeployUnitCommand(human.Id, unitReserveSlot, unitId),
             PresentationInteractionKind.ActionTarget when _interaction.ActionReserveSlot is int reserveSlot =>
                 new PlayActionCommand(human.Id, reserveSlot, unitId),
             PresentationInteractionKind.PowerTarget => new UsePowerCommand(human.Id, unitId),

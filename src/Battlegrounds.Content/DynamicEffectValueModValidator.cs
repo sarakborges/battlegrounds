@@ -62,7 +62,7 @@ internal sealed class DynamicEffectValueModValidator
                 : null;
             var allowSelected =
                 (powerMode && eventName == "onActivate") ||
-                (!powerMode && (eventName == "onAttack" || eventName == "onDamage"));
+                (!powerMode && (eventName == "onPlay" || eventName == "onAttack" || eventName == "onDamage"));
 
             if (trigger.TryGetProperty("conditions", out var conditions) && conditions.ValueKind == JsonValueKind.Array)
             {
