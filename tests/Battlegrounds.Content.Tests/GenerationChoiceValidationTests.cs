@@ -54,6 +54,77 @@ public sealed class GenerationChoiceValidationTests
     }
 
     [Fact]
+    public void Validate_AcceptsUnitAndActionGenerationAcrossPreparationTriggers()
+    {
+        var path = CreateTempMod();
+        try
+        {
+            var generationEffects = """
+                { "kind": "generateUnitToReserve", "unitId": "guard", "count": 2 },
+                {
+                  "kind": "generateUnitChoice",
+                  "generationQuery": {
+                    "minimumTier": 1,
+                    "maximumTier": 2,
+                    "typeId": "construct",
+                    "tagId": "starter",
+                    "excludeSource": true
+                  },
+                  "optionCount": 3
+                },
+                { "kind": "generateActionToReserve", "actionId": "training", "count": 1 },
+                {
+                  "kind": "generateActionChoice",
+                  "actionQuery": {
+                    "minimumTier": 1,
+                    "maximumTier": 2,
+                    "excludeActionId": "mutation-lab"
+                  },
+                  "optionCount": 2
+                }
+                """;
+
+            WriteScout(
+                path,
+                $$"""
+                {
+                  "event": "onPlay",
+                  "effects": [
+                    {{generationEffects}}
+                  ]
+                }
+                """);
+
+            File.WriteAllText(
+                Path.Combine(path, "content", "powers", "quiet-aura.json"),
+                $$"""
+                {
+                  "id": "quiet-aura",
+                  "name": "Quiet Aura",
+                  "triggers": [
+                    {
+                      "event": "onTurnStart",
+                      "effects": [
+                        {{generationEffects}}
+                      ]
+                    }
+                  ]
+                }
+                """);
+
+            var report = new ModValidator().Validate(path);
+
+            Assert.True(
+                report.IsValid,
+                string.Join(Environment.NewLine, report.Issues.Select(issue => $"{issue.Code} {issue.File} {issue.Path}: {issue.Message}")));
+        }
+        finally
+        {
+            Directory.Delete(path, recursive: true);
+        }
+    }
+
+    [Fact]
     public void Validate_RejectsGenerationFromCombatTrigger()
     {
         var path = CreateTempMod();

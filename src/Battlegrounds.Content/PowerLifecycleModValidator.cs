@@ -290,6 +290,12 @@ internal sealed class PowerLifecycleModValidator
                 }
                 break;
 
+            case "generateUnitToReserve":
+            case "generateUnitChoice":
+            case "generateActionToReserve":
+            case "generateActionChoice":
+                // Generation schemas are owned by GenerationChoiceModValidator and ActionModValidator.
+                break;
             default:
                 issues.Add(new("UNSUPPORTED_EFFECT", file, path + ".kind", $"Effect kind '{kind}' is not supported."));
                 break;
