@@ -55,7 +55,7 @@ internal sealed class ModPresentationTextureStore
             _modDirectory,
             asset.RelativePath.Replace('/', Path.DirectorySeparatorChar));
         var image = Image.LoadFromFile(fullPath);
-        if (image.IsEmpty()) return false;
+        if (image is null || image.IsEmpty()) return false;
 
         texture = ImageTexture.CreateFromImage(image);
         _textures.Add(asset.RelativePath, texture);
@@ -147,11 +147,14 @@ internal sealed class ModPresentationTextureStore
 
         try
         {
-            var image = new Image();
-            var error = image.LoadPngFromBuffer(File.ReadAllBytes(fullPath));
-            if (error != Error.Ok || image.IsEmpty())
+            // Godot's normal file loader is the path that successfully loaded this
+            // cosmetic in the live Windows build. Keep the null check because a
+            // corrupt/unsupported image can make the binding return null instead
+            // of a usable Image instance.
+            var image = Image.LoadFromFile(fullPath);
+            if (image is null || image.IsEmpty())
             {
-                GD.PushWarning($"Could not decode cosmetic PNG '{fullPath}': {error}.");
+                GD.PushWarning($"Could not decode cosmetic PNG '{fullPath}'.");
                 return false;
             }
 
