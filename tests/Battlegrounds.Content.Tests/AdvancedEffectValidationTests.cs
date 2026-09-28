@@ -161,6 +161,10 @@ public sealed class AdvancedEffectValidationTests
             var validReport = new ModValidator().Validate(path);
             Assert.True(validReport.IsValid, string.Join(Environment.NewLine, validReport.Issues.Select(issue => $"{issue.Code}: {issue.File} {issue.Path} {issue.Message}")));
 
+            File.WriteAllText(unitPath, attackJson.Replace("onAttack", "onPlay", StringComparison.Ordinal));
+            var playReport = new ModValidator().Validate(path);
+            Assert.True(playReport.IsValid, string.Join(Environment.NewLine, playReport.Issues.Select(issue => $"{issue.Code}: {issue.File} {issue.Path} {issue.Message}")));
+
             File.WriteAllText(unitPath, attackJson.Replace("onAttack", "onDamage", StringComparison.Ordinal));
             var damageReport = new ModValidator().Validate(path);
             Assert.True(damageReport.IsValid, string.Join(Environment.NewLine, damageReport.Issues.Select(issue => $"{issue.Code}: {issue.File} {issue.Path} {issue.Message}")));

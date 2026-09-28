@@ -90,7 +90,7 @@ internal sealed class AdvancedEffectModValidator
                 : null;
             var allowSelected =
                 (powerMode && eventName == "onActivate") ||
-                (!powerMode && (eventName == "onAttack" || eventName == "onDamage"));
+                (!powerMode && (eventName == "onPlay" || eventName == "onAttack" || eventName == "onDamage"));
 
             if (trigger.TryGetProperty("conditions", out var conditions))
                 ValidateConditions(file.Path, conditions, triggerPath + ".conditions", allowSelected, typeIds, tagIds, issues);
