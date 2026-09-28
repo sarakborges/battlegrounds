@@ -10,7 +10,6 @@ public sealed class ModValidator
         var powerIssues = new PowerLifecycleModValidator().Validate(modDirectory)
             .Where(issue => !IsSupersededEffectSchemaIssue(issue))
             .Where(issue => !IsSupersededStaticEffectValueIssue(issue))
-            .Where(issue => !IsSupersededGenerationIssue(issue))
             .Where(issue => !IsSupersededPersistentMutationIssue(issue));
 
         var advancedIssues = new AdvancedEffectModValidator().Validate(modDirectory)
@@ -49,7 +48,6 @@ public sealed class ModValidator
     private static bool IsSupersededBaseIssue(ModValidationIssue issue) =>
         IsSupersededEffectSchemaIssue(issue) ||
         IsSupersededStaticEffectValueIssue(issue) ||
-        IsSupersededGenerationIssue(issue) ||
         IsSupersededPersistentMutationIssue(issue) ||
         IsSpecializedValidatorOwnedSchemaIssue(issue);
 
@@ -91,24 +89,6 @@ public sealed class ModValidator
                           issue.Path.EndsWith(".count", StringComparison.Ordinal);
         if (numericPath && issue.Code is "INVALID_TYPE" or "INVALID_VALUE") return true;
         return issue.Code == "INVALID_VALUE" && issue.Message.StartsWith("modifyStats requires", StringComparison.Ordinal);
-    }
-
-    private static bool IsSupersededGenerationIssue(ModValidationIssue issue)
-    {
-        if (!issue.Path.Contains(".effects[", StringComparison.Ordinal)) return false;
-        if (issue.Code == "UNSUPPORTED_EFFECT" &&
-            (issue.Message.Contains("generateUnitToReserve", StringComparison.Ordinal) ||
-             issue.Message.Contains("generateUnitChoice", StringComparison.Ordinal) ||
-             issue.Message.Contains("generateActionToReserve", StringComparison.Ordinal) ||
-             issue.Message.Contains("generateActionChoice", StringComparison.Ordinal)))
-            return true;
-        return issue.Code == "UNKNOWN_KEY" &&
-               (issue.Path.EndsWith(".unitId", StringComparison.Ordinal) ||
-                issue.Path.EndsWith(".actionId", StringComparison.Ordinal) ||
-                issue.Path.EndsWith(".count", StringComparison.Ordinal) ||
-                issue.Path.EndsWith(".generationQuery", StringComparison.Ordinal) ||
-                issue.Path.EndsWith(".actionQuery", StringComparison.Ordinal) ||
-                issue.Path.EndsWith(".optionCount", StringComparison.Ordinal));
     }
 
     private static bool IsSupersededPersistentMutationIssue(ModValidationIssue issue)

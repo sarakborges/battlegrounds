@@ -700,6 +700,12 @@ internal sealed class DirectoryModValidator
                 if (RequireParameterInt(file, effect, "amount", path, issues, out var amount) && amount == 0)
                     issues.Add(new("INVALID_VALUE", file, path + ".amount", "amount cannot be zero."));
                 break;
+            case "generateUnitToReserve":
+            case "generateUnitChoice":
+            case "generateActionToReserve":
+            case "generateActionChoice":
+                // Generation schemas are owned by GenerationChoiceModValidator and ActionModValidator.
+                break;
             default:
                 ValidateKeys(effect, file, path, ["kind"], ["kind"], issues);
                 issues.Add(new("UNSUPPORTED_EFFECT", file, path + ".kind", $"Effect kind '{kind}' is not supported."));
