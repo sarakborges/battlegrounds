@@ -176,10 +176,10 @@ public sealed class PreparationEngine
         if (command.FieldSlot < 0 || command.FieldSlot >= player.Field.Count)
             return PreparationCommandResult.Failure(PreparationFailureCode.InvalidFieldSlot);
         var unit = player.Field[command.FieldSlot];
-        if (unit.PoolReturnDefinition is not null) _unitPool.ReturnUnit(unit.PoolReturnDefinition);
         player.RemoveFromField(command.FieldSlot);
+        if (unit.ReleasePoolReturnDefinition() is UnitDefinition poolDefinition) _unitPool.ReturnUnit(poolDefinition);
         player.GainResource(_rules.ReleaseValue, _rules.MaximumResource);
-        _effectEngine.ProcessGameEvent(match, player, NativeGameEventKeys.UnitReleased, unit.Definition);
+        _effectEngine.ProcessReleasedUnit(match, player, unit);
         return PreparationCommandResult.Success();
     }
 
