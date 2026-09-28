@@ -2,6 +2,13 @@ namespace Battlegrounds.Content;
 
 public static class ModThemePanelRoles
 {
+    public const string OpponentRail = "panel.opponentRail";
+    public const string TavernControls = "panel.tavernControls";
+    public const string Tavern = "panel.tavern";
+    public const string Board = "panel.board";
+    public const string Reserve = "panel.reserve";
+    public const string HeroDock = "panel.heroDock";
+    public const string TurnRail = "panel.turnRail";
     public const string HeroPortrait = "panel.heroPortrait";
     public const string OpponentEntry = "panel.opponent";
     public const string OpponentEntrySelf = "panel.opponent.self";
