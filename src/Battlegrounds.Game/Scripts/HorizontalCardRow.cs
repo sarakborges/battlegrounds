@@ -8,8 +8,8 @@ namespace Battlegrounds.Game;
 /// height so cards never inflate the vertical HUD.
 ///
 /// Tavern offers and field pieces are drag sources. While a field piece is lifted,
-/// the remaining warband continuously reflows around an insertion gap so the player
-/// sees the final order before releasing the mouse.
+/// the row computes the intended insertion directly from pointer position and reflows
+/// neighboring minions around that gap. Drop zones remain stable for the whole gesture.
 /// </summary>
 public partial class HorizontalCardRow : VBoxContainer
 {
@@ -37,8 +37,12 @@ public partial class HorizontalCardRow : VBoxContainer
     {
         if (IsOfferRow)
             ConfigureOfferDrag();
-        if (IsFieldRow)
-            ConfigureFieldDragAndDrop();
+
+        if (!IsFieldRow)
+            return;
+
+        ConfigureFieldDragAndDrop();
+        UpdateFieldPreviewFromPointer();
     }
 
     public override void _Notification(int what)
@@ -53,42 +57,15 @@ public partial class HorizontalCardRow : VBoxContainer
         if (_fieldDragSourceIndex >= cards.Length)
             EndFieldDrag();
 
-        var innerWidth = Mathf.Max(0.0f, Size.X - Padding * 2.0f);
-        var gapsWidth = Gap * Mathf.Max(0, cards.Length - 1);
-        var availableCardsWidth = Mathf.Max(0.0f, innerWidth - gapsWidth);
-        var fittedWidth = availableCardsWidth / cards.Length;
-        var cardWidth = Mathf.Min(PreferredCardWidth, fittedWidth);
-
-        if (availableCardsWidth >= MinimumCardWidth * cards.Length)
-            cardWidth = Mathf.Max(MinimumCardWidth, cardWidth);
-
-        var availableHeight = Mathf.Max(0.0f, Size.Y - Padding * 2.0f);
-        var cardHeight = Mathf.Min(PreferredCardHeight, availableHeight);
-        var totalWidth = cardWidth * cards.Length + gapsWidth;
-        var x = Mathf.Max(Padding, (Size.X - totalWidth) * 0.5f);
-        var y = Mathf.Max(Padding, (Size.Y - cardHeight) * 0.5f);
+        var geometry = ResolveGeometry(cards.Length);
 
         if (IsFieldRow && IsFieldDragActive(cards.Length))
-            LayoutDraggedField(cards, x, y, cardWidth, cardHeight);
+            LayoutDraggedField(cards, geometry);
         else
-            LayoutCardsNormally(cards, x, y, cardWidth, cardHeight);
+            LayoutCardsNormally(cards, geometry);
 
         if (IsFieldRow)
-            LayoutInsertionZones(cards.Length, x, y, cardWidth, cardHeight);
-    }
-
-    internal void PreviewFieldInsertion(int sourceIndex, int insertionIndex)
-    {
-        if (!IsFieldRow || sourceIndex != _fieldDragSourceIndex)
-            return;
-
-        var cardCount = CurrentCards().Length;
-        var clamped = Math.Clamp(insertionIndex, 0, cardCount);
-        if (_fieldPreviewInsertionIndex == clamped)
-            return;
-
-        _fieldPreviewInsertionIndex = clamped;
-        QueueSort();
+            LayoutInsertionZones(cards.Length, geometry);
     }
 
     private void ApplySemanticGeometry()
@@ -145,7 +122,7 @@ public partial class HorizontalCardRow : VBoxContainer
 
         var cards = CurrentCards();
         var canDrag = main.CanUsePreparationDrag;
-        var reorderEnabled = main.CanReorderHumanField && cards.Length > 1 && IsFieldDragActive(cards.Length);
+        var reorderEnabled = main.CanReorderHumanField && cards.Length > 1;
 
         for (var index = 0; index < cards.Length; index++)
         {
@@ -157,7 +134,6 @@ public partial class HorizontalCardRow : VBoxContainer
         }
 
         SyncInsertionZones(cards.Length, reorderEnabled, main.ReorderHumanFieldAtInsertion);
-        QueueSort();
     }
 
     private void BeginFieldDrag(int sourceIndex)
@@ -171,17 +147,28 @@ public partial class HorizontalCardRow : VBoxContainer
         QueueSort();
     }
 
-    private void EndFieldDrag()
+    internal void EndFieldDrag()
     {
         if (_fieldDragSourceIndex < 0 && _fieldPreviewInsertionIndex < 0)
             return;
 
         _fieldDragSourceIndex = -1;
         _fieldPreviewInsertionIndex = -1;
+        QueueSort();
+    }
 
-        foreach (var zone in GetChildren().OfType<FieldInsertionDropZone>())
-            zone.ResetFeedback();
+    private void UpdateFieldPreviewFromPointer()
+    {
+        var cards = CurrentCards();
+        if (!IsFieldDragActive(cards.Length))
+            return;
 
+        var geometry = ResolveGeometry(cards.Length);
+        var insertion = ResolveInsertionFromPointer(GetLocalMousePosition().X, cards.Length, geometry);
+        if (insertion == _fieldPreviewInsertionIndex)
+            return;
+
+        _fieldPreviewInsertionIndex = insertion;
         QueueSort();
     }
 
@@ -190,27 +177,40 @@ public partial class HorizontalCardRow : VBoxContainer
         _fieldDragSourceIndex < cardCount &&
         _fieldPreviewInsertionIndex >= 0;
 
-    private void LayoutCardsNormally(
-        PresentationCardButton[] cards,
-        float x,
-        float y,
-        float cardWidth,
-        float cardHeight)
+    private RowGeometry ResolveGeometry(int cardCount)
+    {
+        var innerWidth = Mathf.Max(0.0f, Size.X - Padding * 2.0f);
+        var gapsWidth = Gap * Mathf.Max(0, cardCount - 1);
+        var availableCardsWidth = Mathf.Max(0.0f, innerWidth - gapsWidth);
+        var fittedWidth = cardCount == 0 ? PreferredCardWidth : availableCardsWidth / cardCount;
+        var cardWidth = Mathf.Min(PreferredCardWidth, fittedWidth);
+
+        if (cardCount > 0 && availableCardsWidth >= MinimumCardWidth * cardCount)
+            cardWidth = Mathf.Max(MinimumCardWidth, cardWidth);
+
+        var availableHeight = Mathf.Max(0.0f, Size.Y - Padding * 2.0f);
+        var cardHeight = Mathf.Min(PreferredCardHeight, availableHeight);
+        var totalWidth = cardWidth * cardCount + gapsWidth;
+        var x = Mathf.Max(Padding, (Size.X - totalWidth) * 0.5f);
+        var y = Mathf.Max(Padding, (Size.Y - cardHeight) * 0.5f);
+        return new RowGeometry(x, y, cardWidth, cardHeight, cardWidth + Gap);
+    }
+
+    private void LayoutCardsNormally(PresentationCardButton[] cards, RowGeometry geometry)
     {
         for (var index = 0; index < cards.Length; index++)
         {
             FitChildInRect(
                 cards[index],
-                new Rect2(x + index * (cardWidth + Gap), y, cardWidth, cardHeight));
+                new Rect2(
+                    geometry.X + index * geometry.Pitch,
+                    geometry.Y,
+                    geometry.CardWidth,
+                    geometry.CardHeight));
         }
     }
 
-    private void LayoutDraggedField(
-        PresentationCardButton[] cards,
-        float x,
-        float y,
-        float cardWidth,
-        float cardHeight)
+    private void LayoutDraggedField(PresentationCardButton[] cards, RowGeometry geometry)
     {
         var targetIndex = ResolveResultIndex(
             _fieldDragSourceIndex,
@@ -220,7 +220,11 @@ public partial class HorizontalCardRow : VBoxContainer
         var source = cards[_fieldDragSourceIndex];
         FitChildInRect(
             source,
-            new Rect2(x + _fieldDragSourceIndex * (cardWidth + Gap), y, cardWidth, cardHeight));
+            new Rect2(
+                geometry.X + targetIndex * geometry.Pitch,
+                geometry.Y,
+                geometry.CardWidth,
+                geometry.CardHeight));
 
         var remaining = cards
             .Where((_, index) => index != _fieldDragSourceIndex)
@@ -235,8 +239,27 @@ public partial class HorizontalCardRow : VBoxContainer
             var card = remaining[remainingIndex++];
             FitChildInRect(
                 card,
-                new Rect2(x + slot * (cardWidth + Gap), y, cardWidth, cardHeight));
+                new Rect2(
+                    geometry.X + slot * geometry.Pitch,
+                    geometry.Y,
+                    geometry.CardWidth,
+                    geometry.CardHeight));
         }
+    }
+
+    private static int ResolveInsertionFromPointer(float pointerX, int cardCount, RowGeometry geometry)
+    {
+        if (cardCount <= 0)
+            return 0;
+
+        for (var index = 0; index < cardCount; index++)
+        {
+            var center = geometry.X + index * geometry.Pitch + geometry.CardWidth * 0.5f;
+            if (pointerX < center)
+                return index;
+        }
+
+        return cardCount;
     }
 
     private static int ResolveResultIndex(int sourceIndex, int insertionIndex, int cardCount)
@@ -272,12 +295,7 @@ public partial class HorizontalCardRow : VBoxContainer
         }
     }
 
-    private void LayoutInsertionZones(
-        int cardCount,
-        float x,
-        float y,
-        float cardWidth,
-        float cardHeight)
+    private void LayoutInsertionZones(int cardCount, RowGeometry geometry)
     {
         var zones = GetChildren()
             .OfType<FieldInsertionDropZone>()
@@ -287,32 +305,28 @@ public partial class HorizontalCardRow : VBoxContainer
         if (zones.Length < cardCount + 1)
             return;
 
-        var positions = new float[cardCount + 1];
-        for (var insertion = 0; insertion <= cardCount; insertion++)
-        {
-            positions[insertion] = insertion switch
-            {
-                0 => x - Gap * 0.5f,
-                var value when value == cardCount =>
-                    x + cardCount * cardWidth + Mathf.Max(0, cardCount - 1) * Gap + Gap * 0.5f,
-                _ => x + insertion * (cardWidth + Gap) - Gap * 0.5f,
-            };
-        }
+        var zoneY = geometry.Y + geometry.CardHeight * 0.08f;
+        var zoneHeight = geometry.CardHeight * 0.84f;
+        var interiorWidth = Mathf.Max(30.0f, Gap * 2.4f);
 
-        var zoneY = y + cardHeight * 0.08f;
-        var zoneHeight = cardHeight * 0.84f;
         for (var insertion = 0; insertion <= cardCount; insertion++)
         {
-            var left = insertion == 0
-                ? Mathf.Max(0.0f, x - cardWidth * 0.45f)
-                : (positions[insertion - 1] + positions[insertion]) * 0.5f;
-            var right = insertion == cardCount
-                ? Mathf.Min(Size.X, positions[insertion] + cardWidth * 0.45f)
-                : (positions[insertion] + positions[insertion + 1]) * 0.5f;
+            var boundaryX = insertion switch
+            {
+                0 => geometry.X,
+                var value when value == cardCount =>
+                    geometry.X + cardCount * geometry.CardWidth + Mathf.Max(0, cardCount - 1) * Gap,
+                _ => geometry.X + insertion * geometry.Pitch - Gap * 0.5f,
+            };
+
+            var width = insertion is 0 || insertion == cardCount
+                ? Mathf.Max(36.0f, geometry.CardWidth * 0.34f)
+                : interiorWidth;
+            var left = Mathf.Clamp(boundaryX - width * 0.5f, 0.0f, Mathf.Max(0.0f, Size.X - width));
 
             FitChildInRect(
                 zones[insertion],
-                new Rect2(left, zoneY, Mathf.Max(8.0f, right - left), zoneHeight));
+                new Rect2(left, zoneY, width, zoneHeight));
         }
     }
 
@@ -334,4 +348,11 @@ public partial class HorizontalCardRow : VBoxContainer
 
         return null;
     }
+
+    private readonly record struct RowGeometry(
+        float X,
+        float Y,
+        float CardWidth,
+        float CardHeight,
+        float Pitch);
 }
