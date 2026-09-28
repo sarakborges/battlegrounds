@@ -22,9 +22,9 @@ The current roster is 13 classes x 4 Heroes = 52 Heroes.
 
 ## Current mechanical policy
 
-Roster identity is deliberately separated from balance iteration. Most Heroes still inherit the class baseline Power, while a first set of Heroes now has distinct mechanics to exercise the generic economy, generation and event-history systems. Every Hero still keeps the same baseline Health modifier and Armor for now.
+Roster identity is deliberately separated from balance iteration. Most Heroes still inherit the class baseline Power, while a growing set now has distinct mechanics that exercise the generic economy, generation, temporary-modifier and event-history systems. Every Hero still keeps the same baseline Health modifier and Armor for now.
 
-Distinct current exceptions are Varian Wrynn (`strategic-command`), Genn Greymane (`royal-contract`), Jaina Proudmoore (`arcane-momentum`), Khadgar (`arcane-market`), Hemet Nesingwary (`hunting-trophies`), Magatha Grimtotem (`ruthless-bargain`) and Valeera Sanguinar (`shadow-cache`). Other Heroes currently use the class baseline mapping:
+Current distinct exceptions are Varian Wrynn (`strategic-command`), Geya'rah (`warborn-fury`), Genn Greymane (`royal-contract`), Jaina Proudmoore (`arcane-momentum`), Khadgar (`arcane-market`), First Arcanist Thalyssra (`arcane-breakthrough`), Shandris Feathermoon (`sentinel-hunt`), Hemet Nesingwary (`hunting-trophies`), Lady Liadrin (`radiant-armament`), Magatha Grimtotem (`ruthless-bargain`), Valeera Sanguinar (`shadow-cache`), Mathias Shaw (`covert-supplies`) and Arthas Menethil (`frozen-host`). Other Heroes currently use the class baseline mapping:
 
 - Warrior -> `commanding-shout`
 - Mage -> `fireblast`
@@ -40,4 +40,4 @@ Distinct current exceptions are Varian Wrynn (`strategic-command`), Genn Greyman
 - Monk -> `inner-balance`
 - Evoker -> `draconic-legacy`
 
-Distinct Hero mechanics can be authored later as engine primitives and actual gameplay needs justify them.
+Additional distinct Hero mechanics should continue to reuse generic engine primitives where possible, adding new Core capabilities only when a real playable mechanic cannot be expressed cleanly.
