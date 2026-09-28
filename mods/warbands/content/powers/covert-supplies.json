@@ -1,0 +1,20 @@
+{
+  "id": "covert-supplies",
+  "name": "Covert Supplies",
+  "activation": {
+    "cost": 1,
+    "maxUsesPerTurn": 1
+  },
+  "triggers": [
+    {
+      "event": "onActivate",
+      "effects": [
+        {
+          "kind": "generateActionToReserve",
+          "actionId": "sharpen-blades",
+          "count": 1
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,23 @@
+{
+  "id": "warborn-fury",
+  "name": "Warborn Fury",
+  "activation": {
+    "cost": 1,
+    "maxUsesPerTurn": 1
+  },
+  "triggers": [
+    {
+      "event": "onActivate",
+      "effects": [
+        {
+          "kind": "applyUnitModifier",
+          "target": { "scope": "selected" },
+          "modifierKey": "warborn-fury-next-combat",
+          "attack": 3,
+          "health": 2,
+          "duration": "untilCombatEnd"
+        }
+      ]
+    }
+  ]
+}

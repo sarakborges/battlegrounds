@@ -1,0 +1,22 @@
+{
+  "id": "radiant-armament",
+  "name": "Radiant Armament",
+  "activation": {
+    "cost": 1,
+    "maxUsesPerTurn": 1
+  },
+  "triggers": [
+    {
+      "event": "onActivate",
+      "effects": [
+        {
+          "kind": "applyUnitModifier",
+          "target": { "scope": "selected" },
+          "modifierKey": "radiant-armament-next-combat",
+          "health": 4,
+          "duration": "untilCombatEnd"
+        }
+      ]
+    }
+  ]
+}

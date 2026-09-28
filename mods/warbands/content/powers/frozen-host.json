@@ -1,0 +1,25 @@
+{
+  "id": "frozen-host",
+  "name": "Frozen Host",
+  "triggers": [
+    {
+      "event": "onTurnStart",
+      "activationLimit": { "scope": "match", "count": 1 },
+      "conditions": [
+        {
+          "kind": "value",
+          "left": { "kind": "eventCount", "event": "unitDied", "scope": "match", "typeId": "undead" },
+          "comparison": "greaterThanOrEqual",
+          "right": 3
+        }
+      ],
+      "effects": [
+        {
+          "kind": "generateUnitChoice",
+          "generationQuery": { "minimumTier": 2, "maximumTier": 5, "typeId": "undead" },
+          "optionCount": 3
+        }
+      ]
+    }
+  ]
+}
