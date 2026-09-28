@@ -11,24 +11,18 @@ public sealed class ModValidator
             .Where(issue => !IsSupersededEffectSchemaIssue(issue))
             .Where(issue => !IsSupersededStaticEffectValueIssue(issue))
             .Where(issue => !IsSupersededGenerationIssue(issue))
-            .Where(issue => !IsSupersededPersistentMutationIssue(issue))
-            .Where(issue => !IsSupersededCombineIssue(issue));
+            .Where(issue => !IsSupersededPersistentMutationIssue(issue));
 
         var advancedIssues = new AdvancedEffectModValidator().Validate(modDirectory)
-            .Where(issue => !IsSupersededPersistentMutationIssue(issue))
-            .Where(issue => !IsSupersededCombineIssue(issue));
+            .Where(issue => !IsSupersededPersistentMutationIssue(issue));
         var dynamicIssues = new DynamicEffectValueModValidator().Validate(modDirectory)
-            .Where(issue => !IsSupersededPersistentMutationIssue(issue))
-            .Where(issue => !IsSupersededCombineIssue(issue));
+            .Where(issue => !IsSupersededPersistentMutationIssue(issue));
         var statefulIssues = new StatefulEffectModValidator().Validate(modDirectory)
-            .Where(issue => !IsSupersededPersistentMutationIssue(issue))
-            .Where(issue => !IsSupersededCombineIssue(issue));
+            .Where(issue => !IsSupersededPersistentMutationIssue(issue));
         var generationIssues = new GenerationChoiceModValidator().Validate(modDirectory)
-            .Where(issue => !IsSupersededPersistentMutationIssue(issue))
-            .Where(issue => !IsSupersededCombineIssue(issue));
+            .Where(issue => !IsSupersededPersistentMutationIssue(issue));
         var actionIssues = new ActionModValidator().Validate(modDirectory)
-            .Where(issue => !IsSupersededPersistentMutationIssue(issue))
-            .Where(issue => !IsSupersededCombineIssue(issue));
+            .Where(issue => !IsSupersededPersistentMutationIssue(issue));
         var themeIssues = new ModThemeValidator().Validate(modDirectory)
             .Concat(new ModThemeMetricsValidator().Validate(modDirectory))
             .Concat(new ModThemeRoleValidator().Validate(modDirectory));
@@ -57,7 +51,6 @@ public sealed class ModValidator
         IsSupersededStaticEffectValueIssue(issue) ||
         IsSupersededGenerationIssue(issue) ||
         IsSupersededPersistentMutationIssue(issue) ||
-        IsSupersededCombineIssue(issue) ||
         IsSpecializedValidatorOwnedSchemaIssue(issue);
 
     private static bool IsSpecializedValidatorOwnedSchemaIssue(ModValidationIssue issue)
@@ -131,7 +124,4 @@ public sealed class ModValidator
 
         return issue.Code == "UNKNOWN_KEY" && issue.Path.EndsWith(".modifierKey", StringComparison.Ordinal);
     }
-
-    private static bool IsSupersededCombineIssue(ModValidationIssue issue) =>
-        issue.Code == "UNSUPPORTED_TRIGGER" && issue.Message.Contains("onCombine", StringComparison.Ordinal);
 }

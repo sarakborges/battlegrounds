@@ -19,6 +19,19 @@ public sealed class UnitCombineContentTests
     }
 
     [Fact]
+    public void Validate_OnCombineUnitTriggerIsAccepted()
+    {
+        var path = Path.Combine(AppContext.BaseDirectory, "mods", "example");
+
+        var report = new ModValidator().Validate(path);
+
+        Assert.DoesNotContain(report.Issues, issue =>
+            issue.Code == "UNSUPPORTED_TRIGGER" &&
+            issue.File == "content/units/scout-merged.json" &&
+            issue.Path == "$.triggers[0].event");
+    }
+
+    [Fact]
     public void Validate_RejectsCombineReferenceToUnknownUnit()
     {
         var path = CreateTempMod();
