@@ -129,7 +129,7 @@ For example:
 }
 ```
 
-`selected` is context-owned rather than synonymous with UI selection. During an activatable Power's `onActivate`, the selected target is supplied by the command issued by UI or AI. During a Unit's `onPlay`, the selected target is supplied by `DeployUnitCommand` when that trigger requires one. During a Unit's `onAttack`, Combat supplies the already-locked attack target. During a Unit's `onDamage`, Combat supplies the living targetable Unit that caused that damage when one exists. `onAcquire` has no interactive target-selection step, so it does not expose `selected`. Triggers without an available context target resolve `selected` as empty.
+`selected` is context-owned rather than synonymous with UI selection. During an activatable Power's `onActivate`, the selected target is supplied by the command issued by UI or AI. During a Unit's `onPlay`, the selected target is supplied by `DeployUnitCommand` when that trigger requires one. During a Unit's `onAttack`, Combat supplies the already-locked attack target. During a Unit's `onDamage`, Combat supplies the living targetable Unit that caused that damage when one exists. `onAcquire` and `onRelease` have no interactive target-selection step, so they do not expose `selected`. Triggers without an available context target resolve `selected` as empty.
 
 `self` and `selected` are already singular, so they cannot add another selection mode or a limit. Adjacent selections default to `relativeTo: "source"`, preserving the original friendly-only behavior around the source Unit's current field position. `relativeTo: "selected"` instead anchors `adjacent`, `leftAdjacent`, or `rightAdjacent` around the contextual selected Unit; it is valid only where such a context target exists and may use `scope: "enemy"` to select neighbors of an attack target. The anchor itself is not part of an adjacent result. Random selection samples without replacement and uses the injected deterministic RNG.
 
@@ -146,6 +146,22 @@ A successful Unit acquisition resolves in this order:
 5. resolve that instance's authored `onAcquire` triggers through `GameEffectRuntime`.
 
 Because the acquired instance is already in Reserve when the trigger resolves, `self` reads and persistent mutations apply to that exact authoritative runtime Unit. Resource effects also observe the post-payment state, so an authored reward may refund part or all of the acquisition cost. `onAcquire` is a Preparation-only context and may use Preparation-only generation, choice, Action-generation, and persistent-Unit-mutation effects. It does not expose `selected`, because acquisition itself has no interactive target-selection step.
+
+## Release lifecycle
+
+`onRelease` is the neutral Unit trigger for a real successful `ReleaseUnitCommand`. It is not synthesized by death, combine consumption, transformation, elimination cleanup, or any other pool-return path.
+
+A successful Unit release resolves in this order:
+
+1. remove the runtime Unit from the authoritative Field;
+2. surrender its still-owned pooled copy, if any, and return that definition to the shared Unit pool;
+3. grant the normal release resource value;
+4. record the mechanical `unitReleased` history event;
+5. resolve the released Unit's authored `onRelease` triggers through `GameEffectRuntime`.
+
+The released Unit remains available as the effect source snapshot, so source-stat conditions and `sourceStat` value expressions read its state at release time. Because it has already left the Field, the source is added to the resolution context as non-selectable: targeted effects cannot select the released Unit itself, while friendly targets see only Units that still occupy the authoritative Field. Resource effects observe the post-release-value state.
+
+Current support intentionally stays narrow: `onRelease` uses the generic effect surface already valid for this trigger and does not by itself enable Preparation-only generation, pending-choice, Action-generation, or persistent-unit-mutation schemas. It does not expose `selected`, because release has no interactive target-selection step.
 
 ## Attack target context
 
