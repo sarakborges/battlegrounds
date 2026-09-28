@@ -90,7 +90,7 @@ internal sealed class ActionModValidator
                                 {
                                     var allowed = pair.Power
                                         ? eventName is "onActivate" or "onMatchStart" or "onTurnStart" or "onTurnEnd"
-                                        : eventName is "onPlay" or "onTurnStart" or "onTurnEnd";
+                                        : eventName is "onAcquire" or "onPlay" or "onTurnStart" or "onTurnEnd";
                                     var path = $"$.triggers[{triggerIndex}].effects[{effectIndex}]";
                                     if (!allowed)
                                         issues.Add(new("INVALID_EFFECT_CONTEXT", file.Path, path + ".kind", "Action generation is only valid in preparation-only triggers."));

@@ -249,6 +249,38 @@ public sealed class PreparationEffectExecutionTests
         Assert.Equal(0, setup.Pool.GetAvailableCopies(token.Id));
     }
 
+    [Fact]
+    public void Acquire_OnAcquireRunsAfterUnitEntersReserveAndPaymentIsApplied()
+    {
+        var acquired = new UnitDefinition(
+            new UnitId("acquired"),
+            "Acquired",
+            1,
+            1,
+            2,
+            triggers:
+            [
+                new TriggerDefinition(
+                    NativeTriggerKeys.OnAcquire,
+                    [
+                        new ModifyStatsEffectDefinition(new EffectTargetSelector(EffectTargetScope.Self), 2, 3),
+                        new AddResourceEffectDefinition(1),
+                    ]),
+            ]);
+
+        var setup = CreateStartedMatch([acquired], [acquired]);
+        var player = setup.Match.Players[0];
+
+        AcquireById(setup.Engine, setup.Match, player.Id, acquired.Id);
+
+        var unit = Assert.Single(player.Reserve);
+        Assert.Equal(acquired.Id, unit.Definition.Id);
+        Assert.Equal(3, unit.Attack);
+        Assert.Equal(5, unit.Health);
+        Assert.Equal(1, player.Resource);
+        Assert.Empty(player.Field);
+    }
+
     private static void AcquireById(
         PreparationEngine engine,
         MatchState match,
