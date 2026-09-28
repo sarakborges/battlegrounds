@@ -125,10 +125,10 @@ internal sealed partial class PreparationEffectEngine
         if (eventKey != NativeTriggerKeys.OnTurnStart && eventKey != NativeTriggerKeys.OnTurnEnd)
             throw new ArgumentException("Preparation turn events must be onTurnStart or onTurnEnd.", nameof(eventKey));
         var (world, runtime) = GetRuntime(match);
+        var initialUnits = owner.Field.ToArray();
         if (TryGetCurrentPower(owner, out var power) && power.FindTrigger(eventKey) is not null)
             runtime.Process(new GameEffectEvent(eventKey, CreatePowerSource(owner, power)));
 
-        var initialUnits = owner.Field.ToArray();
         foreach (var unit in initialUnits)
         {
             if (!unit.IsAlive || !owner.Field.Any(candidate => candidate.Id == unit.Id)) continue;

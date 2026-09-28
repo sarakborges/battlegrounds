@@ -37,6 +37,80 @@ public sealed class PowerLifecycleTests
     }
 
     [Fact]
+    public void BeginPreparation_UnitSummonedByPowerDoesNotReceiveSameTurnStart()
+    {
+        var token = new UnitDefinition(
+            new UnitId("token"),
+            "Token",
+            1,
+            1,
+            1,
+            triggers:
+            [
+                new TriggerDefinition(
+                    NativeTriggerKeys.OnTurnStart,
+                    [new AddResourceEffectDefinition(5)]),
+            ]);
+        var power = new PowerDefinition(
+            new PowerId("summon"),
+            "Summon",
+            activation: null,
+            triggers:
+            [
+                new TriggerDefinition(
+                    NativeTriggerKeys.OnTurnStart,
+                    [new SummonUnitEffectDefinition(token.Id)]),
+            ]);
+        var setup = CreateSetup(power, [token]);
+
+        setup.Engine.BeginPreparation(setup.Match);
+
+        var player = setup.Match.Players[0];
+        Assert.Equal(token.Id, Assert.Single(player.Field).Definition.Id);
+        Assert.Equal(3, player.Resource);
+    }
+
+    [Fact]
+    public void BeginPreparation_UnitSummonedByUnitDoesNotReceiveSameTurnStart()
+    {
+        var token = new UnitDefinition(
+            new UnitId("token"),
+            "Token",
+            1,
+            1,
+            1,
+            triggers:
+            [
+                new TriggerDefinition(
+                    NativeTriggerKeys.OnTurnStart,
+                    [new AddResourceEffectDefinition(5)]),
+            ]);
+        var summoner = new UnitDefinition(
+            new UnitId("summoner"),
+            "Summoner",
+            1,
+            1,
+            2,
+            triggers:
+            [
+                new TriggerDefinition(
+                    NativeTriggerKeys.OnTurnStart,
+                    [new SummonUnitEffectDefinition(token.Id)]),
+            ]);
+        var power = new PowerDefinition(new PowerId("passive"), "Passive", activation: null, triggers: []);
+        var setup = CreateSetup(power, [summoner, token]);
+        var player = setup.Match.Players[0];
+        player.AddToField(setup.Match.CreateUnit(summoner, UnitInstanceOrigin.Generated));
+
+        setup.Engine.BeginPreparation(setup.Match);
+
+        Assert.Equal(2, player.Field.Count);
+        Assert.Contains(player.Field, unit => unit.Definition.Id == summoner.Id);
+        Assert.Contains(player.Field, unit => unit.Definition.Id == token.Id);
+        Assert.Equal(3, player.Resource);
+    }
+
+    [Fact]
     public void UsePower_PassivePowerCannotBeActivated()
     {
         var power = new PowerDefinition(
@@ -60,11 +134,14 @@ public sealed class PowerLifecycleTests
         Assert.Equal(PreparationFailureCode.PowerNotActivatable, result.FailureCode);
     }
 
-    private static (MatchState Match, PreparationEngine Engine) CreateSetup(PowerDefinition power)
+    private static (MatchState Match, PreparationEngine Engine) CreateSetup(
+        PowerDefinition power,
+        IReadOnlyList<UnitDefinition>? unitDefinitions = null)
     {
-        var unit = new UnitDefinition(new UnitId("unit"), "Unit", 1, 1, 1);
-        var units = new UnitCatalog([unit]);
-        var pool = new UnitPool(units, [new UnitPoolEntry(unit.Id, 20)]);
+        var defaultUnit = new UnitDefinition(new UnitId("unit"), "Unit", 1, 1, 1);
+        var definitions = unitDefinitions?.ToArray() ?? [defaultUnit];
+        var units = new UnitCatalog(definitions);
+        var pool = new UnitPool(units, definitions.Select(unit => new UnitPoolEntry(unit.Id, 20)));
         var powers = new PowerCatalog([power]);
         var leaders = new LeaderCatalog(
         [
