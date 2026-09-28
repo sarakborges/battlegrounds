@@ -1,8 +1,10 @@
+using Battlegrounds.Content;
 using Battlegrounds.Core.Domain.Combines;
 using Battlegrounds.Core.Domain.Ids;
 using Battlegrounds.Core.Domain.Match;
 using Battlegrounds.Core.Domain.Players;
 using Battlegrounds.Core.Domain.Preparation;
+using Godot;
 
 namespace Battlegrounds.Game;
 
@@ -10,18 +12,13 @@ public partial class Main
 {
     private bool _automaticCombineSubmissionInProgress;
     private string? _automaticCombineFailureKey;
+    private ModInteractionSettings? _interactionSettings;
 
-    /// <summary>
-    /// Warbands presents combines as an automatic game rule instead of a manual player action.
-    /// The Core command remains explicit: this presentation policy deterministically selects the
-    /// exact instances and submits the same CombineUnitsCommand used by manual mods and AI.
-    ///
-    /// Other mods remain manual by default, so their existing Combine button and selection flow
-    /// continue to work unchanged.
-    /// </summary>
+    private ModInteractionSettings InteractionSettings =>
+        _interactionSettings ??= new ModInteractionSettingsLoader().Load(ProjectSettings.GlobalizePath(ModPath));
+
     private bool UsesAutomaticCombines =>
-        _session is not null &&
-        string.Equals(_session.Mod.Id, "warbands", StringComparison.Ordinal);
+        InteractionSettings.CombineMode == CombineInteractionMode.Automatic;
 
     public override void _PhysicsProcess(double delta)
     {

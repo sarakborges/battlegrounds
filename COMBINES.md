@@ -26,6 +26,29 @@ The recipe owns only the mechanical relationship: one source Unit definition, an
 
 `UnitCombineCatalog` is immutable authored data. It does not own runtime Unit instances or perform mutations.
 
+## Presentation interaction mode
+
+Mods may choose whether the human-facing presentation exposes combine as a manual interaction or submits eligible combines automatically through the same Core command boundary.
+
+The optional file is:
+
+```text
+presentation/interaction.json
+```
+
+Example:
+
+```json
+{
+  "version": 1,
+  "combineMode": "automatic"
+}
+```
+
+Supported `combineMode` values are `manual` and `automatic`. If the file or property is omitted, presentation defaults to `manual`.
+
+This setting is presentation-owned. It changes how human intent is collected, not the authoritative combine operation: Core still requires an explicit `CombineUnitsCommand` with exact instance IDs, and AI continues to use the same command boundary.
+
 ## Command boundary
 
 UI and AI combine through the same explicit command:

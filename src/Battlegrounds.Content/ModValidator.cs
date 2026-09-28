@@ -47,6 +47,7 @@ public sealed class ModValidator
             .Concat(new UnitCombineModValidator().Validate(modDirectory))
             .Concat(new PresentationModValidator().Validate(modDirectory))
             .Concat(new PresentationAssetModValidator().Validate(modDirectory))
+            .Concat(new ModInteractionSettingsValidator().Validate(modDirectory))
             .Concat(new ModThemeValidator().Validate(modDirectory))
             .ToArray();
 
