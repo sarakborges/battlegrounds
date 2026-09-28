@@ -36,6 +36,7 @@ public partial class Main
             Disabled = disabled,
         };
         card.Configure(title, subtitle, stats, description, texture);
+        ApplyPresentationCardLayout(card);
         if (selected)
             card.SetSelected(true);
         card.Pressed += () => PlayPresentationCue(
