@@ -82,6 +82,30 @@ public sealed class PowerValidationTests
     }
 
     [Fact]
+    public void Validate_OnCombineIsRejectedForPowers()
+    {
+        var path = CreateTempMod();
+        try
+        {
+            File.WriteAllText(
+                Path.Combine(path, "content", "powers", "steady-pulse.json"),
+                "{\"id\":\"steady-pulse\",\"name\":\"Broken\",\"triggers\":[" +
+                "{\"event\":\"onCombine\",\"effects\":[{\"kind\":\"addResource\",\"amount\":1}]}]}");
+
+            var report = new ModValidator().Validate(path);
+
+            Assert.Contains(report.Issues, issue =>
+                issue.Code == "UNSUPPORTED_TRIGGER" &&
+                issue.File == "content/powers/steady-pulse.json" &&
+                issue.Path == "$.triggers[0].event");
+        }
+        finally
+        {
+            Directory.Delete(path, recursive: true);
+        }
+    }
+
+    [Fact]
     public void Validate_SelectedTargetIsOnlyValidForActivation()
     {
         var path = CreateTempMod();
