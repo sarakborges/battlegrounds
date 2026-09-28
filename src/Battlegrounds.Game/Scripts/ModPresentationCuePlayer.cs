@@ -3,25 +3,57 @@ using Godot;
 
 namespace Battlegrounds.Game;
 
+internal sealed record ModPresentationMotionProfile(
+    float PulseScale,
+    double PulseDurationSeconds,
+    float ShakeRotationDegrees,
+    double ShakeDurationSeconds,
+    float LungeScale,
+    double LungeDurationSeconds,
+    float FadeScale,
+    float FadeOpacity,
+    double FadeDurationSeconds,
+    float PopScale,
+    float PopOpacity,
+    double PopDurationSeconds)
+{
+    public double DurationFor(ModPresentationAnimation animation) => animation switch
+    {
+        ModPresentationAnimation.Pulse => PulseDurationSeconds,
+        ModPresentationAnimation.Shake => ShakeDurationSeconds,
+        ModPresentationAnimation.Lunge => LungeDurationSeconds,
+        ModPresentationAnimation.Fade => FadeDurationSeconds,
+        ModPresentationAnimation.Pop => PopDurationSeconds,
+        ModPresentationAnimation.None => 0,
+        _ => throw new ArgumentOutOfRangeException(nameof(animation), animation, null),
+    };
+}
+
 internal sealed class ModPresentationCuePlayer
 {
     private readonly Node _owner;
     private readonly string _modDirectory;
     private readonly ModPresentationCueCatalog _cues;
+    private readonly ModPresentationMotionProfile _motion;
     private readonly Dictionary<string, AudioStream> _audioStreams = new(StringComparer.Ordinal);
     private AudioStreamPlayer? _audioPlayer;
 
-    public ModPresentationCuePlayer(Node owner, string modDirectory)
-        : this(owner, modDirectory, new ModPresentationCueLoader().Load(modDirectory))
+    public ModPresentationCuePlayer(Node owner, string modDirectory, ModPresentationMotionProfile motion)
+        : this(owner, modDirectory, new ModPresentationCueLoader().Load(modDirectory), motion)
     {
     }
 
-    public ModPresentationCuePlayer(Node owner, string modDirectory, ModPresentationCueCatalog cues)
+    public ModPresentationCuePlayer(
+        Node owner,
+        string modDirectory,
+        ModPresentationCueCatalog cues,
+        ModPresentationMotionProfile motion)
     {
         _owner = owner ?? throw new ArgumentNullException(nameof(owner));
         if (string.IsNullOrWhiteSpace(modDirectory)) throw new ArgumentException("Mod directory cannot be empty.", nameof(modDirectory));
         _modDirectory = Path.GetFullPath(modDirectory);
         _cues = cues ?? throw new ArgumentNullException(nameof(cues));
+        _motion = motion ?? throw new ArgumentNullException(nameof(motion));
     }
 
     public void Play(
@@ -30,7 +62,7 @@ internal sealed class ModPresentationCuePlayer
         string entityId,
         string role,
         ModPresentationAnimation fallbackAnimation,
-        double fallbackDurationSeconds)
+        double? fallbackDurationSeconds = null)
     {
         ArgumentNullException.ThrowIfNull(target);
         ArgumentException.ThrowIfNullOrWhiteSpace(entityId);
@@ -38,7 +70,9 @@ internal sealed class ModPresentationCuePlayer
 
         var hasCue = _cues.TryGet(entityKind, entityId, role, out var cue);
         var animation = hasCue && cue.Animation.HasValue ? cue.Animation.Value : fallbackAnimation;
-        var duration = hasCue && cue.DurationSeconds.HasValue ? cue.DurationSeconds.Value : fallbackDurationSeconds;
+        var duration = hasCue && cue.DurationSeconds.HasValue
+            ? cue.DurationSeconds.Value
+            : fallbackDurationSeconds ?? _motion.DurationFor(animation);
         ApplyAnimation(target, animation, duration);
 
         if (hasCue && cue.Audio is not null)
@@ -73,7 +107,7 @@ internal sealed class ModPresentationCuePlayer
         return player;
     }
 
-    private static void ApplyAnimation(Control target, ModPresentationAnimation animation, double durationSeconds)
+    private void ApplyAnimation(Control target, ModPresentationAnimation animation, double durationSeconds)
     {
         if (animation == ModPresentationAnimation.None) return;
 
@@ -83,28 +117,29 @@ internal sealed class ModPresentationCuePlayer
         switch (animation)
         {
             case ModPresentationAnimation.Pop:
-                target.Scale = new Vector2(0.88f, 0.88f);
-                target.Modulate = new Color(1, 1, 1, 0.35f);
+                target.Scale = new Vector2(_motion.PopScale, _motion.PopScale);
+                target.Modulate = new Color(1, 1, 1, _motion.PopOpacity);
                 tween.SetParallel();
                 tween.TweenProperty(target, "scale", Vector2.One, duration);
                 tween.TweenProperty(target, "modulate", Colors.White, duration);
                 break;
             case ModPresentationAnimation.Fade:
                 tween.SetParallel();
-                tween.TweenProperty(target, "scale", new Vector2(0.9f, 0.9f), duration);
-                tween.TweenProperty(target, "modulate", new Color(1, 1, 1, 0.25f), duration);
+                tween.TweenProperty(target, "scale", new Vector2(_motion.FadeScale, _motion.FadeScale), duration);
+                tween.TweenProperty(target, "modulate", new Color(1, 1, 1, _motion.FadeOpacity), duration);
                 break;
             case ModPresentationAnimation.Shake:
-                target.Rotation = -0.025f;
-                tween.TweenProperty(target, "rotation", 0.025f, duration * 0.5);
+                var rotation = Mathf.DegToRad(_motion.ShakeRotationDegrees);
+                target.Rotation = -rotation;
+                tween.TweenProperty(target, "rotation", rotation, duration * 0.5);
                 tween.TweenProperty(target, "rotation", 0.0f, duration * 0.5);
                 break;
             case ModPresentationAnimation.Lunge:
-                target.Scale = new Vector2(1.08f, 1.08f);
+                target.Scale = new Vector2(_motion.LungeScale, _motion.LungeScale);
                 tween.TweenProperty(target, "scale", Vector2.One, duration);
                 break;
             case ModPresentationAnimation.Pulse:
-                target.Scale = new Vector2(1.05f, 1.05f);
+                target.Scale = new Vector2(_motion.PulseScale, _motion.PulseScale);
                 tween.TweenProperty(target, "scale", Vector2.One, duration);
                 break;
         }

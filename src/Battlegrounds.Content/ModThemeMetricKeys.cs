@@ -135,4 +135,26 @@ public static class ModThemeMetricKeys
         public const string PreviewRotationDegrees = "drag.preview.rotationDegrees";
         public const string DropTargetShadowScale = "drag.dropTarget.shadowScale";
     }
+
+    public static class Motion
+    {
+        public const string CombatPlaybackStepSeconds = "motion.combatPlayback.stepSeconds";
+        public const string UiSelectDurationSeconds = "motion.ui.select.durationSeconds";
+
+        public static class Cue
+        {
+            public const string PulseScale = "motion.cue.pulse.scale";
+            public const string PulseDurationSeconds = "motion.cue.pulse.durationSeconds";
+            public const string ShakeRotationDegrees = "motion.cue.shake.rotationDegrees";
+            public const string ShakeDurationSeconds = "motion.cue.shake.durationSeconds";
+            public const string LungeScale = "motion.cue.lunge.scale";
+            public const string LungeDurationSeconds = "motion.cue.lunge.durationSeconds";
+            public const string FadeScale = "motion.cue.fade.scale";
+            public const string FadeOpacity = "motion.cue.fade.opacity";
+            public const string FadeDurationSeconds = "motion.cue.fade.durationSeconds";
+            public const string PopScale = "motion.cue.pop.scale";
+            public const string PopOpacity = "motion.cue.pop.opacity";
+            public const string PopDurationSeconds = "motion.cue.pop.durationSeconds";
+        }
+    }
 }

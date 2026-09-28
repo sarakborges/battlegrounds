@@ -15,6 +15,11 @@ public sealed class ModThemeDefaultsTests
         Assert.Equal(64, theme.Metrics[ModThemeMetricKeys.Launcher.MarginHorizontal]);
         Assert.Equal(92, theme.Metrics[ModThemeMetricKeys.Card.MinimumWidth(ModThemeMetricKeys.Card.DefaultRole)]);
         Assert.Equal(3, theme.Metrics[ModThemeMetricKeys.Drag.DropTargetShadowScale]);
+        Assert.Equal(0.9, theme.Metrics[ModThemeMetricKeys.Motion.CombatPlaybackStepSeconds]);
+        Assert.Equal(1.05, theme.Metrics[ModThemeMetricKeys.Motion.Cue.PulseScale]);
+        Assert.Equal(0.22, theme.Metrics[ModThemeMetricKeys.Motion.Cue.ShakeDurationSeconds]);
+        Assert.Equal(0.25, theme.Metrics[ModThemeMetricKeys.Motion.Cue.FadeOpacity]);
+        Assert.Equal(0.28, theme.Metrics[ModThemeMetricKeys.Motion.Cue.PopDurationSeconds]);
         Assert.Equal(0.12, theme.Components[ModThemeInteractionRoles.DragPreview].Opacity);
         Assert.Equal("#00000000", theme.Components[ModThemeInteractionRoles.DropTargetValid].BackgroundColor);
         Assert.Empty(theme.Fonts);
@@ -34,6 +39,9 @@ public sealed class ModThemeDefaultsTests
               "version": 1,
               "colors": {
                 "accent": "#123456"
+              },
+              "metrics": {
+                "motion.cue.pulse.scale": 1.2
               },
               "components": {
                 "button.primary": {
@@ -63,6 +71,8 @@ public sealed class ModThemeDefaultsTests
             Assert.Equal(0.8, primary.States["hover"].Opacity);
             Assert.Equal("primaryPressed", primary.States["pressed"].BackgroundColor);
             Assert.Equal(8, layered.Metrics[ModThemeMetricKeys.Layout.OuterMargin]);
+            Assert.Equal(0.9, layered.Metrics[ModThemeMetricKeys.Motion.CombatPlaybackStepSeconds]);
+            Assert.Equal(1.2, layered.Metrics[ModThemeMetricKeys.Motion.Cue.PulseScale]);
         }
         finally
         {
