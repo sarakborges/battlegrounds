@@ -152,7 +152,8 @@
     "hud.opponent.identityGap": 0,
     "hud.opponent.statsGap": 0,
     "drag.preview.scale": 1.045,
-    "drag.preview.rotationDegrees": -1.5
+    "drag.preview.rotationDegrees": -1.5,
+    "drag.dropTarget.shadowScale": 3
   },
   "components": {
     "button": {
@@ -228,23 +229,27 @@
       "opacity": 0.12
     },
     "dropTarget.valid": {
+      "backgroundColor": "#00000000",
       "borderColor": "success",
       "borderWidth": 2,
       "radius": "large",
       "padding": { "horizontal": "sm", "vertical": "sm" }
     },
     "dropTarget.valid.active": {
+      "backgroundColor": "#00000000",
       "borderColor": "successActive",
       "borderWidth": 3,
       "radius": "large"
     },
     "dropTarget.invalid": {
+      "backgroundColor": "#00000000",
       "borderColor": "danger",
       "borderWidth": 2,
       "radius": "large",
       "padding": { "horizontal": "sm", "vertical": "sm" }
     },
     "dropTarget.invalid.active": {
+      "backgroundColor": "#00000000",
       "borderColor": "dangerActive",
       "borderWidth": 3,
       "radius": "large"

@@ -5,28 +5,53 @@ namespace Battlegrounds.Game;
 
 public partial class Main
 {
+    private ModThemeCatalog? _engineTheme;
     private ModThemeCatalog? _modTheme;
     private ModThemeBuilder? _themeBuilder;
     private TextureRect? _themeBackgroundImage;
+
+    public override void _EnterTree()
+    {
+        Callable.From(ApplyEngineThemeIfUnresolved).CallDeferred();
+    }
 
     private void InitializeTheme()
     {
         var modDirectory = ProjectSettings.GlobalizePath(ModPath);
         var loader = new ModThemeLoader();
-        var engineTheme = loader.LoadEngineDefault();
+        _engineTheme ??= loader.LoadEngineDefault();
         var modTheme = loader.Load(modDirectory);
-        _modTheme = ModThemeCatalog.Layer(engineTheme, modTheme);
+        _modTheme = ModThemeCatalog.Layer(_engineTheme, modTheme);
 
-        _themeBuilder = new ModThemeBuilder(modDirectory, _modTheme);
+        ApplyResolvedTheme(modDirectory);
+        AppendLog(modTheme.IsEmpty
+            ? $"Presentation theme v{_modTheme.Version} loaded from engine defaults."
+            : $"Presentation theme v{_modTheme.Version} loaded from engine defaults + selected mod overrides.");
+    }
+
+    private void ApplyEngineThemeIfUnresolved()
+    {
+        if (_modTheme is not null)
+            return;
+
+        _engineTheme ??= new ModThemeLoader().LoadEngineDefault();
+        _modTheme = _engineTheme;
+        ApplyResolvedTheme(ProjectSettings.GlobalizePath("res://"));
+        AppendLog($"Presentation theme v{_modTheme.Version} loaded from engine defaults after mod presentation initialization failed.");
+    }
+
+    private void ApplyResolvedTheme(string assetRoot)
+    {
+        if (_modTheme is null)
+            throw new InvalidOperationException("Cannot apply an unresolved presentation theme.");
+
+        _themeBuilder = new ModThemeBuilder(assetRoot, _modTheme);
         Theme = _themeBuilder.Build();
         _endPreparationButton.ThemeTypeVariation = "PrimaryButton";
 
         ApplyScreenTheme(ModThemeScreenRoles.Preparation);
         ApplySemanticTypography();
         ApplySemanticLayout();
-        AppendLog(modTheme.IsEmpty
-            ? $"Presentation theme v{_modTheme.Version} loaded from engine defaults."
-            : $"Presentation theme v{_modTheme.Version} loaded from engine defaults + selected mod overrides.");
     }
 
     private void ApplyScreenTheme(string role)

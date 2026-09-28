@@ -10,14 +10,14 @@ public partial class Main
         if (_modTheme is null)
             return;
 
-        ApplySceneChromeLayout();
+        ApplySceneLayout();
         ApplyRowLayout(_leaderButtons, ModThemeMetricKeys.Row.Leader);
         ApplyRowLayout(_offerButtons, ModThemeMetricKeys.Row.Offer);
         ApplyRowLayout(_fieldButtons, ModThemeMetricKeys.Row.Field);
         ApplyRowLayout(_reserveButtons, ModThemeMetricKeys.Row.Reserve);
     }
 
-    private void ApplySceneChromeLayout()
+    private void ApplySceneLayout()
     {
         var outerMargin = ResolveThemeMetric(ModThemeMetricKeys.Layout.OuterMargin, 0.0f, 512.0f);
         if (GetNodeOrNull<MarginContainer>("Margin") is { } margin)

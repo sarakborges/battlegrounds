@@ -76,6 +76,7 @@ public static class ModThemeMetricNames
         ModThemeMetricKeys.Hud.OpponentStatsGap,
         ModThemeMetricKeys.Drag.PreviewScale,
         ModThemeMetricKeys.Drag.PreviewRotationDegrees,
+        ModThemeMetricKeys.Drag.DropTargetShadowScale,
         ModThemeMetricKeys.Launcher.MarginHorizontal,
         ModThemeMetricKeys.Launcher.MarginVertical,
         ModThemeMetricKeys.Launcher.Gap,

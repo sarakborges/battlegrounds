@@ -133,5 +133,6 @@ public static class ModThemeMetricKeys
     {
         public const string PreviewScale = "drag.preview.scale";
         public const string PreviewRotationDegrees = "drag.preview.rotationDegrees";
+        public const string DropTargetShadowScale = "drag.dropTarget.shadowScale";
     }
 }

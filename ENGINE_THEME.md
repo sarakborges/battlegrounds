@@ -10,9 +10,13 @@ The engine default is stored as data in `src/Battlegrounds.Content/Defaults/pres
 
 ## Why this exists
 
-Presentation defaults should not be distributed across Godot scripts as fallback literals. The base theme owns the neutral visual baseline: typography sizes, colors, spacing, shape tokens, component styles, screen colors and all engine-consumed layout metrics.
+Presentation defaults should not be distributed across Godot scripts or scene files as fallback literals. The base theme owns the neutral visual baseline: typography sizes, colors, spacing, shape tokens, component styles, screen colors and all engine-consumed layout metrics.
 
 Godot code consumes the resolved catalog. A missing required metric or semantic role in that resolved catalog is a contract error rather than an invitation to silently fall back to another hardcoded number.
+
+The gameplay and launcher `.tscn` files own hierarchy, anchors needed to express structural relationships, visibility, input wiring and semantic theme variations. They do not own playable visual dimensions, spacing, font sizes or colors.
+
+If selected-mod presentation initialization fails, gameplay applies the embedded engine theme as a deferred fallback so the error surface does not depend on scene-authored visual defaults.
 
 ## Layering rules
 
@@ -27,5 +31,7 @@ The engine default theme is deliberately asset-free. Fonts, image-backed compone
 ## Ownership boundary
 
 The base theme is an engine presentation default, not gameplay data. Mods retain final ownership of presentation by overriding any supported theme token, semantic component role, screen role or metric.
+
+Pointer hit tolerances, drag insertion hitboxes and cursor semantics are interaction behavior rather than visual skin values and remain adapter-owned. Visual drag feedback such as opacity, scale, rotation, drop-target color, border, radius, padding and shadow scale belongs to the resolved theme.
 
 `Battlegrounds.Core` and `Battlegrounds.Application` remain unaware of theme data.

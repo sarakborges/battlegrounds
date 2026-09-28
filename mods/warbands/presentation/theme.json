@@ -151,7 +151,8 @@
     "hud.opponent.identityGap": 0,
     "hud.opponent.statsGap": 0,
     "drag.preview.scale": 1.045,
-    "drag.preview.rotationDegrees": -1.5
+    "drag.preview.rotationDegrees": -1.5,
+    "drag.dropTarget.shadowScale": 3
   },
   "components": {
     "button": {
