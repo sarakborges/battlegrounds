@@ -67,7 +67,14 @@ public partial class Main
         var healthHeight = ResolvePresentationMetric(ModThemeMetricKeys.Layout.HeroDockHealthBadgeHeight, 1.0f, 512.0f);
         var armorWidth = ResolvePresentationMetric(ModThemeMetricKeys.Layout.HeroDockArmorBadgeWidth, 1.0f, 512.0f);
         var armorHeight = ResolvePresentationMetric(ModThemeMetricKeys.Layout.HeroDockArmorBadgeHeight, 1.0f, 512.0f);
+        var powerWidth = ResolvePresentationMetric(ModThemeMetricKeys.Layout.HeroDockPowerButtonWidth, 1.0f, 1024.0f);
         heroDock.CustomMinimumSize = new Vector2(0, dockHeight);
+
+        var heroCore = heroDock.GetNode<VBoxContainer>("HeroCore");
+        heroCore.CustomMinimumSize = new Vector2(powerWidth, heroCore.CustomMinimumSize.Y);
+        var combineButton = heroDock.GetNode<Button>("CombineButton");
+        if (_hudResourceBadge.GetIndex() > combineButton.GetIndex())
+            heroDock.MoveChild(_hudResourceBadge, combineButton.GetIndex());
 
         var cluster = heroDock.GetNodeOrNull<Control>("HeroPortraitCluster");
         if (cluster is null)
