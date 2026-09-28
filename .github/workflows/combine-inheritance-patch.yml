@@ -1,0 +1,39 @@
+name: combine-inheritance-patch
+on:
+  push:
+    branches: [combine-modifier-inheritance]
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: combine-modifier-inheritance
+          fetch-depth: 0
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Apply combine inheritance slice
+        run: python3 .github/combine-inheritance-patch.py
+      - name: Test core
+        run: dotnet test tests/Battlegrounds.Core.Tests/Battlegrounds.Core.Tests.csproj --configuration Release
+      - name: Test content
+        run: dotnet test tests/Battlegrounds.Content.Tests/Battlegrounds.Content.Tests.csproj --configuration Release
+      - name: Test AI
+        run: dotnet test tests/Battlegrounds.AI.Tests/Battlegrounds.AI.Tests.csproj --configuration Release
+      - name: Test application
+        run: dotnet test tests/Battlegrounds.Application.Tests/Battlegrounds.Application.Tests.csproj --configuration Release
+      - name: Smoke Warbands
+        run: dotnet run --project tools/Battlegrounds.Simulator/Battlegrounds.Simulator.csproj --configuration Release -- --mod mods/warbands --matches 2 --players 4 --seed 29
+      - name: Build Godot adapter
+        run: dotnet build src/Battlegrounds.Game/Battlegrounds.Game.csproj --configuration Release
+      - name: Commit implementation
+        run: |
+          rm .github/combine-inheritance-patch.py .github/workflows/combine-inheritance-patch.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git commit -m 'Let combines inherit persistent modifiers'
+          git push origin HEAD:combine-modifier-inheritance
