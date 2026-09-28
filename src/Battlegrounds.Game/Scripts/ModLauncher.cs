@@ -181,19 +181,19 @@ public partial class ModLauncher : Control
             _themeBackgroundImage.Visible = false;
 
         var title = GetNode<Label>("Margin/Root/Title");
-        title.ThemeTypeVariation = StringName.Empty;
+        title.ThemeTypeVariation = string.Empty;
         title.AddThemeFontSizeOverride("font_size", 32);
 
         var subtitle = GetNode<Label>("Margin/Root/Subtitle");
-        subtitle.ThemeTypeVariation = StringName.Empty;
+        subtitle.ThemeTypeVariation = string.Empty;
         subtitle.AddThemeFontSizeOverride("font_size", 18);
 
         var diagnosticsTitle = GetNode<Label>("Margin/Root/DiagnosticsTitle");
-        diagnosticsTitle.ThemeTypeVariation = StringName.Empty;
+        diagnosticsTitle.ThemeTypeVariation = string.Empty;
         diagnosticsTitle.AddThemeFontSizeOverride("font_size", 18);
 
-        _status.ThemeTypeVariation = StringName.Empty;
-        _refreshButton.ThemeTypeVariation = StringName.Empty;
+        _status.ThemeTypeVariation = string.Empty;
+        _refreshButton.ThemeTypeVariation = string.Empty;
     }
 
     private void SelectCandidate(ModDiscoveryEntry entry)
