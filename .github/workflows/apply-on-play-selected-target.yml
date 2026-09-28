@@ -1,0 +1,131 @@
+name: Apply targeted onPlay slice
+on:
+  push:
+    branches: [on-play-selected-target]
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Apply targeted onPlay support
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          def replace(path, old, new):
+              p = Path(path)
+              text = p.read_text()
+              if old not in text:
+                  raise SystemExit(f'missing pattern in {path}: {old[:80]!r}')
+              p.write_text(text.replace(old, new, 1))
+
+          replace(
+              'src/Battlegrounds.Core/Domain/Preparation/PreparationCommands.cs',
+              'public sealed record DeployUnitCommand(PlayerId PlayerId, int ReserveSlot) : IPreparationCommand;',
+              'public sealed record DeployUnitCommand(PlayerId PlayerId, int ReserveSlot, UnitInstanceId? TargetUnitInstanceId = null) : IPreparationCommand;')
+
+          replace(
+              'src/Battlegrounds.Core/Domain/Preparation/PreparationCommandResult.cs',
+              '    InvalidFieldOrder,\n    InvalidActionTarget,',
+              '    InvalidFieldOrder,\n    InvalidDeployTarget,\n    InvalidActionTarget,')
+
+          replace(
+              'src/Battlegrounds.Core/Domain/Preparation/PreparationEngine.cs',
+              '''    private PreparationCommandResult DeployUnit(MatchState match, PlayerState player, DeployUnitCommand command)\n    {\n        if (command.ReserveSlot < 0 || command.ReserveSlot >= player.Reserve.Count)\n            return PreparationCommandResult.Failure(PreparationFailureCode.InvalidReserveSlot);\n        if (player.Field.Count >= _rules.FieldCapacity)\n            return PreparationCommandResult.Failure(PreparationFailureCode.FieldFull);\n        var unit = player.DeployFromReserve(command.ReserveSlot);\n        _effectEngine.ProcessPlayedUnit(match, player, unit);\n        return PreparationCommandResult.Success();\n    }''',
+              '''    private PreparationCommandResult DeployUnit(MatchState match, PlayerState player, DeployUnitCommand command)\n    {\n        if (command.ReserveSlot < 0 || command.ReserveSlot >= player.Reserve.Count)\n            return PreparationCommandResult.Failure(PreparationFailureCode.InvalidReserveSlot);\n        if (player.Field.Count >= _rules.FieldCapacity)\n            return PreparationCommandResult.Failure(PreparationFailureCode.FieldFull);\n\n        var unit = player.Reserve[command.ReserveSlot];\n        var selectedSelectors = unit.Definition.Triggers\n            .Where(trigger => trigger.Event == NativeTriggerKeys.OnPlay)\n            .SelectMany(trigger => trigger.Effects)\n            .Select(GetTargetSelector)\n            .Where(selector => selector?.Scope == EffectTargetScope.Selected)\n            .Cast<EffectTargetSelector>()\n            .ToArray();\n        if (selectedSelectors.Length > 0)\n        {\n            if (command.TargetUnitInstanceId is null ||\n                !TryGetFieldUnit(match, command.TargetUnitInstanceId.Value, out var selected) ||\n                selectedSelectors.Any(selector => !MatchesSelector(selected, selector)))\n                return PreparationCommandResult.Failure(PreparationFailureCode.InvalidDeployTarget);\n        }\n        else if (command.TargetUnitInstanceId is not null)\n            return PreparationCommandResult.Failure(PreparationFailureCode.InvalidDeployTarget);\n\n        unit = player.DeployFromReserve(command.ReserveSlot);\n        _effectEngine.ProcessPlayedUnit(match, player, unit, command.TargetUnitInstanceId);\n        return PreparationCommandResult.Success();\n    }''')
+
+          replace(
+              'src/Battlegrounds.Core/Domain/Preparation/PreparationEffectEngine.cs',
+              '''    public void ProcessPlayedUnit(MatchState match, PlayerState owner, UnitInstance unit)\n    {\n        var (world, runtime) = GetRuntime(match);\n        var subject = world.Wrap(unit, owner.Id);\n        runtime.RecordGameEvent(owner.Id, NativeGameEventKeys.UnitPlayed, unit.Definition);\n        runtime.Process(new GameEffectEvent(NativeTriggerKeys.OnPlay, subject));''',
+              '''    public void ProcessPlayedUnit(\n        MatchState match,\n        PlayerState owner,\n        UnitInstance unit,\n        UnitInstanceId? selectedTargetInstanceId = null)\n    {\n        var (world, runtime) = GetRuntime(match);\n        var subject = world.Wrap(unit, owner.Id);\n        runtime.RecordGameEvent(owner.Id, NativeGameEventKeys.UnitPlayed, unit.Definition);\n        runtime.Process(new GameEffectEvent(NativeTriggerKeys.OnPlay, subject, selectedTargetInstanceId));''')
+
+          for path in [
+              'src/Battlegrounds.Content/AdvancedEffectModValidator.cs',
+              'src/Battlegrounds.Content/DynamicEffectValueModValidator.cs']:
+              replace(
+                  path,
+                  '(!powerMode && (eventName == "onAttack" || eventName == "onDamage"));',
+                  '(!powerMode && (eventName == "onPlay" || eventName == "onAttack" || eventName == "onDamage"));')
+
+          replace(
+              'src/Battlegrounds.AI/PreparationAiAgent.cs',
+              '''        if (player.Field.Count < _rules.FieldCapacity && player.Reserve.Count > 0)\n        {\n            var reserveIndex = ChooseBestIndex(\n                player.Reserve,\n                unit => ScoreUnitInstance(unit, strategy),\n                unit => unit.Id.Value.ToString(System.Globalization.CultureInfo.InvariantCulture));\n            return new DeployUnitCommand(player.Id, reserveIndex);\n        }''',
+              '''        var deploy = TryCreateDeployUnitCommand(match, player, strategy);\n        if (deploy is not null) return deploy;''')
+
+          insert_marker = '    private ReleaseUnitCommand? TryCreateReplacementRelease(PlayerState player, PreparationAiStrategy strategy)\n'
+          ai = Path('src/Battlegrounds.AI/PreparationAiAgent.cs')
+          text = ai.read_text()
+          method = '''    private DeployUnitCommand? TryCreateDeployUnitCommand(\n        MatchState match,\n        PlayerState player,\n        PreparationAiStrategy strategy)\n    {\n        if (player.Field.Count >= _rules.FieldCapacity || player.Reserve.Count == 0) return null;\n\n        var candidates = new List<DeployCandidate>();\n        for (var index = 0; index < player.Reserve.Count; index++)\n        {\n            var unit = player.Reserve[index];\n            var onPlayEffects = unit.Definition.Triggers\n                .Where(trigger => trigger.Event == NativeTriggerKeys.OnPlay)\n                .SelectMany(trigger => trigger.Effects)\n                .ToArray();\n            var target = SelectTarget(match, player.Id, onPlayEffects);\n            if (target.RequiresTarget && target.Target is null) continue;\n            candidates.Add(new DeployCandidate(index, unit, target.Target));\n        }\n        if (candidates.Count == 0) return null;\n\n        var selectedIndex = ChooseBestIndex(\n            candidates,\n            candidate => ScoreUnitInstance(candidate.Unit, strategy),\n            candidate => candidate.Unit.Id.Value.ToString(System.Globalization.CultureInfo.InvariantCulture));\n        var selected = candidates[selectedIndex];\n        return new DeployUnitCommand(player.Id, selected.ReserveIndex, selected.Target);\n    }\n\n'''
+          if insert_marker not in text:
+              raise SystemExit('AI insert marker missing')
+          ai.write_text(text.replace(insert_marker, method + insert_marker, 1))
+          replace(
+              'src/Battlegrounds.AI/PreparationAiAgent.cs',
+              '    private sealed record ActionCandidate(int ActionIndex, ActionInstance Action, UnitInstanceId? Target);',
+              '    private sealed record DeployCandidate(int ReserveIndex, UnitInstance Unit, UnitInstanceId? Target);\n    private sealed record ActionCandidate(int ActionIndex, ActionInstance Action, UnitInstanceId? Target);')
+
+          replace(
+              'src/Battlegrounds.Game/Scripts/PresentationInteractionState.cs',
+              '    ActionTarget,\n    PowerTarget,',
+              '    DeployTarget,\n    ActionTarget,\n    PowerTarget,')
+          replace(
+              'src/Battlegrounds.Game/Scripts/PresentationInteractionState.cs',
+              '    public int? ActionReserveSlot { get; private set; }',
+              '    public int? UnitReserveSlot { get; private set; }\n    public int? ActionReserveSlot { get; private set; }')
+          replace(
+              'src/Battlegrounds.Game/Scripts/PresentationInteractionState.cs',
+              '    public void BeginActionTarget(int reserveSlot)\n',
+              '''    public void BeginDeployTarget(int reserveSlot)\n    {\n        Reset();\n        Kind = PresentationInteractionKind.DeployTarget;\n        UnitReserveSlot = reserveSlot;\n    }\n\n    public void BeginActionTarget(int reserveSlot)\n''')
+          replace(
+              'src/Battlegrounds.Game/Scripts/PresentationInteractionState.cs',
+              '        ActionReserveSlot = null;\n',
+              '        UnitReserveSlot = null;\n        ActionReserveSlot = null;\n')
+
+          replace(
+              'src/Battlegrounds.Game/Scripts/Main.cs',
+              '''            case PresentationInteractionKind.ActionTarget:\n                _interactionPrompt.Text = Text(''',
+              '''            case PresentationInteractionKind.DeployTarget:\n                _interactionPrompt.Text = Text(\n                    "ui.actionTargetPrompt",\n                    ("unit", Term("unit")),\n                    ("action", Term("unit")));\n                RenderTargetCandidates(match);\n                break;\n            case PresentationInteractionKind.ActionTarget:\n                _interactionPrompt.Text = Text(''')
+          replace(
+              'src/Battlegrounds.Game/Scripts/Main.cs',
+              '''            buttonNormal.Pressed += entry.Kind == PlayableKind.Unit\n                ? () => ExecuteHuman(player => new DeployUnitCommand(player.Id, slot))\n                : () => TryPlayAction(slot);''',
+              '''            buttonNormal.Pressed += entry.Kind == PlayableKind.Unit\n                ? () => TryDeployUnit(slot)\n                : () => TryPlayAction(slot);''')
+          replace(
+              'src/Battlegrounds.Game/Scripts/Main.cs',
+              '    private void TryPlayAction(int reserveSlot)\n',
+              '''    private void TryDeployUnit(int reserveSlot)\n    {\n        if (!TryGetHuman(out var human)) return;\n\n        var command = new DeployUnitCommand(human.Id, reserveSlot);\n        var result = SubmitHumanCommand(command, logFailure: false);\n        if (result.HasValue && !result.Value.Succeeded &&\n            result.Value.FailureCode == PreparationFailureCode.InvalidDeployTarget)\n        {\n            _interaction.BeginDeployTarget(reserveSlot);\n            AppendLog($"{Term("unit")} requires a selected {Term("unit")} target.");\n        }\n        else if (result.HasValue && !result.Value.Succeeded)\n        {\n            AppendLog($"{command.GetType().Name} rejected: {result.Value.FailureCode}.");\n        }\n\n        Render();\n    }\n\n    private void TryPlayAction(int reserveSlot)\n''')
+          replace(
+              'src/Battlegrounds.Game/Scripts/Main.cs',
+              '''        IPreparationCommand command = _interaction.Kind switch\n        {\n            PresentationInteractionKind.ActionTarget when _interaction.ActionReserveSlot is int reserveSlot =>''',
+              '''        IPreparationCommand command = _interaction.Kind switch\n        {\n            PresentationInteractionKind.DeployTarget when _interaction.UnitReserveSlot is int unitReserveSlot =>\n                new DeployUnitCommand(human.Id, unitReserveSlot, unitId),\n            PresentationInteractionKind.ActionTarget when _interaction.ActionReserveSlot is int reserveSlot =>''')
+
+          replace(
+              'tests/Battlegrounds.Content.Tests/AdvancedEffectValidationTests.cs',
+              '''            File.WriteAllText(unitPath, attackJson.Replace("onAttack", "onDamage", StringComparison.Ordinal));\n            var damageReport = new ModValidator().Validate(path);''',
+              '''            File.WriteAllText(unitPath, attackJson.Replace("onAttack", "onPlay", StringComparison.Ordinal));\n            var playReport = new ModValidator().Validate(path);\n            Assert.True(playReport.IsValid, string.Join(Environment.NewLine, playReport.Issues.Select(issue => $"{issue.Code}: {issue.File} {issue.Path} {issue.Message}")));\n\n            File.WriteAllText(unitPath, attackJson.Replace("onAttack", "onDamage", StringComparison.Ordinal));\n            var damageReport = new ModValidator().Validate(path);''')
+
+          Path('tests/Battlegrounds.Core.Tests/Preparation/TargetedOnPlayTests.cs').write_text('''using Battlegrounds.Core.Domain.Effects;\nusing Battlegrounds.Core.Domain.Ids;\nusing Battlegrounds.Core.Domain.Match;\nusing Battlegrounds.Core.Domain.Preparation;\nusing Battlegrounds.Core.Domain.Units;\nusing Battlegrounds.Core.Randomness;\n\nnamespace Battlegrounds.Core.Tests.Preparation;\n\npublic sealed class TargetedOnPlayTests\n{\n    [Fact]\n    public void DeployUnit_SelectedOnPlayTarget_IsValidatedBeforeMutationAndPassedToRuntime()\n    {\n        var target = new UnitDefinition(new UnitId("target"), "Target", 1, 2, 3);\n        var played = new UnitDefinition(\n            new UnitId("played"),\n            "Played",\n            1,\n            1,\n            1,\n            triggers:\n            [\n                new TriggerDefinition(\n                    NativeTriggerKeys.OnPlay,\n                    [new ModifyStatsEffectDefinition(new EffectTargetSelector(EffectTargetScope.Selected), 2, 3)])\n            ]);\n        var filler = new UnitDefinition(new UnitId("filler"), "Filler", 1, 1, 1);\n        var units = new UnitCatalog([target, played, filler]);\n        var pool = new UnitPool(units, [new UnitPoolEntry(filler.Id, 4)]);\n        var rules = new PreparationRules(10, 0, 20, 0, 1, 1, 7, 10, 1, [1], []);\n        var engine = new PreparationEngine(rules, pool, new MinimumRandomSource(), units, null);\n        var match = MatchState.Create([new PlayerId(0), new PlayerId(1)], new MatchRules(2, 2));\n        engine.BeginPreparation(match);\n        var player = match.Players[0];\n        player.AddToReserve(match.CreateUnit(target, UnitInstanceOrigin.Generated));\n        player.AddToReserve(match.CreateUnit(played, UnitInstanceOrigin.Generated));\n\n        Assert.True(engine.Execute(match, new DeployUnitCommand(player.Id, 0)).Succeeded);\n        var targetInstance = Assert.Single(player.Field);\n\n        var missingTarget = engine.Execute(match, new DeployUnitCommand(player.Id, 0));\n        Assert.False(missingTarget.Succeeded);\n        Assert.Equal(PreparationFailureCode.InvalidDeployTarget, missingTarget.FailureCode);\n        Assert.Single(player.Reserve);\n        Assert.Single(player.Field);\n\n        var result = engine.Execute(match, new DeployUnitCommand(player.Id, 0, targetInstance.Id));\n        Assert.True(result.Succeeded);\n        Assert.Empty(player.Reserve);\n        Assert.Equal(4, targetInstance.Attack);\n        Assert.Equal(6, targetInstance.Health);\n    }\n\n    private sealed class MinimumRandomSource : IRandomSource\n    {\n        public int NextInt(int minInclusive, int maxExclusive) => minInclusive;\n    }\n}\n''')
+
+          Path('mods/warbands/content/units/ancient-stag.json').write_text('''{\n  "id": "ancient-stag",\n  "name": "Ancient Stag",\n  "tier": 5,\n  "attack": 7,\n  "health": 9,\n  "behaviors": [],\n  "types": ["beast"],\n  "tags": ["elite"],\n  "triggers": [\n    {\n      "event": "onPlay",\n      "effects": [\n        { "kind": "modifyStats", "target": { "scope": "selected" }, "attack": 2, "health": 2 }\n      ]\n    },\n    {\n      "event": "onCombatStart",\n      "effects": [\n        {\n          "kind": "modifyStats",\n          "target": { "scope": "friendly", "selection": "all", "typeId": "beast" },\n          "attack": 1,\n          "health": 1\n        }\n      ]\n    }\n  ]\n}\n''')
+          PY
+      - name: Test affected layers
+        run: |
+          dotnet test tests/Battlegrounds.Core.Tests/Battlegrounds.Core.Tests.csproj
+          dotnet test tests/Battlegrounds.Content.Tests/Battlegrounds.Content.Tests.csproj
+          dotnet test tests/Battlegrounds.AI.Tests/Battlegrounds.AI.Tests.csproj
+          dotnet test tests/Battlegrounds.Application.Tests/Battlegrounds.Application.Tests.csproj
+          dotnet build src/Battlegrounds.Game/Battlegrounds.Game.csproj
+      - name: Commit implementation
+        shell: bash
+        run: |
+          rm .github/workflows/apply-on-play-selected-target.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git commit -m 'Support selected targets for onPlay'
+          git push origin HEAD:on-play-selected-target
