@@ -22,12 +22,28 @@ public partial class Main
         }
     }
 
-    internal bool CanAcquireOfferFromDrag(int offerSlot)
+    internal bool CanDragOfferFromDrag(int offerSlot)
     {
         if (!CanUsePreparationDrag || !TryGetHuman(out var human))
             return false;
 
         return human.PlayableOffer.Any(entry => entry.Slot == offerSlot);
+    }
+
+    internal bool CanAcquireOfferFromDrag(int offerSlot)
+    {
+        if (!CanDragOfferFromDrag(offerSlot) || _session is null || !TryGetHuman(out var human))
+            return false;
+
+        var entry = human.PlayableOffer.First(candidate => candidate.Slot == offerSlot);
+        var rules = _session.Mod.PreparationRules;
+        if (human.PlayableReserveCount >= rules.ReserveCapacity)
+            return false;
+
+        var cost = entry.Unit is not null
+            ? rules.AcquireCost
+            : entry.Action?.Cost ?? int.MaxValue;
+        return human.CanAfford(cost);
     }
 
     internal bool CanSellFieldUnitFromDrag(int fieldIndex)
@@ -38,24 +54,30 @@ public partial class Main
         return fieldIndex >= 0 && fieldIndex < human.Field.Count;
     }
 
-    internal bool CanDeployReserveFromDrag(int reserveSlot)
+    internal bool CanDragReserveUnitFromDrag(int reserveSlot)
     {
-        if (!CanUsePreparationDrag || _session is null || !TryGetHuman(out var human))
+        if (!CanUsePreparationDrag || !TryGetHuman(out var human))
             return false;
 
-        return reserveSlot >= 0 &&
-               reserveSlot < human.Reserve.Count &&
-               human.Field.Count < _session.Mod.PreparationRules.FieldCapacity;
+        return reserveSlot >= 0 && reserveSlot < human.Reserve.Count;
+    }
+
+    internal bool CanDeployReserveFromDrag(int reserveSlot)
+    {
+        if (!CanDragReserveUnitFromDrag(reserveSlot) || _session is null || !TryGetHuman(out var human))
+            return false;
+
+        return human.Field.Count < _session.Mod.PreparationRules.FieldCapacity;
     }
 
     internal bool CanResolvePreparationDrag(Variant data)
     {
         if (PreparationDragPayload.TryReadOffer(data, out var offerSlot))
-            return CanAcquireOfferFromDrag(offerSlot);
+            return CanDragOfferFromDrag(offerSlot);
         if (PreparationDragPayload.TryReadField(data, out var fieldIndex))
             return CanSellFieldUnitFromDrag(fieldIndex);
         if (PreparationDragPayload.TryReadReserveUnit(data, out var reserveSlot))
-            return CanDeployReserveFromDrag(reserveSlot);
+            return CanDragReserveUnitFromDrag(reserveSlot);
         return false;
     }
 
