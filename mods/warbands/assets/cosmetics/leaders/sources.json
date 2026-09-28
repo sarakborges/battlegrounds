@@ -2,8 +2,8 @@
   "generatedFrom": "https://api.hearthstonejson.com/v1/latest/enUS/cards.json",
   "artApi": "https://art.hearthstonejson.com/",
   "hearthstone": 38,
-  "warcraftWiki": 13,
-  "missing": 1,
+  "warcraftWiki": 14,
+  "missing": 0,
   "leaders": {
     "alleria-windrunner": {
       "displayName": "Alleria Windrunner",
@@ -605,7 +605,11 @@
     },
     "zentabra": {
       "displayName": "Zentabra",
-      "status": "missing"
+      "status": "warcraft-wiki",
+      "source": "Warcraft Wiki",
+      "pageUrl": "https://warcraft.wiki.gg/wiki/Zen'tabra",
+      "imageUrl": "https://warcraft.wiki.gg/images/Zen%27Tabra.jpg?7d6b23",
+      "output": "mods/warbands/assets/cosmetics/leaders/zentabra/base.png"
     }
   }
 }
