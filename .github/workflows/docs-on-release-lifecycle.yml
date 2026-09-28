@@ -1,0 +1,41 @@
+name: docs-on-release-lifecycle
+on:
+  push:
+    branches: [docs-on-release-lifecycle]
+permissions:
+  contents: write
+jobs:
+  docs:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+      - name: Update docs
+        shell: python
+        run: |
+          from pathlib import Path
+
+          path = Path('EFFECTS.md')
+          text = path.read_text()
+
+          old = '`onAcquire` has no interactive target-selection step, so it does not expose `selected`.'
+          new = '`onAcquire` and `onRelease` have no interactive target-selection step, so they do not expose `selected`.'
+          if old not in text:
+              raise SystemExit('selected-context sentence missing')
+          text = text.replace(old, new, 1)
+
+          marker = '\n## Attack target context\n'
+          section = '''\n## Release lifecycle\n\n`onRelease` is the neutral Unit trigger for a real successful `ReleaseUnitCommand`. It is not synthesized by death, combine consumption, transformation, elimination cleanup, or any other pool-return path.\n\nA successful Unit release resolves in this order:\n\n1. remove the runtime Unit from the authoritative Field;\n2. surrender its still-owned pooled copy, if any, and return that definition to the shared Unit pool;\n3. grant the normal release resource value;\n4. record the mechanical `unitReleased` history event;\n5. resolve the released Unit's authored `onRelease` triggers through `GameEffectRuntime`.\n\nThe released Unit remains available as the effect source snapshot, so source-stat conditions and `sourceStat` value expressions read its state at release time. Because it has already left the Field, the source is added to the resolution context as non-selectable: targeted effects cannot select the released Unit itself, while friendly targets see only Units that still occupy the authoritative Field. Resource effects observe the post-release-value state.\n\nCurrent support intentionally stays narrow: `onRelease` uses the generic effect surface already valid for this trigger and does not by itself enable Preparation-only generation, pending-choice, Action-generation, or persistent-unit-mutation schemas. It does not expose `selected`, because release has no interactive target-selection step.\n\n## Attack target context\n'''
+          if marker not in text:
+              raise SystemExit('attack target section marker missing')
+          path.write_text(text.replace(marker, section, 1))
+      - name: Commit docs to main
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add EFFECTS.md
+          git commit -m "Document Unit release lifecycle"
+          git push origin HEAD:main
