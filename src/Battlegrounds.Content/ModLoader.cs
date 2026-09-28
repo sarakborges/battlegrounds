@@ -255,7 +255,11 @@ public sealed class ModLoader
     private static EffectTargetSelector BuildTarget(TargetData? data)
     {
         if (data is null) throw new InvalidDataException("Validated targeted effect is missing target.");
-        return new EffectTargetSelector(BuildQuery(data), data.Selection ?? EffectTargetSelection.All, data.Limit);
+        return new EffectTargetSelector(
+            BuildQuery(data),
+            data.Selection ?? EffectTargetSelection.All,
+            data.Limit,
+            data.RelativeTo ?? EffectTargetAnchor.Source);
     }
 
     private static EffectUnitQuery BuildQuery(QueryData? data)
@@ -325,7 +329,14 @@ public sealed class ModLoader
     private sealed record GenerationQueryData(int? MinimumTier, int? MaximumTier, string? TypeId, string? TagId, bool? ExcludeSource);
     private sealed record ActionQueryData(int? MinimumTier, int? MaximumTier, string? ExcludeActionId);
     private record QueryData(EffectTargetScope Scope, bool? ExcludeSource, string? TypeId, string? TagId);
-    private sealed record TargetData(EffectTargetScope Scope, bool? ExcludeSource, string? TypeId, string? TagId, EffectTargetSelection? Selection, int? Limit)
+    private sealed record TargetData(
+        EffectTargetScope Scope,
+        bool? ExcludeSource,
+        string? TypeId,
+        string? TagId,
+        EffectTargetSelection? Selection,
+        int? Limit,
+        EffectTargetAnchor? RelativeTo)
         : QueryData(Scope, ExcludeSource, TypeId, TagId);
     private sealed record UnitPoolData(string UnitId, int Copies);
 }
