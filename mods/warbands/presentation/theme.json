@@ -42,6 +42,28 @@
     "medium": 7,
     "large": 12
   },
+  "metrics": {
+    "row.leader.gap": 18,
+    "row.leader.preferredCardWidth": 164,
+    "row.leader.minimumCardWidth": 116,
+    "row.leader.preferredCardHeight": 200,
+    "row.leader.padding": 8,
+    "row.offer.gap": 10,
+    "row.offer.preferredCardWidth": 124,
+    "row.offer.minimumCardWidth": 88,
+    "row.offer.preferredCardHeight": 142,
+    "row.offer.padding": 4,
+    "row.field.gap": 16,
+    "row.field.preferredCardWidth": 148,
+    "row.field.minimumCardWidth": 98,
+    "row.field.preferredCardHeight": 204,
+    "row.field.padding": 10,
+    "row.reserve.gap": 4,
+    "row.reserve.preferredCardWidth": 96,
+    "row.reserve.minimumCardWidth": 70,
+    "row.reserve.preferredCardHeight": 70,
+    "row.reserve.padding": 2
+  },
   "components": {
     "button": {
       "fontSize": "button",
