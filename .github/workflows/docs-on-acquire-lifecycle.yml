@@ -1,0 +1,51 @@
+name: docs-on-acquire-lifecycle
+on:
+  push:
+    branches: [docs-on-acquire-lifecycle]
+permissions:
+  contents: write
+jobs:
+  docs:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+      - name: Update docs
+        shell: python
+        run: |
+          from pathlib import Path
+
+          def replace(path, old, new):
+              p = Path(path)
+              text = p.read_text()
+              if old not in text:
+                  raise SystemExit(f'missing replacement in {path}: {old[:100]!r}')
+              p.write_text(text.replace(old, new, 1))
+
+          replace(
+              'README.md',
+              '`onPlay`, `onCombine`, `onSummon`, `onAttack`, `onDamage`, `onDeath` and counted `afterFriendlyDeaths`',
+              '`onAcquire`, `onPlay`, `onCombine`, `onSummon`, `onAttack`, `onDamage`, `onDeath` and counted `afterFriendlyDeaths`')
+
+          replace(
+              'EFFECTS.md',
+              '`selected` is context-owned rather than synonymous with UI selection. During an activatable Power\'s `onActivate`, the selected target is supplied by the command issued by UI or AI. During a Unit\'s `onAttack`, Combat supplies the already-locked attack target. During a Unit\'s `onDamage`, Combat supplies the living targetable Unit that caused that damage when one exists. Triggers without an available context target resolve `selected` as empty.',
+              '`selected` is context-owned rather than synonymous with UI selection. During an activatable Power\'s `onActivate`, the selected target is supplied by the command issued by UI or AI. During a Unit\'s `onPlay`, the selected target is supplied by `DeployUnitCommand` when that trigger requires one. During a Unit\'s `onAttack`, Combat supplies the already-locked attack target. During a Unit\'s `onDamage`, Combat supplies the living targetable Unit that caused that damage when one exists. `onAcquire` has no interactive target-selection step, so it does not expose `selected`. Triggers without an available context target resolve `selected` as empty.')
+
+          marker = '## Attack target context\n'
+          p = Path('EFFECTS.md')
+          text = p.read_text()
+          if marker not in text:
+              raise SystemExit('EFFECTS acquisition insertion marker missing')
+          section = '''## Acquisition lifecycle\n\n`onAcquire` is the neutral Unit trigger for a real successful Unit acquisition from the current Offer. It is not synthesized by Unit generation, pending-choice resolution, copying, combining, summoning, or deployment.\n\nA successful Unit acquisition resolves in this order:\n\n1. remove the authored Unit copy from the Offer;\n2. create its pooled runtime instance and place that instance in Reserve;\n3. spend the normal acquisition resource cost;\n4. record the mechanical `unitAcquired` history event;\n5. resolve that instance's authored `onAcquire` triggers through `GameEffectRuntime`.\n\nBecause the acquired instance is already in Reserve when the trigger resolves, `self` reads and persistent mutations apply to that exact authoritative runtime Unit. Resource effects also observe the post-payment state, so an authored reward may refund part or all of the acquisition cost. `onAcquire` is a Preparation-only context and may use Preparation-only generation, choice, Action-generation, and persistent-Unit-mutation effects. It does not expose `selected`, because acquisition itself has no interactive target-selection step.\n\n'''
+          p.write_text(text.replace(marker, section + marker, 1))
+      - name: Commit docs to main
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add README.md EFFECTS.md
+          git commit -m "Document Unit acquisition lifecycle" || exit 0
+          git push origin HEAD:main
