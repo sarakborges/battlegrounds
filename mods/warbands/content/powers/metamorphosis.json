@@ -1,0 +1,21 @@
+{
+  "id": "metamorphosis",
+  "name": "Metamorphosis",
+  "activation": {
+    "cost": 1,
+    "maxUsesPerTurn": 1
+  },
+  "triggers": [
+    {
+      "event": "onActivate",
+      "effects": [
+        {
+          "kind": "modifyStats",
+          "target": { "scope": "selected" },
+          "attack": 2,
+          "health": 1
+        }
+      ]
+    }
+  ]
+}
