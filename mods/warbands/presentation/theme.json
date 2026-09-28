@@ -43,6 +43,11 @@
     "large": 12
   },
   "metrics": {
+    "launcher.marginHorizontal": 64,
+    "launcher.marginVertical": 48,
+    "launcher.gap": 14,
+    "launcher.modGap": 8,
+    "launcher.diagnosticsMinimumHeight": 180,
     "layout.outerMargin": 8,
     "layout.shell.gap": 6,
     "layout.opponentRail.width": 184,
