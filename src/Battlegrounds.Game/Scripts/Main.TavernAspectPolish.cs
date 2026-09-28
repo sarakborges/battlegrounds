@@ -127,7 +127,11 @@ public partial class Main
             ModThemeMetricKeys.Row.PreferredCardWidth(ModThemeMetricKeys.Row.Offer),
             1.0f,
             2048.0f);
-        var width = Mathf.Max(configuredWidth, offerWidth * 1.75f);
+
+        // The square bartender frame was intentionally made visually dominant in the
+        // previous pass. Reduce that exact resolved footprint by 25% while keeping
+        // its 1:1 geometry and mod-driven base metrics intact.
+        var width = Mathf.Max(configuredWidth, offerWidth * 1.75f) * 0.75f;
         var height = ResolvePresentationMetric(
             ModThemeMetricKeys.Layout.TavernControlsMinimumHeight,
             1.0f,
@@ -165,9 +169,6 @@ public partial class Main
 
         if (layer.GetNodeOrNull<TextureRect>("CosmeticArt") is { } art)
         {
-            // Bartender cosmetics are portrait-oriented while the Tavern opening is
-            // landscape. Contain the full cosmetic instead of center-cropping the
-            // head/shoulders; the foreground frame masks the unused side area.
             art.StretchMode = TextureRect.StretchModeEnum.KeepAspectCentered;
             art.SetAnchorsAndOffsetsPreset(Control.LayoutPreset.FullRect);
         }
