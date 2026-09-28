@@ -182,7 +182,7 @@ Setup
 
 Combat remains an isolated simulation. Settlement applies combat results back to persistent match state only after simulation completes.
 
-The current native post-combat damage policy is `winnerTierPlusSurvivorTiers`: winner Tier plus the Tiers of surviving units. Draws deal zero player damage. Generated/token survivors not present in the starting combat snapshot use their combat survivor Tier, currently Tier 1 by default.
+The current native post-combat damage policy is `winnerTierPlusSurvivorTiers`: winner Tier plus the Tiers of surviving units. Draws deal zero player damage. Starting survivors retain the Tier frozen in `CombatInput`; generated/token survivors carry the authored Tier of their combat runtime definition into `CombatResult`.
 
 Player damage is applied to Leader Armor first and Health second. `CombatSettlement` reports incoming damage, Armor absorbed, Armor after and Health after so UI/replay consumers do not need to reconstruct the calculation.
 

@@ -177,7 +177,7 @@ Combat receives snapshots of persistent Unit state, including current stats and 
 
 Settlement belongs to match orchestration, not combat simulation. A native damage policy selected by mod data converts `CombatResult` plus authoritative player state into player damage.
 
-The current policy `winnerTierPlusSurvivorTiers` uses winner Tier plus surviving unit Tiers; draw deals zero. Generated/token survivors not present in the initial combat snapshot currently default to Tier 1.
+The current policy `winnerTierPlusSurvivorTiers` uses winner Tier plus surviving unit Tiers; draw deals zero. Starting survivors retain the Tier frozen in the combat input, while generated/token survivors carry the authored Tier of their combat runtime definition into `CombatResult`.
 
 Incoming player damage is absorbed by Leader Armor first, then reduces Health. Settlement result data records the absorption and resulting values explicitly.
 
