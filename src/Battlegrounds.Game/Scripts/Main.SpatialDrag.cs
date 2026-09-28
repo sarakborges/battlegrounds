@@ -69,9 +69,12 @@ public partial class Main
         if (!CanAcquireOfferFromDrag(offerSlot))
             return;
 
-        var heroDock = GetNodeOrNull<Control>(
-            "Margin/Shell/CenterStage/PreparationPanel/HeroDock");
-        if (!ContainsPointer(heroDock, pointer, 18.0f))
+        // Buying mirrors Hearthstone/Battlegrounds: drag a tavern offer onto the hero,
+        // never onto the shopkeeper. Keep the fallback target exactly on HeroCore so the
+        // pointer affordance and the action agree with what the player sees.
+        var heroCore = GetNodeOrNull<Control>(
+            "Margin/Shell/CenterStage/PreparationPanel/HeroDock/HeroCore");
+        if (!ContainsPointer(heroCore, pointer, 12.0f))
             return;
 
         AcquireOfferFromDrag(offerSlot);
