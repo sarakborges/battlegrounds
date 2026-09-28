@@ -1,23 +1,28 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 150 96">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 160">
   <defs>
     <linearGradient id="wood" x1="0" y1="0" x2="0" y2="1">
       <stop offset="0" stop-color="#e0ad6a"/>
-      <stop offset=".48" stop-color="#a3683c"/>
+      <stop offset="0.48" stop-color="#a3683c"/>
       <stop offset="1" stop-color="#563421"/>
     </linearGradient>
     <linearGradient id="gold" x1="0" y1="0" x2="1" y2="1">
       <stop offset="0" stop-color="#f4cd83"/>
-      <stop offset=".55" stop-color="#c88745"/>
+      <stop offset="0.55" stop-color="#c88745"/>
       <stop offset="1" stop-color="#6f4328"/>
     </linearGradient>
   </defs>
-  <path d="M0 0H150V96H0Z M23 90V39C23 25 34 17 51 17H99C116 17 127 25 127 39V90Z" fill="#0d0907" fill-rule="evenodd"/>
-  <path d="M9 94V35C9 13 26 4 47 4h56c21 0 38 9 38 31v59" fill="none" stroke="#321d13" stroke-width="10" stroke-linejoin="round"/>
-  <path d="M13 92V36c0-18 14-27 35-27h54c21 0 35 9 35 27v56" fill="none" stroke="url(#wood)" stroke-width="6" stroke-linejoin="round"/>
-  <path d="M23 90V39c0-14 11-22 28-22h48c17 0 28 8 28 22v51" fill="none" stroke="url(#gold)" stroke-width="3"/>
-  <path d="M37 15C47 7 60 4 75 4s28 3 38 11" fill="none" stroke="#f3c77f" stroke-width="3" stroke-linecap="round"/>
-  <path d="M18 78h114" stroke="#d89b55" stroke-width="6" stroke-linecap="round"/>
-  <path d="M23 86h104" stroke="#593520" stroke-width="5" stroke-linecap="round"/>
-  <circle cx="23" cy="79" r="4" fill="#f2ca82" stroke="#53301d" stroke-width="2"/>
-  <circle cx="127" cy="79" r="4" fill="#f2ca82" stroke="#53301d" stroke-width="2"/>
+
+  <!-- Opaque surround masks the cosmetic outside the square portrait opening. -->
+  <path d="M0 0H160V160H0Z M24 24H136V136H24Z" fill="#0d0907" fill-rule="evenodd"/>
+
+  <!-- A tall 1:1 keeper opening: the visible cosmetic area is 112x112. -->
+  <rect x="14" y="14" width="132" height="136" rx="30" fill="none" stroke="#321d13" stroke-width="10"/>
+  <rect x="18" y="18" width="124" height="128" rx="26" fill="none" stroke="url(#wood)" stroke-width="6"/>
+  <rect x="24" y="24" width="112" height="112" rx="18" fill="none" stroke="url(#gold)" stroke-width="3"/>
+
+  <path d="M42 24C52 14 65 10 80 10s28 4 38 14" fill="none" stroke="#f3c77f" stroke-width="3" stroke-linecap="round"/>
+  <path d="M20 134h120" stroke="#d89b55" stroke-width="7" stroke-linecap="round"/>
+  <path d="M26 145h108" stroke="#593520" stroke-width="6" stroke-linecap="round"/>
+  <circle cx="24" cy="135" r="5" fill="#f2ca82" stroke="#53301d" stroke-width="2"/>
+  <circle cx="136" cy="135" r="5" fill="#f2ca82" stroke="#53301d" stroke-width="2"/>
 </svg>
