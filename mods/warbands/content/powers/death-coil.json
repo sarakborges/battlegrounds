@@ -1,0 +1,20 @@
+{
+  "id": "death-coil",
+  "name": "Death Coil",
+  "activation": {
+    "cost": 2,
+    "maxUsesPerTurn": 1
+  },
+  "triggers": [
+    {
+      "event": "onActivate",
+      "effects": [
+        {
+          "kind": "dealDamage",
+          "target": { "scope": "selected" },
+          "amount": 2
+        }
+      ]
+    }
+  ]
+}
