@@ -8,5 +8,6 @@ public partial class Main
         RefreshTavernHud();
         ApplyTavernAspectPolish();
         RefreshPreparationPresentationPolish();
+        RefreshLeaderFramePolish();
     }
 }
