@@ -267,6 +267,7 @@ internal sealed class PowerLifecycleModValidator
 
             case "addResource":
             case "adjustUpgradeCost":
+            case "addAcquireDiscount":
                 ValidateKeys(effect, file, path, ["kind", "amount"], ["kind", "amount"], issues);
                 break;
 

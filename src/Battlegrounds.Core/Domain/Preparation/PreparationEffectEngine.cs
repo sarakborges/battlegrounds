@@ -342,6 +342,8 @@ internal sealed partial class PreparationEffectEngine
 
         public void AdjustUpgradeCost(PlayerId playerId, int amount) => GetPlayer(playerId).AdjustUpgradeCost(amount);
 
+        public void AddAcquireDiscount(PlayerId playerId, int amount) => GetPlayer(playerId).AddAcquireDiscount(amount);
+
         public void RefreshOffer(PlayerId playerId) => _refreshOffer(GetPlayer(playerId));
 
         public void SetPower(PlayerId playerId, PowerId powerId)

@@ -45,7 +45,7 @@ internal sealed class PreparationEconomyEffectModValidator
                     foreach (var effect in effects.EnumerateArray())
                     {
                         if (effect.ValueKind == JsonValueKind.Object && effect.TryGetProperty("kind", out var kind) &&
-                            kind.ValueKind == JsonValueKind.String && kind.GetString() is "adjustUpgradeCost" or "refreshOffer" && !allowed)
+                            kind.ValueKind == JsonValueKind.String && kind.GetString() is "adjustUpgradeCost" or "addAcquireDiscount" or "refreshOffer" && !allowed)
                         {
                             issues.Add(new(
                                 "INVALID_EFFECT_CONTEXT",

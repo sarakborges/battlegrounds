@@ -393,13 +393,13 @@ public sealed class PreparationAiAgent
             return null;
 
         var affordable = player.PlayableOffer
-            .Where(entry => player.Resource >= GetAcquireCost(entry))
+            .Where(entry => player.Resource >= player.GetAcquireCost(entry, _rules))
             .ToArray();
         if (affordable.Length == 0) return null;
 
         var index = ChooseBestIndex(
             affordable,
-            entry => ScoreOffer(entry, strategy),
+            entry => ScoreOffer(player, entry, strategy),
             entry => entry.Id);
         return new AcquirePlayableCommand(player.Id, affordable[index].Slot);
     }
@@ -459,15 +459,16 @@ public sealed class PreparationAiAgent
         (selector.RequiredTypeId is null || unit.Definition.Types.Any(type => type.Id == selector.RequiredTypeId.Value)) &&
         (selector.RequiredTagId is null || unit.Definition.Tags.Any(tag => tag.Id == selector.RequiredTagId.Value));
 
-    private int GetAcquireCost(Battlegrounds.Core.Domain.Playables.PlayableOfferEntry entry) =>
-        entry.Action?.Cost ?? _rules.AcquireCost;
-
     private long ScoreOffer(
+        PlayerState player,
         Battlegrounds.Core.Domain.Playables.PlayableOfferEntry entry,
-        PreparationAiStrategy strategy) =>
-        entry.Unit is not null
-            ? ScoreUnitDefinition(entry.Unit, strategy) - GetAcquireCost(entry)
-            : ScoreActionDefinition(entry.Action!) - GetAcquireCost(entry);
+        PreparationAiStrategy strategy)
+    {
+        var cost = player.GetAcquireCost(entry, _rules);
+        return entry.Unit is not null
+            ? ScoreUnitDefinition(entry.Unit, strategy) - cost
+            : ScoreActionDefinition(entry.Action!) - cost;
+    }
 
     private static long ScoreUnitDefinition(UnitDefinition unit) =>
         ((long)unit.Tier * 10_000L) + ((long)unit.BaseAttack * 10L) + unit.BaseHealth;

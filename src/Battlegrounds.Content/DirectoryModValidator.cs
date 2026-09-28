@@ -679,6 +679,7 @@ internal sealed class DirectoryModValidator
                 break;
             case "addResource":
             case "adjustUpgradeCost":
+            case "addAcquireDiscount":
                 ValidateKeys(effect, file, path, ["kind", "amount"], ["kind"], issues);
                 if (!effect.TryGetProperty("amount", out _))
                     issues.Add(new("MISSING_REQUIRED_PARAMETER", file, path + ".amount", "Effect requires 'amount'."));

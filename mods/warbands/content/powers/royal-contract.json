@@ -1,0 +1,15 @@
+{
+  "id": "royal-contract",
+  "name": "Royal Contract",
+  "triggers": [
+    {
+      "event": "onTurnStart",
+      "effects": [
+        {
+          "kind": "addAcquireDiscount",
+          "amount": 1
+        }
+      ]
+    }
+  ]
+}

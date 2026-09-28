@@ -162,6 +162,7 @@ internal sealed class DynamicEffectValueModValidator
 
             case "addResource":
             case "adjustUpgradeCost":
+            case "addAcquireDiscount":
                 if (effect.TryGetProperty("amount", out var resource))
                 {
                     ValidateValue(file, resource, path + ".amount", false, allowSelected, typeIds, tagIds, 0, issues);

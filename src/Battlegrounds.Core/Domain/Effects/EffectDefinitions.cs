@@ -335,6 +335,23 @@ public sealed record AdjustUpgradeCostEffectDefinition : EffectDefinition
     }
 }
 
+public sealed record AddAcquireDiscountEffectDefinition : EffectDefinition
+{
+    public override NativeEffectKey Kind => NativeEffectKeys.AddAcquireDiscount;
+    public EffectValueExpression Amount { get; }
+
+    public AddAcquireDiscountEffectDefinition(int amount)
+        : this(new ConstantEffectValueExpression(amount))
+    {
+        if (amount <= 0) throw new ArgumentOutOfRangeException(nameof(amount));
+    }
+
+    public AddAcquireDiscountEffectDefinition(EffectValueExpression amount)
+    {
+        Amount = amount ?? throw new ArgumentNullException(nameof(amount));
+    }
+}
+
 public sealed record RefreshOfferEffectDefinition : EffectDefinition
 {
     public override NativeEffectKey Kind => NativeEffectKeys.RefreshOffer;

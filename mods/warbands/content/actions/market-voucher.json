@@ -1,0 +1,12 @@
+{
+  "id": "market-voucher",
+  "name": "Market Voucher",
+  "tier": 1,
+  "cost": 1,
+  "effects": [
+    {
+      "kind": "addAcquireDiscount",
+      "amount": 2
+    }
+  ]
+}

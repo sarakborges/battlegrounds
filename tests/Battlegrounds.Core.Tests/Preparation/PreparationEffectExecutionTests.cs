@@ -407,6 +407,33 @@ public sealed class PreparationEffectExecutionTests
         Assert.Equal(3, player.PlayableOffer.Count);
     }
 
+    [Fact]
+    public void AcquireDiscount_AppliesToNextUnitAndOnAcquireCanGrantTheFollowingDiscount()
+    {
+        var grant = new UnitDefinition(
+            new UnitId("grant"),
+            "Grant",
+            1,
+            1,
+            1,
+            triggers:
+            [
+                new TriggerDefinition(NativeTriggerKeys.OnAcquire, [new AddAcquireDiscountEffectDefinition(2)]),
+            ]);
+        var plain = new UnitDefinition(new UnitId("plain"), "Plain", 1, 1, 1);
+        var setup = CreateStartedMatch([grant, plain], [grant, plain], startingResource: 10, acquireCost: 3);
+        var player = setup.Match.Players[0];
+        player.AddAcquireDiscount(1);
+
+        AcquireById(setup.Engine, setup.Match, player.Id, grant.Id);
+        Assert.Equal(8, player.Resource);
+        Assert.Equal(2, player.NextAcquireDiscount);
+
+        AcquireById(setup.Engine, setup.Match, player.Id, plain.Id);
+        Assert.Equal(7, player.Resource);
+        Assert.Equal(0, player.NextAcquireDiscount);
+    }
+
     private static void AcquireById(
         PreparationEngine engine,
         MatchState match,
