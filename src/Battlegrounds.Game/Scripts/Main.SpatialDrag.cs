@@ -134,7 +134,7 @@ public partial class Main
             return;
 
         var shopkeeper = GetNodeOrNull<Control>(
-            "Margin/Shell/CenterStage/PreparationPanel/TavernShelf/ShelfRow/ShopkeeperSlot");
+            "Margin/Shell/CenterStage/PreparationPanel/TavernControls/ControlsRow/ShopkeeperSlot");
         if (ContainsPointer(shopkeeper, pointer, PreparationDropTargetPadding))
         {
             SellFieldUnitFromDrag(fieldIndex);
