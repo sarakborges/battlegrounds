@@ -54,7 +54,7 @@ public partial class Main
 
     private TextureRect EnsureHeroPortraitSlot()
     {
-        var heroDock = GetNode<HBoxContainer>("Margin/Shell/CenterStage/PreparationPanel/HeroDock");
+        var heroDock = GetNode<HBoxContainer>("Margin/Shell/CenterStage/PreparationPanel/HeroDock/HeroDockRow");
         var dockHeight = ResolvePresentationMetric(ModThemeMetricKeys.Hud.HeroDockMinimumHeight, 1.0f, 2048.0f);
         var portraitSize = ResolvePresentationMetric(ModThemeMetricKeys.Hud.HeroPortraitSize, 1.0f, 2048.0f);
         heroDock.CustomMinimumSize = new Vector2(0, dockHeight);
