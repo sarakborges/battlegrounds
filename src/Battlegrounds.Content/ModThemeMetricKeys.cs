@@ -83,13 +83,25 @@ public static class ModThemeMetricKeys
 
     public static class Card
     {
+        public const string DefaultRole = "default";
+        public const string LeaderRole = "leader";
+        public const string ShopRole = "shop";
+        public const string BoardRole = "board";
+        public const string ReserveRole = "reserve";
+        public const string ChoiceRole = "choice";
         public const string ContentGap = "card.contentGap";
+
         public static string MinimumWidth(string role) => $"card.{role}.minimumWidth";
         public static string ArtHeight(string role) => $"card.{role}.artHeight";
     }
 
     public static class Row
     {
+        public const string LeaderRole = "leader";
+        public const string OfferRole = "offer";
+        public const string FieldRole = "field";
+        public const string ReserveRole = "reserve";
+
         public const string Leader = "row.leader";
         public const string Offer = "row.offer";
         public const string Field = "row.field";
