@@ -27,6 +27,34 @@ A transformed Unit that originally came from the shared pool returns its origina
 
 The Content boundary rejects these four effects from Combat-capable authored triggers. Combat receives only an isolated snapshot and never receives the persistent-mutation adapter.
 
+## Continuous unit stat auras
+
+A Unit may author continuous Attack/Health bonuses under top-level `auras`. Unlike `modifyStats` or named modifiers, an aura is derived board state: it does not permanently mutate the target and disappears as soon as the source or target relationship stops matching.
+
+Example:
+
+```json
+{
+  "auras": [
+    {
+      "target": {
+        "scope": "friendly",
+        "selection": "all",
+        "typeId": "beast"
+      },
+      "attack": 1,
+      "health": 1
+    }
+  ]
+}
+```
+
+The first aura slice intentionally supports only non-negative friendly stat bonuses. Targets may use `all`, source-relative `adjacent`, `leftAdjacent`, or `rightAdjacent`, with optional `typeId`, `tagId`, and `excludeSource`. Aura targets do not support `limit`, enemy scope, selected-relative anchoring, or random selection.
+
+Aura contribution is stored separately from a Unit's intrinsic and persistent stats. Preparation recalculates it when Field membership, order, transformation, summoning, or revival changes. Combat independently recalculates it for the initial board and when Units are summoned, removed by death, or revived. Therefore an aura source that leaves the Field or dies stops contributing immediately, and positional auras follow the current ordering rather than leaving a stat bonus behind.
+
+Persistent-to-Combat snapshots carry intrinsic stats without the currently-applied aura contribution, so Combat recomputes the same authored aura exactly once. Likewise, `copyUnitToReserve` copies intrinsic runtime state and named modifiers but does not capture a temporary aura contribution. Aura resolution itself consumes no RNG and is not a trigger or mechanical history event.
+
 ## Combine reward lifecycle
 
 `onCombine` is a neutral Preparation-only hook for the result of an explicit `CombineUnitsCommand`. It does not mean `onPlay`, `onSummon`, or `onDeath`, and combining does not synthesize any of those events for consumed or resulting Units.
