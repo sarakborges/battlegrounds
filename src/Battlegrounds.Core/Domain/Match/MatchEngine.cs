@@ -190,6 +190,12 @@ public sealed class MatchEngine
 
         ApplyPowerChanges(match, powerChanges);
         match.RecordEliminations(newlyEliminated, healthBeforeCombat);
+        foreach (var playerId in newlyEliminated)
+        {
+            if (!match.TryGetPlayer(playerId, out var eliminatedPlayer))
+                throw new InvalidOperationException($"Cannot reclaim pool copies for unknown eliminated player '{playerId}'.");
+            _preparationEngine.ReclaimEliminatedPlayerPoolCopies(eliminatedPlayer);
+        }
         match.RecordCombatPairings(materializedPairings, eliminatedOpponent);
         if (match.ActivePlayerCount <= 1)
         {

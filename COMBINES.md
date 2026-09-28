@@ -93,8 +93,8 @@ A successful combine resolves atomically in this order:
 4. return each consumed pooled copy to the Unit pool exactly once;
 5. create a fresh Generated instance of `resultUnitId`;
 6. place the result in Reserve;
-7. execute the result Unit's optional `onCombine` reward trigger;
-8. resolve any consequences produced by that reward through the existing Preparation effect runtime.
+7. execute the result Unit's authored `onCombine` reward triggers in definition order, using that result Unit itself as the effect source;
+8. resolve any consequences produced by those rewards through the existing Preparation effect runtime.
 
 No component's `onDeath`, `onPlay`, `onSummon`, or release semantics are invoked merely because it was consumed by a combine. Combining is its own explicit lifecycle operation.
 
@@ -102,7 +102,7 @@ No component's `onDeath`, `onPlay`, `onSummon`, or release semantics are invoked
 
 `onCombine` is a Preparation-only reward hook on the authored result Unit. It is not a combat trigger and is not a synonym for `onPlay` or `onSummon`.
 
-The result Unit is already in Reserve when its `onCombine` effects run. The hook exists for reward-style consequences such as resource changes, generated playables, pending choices, or other targetless Preparation effects that already use `GameEffectRuntime` semantics.
+The result Unit is already in Reserve when its `onCombine` effects run. The result Unit itself is the runtime effect source, so source-relative dynamic values such as `sourceStat` read the result's authored/current runtime stats rather than a synthetic proxy. Multiple authored `onCombine` triggers resolve in definition order. The hook exists for reward-style consequences such as resource changes, generated playables, pending choices, or other targetless Preparation effects that already use `GameEffectRuntime` semantics.
 
 The result's upgraded/base stats, behaviors, tags, types, and ordinary triggers belong directly on its `UnitDefinition`; they are not synthesized from the consumed copies.
 

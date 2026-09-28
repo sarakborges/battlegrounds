@@ -24,7 +24,7 @@ Battlegrounds.Application
 
 - `ModPath`: validated mod directory, defaulting to the repository `mods/example` fixture while developing locally;
 - `Seed`: deterministic single-player session seed;
-- `ParticipantCount`: one human plus AI opponents. It must satisfy the selected mod's player-count rules and is currently required to be even because round one has no eliminated-opponent snapshot;
+- `ParticipantCount`: one human plus AI opponents. It may be odd or even and must satisfy the selected mod's player-count rules; an odd first combat round uses an explicit bye until an eliminated-opponent snapshot exists;
 - `Locale`: optional presentation locale. Empty means use Godot's system locale and then the mod catalog's fallback rules;
 - `CombatPlaybackStepSeconds`: presentation-only delay between automatic playback steps.
 
@@ -181,6 +181,8 @@ Rendering may create derived labels, cards, textures, audio streams, ordering, b
 
 CI builds `Battlegrounds.Game` in addition to testing Core, Content, AI and Application. This catches C#/Godot API drift at the adapter boundary even though headless CI does not run the interactive scene.
 
-## Next presentation boundary
+## Mod selection boundary
 
-The development scene still receives one exported `ModPath`, so a real user cannot inspect/select mods without changing editor configuration. The next boundary should introduce deterministic mod discovery and a Godot selection surface over lightweight Content-owned package summaries/validation diagnostics. Invalid packages should remain inspectable but must never become running sessions, and Application/Core must remain unaware of discovery directories or selection UI.
+The project starts from `ModLauncher`, which asks `Battlegrounds.Content` for deterministic package discovery and lightweight validation summaries before a gameplay session exists. Valid packages may be selected and launched; invalid packages remain inspectable through diagnostics but never become running sessions.
+
+Discovery directories, package inspection and selection UI remain presentation/content concerns. `Battlegrounds.Application` and `Battlegrounds.Core` only receive an already validated selected package and stay unaware of launcher filesystem policy.

@@ -43,6 +43,13 @@ public sealed class UnitInstance
         _modifiersView = _modifiers.AsReadOnly();
     }
 
+    internal UnitDefinition? ReleasePoolReturnDefinition()
+    {
+        var definition = PoolReturnDefinition;
+        PoolReturnDefinition = null;
+        return definition;
+    }
+
     internal void ModifyStats(int attackDelta, int healthDelta)
     {
         Attack = Math.Max(0, Attack + attackDelta);

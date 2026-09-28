@@ -218,7 +218,10 @@ internal sealed class GameEffectRuntime
                     _world.TakeDamage(target, amount);
                     RecordGameEventCore(target.OwnerPlayerId, NativeGameEventKeys.UnitDamaged, target.Definition, queue);
                     if (_world.TryConsumeBehavior(source, NativeBehaviorKeys.LethalFirstDamagePerCombat)) _world.Destroy(target);
-                    queue.Enqueue(new GameEffectEvent(NativeTriggerKeys.OnDamage, target));
+                    queue.Enqueue(new GameEffectEvent(
+                        NativeTriggerKeys.OnDamage,
+                        target,
+                        GetLivingContextTargetInstanceId(source)));
                 }
                 break;
             }
@@ -319,6 +322,14 @@ internal sealed class GameEffectRuntime
             default:
                 throw new ArgumentOutOfRangeException(nameof(resolved), resolved.Definition.Kind, "Unsupported effect kind.");
         }
+    }
+
+    private UnitInstanceId? GetLivingContextTargetInstanceId(IEffectRuntimeUnit source)
+    {
+        if (!source.IsAlive) return null;
+        return _world.TryGetUnit(source.InstanceId, out var current) && current.IsAlive
+            ? source.InstanceId
+            : null;
     }
 
     private UnitCatalog RequireUnitCatalog(string effect) =>

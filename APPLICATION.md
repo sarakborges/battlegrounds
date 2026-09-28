@@ -126,11 +126,11 @@ The same injected `IRandomSource` is shared by Leader offers, AI personality ass
 
 Given the same validated mod, participant IDs, human commands and seed, application orchestration follows the same deterministic Core/AI sequence, including the same AI personality and strategy assignments. Locale selection does not participate in this deterministic gameplay stream.
 
-## Current odd-player constraint
+## Odd-player pairing boundary
 
-The current Core combat contract requires an eliminated-opponent snapshot when the active player count is odd. No such snapshot exists before the first combat round, so a session currently requires an even initial participant count.
+Sessions may start with odd or even participant counts as long as the selected mod's player-count rules allow them. Pairing remains explicit: when an odd active-player count has no eliminated-opponent snapshot yet, the pairing policy assigns one explicit bye. A bye is recorded in authoritative pairing history, creates no combat settlement, deals no damage and fires no combat lifecycle effects.
 
-This is an explicit application precondition, not a hidden bye rule. A future matchmaking design may change that contract, but the session must continue to produce explicit pairings rather than bypass `MatchEngine` validation.
+Once an eliminated-opponent snapshot exists, the odd player may instead be paired against that immutable archived participant. `SinglePlayerSession` still delegates pairing policy and submits the resulting explicit `CombatPairing` values to `MatchEngine`; it never bypasses Core pairing validation.
 
 ## Presentation ownership
 

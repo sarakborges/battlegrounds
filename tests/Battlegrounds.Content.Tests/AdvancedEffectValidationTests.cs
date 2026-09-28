@@ -125,7 +125,7 @@ public sealed class AdvancedEffectValidationTests
     }
 
     [Fact]
-    public void Validate_SelectedUnitTargetRequiresAttackContext()
+    public void Validate_SelectedUnitTargetRequiresContextProvidingTrigger()
     {
         var path = CreateTempMod();
         try
@@ -160,6 +160,10 @@ public sealed class AdvancedEffectValidationTests
             File.WriteAllText(unitPath, attackJson);
             var validReport = new ModValidator().Validate(path);
             Assert.True(validReport.IsValid, string.Join(Environment.NewLine, validReport.Issues.Select(issue => $"{issue.Code}: {issue.File} {issue.Path} {issue.Message}")));
+
+            File.WriteAllText(unitPath, attackJson.Replace("onAttack", "onDamage", StringComparison.Ordinal));
+            var damageReport = new ModValidator().Validate(path);
+            Assert.True(damageReport.IsValid, string.Join(Environment.NewLine, damageReport.Issues.Select(issue => $"{issue.Code}: {issue.File} {issue.Path} {issue.Message}")));
 
             File.WriteAllText(unitPath, attackJson.Replace("onAttack", "onCombatStart", StringComparison.Ordinal));
             var invalidReport = new ModValidator().Validate(path);
