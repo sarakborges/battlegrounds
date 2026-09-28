@@ -55,8 +55,8 @@ public partial class Main
     private TextureRect EnsureHeroPortraitSlot()
     {
         var heroDock = GetNode<HBoxContainer>("Margin/Shell/CenterStage/PreparationPanel/HeroDock");
-        var dockHeight = ResolvePresentationMetric(ModThemeMetricKeys.Hud.HeroDockMinimumHeight, 108.0f, 1.0f, 2048.0f);
-        var portraitSize = ResolvePresentationMetric(ModThemeMetricKeys.Hud.HeroPortraitSize, 88.0f, 1.0f, 2048.0f);
+        var dockHeight = ResolvePresentationMetric(ModThemeMetricKeys.Hud.HeroDockMinimumHeight, 1.0f, 2048.0f);
+        var portraitSize = ResolvePresentationMetric(ModThemeMetricKeys.Hud.HeroPortraitSize, 1.0f, 2048.0f);
         heroDock.CustomMinimumSize = new Vector2(0, dockHeight);
 
         var existing = heroDock.GetNodeOrNull<PanelContainer>("HeroPortraitFrame");
@@ -129,15 +129,15 @@ public partial class Main
             child.QueueFree();
         }
 
-        var entryHeight = ResolvePresentationMetric(ModThemeMetricKeys.Hud.OpponentEntryHeight, 58.0f, 1.0f, 2048.0f);
-        var marginHorizontal = Mathf.RoundToInt(ResolvePresentationMetric(ModThemeMetricKeys.Hud.OpponentMarginHorizontal, 5.0f, 0.0f, 512.0f));
-        var marginVertical = Mathf.RoundToInt(ResolvePresentationMetric(ModThemeMetricKeys.Hud.OpponentMarginVertical, 4.0f, 0.0f, 512.0f));
-        var rowGap = Mathf.RoundToInt(ResolvePresentationMetric(ModThemeMetricKeys.Hud.OpponentGap, 5.0f, 0.0f, 512.0f));
-        var rankWidth = ResolvePresentationMetric(ModThemeMetricKeys.Hud.OpponentRankWidth, 18.0f, 1.0f, 512.0f);
-        var portraitSize = ResolvePresentationMetric(ModThemeMetricKeys.Hud.OpponentPortraitSize, 44.0f, 1.0f, 1024.0f);
-        var statsWidth = ResolvePresentationMetric(ModThemeMetricKeys.Hud.OpponentStatsWidth, 34.0f, 1.0f, 1024.0f);
-        var identityGap = Mathf.RoundToInt(ResolvePresentationMetric(ModThemeMetricKeys.Hud.OpponentIdentityGap, 0.0f, 0.0f, 256.0f));
-        var statsGap = Mathf.RoundToInt(ResolvePresentationMetric(ModThemeMetricKeys.Hud.OpponentStatsGap, 0.0f, 0.0f, 256.0f));
+        var entryHeight = ResolvePresentationMetric(ModThemeMetricKeys.Hud.OpponentEntryHeight, 1.0f, 2048.0f);
+        var marginHorizontal = Mathf.RoundToInt(ResolvePresentationMetric(ModThemeMetricKeys.Hud.OpponentMarginHorizontal, 0.0f, 512.0f));
+        var marginVertical = Mathf.RoundToInt(ResolvePresentationMetric(ModThemeMetricKeys.Hud.OpponentMarginVertical, 0.0f, 512.0f));
+        var rowGap = Mathf.RoundToInt(ResolvePresentationMetric(ModThemeMetricKeys.Hud.OpponentGap, 0.0f, 512.0f));
+        var rankWidth = ResolvePresentationMetric(ModThemeMetricKeys.Hud.OpponentRankWidth, 1.0f, 512.0f);
+        var portraitSize = ResolvePresentationMetric(ModThemeMetricKeys.Hud.OpponentPortraitSize, 1.0f, 1024.0f);
+        var statsWidth = ResolvePresentationMetric(ModThemeMetricKeys.Hud.OpponentStatsWidth, 1.0f, 1024.0f);
+        var identityGap = Mathf.RoundToInt(ResolvePresentationMetric(ModThemeMetricKeys.Hud.OpponentIdentityGap, 0.0f, 256.0f));
+        var statsGap = Mathf.RoundToInt(ResolvePresentationMetric(ModThemeMetricKeys.Hud.OpponentStatsGap, 0.0f, 256.0f));
 
         var ordered = match.Players
             .OrderBy(player => player.IsEliminated)
