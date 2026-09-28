@@ -46,6 +46,16 @@ internal sealed class ModThemeMetricsValidator
                 continue;
             }
 
+            if (!ModThemeMetricNames.IsSupported(pair.Name))
+            {
+                issues.Add(new(
+                    "UNKNOWN_THEME_METRIC",
+                    ThemeFile,
+                    "$.metrics." + pair.Name,
+                    $"Theme metric '{pair.Name}' is not supported by theme schema v1."));
+                continue;
+            }
+
             if (pair.Value.ValueKind != JsonValueKind.Number ||
                 !pair.Value.TryGetDouble(out var value) ||
                 !double.IsFinite(value) ||
