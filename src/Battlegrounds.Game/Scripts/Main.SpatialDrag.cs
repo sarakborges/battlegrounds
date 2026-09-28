@@ -121,7 +121,7 @@ public partial class Main
             return;
 
         var heroCore = GetNodeOrNull<Control>(
-            "Margin/Shell/CenterStage/PreparationPanel/HeroDock/HeroCore");
+            "Margin/Shell/CenterStage/PreparationPanel/HeroDock/HeroDockRow/HeroCore");
         if (!ContainsPointer(heroCore, pointer, PreparationDropTargetPadding))
             return;
 
