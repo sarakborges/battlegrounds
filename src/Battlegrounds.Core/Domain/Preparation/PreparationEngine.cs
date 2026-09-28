@@ -284,6 +284,21 @@ public sealed class PreparationEngine
             return PreparationCommandResult.Failure(PreparationFailureCode.ReserveFull);
 
         var resultDefinition = _unitCatalog.GetRequired(combine.ResultUnitId);
+        var inheritedModifiers = combine.InheritPersistentModifiers
+            ? selected
+                .SelectMany(value => value.Unit.Modifiers)
+                .Where(modifier => modifier.Duration == UnitModifierDuration.Persistent)
+                .GroupBy(modifier => modifier.Key, StringComparer.Ordinal)
+                .Select(group => new
+                {
+                    Key = group.Key,
+                    Attack = group.Sum(modifier => modifier.AttackDelta),
+                    Health = group.Sum(modifier => modifier.HealthDelta),
+                })
+                .Where(modifier => modifier.Attack != 0 || modifier.Health != 0)
+                .OrderBy(modifier => modifier.Key, StringComparer.Ordinal)
+                .ToArray()
+            : [];
         foreach (var value in selected)
         {
             var removed = player.RemoveOwnedUnit(value.Unit.Id);
@@ -292,6 +307,8 @@ public sealed class PreparationEngine
         }
 
         var result = match.CreateUnit(resultDefinition, UnitInstanceOrigin.Generated);
+        foreach (var modifier in inheritedModifiers)
+            result.ApplyModifier(modifier.Key, modifier.Attack, modifier.Health, UnitModifierDuration.Persistent);
         player.AddToReserve(result);
         _effectEngine.ProcessCombinedUnit(match, player, result);
         return PreparationCommandResult.Success();

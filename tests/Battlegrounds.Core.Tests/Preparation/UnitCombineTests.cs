@@ -73,6 +73,46 @@ public sealed class UnitCombineTests
     }
 
     [Fact]
+    public void Combine_CanAggregatePersistentModifiersWithoutCarryingTemporaryOnes()
+    {
+        var source = new UnitDefinition(new UnitId("source"), "Source", 1, 2, 2);
+        var result = new UnitDefinition(new UnitId("result"), "Result", 1, 5, 5);
+        var combine = new UnitCombineDefinition(
+            new UnitCombineId("inherit"),
+            "Inherited Combine",
+            source.Id,
+            3,
+            result.Id,
+            inheritPersistentModifiers: true);
+        var combines = new UnitCombineCatalog([combine]);
+        var units = new UnitCatalog([source, result], combines);
+        var pool = new UnitPool(units, [new UnitPoolEntry(source.Id, 6)]);
+        var rules = new PreparationRules(10, 0, 10, 0, 1, 1, 7, 10, 2, [3, 3], [5]);
+        var engine = new PreparationEngine(rules, pool, new MinimumRandomSource(), units, null, null, null, combines);
+        var match = MatchState.Create([new PlayerId(0), new PlayerId(1)], new MatchRules(2, 2));
+        engine.BeginPreparation(match);
+        var player = match.Players[0];
+        Assert.True(engine.Execute(match, new AcquireUnitCommand(player.Id, 0)).Succeeded);
+        Assert.True(engine.Execute(match, new AcquireUnitCommand(player.Id, 0)).Succeeded);
+        Assert.True(engine.Execute(match, new AcquireUnitCommand(player.Id, 0)).Succeeded);
+        player.Reserve[0].ApplyModifier("legacy", 1, 2, UnitModifierDuration.Persistent);
+        player.Reserve[1].ApplyModifier("legacy", 3, 4, UnitModifierDuration.Persistent);
+        player.Reserve[2].ApplyModifier("temporary", 9, 9, UnitModifierDuration.UntilCombatEnd);
+        var ids = player.Reserve.Select(unit => unit.Id).ToArray();
+
+        Assert.True(engine.Execute(match, new CombineUnitsCommand(player.Id, combine.Id, ids)).Succeeded);
+
+        var merged = Assert.Single(player.Reserve);
+        Assert.Equal(9, merged.Attack);
+        Assert.Equal(11, merged.Health);
+        var inherited = Assert.Single(merged.Modifiers);
+        Assert.Equal("legacy", inherited.Key);
+        Assert.Equal(4, inherited.AttackDelta);
+        Assert.Equal(6, inherited.HealthDelta);
+        Assert.Equal(UnitModifierDuration.Persistent, inherited.Duration);
+    }
+
+    [Fact]
     public void Combine_RejectsDuplicateOrWrongSourceInstances()
     {
         var source = new UnitDefinition(new UnitId("source"), "Source", 1, 1, 1);
