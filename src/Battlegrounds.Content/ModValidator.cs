@@ -9,19 +9,13 @@ public sealed class ModValidator
 
         var powerIssues = new PowerLifecycleModValidator().Validate(modDirectory)
             .Where(issue => !IsSupersededEffectSchemaIssue(issue))
-            .Where(issue => !IsSupersededStaticEffectValueIssue(issue))
-;
+            .Where(issue => !IsSupersededStaticEffectValueIssue(issue));
 
-        var advancedIssues = new AdvancedEffectModValidator().Validate(modDirectory)
-;
-        var dynamicIssues = new DynamicEffectValueModValidator().Validate(modDirectory)
-;
-        var statefulIssues = new StatefulEffectModValidator().Validate(modDirectory)
-;
-        var generationIssues = new GenerationChoiceModValidator().Validate(modDirectory)
-;
-        var actionIssues = new ActionModValidator().Validate(modDirectory)
-;
+        var advancedIssues = new AdvancedEffectModValidator().Validate(modDirectory);
+        var dynamicIssues = new DynamicEffectValueModValidator().Validate(modDirectory);
+        var statefulIssues = new StatefulEffectModValidator().Validate(modDirectory);
+        var generationIssues = new GenerationChoiceModValidator().Validate(modDirectory);
+        var actionIssues = new ActionModValidator().Validate(modDirectory);
         var themeIssues = new ModThemeValidator().Validate(modDirectory)
             .Concat(new ModThemeMetricsValidator().Validate(modDirectory))
             .Concat(new ModThemeRoleValidator().Validate(modDirectory));
@@ -89,5 +83,4 @@ public sealed class ModValidator
         if (numericPath && issue.Code is "INVALID_TYPE" or "INVALID_VALUE") return true;
         return issue.Code == "INVALID_VALUE" && issue.Message.StartsWith("modifyStats requires", StringComparison.Ordinal);
     }
-
 }
