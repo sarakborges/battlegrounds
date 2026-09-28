@@ -138,22 +138,20 @@ internal sealed class ModPresentationTextureStore
             entityId,
             $"{skinId}.png");
 
-        if (_cosmeticTextures.TryGetValue(fullPath, out texture))
-            return texture is not null;
+        if (_cosmeticTextures.TryGetValue(fullPath, out texture) && texture is not null)
+            return true;
 
         texture = null;
         if (!File.Exists(fullPath))
-        {
-            _cosmeticTextures[fullPath] = null;
             return false;
-        }
 
         try
         {
-            var image = Image.LoadFromFile(fullPath);
-            if (image.IsEmpty())
+            var image = new Image();
+            var error = image.LoadPngFromBuffer(File.ReadAllBytes(fullPath));
+            if (error != Error.Ok || image.IsEmpty())
             {
-                _cosmeticTextures[fullPath] = null;
+                GD.PushWarning($"Could not decode cosmetic PNG '{fullPath}': {error}.");
                 return false;
             }
 
@@ -164,7 +162,6 @@ internal sealed class ModPresentationTextureStore
         catch (Exception exception)
         {
             GD.PushWarning($"Could not load cosmetic image '{fullPath}': {exception.Message}");
-            _cosmeticTextures[fullPath] = null;
             return false;
         }
     }
