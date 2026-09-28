@@ -1,3 +1,4 @@
+using Battlegrounds.Content;
 using Godot;
 
 namespace Battlegrounds.Game;
@@ -249,16 +250,16 @@ internal sealed partial class PresentationCardButton : Button
         if (main is not null)
         {
             minimumWidth = main.ResolvePresentationMetric(
-                $"card.{role}.minimumWidth",
+                ModThemeMetricKeys.Card.MinimumWidth(role),
                 minimumWidth,
                 1.0f,
                 2048.0f);
             artHeight = main.ResolvePresentationMetric(
-                $"card.{role}.artHeight",
+                ModThemeMetricKeys.Card.ArtHeight(role),
                 artHeight,
                 0.0f,
                 2048.0f);
-            var contentGap = main.ResolvePresentationMetric("card.contentGap", 2.0f, 0.0f, 256.0f);
+            var contentGap = main.ResolvePresentationMetric(ModThemeMetricKeys.Card.ContentGap, 2.0f, 0.0f, 256.0f);
             _column.AddThemeConstantOverride("separation", Mathf.RoundToInt(contentGap));
         }
 
