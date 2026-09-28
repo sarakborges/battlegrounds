@@ -68,5 +68,4 @@ public sealed class ModValidator
         if (issue.Code == "UNSUPPORTED_TRIGGER" && issue.Message.Contains("afterEventCount", StringComparison.Ordinal)) return true;
         return issue.Code == "INVALID_VALUE" && issue.Path.EndsWith(".target.scope", StringComparison.Ordinal);
     }
-
 }
