@@ -5,6 +5,7 @@ namespace Battlegrounds.Game;
 internal enum PresentationInteractionKind
 {
     None,
+    DeployTarget,
     ActionTarget,
     PowerTarget,
     CombineRecipe,
@@ -16,11 +17,19 @@ internal sealed class PresentationInteractionState
     private readonly HashSet<UnitInstanceId> _selectedUnits = [];
 
     public PresentationInteractionKind Kind { get; private set; }
+    public int? UnitReserveSlot { get; private set; }
     public int? ActionReserveSlot { get; private set; }
     public UnitCombineId? CombineId { get; private set; }
     public IReadOnlyCollection<UnitInstanceId> SelectedUnits => _selectedUnits;
 
     public bool IsActive => Kind != PresentationInteractionKind.None;
+
+    public void BeginDeployTarget(int reserveSlot)
+    {
+        Reset();
+        Kind = PresentationInteractionKind.DeployTarget;
+        UnitReserveSlot = reserveSlot;
+    }
 
     public void BeginActionTarget(int reserveSlot)
     {
@@ -63,6 +72,7 @@ internal sealed class PresentationInteractionState
     public void Reset()
     {
         Kind = PresentationInteractionKind.None;
+        UnitReserveSlot = null;
         ActionReserveSlot = null;
         CombineId = null;
         _selectedUnits.Clear();

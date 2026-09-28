@@ -151,14 +151,8 @@ public sealed class PreparationAiAgent
         var combine = TryCreateCombineCommand(player);
         if (combine is not null) return combine;
 
-        if (player.Field.Count < _rules.FieldCapacity && player.Reserve.Count > 0)
-        {
-            var reserveIndex = ChooseBestIndex(
-                player.Reserve,
-                unit => ScoreUnitInstance(unit, strategy),
-                unit => unit.Id.Value.ToString(System.Globalization.CultureInfo.InvariantCulture));
-            return new DeployUnitCommand(player.Id, reserveIndex);
-        }
+        var deploy = TryCreateDeployUnitCommand(match, player, strategy);
+        if (deploy is not null) return deploy;
 
         var release = TryCreateReplacementRelease(player, strategy);
         if (release is not null) return release;
@@ -281,6 +275,35 @@ public sealed class PreparationAiAgent
         }
 
         return null;
+    }
+
+    private DeployUnitCommand? TryCreateDeployUnitCommand(
+        MatchState match,
+        PlayerState player,
+        PreparationAiStrategy strategy)
+    {
+        if (player.Field.Count >= _rules.FieldCapacity || player.Reserve.Count == 0) return null;
+
+        var candidates = new List<DeployCandidate>();
+        for (var index = 0; index < player.Reserve.Count; index++)
+        {
+            var unit = player.Reserve[index];
+            var onPlayEffects = unit.Definition.Triggers
+                .Where(trigger => trigger.Event == NativeTriggerKeys.OnPlay)
+                .SelectMany(trigger => trigger.Effects)
+                .ToArray();
+            var target = SelectTarget(match, player.Id, onPlayEffects);
+            if (target.RequiresTarget && target.Target is null) continue;
+            candidates.Add(new DeployCandidate(index, unit, target.Target));
+        }
+        if (candidates.Count == 0) return null;
+
+        var selectedIndex = ChooseBestIndex(
+            candidates,
+            candidate => ScoreUnitInstance(candidate.Unit, strategy),
+            candidate => candidate.Unit.Id.Value.ToString(System.Globalization.CultureInfo.InvariantCulture));
+        var selected = candidates[selectedIndex];
+        return new DeployUnitCommand(player.Id, selected.ReserveIndex, selected.Target);
     }
 
     private ReleaseUnitCommand? TryCreateReplacementRelease(PlayerState player, PreparationAiStrategy strategy)
@@ -483,6 +506,7 @@ public sealed class PreparationAiAgent
     }
 
     private sealed record Scored<T>(T Value, int Index, long Score, string StableId);
+    private sealed record DeployCandidate(int ReserveIndex, UnitInstance Unit, UnitInstanceId? Target);
     private sealed record ActionCandidate(int ActionIndex, ActionInstance Action, UnitInstanceId? Target);
     private sealed record TargetCandidate(PlayerId OwnerPlayerId, UnitInstance Unit);
     private readonly record struct SelectedTarget(bool RequiresTarget, UnitInstanceId? Target);
