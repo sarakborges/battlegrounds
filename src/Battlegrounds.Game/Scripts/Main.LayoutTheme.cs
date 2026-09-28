@@ -42,12 +42,12 @@ public partial class Main
         const string preparation = "Margin/Shell/CenterStage/PreparationPanel";
         ApplySeparation(preparation, ModThemeMetricKeys.Layout.PreparationGap);
         ApplyMinimumSize(preparation + "/TavernControls", null, ModThemeMetricKeys.Layout.TavernControlsMinimumHeight);
-        ApplySeparation(preparation + "/TavernControls", ModThemeMetricKeys.Layout.TavernControlsGap);
-        ApplyMinimumSize(preparation + "/TavernControls/TierBadge", ModThemeMetricKeys.Layout.TavernTierBadgeWidth, ModThemeMetricKeys.Layout.TavernTierBadgeHeight);
-        ApplyMinimumSize(preparation + "/TavernControls/UpgradeButton", ModThemeMetricKeys.Layout.TavernUpgradeButtonWidth, ModThemeMetricKeys.Layout.TavernControlHeight);
-        ApplyMinimumSize(preparation + "/TavernControls/ControlSpacer", ModThemeMetricKeys.Layout.TavernControlSpacerWidth, null);
-        ApplyMinimumSize(preparation + "/TavernControls/RefreshButton", ModThemeMetricKeys.Layout.TavernRefreshButtonWidth, ModThemeMetricKeys.Layout.TavernControlHeight);
-        ApplyMinimumSize(preparation + "/TavernControls/FreezeButton", ModThemeMetricKeys.Layout.TavernFreezeButtonWidth, ModThemeMetricKeys.Layout.TavernControlHeight);
+        ApplySeparation(preparation + "/TavernControls/ControlsRow", ModThemeMetricKeys.Layout.TavernControlsGap);
+        ApplyMinimumSize(preparation + "/TavernControls/ControlsRow/TierBadge", ModThemeMetricKeys.Layout.TavernTierBadgeWidth, ModThemeMetricKeys.Layout.TavernTierBadgeHeight);
+        ApplyMinimumSize(preparation + "/TavernControls/ControlsRow/UpgradeButton", ModThemeMetricKeys.Layout.TavernUpgradeButtonWidth, ModThemeMetricKeys.Layout.TavernControlHeight);
+        ApplyMinimumSize(preparation + "/TavernControls/ControlsRow/ControlSpacer", ModThemeMetricKeys.Layout.TavernControlSpacerWidth, null);
+        ApplyMinimumSize(preparation + "/TavernControls/ControlsRow/RefreshButton", ModThemeMetricKeys.Layout.TavernRefreshButtonWidth, ModThemeMetricKeys.Layout.TavernControlHeight);
+        ApplyMinimumSize(preparation + "/TavernControls/ControlsRow/FreezeButton", ModThemeMetricKeys.Layout.TavernFreezeButtonWidth, ModThemeMetricKeys.Layout.TavernControlHeight);
 
         ApplyMinimumSize(preparation + "/TavernShelf", null, ModThemeMetricKeys.Layout.TavernShelfMinimumHeight);
         ApplySeparation(preparation + "/TavernShelf/ShelfRow", ModThemeMetricKeys.Layout.TavernShelfGap);
@@ -58,14 +58,15 @@ public partial class Main
         ApplyMinimumSize(preparation + "/BoardStage", null, ModThemeMetricKeys.Layout.BoardMinimumHeight);
         ApplyMinimumSize(preparation + "/ReserveShelf", null, ModThemeMetricKeys.Layout.ReserveMinimumHeight);
 
-        ApplySeparation(preparation + "/HeroDock", ModThemeMetricKeys.Layout.HeroDockGap);
-        ApplyMinimumSize(preparation + "/HeroDock/HealthBadge", ModThemeMetricKeys.Layout.HeroDockHealthBadgeWidth, ModThemeMetricKeys.Layout.HeroDockHealthBadgeHeight);
-        ApplyMinimumSize(preparation + "/HeroDock/HudArmorBadge", ModThemeMetricKeys.Layout.HeroDockArmorBadgeWidth, ModThemeMetricKeys.Layout.HeroDockArmorBadgeHeight);
-        ApplyMinimumSize(preparation + "/HeroDock/HeroCore", ModThemeMetricKeys.Layout.HeroDockHeroCoreWidth, null);
-        ApplySeparation(preparation + "/HeroDock/HeroCore", ModThemeMetricKeys.Layout.HeroDockHeroCoreGap);
-        ApplyMinimumSize(preparation + "/HeroDock/HeroCore/PowerButton", ModThemeMetricKeys.Layout.HeroDockPowerButtonWidth, ModThemeMetricKeys.Layout.HeroDockPowerButtonHeight);
-        ApplyMinimumSize(preparation + "/HeroDock/CombineButton", ModThemeMetricKeys.Layout.HeroDockCombineButtonWidth, ModThemeMetricKeys.Layout.HeroDockCombineButtonHeight);
-        ApplyMinimumSize(preparation + "/HeroDock/ResourceBadge", ModThemeMetricKeys.Layout.HeroDockResourceBadgeWidth, ModThemeMetricKeys.Layout.HeroDockResourceBadgeHeight);
+        ApplyMinimumSize(preparation + "/HeroDock", null, ModThemeMetricKeys.Hud.HeroDockMinimumHeight);
+        ApplySeparation(preparation + "/HeroDock/HeroDockRow", ModThemeMetricKeys.Layout.HeroDockGap);
+        ApplyMinimumSize(preparation + "/HeroDock/HeroDockRow/HealthBadge", ModThemeMetricKeys.Layout.HeroDockHealthBadgeWidth, ModThemeMetricKeys.Layout.HeroDockHealthBadgeHeight);
+        ApplyMinimumSize(preparation + "/HeroDock/HeroDockRow/HudArmorBadge", ModThemeMetricKeys.Layout.HeroDockArmorBadgeWidth, ModThemeMetricKeys.Layout.HeroDockArmorBadgeHeight);
+        ApplyMinimumSize(preparation + "/HeroDock/HeroDockRow/HeroCore", ModThemeMetricKeys.Layout.HeroDockHeroCoreWidth, null);
+        ApplySeparation(preparation + "/HeroDock/HeroDockRow/HeroCore", ModThemeMetricKeys.Layout.HeroDockHeroCoreGap);
+        ApplyMinimumSize(preparation + "/HeroDock/HeroDockRow/HeroCore/PowerButton", ModThemeMetricKeys.Layout.HeroDockPowerButtonWidth, ModThemeMetricKeys.Layout.HeroDockPowerButtonHeight);
+        ApplyMinimumSize(preparation + "/HeroDock/HeroDockRow/CombineButton", ModThemeMetricKeys.Layout.HeroDockCombineButtonWidth, ModThemeMetricKeys.Layout.HeroDockCombineButtonHeight);
+        ApplyMinimumSize(preparation + "/HeroDock/HeroDockRow/ResourceBadge", ModThemeMetricKeys.Layout.HeroDockResourceBadgeWidth, ModThemeMetricKeys.Layout.HeroDockResourceBadgeHeight);
 
         ApplyMinimumSize("Margin/Shell/TurnRail", ModThemeMetricKeys.Layout.TurnRailWidth, null);
         ApplySeparation("Margin/Shell/TurnRail/Content", ModThemeMetricKeys.Layout.TurnRailGap);
