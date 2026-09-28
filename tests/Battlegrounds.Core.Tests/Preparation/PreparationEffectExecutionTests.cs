@@ -322,6 +322,37 @@ public sealed class PreparationEffectExecutionTests
         Assert.Equal(1, setup.Pool.GetAvailableCopies(released.Id));
     }
 
+    [Fact]
+    public void EndPreparation_TurnEndPendingChoiceCannotMarkPlayerReady()
+    {
+        var option = new UnitDefinition(new UnitId("option"), "Option", 1, 1, 1);
+        var source = new UnitDefinition(
+            new UnitId("source"),
+            "Source",
+            1,
+            1,
+            2,
+            triggers:
+            [
+                new TriggerDefinition(
+                    NativeTriggerKeys.OnTurnEnd,
+                    [new GenerateUnitChoiceEffectDefinition(new UnitDefinitionQuery(excludeSource: true), optionCount: 1)]),
+            ]);
+
+        var setup = CreateStartedMatch([source, option], [source, option], startingResource: 10, acquireCost: 0);
+        var player = setup.Match.Players[0];
+        AcquireById(setup.Engine, setup.Match, player.Id, source.Id);
+        Assert.True(setup.Engine.Execute(setup.Match, new DeployUnitCommand(player.Id, 0)).Succeeded);
+
+        var error = Assert.Throws<InvalidOperationException>(() =>
+            setup.Engine.Execute(setup.Match, new EndPreparationCommand(player.Id)));
+
+        Assert.Contains("pending choice", error.Message, StringComparison.OrdinalIgnoreCase);
+        Assert.NotNull(player.PendingChoice);
+        Assert.False(player.IsReadyForCombat);
+        Assert.Equal(MatchPhase.Preparation, setup.Match.Phase);
+    }
+
     private static void AcquireById(
         PreparationEngine engine,
         MatchState match,

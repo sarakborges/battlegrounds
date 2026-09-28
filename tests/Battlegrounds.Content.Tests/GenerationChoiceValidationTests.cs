@@ -157,6 +157,69 @@ public sealed class GenerationChoiceValidationTests
         }
     }
 
+    [Fact]
+    public void Validate_RejectsPendingChoicesAtTurnEndButAllowsDirectGeneration()
+    {
+        var path = CreateTempMod();
+        try
+        {
+            WriteScout(
+                path,
+                """
+                {
+                  "event": "onTurnEnd",
+                  "effects": [
+                    { "kind": "generateUnitToReserve", "unitId": "guard", "count": 1 },
+                    {
+                      "kind": "generateUnitChoice",
+                      "generationQuery": { "typeId": "construct" },
+                      "optionCount": 1
+                    }
+                  ]
+                }
+                """);
+
+            File.WriteAllText(
+                Path.Combine(path, "content", "powers", "quiet-aura.json"),
+                """
+                {
+                  "id": "quiet-aura",
+                  "name": "Quiet Aura",
+                  "triggers": [
+                    {
+                      "event": "onTurnEnd",
+                      "effects": [
+                        { "kind": "generateActionToReserve", "actionId": "training", "count": 1 },
+                        {
+                          "kind": "generateActionChoice",
+                          "actionQuery": { "minimumTier": 1, "maximumTier": 2 },
+                          "optionCount": 1
+                        }
+                      ]
+                    }
+                  ]
+                }
+                """);
+
+            var report = new ModValidator().Validate(path);
+            var contextIssues = report.Issues
+                .Where(issue => issue.Code == "INVALID_EFFECT_CONTEXT")
+                .ToArray();
+
+            Assert.Contains(contextIssues, issue =>
+                issue.File.EndsWith("scout.json", StringComparison.Ordinal) &&
+                issue.Path.EndsWith(".effects[1].kind", StringComparison.Ordinal));
+            Assert.Contains(contextIssues, issue =>
+                issue.File.EndsWith("quiet-aura.json", StringComparison.Ordinal) &&
+                issue.Path.EndsWith(".effects[1].kind", StringComparison.Ordinal));
+            Assert.DoesNotContain(contextIssues, issue => issue.Path.EndsWith(".effects[0].kind", StringComparison.Ordinal));
+        }
+        finally
+        {
+            Directory.Delete(path, recursive: true);
+        }
+    }
+
     private static void WriteScout(string root, string triggerJson)
     {
         File.WriteAllText(
