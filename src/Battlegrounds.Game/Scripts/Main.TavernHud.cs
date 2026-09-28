@@ -1,4 +1,7 @@
+using Battlegrounds.Content;
 using Battlegrounds.Core.Domain.Match;
+using Battlegrounds.Core.Domain.Playables;
+using Battlegrounds.Core.Domain.Players;
 using Godot;
 
 namespace Battlegrounds.Game;
@@ -9,6 +12,7 @@ public partial class Main
     private Label _tavernUpgradeCost = null!;
     private Label _tavernRefreshCost = null!;
     private Label _tavernFreezeCost = null!;
+    private HorizontalCardRow? _tavernActionOffers;
 
     private void RefreshTavernHud()
     {
@@ -55,6 +59,76 @@ public partial class Main
         _freezeButton.TooltipText = human.IsOfferFrozen
             ? Text("ui.unfreezeOffer", ("offer", Term("offer")))
             : Text("ui.freezeOffer", ("offer", Term("offer")));
+
+        RefreshPreparationChrome(human, match.Phase);
+    }
+
+    private void RefreshPreparationChrome(PlayerState human, MatchPhase phase)
+    {
+        var isPreparation = phase == MatchPhase.Preparation;
+        _status.Visible = !isPreparation;
+        if (!isPreparation)
+            return;
+
+        HideDirectPlaceholderLabels(_offerButtons);
+        HideDirectPlaceholderLabels(_fieldButtons);
+        HideDirectPlaceholderLabels(_reserveButtons);
+        PartitionTavernOffers(human);
+    }
+
+    private static void HideDirectPlaceholderLabels(Node row)
+    {
+        foreach (var label in row.GetChildren().OfType<Label>())
+            label.Visible = false;
+    }
+
+    private void PartitionTavernOffers(PlayerState human)
+    {
+        if (_tavernActionOffers is null)
+            return;
+
+        var entries = human.PlayableOffer;
+        var cards = _offerButtons.GetChildren()
+            .OfType<PresentationCardButton>()
+            .Where(card => !card.IsQueuedForDeletion())
+            .ToArray();
+
+        // A freshly rendered offer contains every playable in OfferButtons. Once the
+        // action cards are reparented this count no longer matches, which makes this
+        // operation idempotent while the HUD driver ticks every frame.
+        if (cards.Length != entries.Count)
+            return;
+
+        var actionIndices = entries
+            .Select((entry, index) => (entry, index))
+            .Where(value => value.entry.Kind == PlayableKind.Action)
+            .Select(value => value.index)
+            .ToArray();
+
+        ClearLiveChildren(_tavernActionOffers);
+        if (actionIndices.Length == 0)
+        {
+            _tavernActionOffers.Visible = false;
+            return;
+        }
+
+        foreach (var index in actionIndices)
+        {
+            var card = cards[index];
+            _offerButtons.RemoveChild(card);
+            _tavernActionOffers.AddChild(card);
+        }
+
+        _tavernActionOffers.Visible = true;
+        _offerButtons.QueueSort();
+        _tavernActionOffers.QueueSort();
+    }
+
+    private static void ClearLiveChildren(Node parent)
+    {
+        foreach (var child in parent.GetChildren())
+            if (!child.IsQueuedForDeletion())
+                child.QueueFree();
     }
 
     private void BindBattlegroundsTavernHeader()
@@ -80,6 +154,8 @@ public partial class Main
         shopkeeper.MouseFilter = Control.MouseFilterEnum.Stop;
         shopkeeper.ClipContents = true;
         BindShopkeeperCosmetic(shopkeeper);
+        BindShopkeeperFrame(shopkeeper);
+        BindActionOfferShelf(shelfRow);
 
         controlsRow.MoveChild(_upgradeButton, 0);
         controlsRow.MoveChild(tierBadge, 1);
@@ -90,15 +166,12 @@ public partial class Main
 
         if (shopkeeper.GetNodeOrNull<Control>("Content") is VBoxContainer shopkeeperContent)
         {
+            shopkeeperContent.ZIndex = 3;
             shopkeeperContent.Alignment = BoxContainer.AlignmentMode.End;
             if (shopkeeperContent.GetNodeOrNull<Label>("Name") is { } name)
                 name.Visible = false;
             if (shopkeeperContent.GetNodeOrNull<Label>("SellHint") is { } sellHint)
-            {
-                sellHint.Text = Text("ui.releaseTargetTitle");
-                sellHint.ThemeTypeVariation = "CaptionLabel";
-                sellHint.HorizontalAlignment = HorizontalAlignment.Center;
-            }
+                sellHint.Visible = false;
         }
 
         _tavernUpgradeCost = EnsureTavernCostBadge(_upgradeButton, "UpgradeCost");
@@ -115,6 +188,33 @@ public partial class Main
         shelfRow.Alignment = BoxContainer.AlignmentMode.Center;
     }
 
+    private void BindActionOfferShelf(HBoxContainer shelfRow)
+    {
+        _tavernActionOffers = shelfRow.GetNodeOrNull<HorizontalCardRow>("ActionOfferButtons");
+        if (_tavernActionOffers is null)
+        {
+            _tavernActionOffers = new HorizontalCardRow
+            {
+                Name = "ActionOfferButtons",
+                SizeFlagsVertical = Control.SizeFlags.ExpandFill,
+                ClipContents = false,
+            };
+            shelfRow.AddChild(_tavernActionOffers);
+        }
+
+        ApplyRowLayout(_tavernActionOffers, ModThemeMetricKeys.Row.Offer);
+        var preferredWidth = ResolvePresentationMetric(
+            ModThemeMetricKeys.Row.PreferredCardWidth(ModThemeMetricKeys.Row.Offer),
+            1.0f,
+            2048.0f);
+        var padding = ResolvePresentationMetric(
+            ModThemeMetricKeys.Row.Padding(ModThemeMetricKeys.Row.Offer),
+            0.0f,
+            512.0f);
+        _tavernActionOffers.CustomMinimumSize = new Vector2(preferredWidth + (padding * 2.0f), 0);
+        shelfRow.MoveChild(_tavernActionOffers, _offerButtons.GetIndex() + 1);
+    }
+
     private void BindShopkeeperCosmetic(PanelContainer shopkeeper)
     {
         var art = shopkeeper.GetNodeOrNull<TextureRect>("CosmeticArt");
@@ -128,8 +228,8 @@ public partial class Main
                 SizeFlagsHorizontal = Control.SizeFlags.ExpandFill,
                 SizeFlagsVertical = Control.SizeFlags.ExpandFill,
                 CustomMinimumSize = new Vector2(
-                    ResolvePresentationMetric(Battlegrounds.Content.ModThemeMetricKeys.Layout.TavernShopkeeperWidth, 1.0f, 2048.0f),
-                    ResolvePresentationMetric(Battlegrounds.Content.ModThemeMetricKeys.Layout.TavernControlsMinimumHeight, 1.0f, 2048.0f)),
+                    ResolvePresentationMetric(ModThemeMetricKeys.Layout.TavernShopkeeperWidth, 1.0f, 2048.0f),
+                    ResolvePresentationMetric(ModThemeMetricKeys.Layout.TavernControlsMinimumHeight, 1.0f, 2048.0f)),
                 MouseFilter = Control.MouseFilterEnum.Ignore,
                 ZIndex = 1,
             };
@@ -142,6 +242,39 @@ public partial class Main
         art.Visible = hasImage && texture is not null;
         if (!art.Visible)
             GD.PushWarning("Shopkeeper cosmetic could not be resolved; rendering the shopkeeper slot without art.");
+    }
+
+    private void BindShopkeeperFrame(PanelContainer shopkeeper)
+    {
+        if (_modTheme?.Components.TryGetValue(ModThemePanelRoles.Shopkeeper, out var style) != true ||
+            string.IsNullOrWhiteSpace(style.BackgroundAsset) ||
+            _themeBuilder is null)
+        {
+            return;
+        }
+
+        var texture = _themeBuilder.LoadImage(style.BackgroundAsset);
+        if (texture is null)
+            return;
+
+        var frame = shopkeeper.GetNodeOrNull<TextureRect>("CosmeticFrame");
+        if (frame is null)
+        {
+            frame = new TextureRect
+            {
+                Name = "CosmeticFrame",
+                ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize,
+                StretchMode = TextureRect.StretchModeEnum.Scale,
+                SizeFlagsHorizontal = Control.SizeFlags.ExpandFill,
+                SizeFlagsVertical = Control.SizeFlags.ExpandFill,
+                MouseFilter = Control.MouseFilterEnum.Ignore,
+                ZIndex = 2,
+            };
+            shopkeeper.AddChild(frame);
+        }
+
+        frame.Texture = texture;
+        frame.Visible = true;
     }
 
     private Label EnsureTavernCostBadge(Button button, string name)
