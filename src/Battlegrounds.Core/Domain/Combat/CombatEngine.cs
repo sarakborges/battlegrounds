@@ -856,7 +856,7 @@ public sealed class CombatEngine
         }
 
         public IReadOnlyList<CombatSurvivor> GetSurvivors() =>
-            _units.Select(unit => new CombatSurvivor(unit.InstanceId, unit.Health)).ToArray();
+            _units.Select(unit => new CombatSurvivor(unit.InstanceId, unit.Health, unit.Definition.Tier)).ToArray();
     }
 
     private sealed class CombatRuntimeUnit : IEffectRuntimeUnit
