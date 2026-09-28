@@ -169,6 +169,7 @@ public sealed class ModThemeLoader
         ArgumentException.ThrowIfNullOrWhiteSpace(modDirectory);
         var issues = new ModThemeValidator().Validate(modDirectory)
             .Concat(new ModThemeMetricsValidator().Validate(modDirectory))
+            .Concat(new ModThemeRoleValidator().Validate(modDirectory))
             .ToArray();
         if (issues.Length > 0) throw new ModValidationException(new ModValidationReport(issues));
         return LoadValidated(modDirectory);
