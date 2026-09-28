@@ -199,7 +199,12 @@ internal sealed partial class PresentationCardButton : Button
             _inspectData = _inspectData with { Details = details };
     }
 
-    public void ConfigureToken(int? tier, int attack, int health, string? inspectDetails = null)
+    public void ConfigureToken(
+        int? tier,
+        int attack,
+        int health,
+        string? inspectDetails = null,
+        int? inspectTier = null)
     {
         _tokenMode = true;
         _tokenTier = tier;
@@ -214,8 +219,10 @@ internal sealed partial class PresentationCardButton : Button
         {
             _inspectData = _inspectData with
             {
+                Subtitle = string.Empty,
+                Stats = string.Empty,
                 Details = inspectDetails,
-                Tier = tier,
+                Tier = inspectTier ?? tier,
                 Attack = attack,
                 Health = health,
             };
@@ -306,7 +313,7 @@ internal sealed partial class PresentationCardButton : Button
             _art.Texture);
         preview.ConfigureInspectDetails(_inspectData?.Details);
         if (_tokenMode)
-            preview.ConfigureToken(_tokenTier, _tokenAttack, _tokenHealth, _inspectData?.Details);
+            preview.ConfigureToken(_tokenTier, _tokenAttack, _tokenHealth, _inspectData?.Details, _inspectData?.Tier);
         root.AddChild(preview);
         return root;
     }
