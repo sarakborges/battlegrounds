@@ -31,7 +31,17 @@ public partial class Main
         if (_combineButton is null)
             return;
 
-        _combineButton.Visible = !UsesAutomaticCombines;
+        if (UsesAutomaticCombines || _session?.Match is not MatchState match || match.Phase != MatchPhase.Preparation)
+        {
+            _combineButton.Visible = false;
+            return;
+        }
+
+        _combineButton.Visible = match.TryGetPlayer(_session.HumanPlayerId, out var human) &&
+                                 !human.IsEliminated &&
+                                 !human.IsReadyForCombat &&
+                                 human.PendingChoice is null &&
+                                 GetAvailableCombines(human).Count > 0;
     }
 
     private void TrySubmitAutomaticCombine()
