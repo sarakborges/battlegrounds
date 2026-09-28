@@ -94,7 +94,15 @@ public sealed class ModThemeCatalog
     public IReadOnlyDictionary<string, ModThemeStyle> Components => _components;
     public IReadOnlyDictionary<string, ModThemeScreenStyle> Screens => _screens;
 
-    public bool IsEmpty => _colors.Count == 0 && _fonts.Count == 0 && _metrics.Count == 0 && _components.Count == 0 && _screens.Count == 0;
+    public bool IsEmpty =>
+        _colors.Count == 0 &&
+        _fonts.Count == 0 &&
+        _fontSizes.Count == 0 &&
+        _spacing.Count == 0 &&
+        _radii.Count == 0 &&
+        _metrics.Count == 0 &&
+        _components.Count == 0 &&
+        _screens.Count == 0;
 
     internal ModThemeCatalog(
         int version,
