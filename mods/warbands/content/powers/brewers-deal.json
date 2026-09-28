@@ -1,0 +1,14 @@
+{
+  "id": "brewers-deal",
+  "name": "Brewer's Deal",
+  "activation": { "cost": 1, "maxUsesPerTurn": 1 },
+  "triggers": [
+    {
+      "event": "onActivate",
+      "effects": [
+        { "kind": "refreshOffer" },
+        { "kind": "addAcquireDiscount", "amount": 1 }
+      ]
+    }
+  ]
+}

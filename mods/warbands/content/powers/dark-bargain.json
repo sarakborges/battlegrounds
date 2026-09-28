@@ -1,0 +1,14 @@
+{
+  "id": "dark-bargain",
+  "name": "Dark Bargain",
+  "activation": { "cost": 0, "maxUsesPerTurn": 1 },
+  "triggers": [
+    {
+      "event": "onActivate",
+      "effects": [
+        { "kind": "destroyUnit", "target": { "scope": "selected" } },
+        { "kind": "addResource", "amount": 2 }
+      ]
+    }
+  ]
+}
