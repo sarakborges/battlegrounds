@@ -33,6 +33,11 @@
     "resourceAccent": "#F0BC55",
     "tierSurface": "#302116",
     "tierAccent": "#D79B50",
+    "tavernPurple": "#65369B",
+    "tavernPurpleHover": "#7D4DB5",
+    "tavernPurplePressed": "#4C267A",
+    "tavernFreeze": "#51409A",
+    "tavernFreezePressed": "#2D6F9B",
     "eliminatedSurface": "#171310",
     "eliminatedBorder": "#3B3029"
   },
@@ -76,20 +81,20 @@
     "layout.leaderPanel.gap": 12,
     "layout.leaderPanel.cardsMinimumHeight": 320,
     "layout.preparation.gap": 5,
-    "layout.tavern.controls.minimumHeight": 42,
-    "layout.tavern.controls.gap": 8,
-    "layout.tavern.tierBadge.width": 48,
-    "layout.tavern.tierBadge.height": 36,
-    "layout.tavern.upgradeButton.width": 116,
-    "layout.tavern.controlHeight": 34,
-    "layout.tavern.controlSpacerWidth": 24,
-    "layout.tavern.refreshButton.width": 96,
-    "layout.tavern.freezeButton.width": 96,
-    "layout.tavern.shelf.minimumHeight": 150,
-    "layout.tavern.shelf.gap": 10,
-    "layout.tavern.shopkeeperWidth": 104,
-    "layout.tavern.shopkeeperContentGap": 2,
-    "layout.tavern.balanceSpacerWidth": 104,
+    "layout.tavern.controls.minimumHeight": 90,
+    "layout.tavern.controls.gap": 6,
+    "layout.tavern.tierBadge.width": 44,
+    "layout.tavern.tierBadge.height": 54,
+    "layout.tavern.upgradeButton.width": 68,
+    "layout.tavern.controlHeight": 74,
+    "layout.tavern.controlSpacerWidth": 0,
+    "layout.tavern.refreshButton.width": 68,
+    "layout.tavern.freezeButton.width": 68,
+    "layout.tavern.shelf.minimumHeight": 142,
+    "layout.tavern.shelf.gap": 4,
+    "layout.tavern.shopkeeperWidth": 124,
+    "layout.tavern.shopkeeperContentGap": 0,
+    "layout.tavern.balanceSpacerWidth": 0,
     "layout.board.minimumHeight": 238,
     "layout.reserve.minimumHeight": 72,
     "layout.heroDock.gap": 8,
@@ -226,6 +231,45 @@
         }
       }
     },
+    "button.tavernAction": {
+      "fontSize": "heading",
+      "textColor": "primaryText",
+      "backgroundColor": "tavernPurple",
+      "backgroundAsset": "assets/ui/tavern-action.svg",
+      "padding": {
+        "horizontal": "xs",
+        "vertical": "xs"
+      },
+      "states": {
+        "hover": {
+          "backgroundColor": "tavernPurpleHover"
+        },
+        "pressed": {
+          "backgroundColor": "tavernPurplePressed"
+        },
+        "disabled": {
+          "textColor": "textDisabled",
+          "opacity": 0.5
+        },
+        "focus": {
+          "backgroundColor": "tavernPurpleHover"
+        }
+      }
+    },
+    "button.tavernUpgrade": {
+      "backgroundColor": "#7A3FA8"
+    },
+    "button.tavernRefresh": {
+      "backgroundColor": "#6636A1"
+    },
+    "button.tavernFreeze": {
+      "backgroundColor": "tavernFreeze",
+      "states": {
+        "pressed": {
+          "backgroundColor": "tavernFreezePressed"
+        }
+      }
+    },
     "card": {
       "fontSize": "body",
       "textColor": "text",
@@ -313,11 +357,11 @@
       }
     },
     "panel.tavernControls": {
-      "backgroundColor": "surfaceDeep",
-      "borderColor": "border",
-      "radius": "medium",
+      "backgroundColor": "#00000000",
+      "borderColor": "#00000000",
+      "borderWidth": 0,
       "padding": {
-        "horizontal": "sm",
+        "horizontal": "xs",
         "vertical": "xs"
       }
     },
@@ -401,8 +445,8 @@
       }
     },
     "panel.tierBadge": {
-      "backgroundColor": "tierSurface",
-      "borderColor": "tierAccent",
+      "backgroundColor": "#4B2778",
+      "borderColor": "focus",
       "borderWidth": 2,
       "radius": "medium",
       "padding": {
@@ -470,9 +514,10 @@
       }
     },
     "panel.shopkeeper": {
-      "backgroundColor": "surfaceRaised",
-      "borderColor": "primary",
-      "borderWidth": 2,
+      "backgroundColor": "#FFFFFFFF",
+      "backgroundAsset": "assets/ui/tavern-keeper-frame.svg",
+      "borderColor": "#00000000",
+      "borderWidth": 0,
       "padding": {
         "horizontal": "xs",
         "vertical": "xs"
