@@ -15,15 +15,17 @@ public partial class Main
         {
             if (_modTheme?.Components.TryGetValue(ModThemeInteractionRoles.DragPreview, out var style) == true && style.Opacity is double opacity)
                 return Mathf.Clamp((float)opacity, 0.0f, 1.0f);
-            return 0.12f;
+
+            throw new InvalidOperationException(
+                $"Resolved presentation theme is missing required '{ModThemeInteractionRoles.DragPreview}.opacity'.");
         }
     }
 
     internal float PreparationDragPreviewScale =>
-        ResolveThemeMetric(ModThemeMetricKeys.Drag.PreviewScale, 1.045f, 0.5f, 2.0f);
+        ResolveThemeMetric(ModThemeMetricKeys.Drag.PreviewScale, 0.5f, 2.0f);
 
     internal float PreparationDragPreviewRotationDegrees =>
-        ResolveThemeMetric(ModThemeMetricKeys.Drag.PreviewRotationDegrees, -1.5f, -45.0f, 45.0f);
+        ResolveThemeMetric(ModThemeMetricKeys.Drag.PreviewRotationDegrees, -45.0f, 45.0f);
 
     internal float PreparationDropTargetPadding
     {
@@ -32,9 +34,8 @@ public partial class Main
             if (TryResolveDropTargetPadding(ModThemeInteractionRoles.DropTargetValid, out var padding) ||
                 TryResolveDropTargetPadding(ModThemeInteractionRoles.DropTargetInvalid, out padding))
                 return padding;
-            if (_modTheme?.Spacing.TryGetValue("sm", out var spacing) == true)
-                return spacing;
-            return 8.0f;
+
+            throw new InvalidOperationException("Resolved presentation theme is missing drop-target padding.");
         }
     }
 
@@ -48,47 +49,32 @@ public partial class Main
             _ => ModThemeInteractionRoles.DropTargetInvalid,
         };
 
-        ModThemeStyle? style = null;
-        if (_modTheme is not null)
-            _modTheme.Components.TryGetValue(role, out style);
+        if (_modTheme is null || !_modTheme.Components.TryGetValue(role, out var style))
+            throw new InvalidOperationException($"Resolved presentation theme is missing required component role '{role}'.");
 
         var box = new StyleBoxFlat
         {
             BgColor = new Color(0, 0, 0, 0),
-            BorderColor = valid
-                ? new Color(0.45f, 0.80f, 0.42f, active ? 0.95f : 0.72f)
-                : new Color(0.90f, 0.30f, 0.30f, active ? 0.95f : 0.72f),
-            BorderWidthLeft = active ? 3 : 2,
-            BorderWidthTop = active ? 3 : 2,
-            BorderWidthRight = active ? 3 : 2,
-            BorderWidthBottom = active ? 3 : 2,
-            CornerRadiusTopLeft = 12,
-            CornerRadiusTopRight = 12,
-            CornerRadiusBottomLeft = 12,
-            CornerRadiusBottomRight = 12,
         };
 
-        if (style is not null)
+        var opacity = Mathf.Clamp((float)(style.Opacity ?? 1.0), 0.0f, 1.0f);
+        if (ResolveThemeColor(style.BackgroundColor, out var background))
+            box.BgColor = new Color(background, background.A * opacity);
+        if (ResolveThemeColor(style.BorderColor, out var border))
+            box.BorderColor = new Color(border, border.A * opacity);
+        if (style.BorderWidth is int width)
         {
-            var opacity = Mathf.Clamp((float)(style.Opacity ?? 1.0), 0.0f, 1.0f);
-            if (ResolveThemeColor(style.BackgroundColor, out var background))
-                box.BgColor = new Color(background, background.A * opacity);
-            if (ResolveThemeColor(style.BorderColor, out var border))
-                box.BorderColor = new Color(border, border.A * opacity);
-            if (style.BorderWidth is int width)
-            {
-                box.BorderWidthLeft = width;
-                box.BorderWidthTop = width;
-                box.BorderWidthRight = width;
-                box.BorderWidthBottom = width;
-            }
-            if (style.Radius is not null && _modTheme?.Radii.TryGetValue(style.Radius, out var radius) == true)
-            {
-                box.CornerRadiusTopLeft = radius;
-                box.CornerRadiusTopRight = radius;
-                box.CornerRadiusBottomLeft = radius;
-                box.CornerRadiusBottomRight = radius;
-            }
+            box.BorderWidthLeft = width;
+            box.BorderWidthTop = width;
+            box.BorderWidthRight = width;
+            box.BorderWidthBottom = width;
+        }
+        if (style.Radius is not null && _modTheme.Radii.TryGetValue(style.Radius, out var radius))
+        {
+            box.CornerRadiusTopLeft = radius;
+            box.CornerRadiusTopRight = radius;
+            box.CornerRadiusBottomLeft = radius;
+            box.CornerRadiusBottomRight = radius;
         }
 
         box.ShadowColor = box.BorderColor;

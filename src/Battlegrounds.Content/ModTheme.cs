@@ -73,7 +73,7 @@ public sealed class ModThemeStyle
 
 public sealed record ModThemeScreenStyle(string? BackgroundColor, string? BackgroundAsset);
 
-public sealed class ModThemeCatalog
+public sealed partial class ModThemeCatalog
 {
     private readonly ReadOnlyDictionary<string, string> _colors;
     private readonly ReadOnlyDictionary<string, ModThemeFont> _fonts;
@@ -153,7 +153,7 @@ public sealed class ModThemeCatalog
         new(new Dictionary<string, T>(source, StringComparer.Ordinal));
 }
 
-public sealed class ModThemeLoader
+public sealed partial class ModThemeLoader
 {
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
@@ -179,9 +179,13 @@ public sealed class ModThemeLoader
     {
         var path = Path.Combine(modDirectory, "presentation", "theme.json");
         if (!File.Exists(path)) return ModThemeCatalog.Empty;
+        return DeserializeCatalog(File.ReadAllText(path));
+    }
 
-        var data = JsonSerializer.Deserialize<ThemeData>(File.ReadAllText(path), JsonOptions)
-            ?? throw new InvalidDataException("Validated theme contained no data.");
+    private static ModThemeCatalog DeserializeCatalog(string json)
+    {
+        var data = JsonSerializer.Deserialize<ThemeData>(json, JsonOptions)
+            ?? throw new InvalidDataException("Theme contained no data.");
 
         var fonts = (data.Typography?.Fonts ?? new Dictionary<string, ThemeFontData>())
             .ToDictionary(pair => pair.Key, pair => new ModThemeFont(pair.Value.Asset), StringComparer.Ordinal);

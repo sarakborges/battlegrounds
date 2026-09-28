@@ -64,9 +64,9 @@ public partial class Main
         if (margin is not null)
         {
             var horizontal = Mathf.RoundToInt(ResolvePresentationMetric(
-                ModThemeMetricKeys.Layout.Combat.MarginHorizontal, 32.0f, 0.0f, 512.0f));
+                ModThemeMetricKeys.Layout.Combat.MarginHorizontal, 0.0f, 512.0f));
             var vertical = Mathf.RoundToInt(ResolvePresentationMetric(
-                ModThemeMetricKeys.Layout.Combat.MarginVertical, 24.0f, 0.0f, 512.0f));
+                ModThemeMetricKeys.Layout.Combat.MarginVertical, 0.0f, 512.0f));
 
             margin.AddThemeConstantOverride("margin_left", horizontal);
             margin.AddThemeConstantOverride("margin_right", horizontal);
@@ -80,7 +80,7 @@ public partial class Main
             root.AddThemeConstantOverride(
                 "separation",
                 Mathf.RoundToInt(ResolvePresentationMetric(
-                    ModThemeMetricKeys.Layout.Combat.ContentGap, 12.0f, 0.0f, 512.0f)));
+                    ModThemeMetricKeys.Layout.Combat.ContentGap, 0.0f, 512.0f)));
 
             var horizontalRows = root.GetChildren().OfType<HBoxContainer>().ToArray();
             if (horizontalRows.Length > 0)
@@ -88,7 +88,7 @@ public partial class Main
                 horizontalRows[0].AddThemeConstantOverride(
                     "separation",
                     Mathf.RoundToInt(ResolvePresentationMetric(
-                        ModThemeMetricKeys.Layout.Combat.BoardsGap, 24.0f, 0.0f, 512.0f)));
+                        ModThemeMetricKeys.Layout.Combat.BoardsGap, 0.0f, 512.0f)));
             }
 
             if (horizontalRows.Length > 1)
@@ -96,12 +96,12 @@ public partial class Main
                 horizontalRows[^1].AddThemeConstantOverride(
                     "separation",
                     Mathf.RoundToInt(ResolvePresentationMetric(
-                        ModThemeMetricKeys.Layout.Combat.ControlsGap, 8.0f, 0.0f, 512.0f)));
+                        ModThemeMetricKeys.Layout.Combat.ControlsGap, 0.0f, 512.0f)));
             }
         }
 
         var unitGap = Mathf.RoundToInt(ResolvePresentationMetric(
-            ModThemeMetricKeys.Layout.Combat.UnitGap, 6.0f, 0.0f, 512.0f));
+            ModThemeMetricKeys.Layout.Combat.UnitGap, 0.0f, 512.0f));
         _combatLeftUnits?.AddThemeConstantOverride("separation", unitGap);
         _combatRightUnits?.AddThemeConstantOverride("separation", unitGap);
     }

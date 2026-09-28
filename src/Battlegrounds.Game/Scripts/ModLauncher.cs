@@ -5,13 +5,6 @@ namespace Battlegrounds.Game;
 
 public partial class ModLauncher : Control
 {
-    private static readonly Color DefaultBackgroundColor = new(0.055f, 0.063f, 0.082f, 1f);
-    private const float DefaultMarginHorizontal = 64.0f;
-    private const float DefaultMarginVertical = 48.0f;
-    private const int DefaultRootGap = 14;
-    private const int DefaultModGap = 8;
-    private const float DefaultDiagnosticsHeight = 180.0f;
-
     [Export] public string ModsRoot { get; set; } = "res://../../mods";
     [Export] public string GameplayScenePath { get; set; } = "res://Scenes/Main.tscn";
     [Export] public int Seed { get; set; } = 20260927;
@@ -24,6 +17,7 @@ public partial class ModLauncher : Control
     private RichTextLabel _diagnostics = null!;
     private Button _refreshButton = null!;
     private TextureRect? _themeBackgroundImage;
+    private ModThemeCatalog _engineTheme = null!;
     private ModThemeBuilder? _themeBuilder;
     private string? _themedDirectoryName;
 
@@ -34,6 +28,7 @@ public partial class ModLauncher : Control
         _modButtons = GetNode<VBoxContainer>("%ModButtons");
         _diagnostics = GetNode<RichTextLabel>("%Diagnostics");
         _refreshButton = GetNode<Button>("%RefreshButton");
+        _engineTheme = new ModThemeLoader().LoadEngineDefault();
         _refreshButton.Pressed += DiscoverMods;
         DiscoverMods();
     }
@@ -109,14 +104,17 @@ public partial class ModLauncher : Control
             return;
 
         var modDirectory = Path.Combine(ResolveModsRoot(), entry.DirectoryName);
-        var theme = new ModThemeLoader().Load(modDirectory);
+        var modTheme = new ModThemeLoader().Load(modDirectory);
+        var theme = ModThemeCatalog.Layer(_engineTheme, modTheme);
 
         ResetLauncherTheme();
         _themedDirectoryName = entry.DirectoryName;
-        if (theme.IsEmpty)
-            return;
+        ApplyLauncherTheme(theme, modDirectory);
+    }
 
-        _themeBuilder = new ModThemeBuilder(modDirectory, theme);
+    private void ApplyLauncherTheme(ModThemeCatalog theme, string assetRoot)
+    {
+        _themeBuilder = new ModThemeBuilder(assetRoot, theme);
         Theme = _themeBuilder.Build();
         ApplyLauncherTypography(theme);
         ApplyLauncherScreen(theme);
@@ -147,13 +145,17 @@ public partial class ModLauncher : Control
     private void ApplyLauncherScreen(ModThemeCatalog theme)
     {
         if (!theme.Screens.TryGetValue(ModThemeScreenRoles.Launcher, out var screen))
-            return;
+            throw new InvalidOperationException("Resolved presentation theme is missing the launcher screen role.");
 
         if (theme.TryResolveColor(screen.BackgroundColor, out var color))
             _background.Color = Color.FromHtml(color);
 
         if (string.IsNullOrWhiteSpace(screen.BackgroundAsset) || _themeBuilder is null)
+        {
+            if (_themeBackgroundImage is not null)
+                _themeBackgroundImage.Visible = false;
             return;
+        }
 
         var texture = _themeBuilder.LoadImage(screen.BackgroundAsset);
         if (texture is null)
@@ -179,8 +181,8 @@ public partial class ModLauncher : Control
 
     private void ApplyLauncherLayout(ModThemeCatalog theme)
     {
-        var horizontal = ResolveMetric(theme, ModThemeMetricKeys.Launcher.MarginHorizontal, DefaultMarginHorizontal, 0, 1024);
-        var vertical = ResolveMetric(theme, ModThemeMetricKeys.Launcher.MarginVertical, DefaultMarginVertical, 0, 1024);
+        var horizontal = ResolveMetric(theme, ModThemeMetricKeys.Launcher.MarginHorizontal, 0, 1024);
+        var vertical = ResolveMetric(theme, ModThemeMetricKeys.Launcher.MarginVertical, 0, 1024);
         var margin = GetNode<MarginContainer>("Margin");
         margin.OffsetLeft = horizontal;
         margin.OffsetRight = -horizontal;
@@ -190,59 +192,28 @@ public partial class ModLauncher : Control
         var root = GetNode<VBoxContainer>("Margin/Root");
         root.AddThemeConstantOverride(
             "separation",
-            Mathf.RoundToInt(ResolveMetric(theme, ModThemeMetricKeys.Launcher.Gap, DefaultRootGap, 0, 512)));
+            Mathf.RoundToInt(ResolveMetric(theme, ModThemeMetricKeys.Launcher.Gap, 0, 512)));
         _modButtons.AddThemeConstantOverride(
             "separation",
-            Mathf.RoundToInt(ResolveMetric(theme, ModThemeMetricKeys.Launcher.ModGap, DefaultModGap, 0, 512)));
+            Mathf.RoundToInt(ResolveMetric(theme, ModThemeMetricKeys.Launcher.ModGap, 0, 512)));
 
         _diagnostics.CustomMinimumSize = new Vector2(
             _diagnostics.CustomMinimumSize.X,
-            ResolveMetric(theme, ModThemeMetricKeys.Launcher.DiagnosticsMinimumHeight, DefaultDiagnosticsHeight, 0, 4096));
+            ResolveMetric(theme, ModThemeMetricKeys.Launcher.DiagnosticsMinimumHeight, 0, 4096));
     }
 
     private void ResetLauncherTheme()
     {
-        Theme = null;
-        _themeBuilder = null;
         _themedDirectoryName = null;
-        _background.Color = DefaultBackgroundColor;
         if (_themeBackgroundImage is not null)
             _themeBackgroundImage.Visible = false;
-
-        ResetLauncherLayout();
-
-        var title = GetNode<Label>("Margin/Root/Title");
-        title.ThemeTypeVariation = string.Empty;
-        title.AddThemeFontSizeOverride("font_size", 32);
-
-        var subtitle = GetNode<Label>("Margin/Root/Subtitle");
-        subtitle.ThemeTypeVariation = string.Empty;
-        subtitle.AddThemeFontSizeOverride("font_size", 18);
-
-        var diagnosticsTitle = GetNode<Label>("Margin/Root/DiagnosticsTitle");
-        diagnosticsTitle.ThemeTypeVariation = string.Empty;
-        diagnosticsTitle.AddThemeFontSizeOverride("font_size", 18);
-
-        _status.ThemeTypeVariation = string.Empty;
-        _refreshButton.ThemeTypeVariation = string.Empty;
+        ApplyLauncherTheme(_engineTheme, ProjectSettings.GlobalizePath("res://"));
     }
 
-    private void ResetLauncherLayout()
-    {
-        var margin = GetNode<MarginContainer>("Margin");
-        margin.OffsetLeft = DefaultMarginHorizontal;
-        margin.OffsetRight = -DefaultMarginHorizontal;
-        margin.OffsetTop = DefaultMarginVertical;
-        margin.OffsetBottom = -DefaultMarginVertical;
-        GetNode<VBoxContainer>("Margin/Root").AddThemeConstantOverride("separation", DefaultRootGap);
-        _modButtons.AddThemeConstantOverride("separation", DefaultModGap);
-        _diagnostics.CustomMinimumSize = new Vector2(_diagnostics.CustomMinimumSize.X, DefaultDiagnosticsHeight);
-    }
-
-    private static float ResolveMetric(ModThemeCatalog theme, string key, float fallback, float minimum, float maximum)
+    private static float ResolveMetric(ModThemeCatalog theme, string key, float minimum, float maximum)
     {
         if (!theme.Metrics.TryGetValue(key, out var value))
-            return fallback;
+            throw new InvalidOperationException($"Resolved presentation theme is missing required metric '{key}'.");
         return Mathf.Clamp((float)value, minimum, maximum);
     }
 

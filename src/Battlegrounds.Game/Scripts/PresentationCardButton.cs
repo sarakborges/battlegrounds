@@ -25,14 +25,9 @@ internal sealed partial class PresentationCardButton : Button
     {
         Text = string.Empty;
         ThemeTypeVariation = "CardButton";
-        CustomMinimumSize = new Vector2(92, 0);
         ClipContents = true;
 
         var margin = IgnoreMouse(new MarginContainer());
-        margin.AddThemeConstantOverride("margin_left", 6);
-        margin.AddThemeConstantOverride("margin_top", 6);
-        margin.AddThemeConstantOverride("margin_right", 6);
-        margin.AddThemeConstantOverride("margin_bottom", 6);
         AddChild(margin);
         margin.SetAnchorsAndOffsetsPreset(LayoutPreset.FullRect);
 
@@ -41,12 +36,10 @@ internal sealed partial class PresentationCardButton : Button
             SizeFlagsHorizontal = SizeFlags.ExpandFill,
             SizeFlagsVertical = SizeFlags.ExpandFill,
         });
-        _column.AddThemeConstantOverride("separation", 2);
         margin.AddChild(_column);
 
         _art = IgnoreMouse(new TextureRect
         {
-            CustomMinimumSize = new Vector2(0, 52),
             SizeFlagsHorizontal = SizeFlags.ExpandFill,
             SizeFlagsVertical = SizeFlags.ExpandFill,
             ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize,
@@ -190,17 +183,14 @@ internal sealed partial class PresentationCardButton : Button
     private void BeginDrag()
     {
         _dragActive = true;
-        var opacity = FindMain()?.PreparationDragSourceOpacity ?? 0.12f;
-        SelfModulate = new Color(1, 1, 1, opacity);
+        var main = FindMain() ?? throw new InvalidOperationException("Presentation card is not attached to Main.");
+        SelfModulate = new Color(1, 1, 1, main.PreparationDragSourceOpacity);
         _dragStarted?.Invoke();
     }
 
     private Control CreateDragPreview(Vector2 grabOffset)
     {
-        var main = FindMain();
-        var scale = main?.PreparationDragPreviewScale ?? 1.045f;
-        var rotationDegrees = main?.PreparationDragPreviewRotationDegrees ?? -1.5f;
-
+        var main = FindMain() ?? throw new InvalidOperationException("Presentation card is not attached to Main.");
         var root = new Control
         {
             MouseFilter = MouseFilterEnum.Ignore,
@@ -215,8 +205,8 @@ internal sealed partial class PresentationCardButton : Button
             FocusMode = FocusModeEnum.None,
             ButtonMask = (MouseButtonMask)0,
             PivotOffset = grabOffset,
-            Scale = new Vector2(scale, scale),
-            Rotation = Mathf.DegToRad(rotationDegrees),
+            Scale = new Vector2(main.PreparationDragPreviewScale, main.PreparationDragPreviewScale),
+            Rotation = Mathf.DegToRad(main.PreparationDragPreviewRotationDegrees),
             TooltipText = string.Empty,
         };
         preview.SetMeta("presentation_skip_footprint", true);
@@ -236,32 +226,27 @@ internal sealed partial class PresentationCardButton : Button
             return;
 
         var parentName = GetParent()?.Name.ToString();
-        var (minimumWidth, artHeight, role, disablePointerInteraction) = parentName switch
+        var (role, disablePointerInteraction) = parentName switch
         {
-            "LeaderButtons" => (156.0f, 118.0f, ModThemeMetricKeys.Card.LeaderRole, false),
-            "OfferButtons" => (118.0f, 76.0f, ModThemeMetricKeys.Card.ShopRole, false),
-            "FieldButtons" => (138.0f, 112.0f, ModThemeMetricKeys.Card.BoardRole, true),
-            "ReserveButtons" => (90.0f, 34.0f, ModThemeMetricKeys.Card.ReserveRole, false),
-            "InteractionButtons" => (124.0f, 82.0f, ModThemeMetricKeys.Card.ChoiceRole, false),
-            _ => (92.0f, 52.0f, ModThemeMetricKeys.Card.DefaultRole, false),
+            "LeaderButtons" => (ModThemeMetricKeys.Card.LeaderRole, false),
+            "OfferButtons" => (ModThemeMetricKeys.Card.ShopRole, false),
+            "FieldButtons" => (ModThemeMetricKeys.Card.BoardRole, true),
+            "ReserveButtons" => (ModThemeMetricKeys.Card.ReserveRole, false),
+            "InteractionButtons" => (ModThemeMetricKeys.Card.ChoiceRole, false),
+            _ => (ModThemeMetricKeys.Card.DefaultRole, false),
         };
 
-        var main = FindMain();
-        if (main is not null)
-        {
-            minimumWidth = main.ResolvePresentationMetric(
-                ModThemeMetricKeys.Card.MinimumWidth(role),
-                minimumWidth,
-                1.0f,
-                2048.0f);
-            artHeight = main.ResolvePresentationMetric(
-                ModThemeMetricKeys.Card.ArtHeight(role),
-                artHeight,
-                0.0f,
-                2048.0f);
-            var contentGap = main.ResolvePresentationMetric(ModThemeMetricKeys.Card.ContentGap, 2.0f, 0.0f, 256.0f);
-            _column.AddThemeConstantOverride("separation", Mathf.RoundToInt(contentGap));
-        }
+        var main = FindMain() ?? throw new InvalidOperationException("Presentation card is not attached to Main.");
+        var minimumWidth = main.ResolvePresentationMetric(
+            ModThemeMetricKeys.Card.MinimumWidth(role),
+            1.0f,
+            2048.0f);
+        var artHeight = main.ResolvePresentationMetric(
+            ModThemeMetricKeys.Card.ArtHeight(role),
+            0.0f,
+            2048.0f);
+        var contentGap = main.ResolvePresentationMetric(ModThemeMetricKeys.Card.ContentGap, 0.0f, 256.0f);
+        _column.AddThemeConstantOverride("separation", Mathf.RoundToInt(contentGap));
 
         ApplyFootprint(minimumWidth, artHeight, showSubtitle: false, role);
         if (disablePointerInteraction)
