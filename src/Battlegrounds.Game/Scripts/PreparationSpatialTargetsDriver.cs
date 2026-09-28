@@ -9,19 +9,33 @@ public partial class PreparationSpatialTargetsDriver : Node
         if (GetParent() is not Main main)
             return;
 
-        var frame = main.GetNodeOrNull<Control>(
-            "Margin/Shell/CenterStage/PreparationPanel/HeroDock/HeroPortraitFrame");
-        if (frame is null || frame.GetNodeOrNull<PreparationDropTarget>("PurchaseDropTarget") is not null)
+        var heroDock = main.GetNodeOrNull<Control>(
+            "Margin/Shell/CenterStage/PreparationPanel/HeroDock");
+        if (heroDock is null)
             return;
 
-        var target = new PreparationDropTarget
+        var target = heroDock.GetNodeOrNull<PreparationDropTarget>("PurchaseDropTarget");
+        if (target is null)
         {
-            Name = "PurchaseDropTarget",
-            Role = PreparationDropTargetRole.AcquireOffer,
-            ThemeTypeVariation = "HeroPurchaseDropTarget",
-            ZIndex = 5,
-        };
-        frame.AddChild(target);
-        target.SetAnchorsAndOffsetsPreset(Control.LayoutPreset.FullRect);
+            target = new PreparationDropTarget
+            {
+                Name = "PurchaseDropTarget",
+                Role = PreparationDropTargetRole.AcquireOffer,
+                ThemeTypeVariation = "HeroPurchaseDropTarget",
+                ZIndex = 50,
+                Visible = false,
+                MouseFilter = Control.MouseFilterEnum.Ignore,
+            };
+            heroDock.AddChild(target);
+            target.SetAnchorsAndOffsetsPreset(Control.LayoutPreset.FullRect);
+        }
+
+        var viewport = main.GetViewport();
+        var draggingOffer = viewport.GuiIsDragging() &&
+                            PreparationDragPayload.TryReadOffer(viewport.GuiGetDragData(), out _);
+        target.Visible = draggingOffer;
+        target.MouseFilter = draggingOffer
+            ? Control.MouseFilterEnum.Stop
+            : Control.MouseFilterEnum.Ignore;
     }
 }
