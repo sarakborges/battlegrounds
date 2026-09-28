@@ -102,7 +102,7 @@ theme_override_font_sizes/font_size = 20
 text = ""
 horizontal_alignment = 1
 
-[node name="LeaderButtons" type="VBoxContainer" parent="Margin/Shell/CenterStage/LeaderPanel"]
+[node name="LeaderButtons" type="Container" parent="Margin/Shell/CenterStage/LeaderPanel"]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 320)
 layout_mode = 2
@@ -207,7 +207,7 @@ theme_type_variation = &"ShopkeeperDropTargetArea"
 script = ExtResource("4_drop_target")
 role = 1
 
-[node name="OfferButtons" type="VBoxContainer" parent="Margin/Shell/CenterStage/PreparationPanel/TavernShelf/ShelfRow"]
+[node name="OfferButtons" type="Container" parent="Margin/Shell/CenterStage/PreparationPanel/TavernShelf/ShelfRow"]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
@@ -228,7 +228,7 @@ custom_minimum_size = Vector2(0, 250)
 layout_mode = 2
 size_flags_vertical = 3
 
-[node name="FieldButtons" type="VBoxContainer" parent="Margin/Shell/CenterStage/PreparationPanel/BoardStage"]
+[node name="FieldButtons" type="Container" parent="Margin/Shell/CenterStage/PreparationPanel/BoardStage"]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
@@ -240,7 +240,7 @@ script = ExtResource("2_card_row")
 custom_minimum_size = Vector2(0, 72)
 layout_mode = 2
 
-[node name="ReserveButtons" type="VBoxContainer" parent="Margin/Shell/CenterStage/PreparationPanel/ReserveShelf"]
+[node name="ReserveButtons" type="Container" parent="Margin/Shell/CenterStage/PreparationPanel/ReserveShelf"]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3

@@ -11,7 +11,7 @@ namespace Battlegrounds.Game;
 /// the row computes the intended insertion directly from pointer position and reflows
 /// neighboring minions around that gap. Drop zones remain stable for the whole gesture.
 /// </summary>
-public partial class HorizontalCardRow : VBoxContainer
+public partial class HorizontalCardRow : Container
 {
     [Export] public float Gap { get; set; } = 8.0f;
     [Export] public float PreferredCardWidth { get; set; } = 138.0f;
