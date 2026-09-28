@@ -38,7 +38,7 @@ public partial class PreparationSpatialTargetsDriver : Node
         var overValidTarget = false;
 
         var hero = main.GetNodeOrNull<Control>(
-            "Margin/Shell/CenterStage/PreparationPanel/HeroDock/HeroCore");
+            "Margin/Shell/CenterStage/PreparationPanel/HeroDock/HeroDockRow/HeroCore");
         var shopkeeper = main.GetNodeOrNull<Control>(
             "Margin/Shell/CenterStage/PreparationPanel/TavernShelf/ShelfRow/ShopkeeperSlot");
         var board = main.GetNodeOrNull<Control>("%FieldButtons");
