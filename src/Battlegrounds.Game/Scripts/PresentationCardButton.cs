@@ -9,7 +9,10 @@ internal sealed record PresentationCardInspectData(
     string Stats,
     string? Description,
     string? Details,
-    Texture2D? Texture);
+    Texture2D? Texture,
+    int? Tier = null,
+    int? Attack = null,
+    int? Health = null);
 
 internal sealed partial class PresentationCardButton : Button
 {
@@ -94,7 +97,6 @@ internal sealed partial class PresentationCardButton : Button
         AddChild(_tierBadge);
         AddChild(_attackBadge);
         AddChild(_healthBadge);
-        AnchorStatBadges();
     }
 
     public override void _Ready()
@@ -209,7 +211,15 @@ internal sealed partial class PresentationCardButton : Button
         TooltipText = string.Empty;
 
         if (_inspectData is not null)
-            _inspectData = _inspectData with { Details = inspectDetails };
+        {
+            _inspectData = _inspectData with
+            {
+                Details = inspectDetails,
+                Tier = tier,
+                Attack = attack,
+                Health = health,
+            };
+        }
 
         if (IsInsideTree())
             ApplyTokenVisualMode();
@@ -359,6 +369,35 @@ internal sealed partial class PresentationCardButton : Button
         _attackBadge.Visible = true;
         _healthBadge.Visible = true;
         _art.SizeFlagsVertical = SizeFlags.ExpandFill;
+        _column.AddThemeConstantOverride("separation", 0);
+        ApplyTokenBadgeLayout();
+    }
+
+    private void ApplyTokenBadgeLayout()
+    {
+        var main = FindMain();
+        if (main is null)
+            return;
+
+        var badgeSize = main.ResolvePresentationMetric(ModThemeMetricKeys.Card.TokenBadgeSize, 16.0f, 128.0f);
+        var inset = main.ResolvePresentationMetric(ModThemeMetricKeys.Card.TokenBadgeInset, 0.0f, 64.0f);
+
+        SetBadgeRect(_tierBadge, 0.0f, 0.0f, inset, inset, badgeSize);
+        SetBadgeRect(_attackBadge, 0.0f, 1.0f, inset, -inset - badgeSize, badgeSize);
+        SetBadgeRect(_healthBadge, 1.0f, 1.0f, -inset - badgeSize, -inset - badgeSize, badgeSize);
+    }
+
+    private static void SetBadgeRect(Control badge, float anchorX, float anchorY, float left, float top, float size)
+    {
+        badge.AnchorLeft = anchorX;
+        badge.AnchorTop = anchorY;
+        badge.AnchorRight = anchorX;
+        badge.AnchorBottom = anchorY;
+        badge.OffsetLeft = left;
+        badge.OffsetTop = top;
+        badge.OffsetRight = left + size;
+        badge.OffsetBottom = top + size;
+        badge.CustomMinimumSize = new Vector2(size, size);
     }
 
     private void HandleMouseEntered()
@@ -374,40 +413,13 @@ internal sealed partial class PresentationCardButton : Button
         FindMain()?.HideCardInspect(this);
     }
 
-    private void AnchorStatBadges()
-    {
-        AnchorBadge(_tierBadge, 0, 0, 0, 0, 5, 5, 37, 37);
-        AnchorBadge(_attackBadge, 0, 1, 0, 1, 5, -37, 37, -5);
-        AnchorBadge(_healthBadge, 1, 1, 1, 1, -37, -37, -5, -5);
-    }
-
-    private static void AnchorBadge(
-        Control badge,
-        float anchorLeft,
-        float anchorTop,
-        float anchorRight,
-        float anchorBottom,
-        float offsetLeft,
-        float offsetTop,
-        float offsetRight,
-        float offsetBottom)
-    {
-        badge.AnchorLeft = anchorLeft;
-        badge.AnchorTop = anchorTop;
-        badge.AnchorRight = anchorRight;
-        badge.AnchorBottom = anchorBottom;
-        badge.OffsetLeft = offsetLeft;
-        badge.OffsetTop = offsetTop;
-        badge.OffsetRight = offsetRight;
-        badge.OffsetBottom = offsetBottom;
-    }
-
     private static (PanelContainer Panel, Label Label) CreateStatBadge(string panelVariation, string labelVariation)
     {
         var panel = IgnoreMouse(new PanelContainer
         {
             ThemeTypeVariation = panelVariation,
             Visible = false,
+            ZIndex = 4,
         });
         var label = CreateLabel(labelVariation);
         label.HorizontalAlignment = HorizontalAlignment.Center;
