@@ -33,6 +33,13 @@ internal sealed class ModThemeBuilder
         ApplyComponent(theme, ModThemeComponentRoles.Input, "LineEdit");
         ApplyComponent(theme, ModThemeComponentRoles.Panel, "PanelContainer");
 
+        ApplyPanelVariation(theme, ModThemePanelRoles.OpponentRail, "OpponentRailSurface");
+        ApplyPanelVariation(theme, ModThemePanelRoles.TavernControls, "TavernControlsSurface");
+        ApplyPanelVariation(theme, ModThemePanelRoles.Tavern, "TavernSurface");
+        ApplyPanelVariation(theme, ModThemePanelRoles.Board, "BoardSurface");
+        ApplyPanelVariation(theme, ModThemePanelRoles.Reserve, "ReserveSurface");
+        ApplyPanelVariation(theme, ModThemePanelRoles.HeroDock, "HeroDockSurface");
+        ApplyPanelVariation(theme, ModThemePanelRoles.TurnRail, "TurnRailSurface");
         ApplyPanelVariation(theme, ModThemePanelRoles.HeroPortrait, "HeroPortraitFrame");
         ApplyPanelVariation(theme, ModThemePanelRoles.OpponentEntry, "OpponentEntry");
         ApplyPanelVariation(theme, ModThemePanelRoles.OpponentEntrySelf, "OpponentEntrySelf");
