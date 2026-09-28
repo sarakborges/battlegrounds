@@ -224,9 +224,9 @@ public sealed class EffectPipeline
             EffectTargetSelection.HighestHealth => candidates.OrderByDescending(unit => unit.Health).ThenBy(unit => unit.Position),
             EffectTargetSelection.Leftmost => candidates.OrderBy(unit => unit.Position),
             EffectTargetSelection.Rightmost => candidates.OrderByDescending(unit => unit.Position),
-            EffectTargetSelection.Adjacent => SelectAdjacent(candidates, context, true, true),
-            EffectTargetSelection.LeftAdjacent => SelectAdjacent(candidates, context, true, false),
-            EffectTargetSelection.RightAdjacent => SelectAdjacent(candidates, context, false, true),
+            EffectTargetSelection.Adjacent => SelectAdjacent(candidates, context, selector.RelativeTo, true, true),
+            EffectTargetSelection.LeftAdjacent => SelectAdjacent(candidates, context, selector.RelativeTo, true, false),
+            EffectTargetSelection.RightAdjacent => SelectAdjacent(candidates, context, selector.RelativeTo, false, true),
             _ => throw new ArgumentOutOfRangeException(nameof(selector.Selection), selector.Selection, "Unsupported target selection."),
         };
 
@@ -276,20 +276,29 @@ public sealed class EffectPipeline
     private static IReadOnlyList<EffectUnitSnapshot> SelectAdjacent(
         IReadOnlyList<EffectUnitSnapshot> candidates,
         EffectResolutionContext context,
+        EffectTargetAnchor relativeTo,
         bool includeLeft,
         bool includeRight)
     {
-        var source = context.Units.Single(unit => unit.InstanceId == context.SourceInstanceId);
-        if (source.Position < 0) return [];
+        EffectUnitSnapshot? anchor = relativeTo switch
+        {
+            EffectTargetAnchor.Source => context.Units.Single(unit => unit.InstanceId == context.SourceInstanceId),
+            EffectTargetAnchor.Selected when context.SelectedTargetInstanceId is UnitInstanceId selectedId =>
+                context.Units.SingleOrDefault(unit => unit.InstanceId == selectedId),
+            EffectTargetAnchor.Selected => null,
+            _ => throw new ArgumentOutOfRangeException(nameof(relativeTo), relativeTo, "Unsupported target anchor."),
+        };
+        if (anchor is null || anchor.Position < 0) return [];
+
         var result = new List<EffectUnitSnapshot>(2);
         if (includeLeft)
         {
-            var left = candidates.FirstOrDefault(unit => unit.OwnerPlayerId == source.OwnerPlayerId && unit.Position == source.Position - 1);
+            var left = candidates.FirstOrDefault(unit => unit.OwnerPlayerId == anchor.OwnerPlayerId && unit.Position == anchor.Position - 1);
             if (left is not null) result.Add(left);
         }
         if (includeRight)
         {
-            var right = candidates.FirstOrDefault(unit => unit.OwnerPlayerId == source.OwnerPlayerId && unit.Position == source.Position + 1);
+            var right = candidates.FirstOrDefault(unit => unit.OwnerPlayerId == anchor.OwnerPlayerId && unit.Position == anchor.Position + 1);
             if (right is not null) result.Add(right);
         }
         return result;

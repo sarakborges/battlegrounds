@@ -109,6 +109,38 @@ public sealed class EffectPipelineTests
     }
 
     [Fact]
+    public void ResolveEvent_AdjacentCanUseSelectedTargetAsAnchor()
+    {
+        var target = new EffectTargetSelector(
+            EffectTargetScope.Enemy,
+            EffectTargetSelection.Adjacent,
+            relativeTo: EffectTargetAnchor.Selected);
+        var definition = Unit(new TriggerDefinition(
+            NativeTriggerKeys.OnAttack,
+            [new DealDamageEffectDefinition(target, 2)]));
+        var units = new[]
+        {
+            UnitSnapshot(1, 0, true, position: 0),
+            UnitSnapshot(2, 1, true, position: 0),
+            UnitSnapshot(3, 1, true, position: 1),
+            UnitSnapshot(4, 1, true, position: 2),
+        };
+        var context = new EffectResolutionContext(
+            new UnitInstanceId(1),
+            new PlayerId(0),
+            units,
+            new UnitInstanceId(3));
+
+        var resolved = Assert.Single(new EffectPipeline().ResolveEvent(
+            definition,
+            NativeTriggerKeys.OnAttack,
+            context,
+            new MinimumRandomSource()));
+
+        Assert.Equal([new UnitInstanceId(2), new UnitInstanceId(4)], resolved.TargetInstanceIds);
+    }
+
+    [Fact]
     public void ResolveEvent_ConditionsGateWholeTrigger()
     {
         var conditions = new EffectConditionDefinition[]
