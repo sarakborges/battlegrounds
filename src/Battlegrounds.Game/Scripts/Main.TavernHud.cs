@@ -13,6 +13,7 @@ public partial class Main
     private Label _tavernRefreshCost = null!;
     private Label _tavernFreezeCost = null!;
     private HorizontalCardRow? _tavernActionOffers;
+    private Label? _heroPortraitFallback;
 
     private void RefreshTavernHud()
     {
@@ -61,6 +62,7 @@ public partial class Main
             : Text("ui.freezeOffer", ("offer", Term("offer")));
 
         RefreshPreparationChrome(human, match.Phase);
+        RefreshHeroPortraitFallback();
     }
 
     private void RefreshPreparationChrome(PlayerState human, MatchPhase phase)
@@ -74,6 +76,7 @@ public partial class Main
         HideDirectPlaceholderLabels(_fieldButtons);
         HideDirectPlaceholderLabels(_reserveButtons);
         PartitionTavernOffers(human);
+        ResizeTavernOfferShelves(human);
     }
 
     private static void HideDirectPlaceholderLabels(Node row)
@@ -112,13 +115,67 @@ public partial class Main
         foreach (var index in actionIndices)
         {
             var card = cards[index];
+            var slot = entries[index].Slot;
             _offerButtons.RemoveChild(card);
             _tavernActionOffers.AddChild(card);
+            card.ThemeTypeVariation = "TavernActionButton";
+            card.ConfigureOfferDrag(
+                slot,
+                CanUsePreparationDrag && !card.Disabled,
+                () => CompleteSeparatedOfferDrag(slot));
         }
 
         _tavernActionOffers.Visible = true;
         _offerButtons.QueueSort();
         _tavernActionOffers.QueueSort();
+    }
+
+    private void CompleteSeparatedOfferDrag(int offerSlot)
+    {
+        if (GetViewport().GuiIsDragSuccessful())
+            return;
+
+        CompleteOfferDragFromPointer(offerSlot, GetViewport().GetMousePosition());
+    }
+
+    private void ResizeTavernOfferShelves(PlayerState human)
+    {
+        if (_tavernActionOffers is null)
+            return;
+
+        var preferredWidth = ResolvePresentationMetric(
+            ModThemeMetricKeys.Row.PreferredCardWidth(ModThemeMetricKeys.Row.Offer),
+            1.0f,
+            2048.0f);
+        var gap = ResolvePresentationMetric(
+            ModThemeMetricKeys.Row.Gap(ModThemeMetricKeys.Row.Offer),
+            0.0f,
+            512.0f);
+        var padding = ResolvePresentationMetric(
+            ModThemeMetricKeys.Row.Padding(ModThemeMetricKeys.Row.Offer),
+            0.0f,
+            512.0f);
+
+        _offerButtons.SizeFlagsHorizontal = Control.SizeFlags.ShrinkCenter;
+        _offerButtons.CustomMinimumSize = new Vector2(
+            CalculateTavernRowWidth(human.Offer.Count, preferredWidth, gap, padding),
+            _offerButtons.CustomMinimumSize.Y);
+
+        _tavernActionOffers.SizeFlagsHorizontal = Control.SizeFlags.ShrinkCenter;
+        _tavernActionOffers.CustomMinimumSize = new Vector2(
+            CalculateTavernRowWidth(human.ActionOffer.Count, preferredWidth, gap, padding),
+            _tavernActionOffers.CustomMinimumSize.Y);
+
+        _offerButtons.QueueSort();
+        _tavernActionOffers.QueueSort();
+    }
+
+    private static float CalculateTavernRowWidth(int count, float cardWidth, float gap, float padding)
+    {
+        if (count <= 0)
+            return 0.0f;
+
+        return (count * cardWidth) + (Math.Max(0, count - 1) * gap) + (padding * 2.0f);
     }
 
     private static void ClearLiveChildren(Node parent)
@@ -193,28 +250,42 @@ public partial class Main
             _tavernActionOffers = new HorizontalCardRow
             {
                 Name = "ActionOfferButtons",
+                SizeFlagsHorizontal = Control.SizeFlags.ShrinkCenter,
                 SizeFlagsVertical = Control.SizeFlags.ExpandFill,
                 ClipContents = false,
             };
             shelfRow.AddChild(_tavernActionOffers);
         }
 
+        _offerButtons.SizeFlagsHorizontal = Control.SizeFlags.ShrinkCenter;
         ApplyRowLayout(_tavernActionOffers, ModThemeMetricKeys.Row.Offer);
-        var preferredWidth = ResolvePresentationMetric(
-            ModThemeMetricKeys.Row.PreferredCardWidth(ModThemeMetricKeys.Row.Offer),
-            1.0f,
-            2048.0f);
-        var padding = ResolvePresentationMetric(
-            ModThemeMetricKeys.Row.Padding(ModThemeMetricKeys.Row.Offer),
-            0.0f,
-            512.0f);
-        _tavernActionOffers.CustomMinimumSize = new Vector2(preferredWidth + (padding * 2.0f), 0);
         shelfRow.MoveChild(_tavernActionOffers, _offerButtons.GetIndex() + 1);
+    }
+
+    private Control EnsureShopkeeperCosmeticLayer(PanelContainer shopkeeper)
+    {
+        var layer = shopkeeper.GetNodeOrNull<Control>("CosmeticLayer");
+        if (layer is not null)
+            return layer;
+
+        layer = new Control
+        {
+            Name = "CosmeticLayer",
+            CustomMinimumSize = new Vector2(
+                ResolvePresentationMetric(ModThemeMetricKeys.Layout.TavernShopkeeperWidth, 1.0f, 2048.0f),
+                ResolvePresentationMetric(ModThemeMetricKeys.Layout.TavernControlsMinimumHeight, 1.0f, 2048.0f)),
+            MouseFilter = Control.MouseFilterEnum.Ignore,
+            ZIndex = 1,
+        };
+        shopkeeper.AddChild(layer);
+        shopkeeper.MoveChild(layer, 0);
+        return layer;
     }
 
     private void BindShopkeeperCosmetic(PanelContainer shopkeeper)
     {
-        var art = shopkeeper.GetNodeOrNull<TextureRect>("CosmeticArt");
+        var layer = EnsureShopkeeperCosmeticLayer(shopkeeper);
+        var art = layer.GetNodeOrNull<TextureRect>("CosmeticArt");
         if (art is null)
         {
             art = new TextureRect
@@ -222,23 +293,37 @@ public partial class Main
                 Name = "CosmeticArt",
                 ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize,
                 StretchMode = TextureRect.StretchModeEnum.KeepAspectCovered,
-                SizeFlagsHorizontal = Control.SizeFlags.ExpandFill,
-                SizeFlagsVertical = Control.SizeFlags.ExpandFill,
-                CustomMinimumSize = new Vector2(
-                    ResolvePresentationMetric(ModThemeMetricKeys.Layout.TavernShopkeeperWidth, 1.0f, 2048.0f),
-                    ResolvePresentationMetric(ModThemeMetricKeys.Layout.TavernControlsMinimumHeight, 1.0f, 2048.0f)),
                 MouseFilter = Control.MouseFilterEnum.Ignore,
-                ZIndex = 1,
             };
-            shopkeeper.AddChild(art);
-            shopkeeper.MoveChild(art, 0);
+            layer.AddChild(art);
+            art.SetAnchorsAndOffsetsPreset(Control.LayoutPreset.FullRect);
         }
 
         var hasImage = PresentationTextures.TryGetShopkeeperImage(out var texture);
         art.Texture = texture;
         art.Visible = hasImage && texture is not null;
+
+        var fallback = layer.GetNodeOrNull<Label>("CosmeticFallback");
+        if (fallback is null)
+        {
+            fallback = new Label
+            {
+                Name = "CosmeticFallback",
+                Text = "★",
+                ThemeTypeVariation = "TitleLabel",
+                HorizontalAlignment = HorizontalAlignment.Center,
+                VerticalAlignment = VerticalAlignment.Center,
+                MouseFilter = Control.MouseFilterEnum.Ignore,
+            };
+            if (ResolveThemeColor("focus", out var focusColor))
+                fallback.AddThemeColorOverride("font_color", focusColor);
+            layer.AddChild(fallback);
+            fallback.SetAnchorsAndOffsetsPreset(Control.LayoutPreset.FullRect);
+        }
+
+        fallback.Visible = !art.Visible;
         if (!art.Visible)
-            GD.PushWarning("Shopkeeper cosmetic could not be resolved; rendering the shopkeeper slot without art.");
+            GD.PushWarning("Shopkeeper cosmetic could not be resolved; rendering the themed shopkeeper fallback.");
     }
 
     private void BindShopkeeperFrame(PanelContainer shopkeeper)
@@ -256,7 +341,8 @@ public partial class Main
         if (texture is null)
             return;
 
-        var frame = shopkeeper.GetNodeOrNull<TextureRect>("CosmeticFrame");
+        var layer = EnsureShopkeeperCosmeticLayer(shopkeeper);
+        var frame = layer.GetNodeOrNull<TextureRect>("CosmeticFrame");
         if (frame is null)
         {
             frame = new TextureRect
@@ -264,16 +350,56 @@ public partial class Main
                 Name = "CosmeticFrame",
                 ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize,
                 StretchMode = TextureRect.StretchModeEnum.Scale,
-                SizeFlagsHorizontal = Control.SizeFlags.ExpandFill,
-                SizeFlagsVertical = Control.SizeFlags.ExpandFill,
                 MouseFilter = Control.MouseFilterEnum.Ignore,
-                ZIndex = 2,
+                ZIndex = 1,
             };
-            shopkeeper.AddChild(frame);
+            layer.AddChild(frame);
+            frame.SetAnchorsAndOffsetsPreset(Control.LayoutPreset.FullRect);
         }
 
         frame.Texture = texture;
         frame.Visible = true;
+    }
+
+    private void RefreshHeroPortraitFallback()
+    {
+        if (!_hudBound || _hudHeroPortrait is null)
+            return;
+
+        var frame = _hudHeroPortrait.GetParent() as PanelContainer;
+        if (frame is null)
+            return;
+
+        _heroPortraitFallback ??= frame.GetNodeOrNull<Label>("PortraitFallback");
+        if (_heroPortraitFallback is null)
+        {
+            _heroPortraitFallback = new Label
+            {
+                Name = "PortraitFallback",
+                ThemeTypeVariation = "HeadingLabel",
+                HorizontalAlignment = HorizontalAlignment.Center,
+                VerticalAlignment = VerticalAlignment.Center,
+                MouseFilter = Control.MouseFilterEnum.Ignore,
+                ZIndex = 1,
+            };
+            if (ResolveThemeColor("focus", out var focusColor))
+                _heroPortraitFallback.AddThemeColorOverride("font_color", focusColor);
+            frame.AddChild(_heroPortraitFallback);
+            _heroPortraitFallback.SetAnchorsAndOffsetsPreset(Control.LayoutPreset.FullRect);
+        }
+
+        _heroPortraitFallback.Text = BuildPortraitMonogram(_hudHeroName.Text);
+        _heroPortraitFallback.Visible = !_hudHeroPortrait.Visible || _hudHeroPortrait.Texture is null;
+    }
+
+    private static string BuildPortraitMonogram(string displayName)
+    {
+        var parts = displayName.Split(new[] { ' ', '-', '_' }, StringSplitOptions.RemoveEmptyEntries);
+        if (parts.Length == 0)
+            return "★";
+        if (parts.Length == 1)
+            return parts[0][0].ToString().ToUpperInvariant();
+        return string.Concat(parts.Take(2).Select(part => char.ToUpperInvariant(part[0])));
     }
 
     private Label EnsureTavernCostBadge(Button button, string name)
