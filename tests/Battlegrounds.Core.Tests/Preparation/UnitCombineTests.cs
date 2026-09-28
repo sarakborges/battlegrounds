@@ -24,6 +24,9 @@ public sealed class UnitCombineTests
             [
                 new TriggerDefinition(
                     NativeTriggerKeys.OnCombine,
+                    [new AddResourceEffectDefinition(new SourceStatEffectValueExpression(EffectStat.Attack))]),
+                new TriggerDefinition(
+                    NativeTriggerKeys.OnCombine,
                     [new AddResourceEffectDefinition(1)])
             ]);
         var combine = new UnitCombineDefinition(
@@ -66,7 +69,7 @@ public sealed class UnitCombineTests
         Assert.Equal(result.Id, merged.Definition.Id);
         Assert.Equal(UnitInstanceOrigin.Generated, merged.Origin);
         Assert.Equal(6, pool.GetAvailableCopies(source.Id));
-        Assert.Equal(11, player.Resource);
+        Assert.Equal(15, player.Resource);
     }
 
     [Fact]

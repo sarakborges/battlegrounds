@@ -10,7 +10,7 @@ using Battlegrounds.Core.Randomness;
 
 namespace Battlegrounds.Core.Domain.Preparation;
 
-internal sealed class PreparationEffectEngine
+internal sealed partial class PreparationEffectEngine
 {
     private readonly PreparationRules _rules;
     private readonly IUnitPool _unitPool;
