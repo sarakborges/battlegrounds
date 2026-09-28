@@ -116,14 +116,6 @@ public sealed class SinglePlayerSession
         if (aiPlayers.Distinct().Count() != aiPlayers.Length)
             throw new ArgumentException("AI player ids must be unique.", nameof(aiPlayerIds));
 
-        var participantCount = aiPlayers.Length + 1;
-        if (participantCount % 2 != 0)
-        {
-            throw new ArgumentException(
-                "The current combat contract requires an even initial participant count because no eliminated-opponent snapshot exists in round one.",
-                nameof(aiPlayerIds));
-        }
-
         return new SinglePlayerSession(
             mod,
             humanPlayerId,
