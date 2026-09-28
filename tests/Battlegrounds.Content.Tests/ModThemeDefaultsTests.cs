@@ -40,6 +40,9 @@ public sealed class ModThemeDefaultsTests
               "colors": {
                 "accent": "#123456"
               },
+              "metrics": {
+                "motion.cue.pulse.scale": 1.2
+              },
               "components": {
                 "button.primary": {
                   "backgroundColor": "accent",
@@ -69,6 +72,7 @@ public sealed class ModThemeDefaultsTests
             Assert.Equal("primaryPressed", primary.States["pressed"].BackgroundColor);
             Assert.Equal(8, layered.Metrics[ModThemeMetricKeys.Layout.OuterMargin]);
             Assert.Equal(0.9, layered.Metrics[ModThemeMetricKeys.Motion.CombatPlaybackStepSeconds]);
+            Assert.Equal(1.2, layered.Metrics[ModThemeMetricKeys.Motion.Cue.PulseScale]);
         }
         finally
         {
