@@ -25,6 +25,9 @@ public partial class Main
         _offerButtons.SizeFlagsVertical = Control.SizeFlags.ShrinkCenter;
         if (_tavernActionOffers is not null)
             _tavernActionOffers.SizeFlagsVertical = Control.SizeFlags.ShrinkCenter;
+
+        if (_hudBound)
+            ApplyCompactResourceBadge();
     }
 
     private static void ShrinkVertically(Control control)
@@ -74,5 +77,17 @@ public partial class Main
 
         if (layer.GetNodeOrNull<TextureRect>("CosmeticArt") is { } art)
             art.StretchMode = TextureRect.StretchModeEnum.KeepAspectCovered;
+    }
+
+    private void ApplyCompactResourceBadge()
+    {
+        var height = ResolvePresentationMetric(
+            ModThemeMetricKeys.Layout.HeroDockResourceBadgeHeight,
+            1.0f,
+            512.0f);
+
+        _hudResourceBadge.CustomMinimumSize = new Vector2(0.0f, height);
+        _hudResourceBadge.SizeFlagsHorizontal = Control.SizeFlags.ShrinkCenter;
+        _hudResourceBadge.SizeFlagsVertical = Control.SizeFlags.ShrinkCenter;
     }
 }
