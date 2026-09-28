@@ -33,11 +33,31 @@ Visible vocabulary, authored entity display text and UI templates are validated 
 
 The default locale must be complete for required UI templates. Secondary locales may be partial and resolve missing keys through deterministic exact-locale → language-locale → default-locale fallback. Authored entity names additionally fall back to the validated `name` from their content file, so gameplay IDs and immutable definitions never become locale-dependent. `Battlegrounds.Game` chooses the requested/system locale and formats the validated presentation text; Application only passes the validated package through, and Core never sees locale data.
 
+Gameplay-facing labels after a mod is selected are mod-owned presentation strings rather than scene-authored text. Engine-shell text that exists before a mod is selected, such as launcher/error surfaces, remains engine-owned.
+
 `mods/example` currently demonstrates `en` and `pt-BR` presentation data, including localized authored entity names and an optional description.
 
 Presentation media follows the same ownership rule. An optional `assets/presentation.json` maps stable Leader, Unit and Action IDs to mod-relative portrait/art slots plus optional presentation cues. `Battlegrounds.Content` validates entity references, slots, cue roles, animation metadata, path containment, file existence and media type before exposing immutable asset/cue catalogs; `Battlegrounds.Game` owns runtime image/audio decoding, texture/audio caching and animation playback. Missing asset/cue entries are valid presentation fallbacks and never change gameplay identity or rules.
 
 See `LOCALIZATION.md` for the text format/fallback contract and `PRESENTATION_ASSETS.md` for presentation-media/cue metadata and path ownership.
+
+## Mod-driven theme and presentation
+
+Visual presentation resolves through one data-owned pipeline:
+
+```text
+engine default theme -> selected mod overrides -> Godot presentation resources
+```
+
+The embedded engine default theme is only a neutral presentation baseline. A mod may override colors, typography, spacing, shapes, component states, screen backgrounds, card/HUD/layout geometry, drag/drop feedback and presentation motion through `presentation/theme.json`. Theme schema v1 uses strict metric/component/screen vocabularies so misspelled or unsupported presentation keys reject the mod instead of silently doing nothing.
+
+Playable `.tscn` files own hierarchy, structural relationships, visibility, input wiring and semantic theme variations; they do not own playable visual dimensions, colors, typography sizes, presentation spacing or motion timing. Runtime-created combat controls follow the same rule.
+
+Presentation timing such as combat playback cadence and neutral `pulse`/`shake`/`lunge`/`fade`/`pop` tween tuning is also theme data. It only affects how already-resolved state is shown and cannot affect Core simulation timing or authoritative results.
+
+`presentation/interaction.json` contains presentation interaction policy that changes how human intent is collected without changing Core mechanics. The current contract includes manual vs automatic Unit combine submission.
+
+See `THEMING.md`, `ENGINE_THEME.md` and `THEME_ROLES.md` for the visual contract.
 
 ## One authored entity per file
 
@@ -74,7 +94,7 @@ The file name is part of the validation contract: `content/units/guard.json` mus
 
 This rule applies to future ID-addressable content too: artifacts, quests, anomalies, or other authored entities should each have their own file rather than being accumulated into one array document.
 
-Aggregate files are reserved for genuinely package-global configuration, such as `mod.json`, `rules/*.json`, `content/pool.json`, `localization/presentation.json` and `assets/presentation.json`.
+Aggregate files are reserved for genuinely package-global configuration, such as `mod.json`, `rules/*.json`, `content/pool.json`, `localization/presentation.json`, `assets/presentation.json` and optional `presentation/*.json` files.
 
 ## Leaders and powers
 
@@ -132,6 +152,8 @@ Battlecry-like, Deathrattle-like, summon, damage, destroy, buff, Action and Powe
 
 Current trigger families include Unit events such as `onPlay`, `onCombine`, `onSummon`, `onAttack`, `onDamage`, `onDeath` and counted `afterFriendlyDeaths`, plus shared lifecycle events such as `onMatchStart`, `onTurnStart`, `onTurnEnd`, `onCombatStart`, `onCombatEnd` and active-power `onActivate`.
 
+`onCombine` is specifically a Unit result lifecycle hook; Powers do not accept it as a Power trigger.
+
 Effects include stat modification, damage, destruction, explicit trigger activation, summon, behavior mutation, resource adjustment, power replacement, Unit/Action generation and choices, persistent Unit transform/copy, and named persistent Unit modifiers.
 
 Numeric effect parameters may be dynamic expressions. Target selection and conditions are composable. Scoped event history supports counted conditions and activation limits without introducing a global event bus.
@@ -172,9 +194,9 @@ Combat `addResource`, power changes and scoped effect-history deltas leave Comba
 
 `CombatPairing` remains explicit: matchmaking is not hidden inside `MatchEngine`.
 
-`MatchState` owns authoritative `CombatPairingHistory`. Only pairings that were actually resolved by `MatchEngine` are recorded. Eliminated-opponent entries preserve the exact archived opponent source used at the beginning of that combat round.
+`MatchState` owns authoritative `CombatPairingHistory`. Resolved live/ghost combat pairings are recorded, and bye assignments are also retained as pairing history so the baseline policy can distribute future byes fairly. Eliminated-opponent entries preserve the exact archived opponent source used at the beginning of that combat round.
 
-`HistoryAwareCombatPairingPolicy` is a neutral baseline policy outside the engine. It prefers less-repeated live opponents, then the least-recent prior meeting, with injected deterministic RNG for exact ties. When an odd active-player count requires an eliminated-opponent pairing, it distributes those assignments using the same history-aware principle.
+`HistoryAwareCombatPairingPolicy` is a neutral baseline policy outside the engine. It prefers less-repeated live opponents, then the least-recent prior meeting, with injected deterministic RNG for exact ties. When the active-player count is odd, it uses an eliminated-opponent snapshot when one already exists; otherwise it assigns one explicit bye, preferring players with fewer prior byes.
 
 Callers still make the boundary explicit:
 
@@ -185,15 +207,13 @@ var roundResult = matchEngine.ResolveCombatRound(match, pairings);
 
 See `MATCHMAKING.md` for the contract.
 
-## Odd-player combat and eliminated-opponent snapshots
+## Odd-player combat, byes and eliminated-opponent snapshots
 
-When the number of active players is odd, exactly one pairing must use:
+Odd participant counts are supported from the first round. There is no engine rule requiring an even lobby.
 
-```csharp
-CombatPairing.VersusEliminatedOpponent(playerId)
-```
+When the number of active players is odd and no eliminated-opponent snapshot exists yet, exactly one player receives an explicit bye. A bye is a real `CombatPairing` state, is recorded in pairing history, generates no `CombatSettlement`, deals no damage and does not fire combat lifecycle effects. The baseline policy prefers players with fewer prior byes so early odd-player rounds distribute them fairly.
 
-The opponent is the immutable `EliminatedOpponentSnapshot` from the **most recently eliminated player before that combat round started**. It preserves that player's Field, Tier, current Power and effect-history snapshot relevant to Combat.
+Once an eliminated player has been archived, the odd player may instead face the immutable `EliminatedOpponentSnapshot` from the **most recently eliminated player before that combat round started**. It preserves that player's Field, Tier, current Power and effect-history snapshot relevant to Combat.
 
 The archived opponent:
 
@@ -203,8 +223,6 @@ The archived opponent:
 - can still win combat and deal normal post-combat damage;
 - is frozen for the whole round, so a newly eliminated player cannot replace it halfway through settlement;
 - is replaced by the most recently eliminated player only for a later round.
-
-An initially odd lobby has no eliminated-player snapshot yet and is therefore rejected rather than silently inventing a bye.
 
 ## Placement and elimination history
 
@@ -232,7 +250,7 @@ See `AI.md` for ownership and determinism rules.
 
 `Battlegrounds.Application` is a framework-free orchestration layer over validated Content, Core and AI.
 
-`SinglePlayerSession` coordinates one human player plus AI opponents. AI Leader selection and Preparation use `PreparationAiAgent`; human input uses the same `IPreparationCommand` types; combat pairings come from `ICombatPairingPolicy`; and all authoritative mutation still enters through `MatchEngine`/Core.
+`SinglePlayerSession` coordinates exactly one human player plus AI opponents. The total participant count may be odd or even and is constrained only by the selected mod's `minimumPlayers` / `maximumPlayers`. AI Leader selection and Preparation use `PreparationAiAgent`; human input uses the same `IPreparationCommand` types; combat pairings come from `ICombatPairingPolicy`; and all authoritative mutation still enters through `MatchEngine`/Core.
 
 Every Preparation round rolls a fresh random initiative order across active players. Only the current initiative owner may issue Preparation commands. That player may perform any number of legal actions—buying, releasing, refreshing, upgrading, using powers, resolving generated choices and so on—until `EndPreparationCommand` yields to the next player. There is no one-human-action/one-AI-action alternation, no action quota and no Preparation timer in the current local flow.
 
@@ -242,7 +260,7 @@ The shared Unit pool is authoritative but hidden from the human. Exact remaining
 
 Initiative is rolled independently each round from the deterministic session RNG. There is intentionally no rotation or fairness correction: the same player may be first for several consecutive rounds if the seeded random sequence produces that result.
 
-Immediately before combat resolution, the session freezes the paired starting Unit views; after Core returns, `LastCombat` exposes a `SessionCombatRecord` containing those immutable snapshots plus the authoritative `CombatRoundResult`. Presentation can therefore keep showing the completed combat after the Match has already advanced without owning or delaying simulation.
+Immediately before combat resolution, the session freezes the paired starting Unit views; after Core returns, `LastCombat` exposes a `SessionCombatRecord` containing those immutable snapshots plus the authoritative `CombatRoundResult`. Presentation can therefore keep showing the completed combat after the Match has already advanced without owning or delaying simulation. If the human receives a bye, no fake combat record/settlement is invented.
 
 The session exposes the validated `ModPackage`, including its immutable presentation catalog, but does not select locales or interpret localized strings.
 
@@ -254,15 +272,17 @@ See `APPLICATION.md` for the orchestration and ownership contract.
 
 The playable Preparation surface covers Leader selection, generic acquire/deploy/release, refresh, upgrade, freeze/unfreeze, Action/Power activation, pending Unit/Action choices, explicit Unit-combine component selection and ending Preparation.
 
-Multi-step intent is stored only in `PresentationInteractionState`. Targeted Actions/Powers first submit without a target; when Core reports `InvalidActionTarget`/`InvalidPowerTarget`, Godot enters target-selection mode and resubmits the chosen `UnitInstanceId`. Combine selection stores exact highlighted component IDs and finishes with the existing `CombineUnitsCommand`.
+Multi-step intent is stored only in `PresentationInteractionState`. Targeted Actions/Powers first submit without a target; when Core reports `InvalidActionTarget`/`InvalidPowerTarget`, Godot enters target-selection mode and resubmits the chosen `UnitInstanceId`. Combine selection stores exact highlighted component IDs and finishes with the existing `CombineUnitsCommand`; mods may alternatively request automatic combine submission through validated interaction settings.
 
 Godot resolves the selected mod's `ModPresentationCatalog` using the exported locale or Godot's system locale. Preparation labels, summaries, concept vocabulary, authored Leader/Power/Unit/Action/combine names and combat playback text are rendered from mod-owned presentation data with Content-owned fallback instead of hardcoded engine English or locale-dependent gameplay identity.
 
+Godot also resolves the embedded engine theme plus the selected mod's optional `presentation/theme.json` overrides before applying visual values. Scene files and runtime-created presentation controls provide structure; colors, typography, playable spacing/dimensions, semantic component styles, screen presentation and motion tuning come from the resolved theme. A presentation initialization failure can still render through the embedded engine baseline instead of relying on stale `.tscn` visual literals.
+
 Validated media/cue metadata remains outside Core. `ModPresentationTextureStore` loads mod-relative images into cached `Texture2D` instances, while `ModPresentationCuePlayer` consumes immutable `ModPresentationCueCatalog` entries and owns presentation-only tweens plus optional cached `.wav` playback. Reusable `PresentationCardButton` controls render Leader choices plus Unit/Action pending choices, Offer, Reserve and Field entries from stable IDs and emit `ui.select` presentation cues when pressed. Missing media/cues degrade to the neutral card/text and fallback animation behavior; cards still submit the same existing slots/IDs/commands and never become gameplay authority.
 
-Resolved human combat is displayed through a full-screen presentation-owned playback overlay. `CombatPlaybackState` starts from immutable session snapshots and consumes `CombatResult.Timeline` in order. Combat board Units reuse validated Unit art/card identity, while each already-resolved timeline event maps to a stable role such as `combat.attack`, `combat.target`, `combat.summon`, `combat.damage`, `combat.death`, `combat.revive` or `combat.trigger`. Authored animation/duration/audio metadata may change how that event is presented, but playback may still auto-step, advance manually or skip to settlement independently; no tween or clip completion reruns combat, alters event order or mutates Core state.
+Resolved human combat is displayed through a full-screen presentation-owned playback overlay. `CombatPlaybackState` starts from immutable session snapshots and consumes `CombatResult.Timeline` in order. Combat board Units reuse validated Unit art/card identity, while each already-resolved timeline event maps to a stable role such as `combat.attack`, `combat.target`, `combat.summon`, `combat.damage`, `combat.death`, `combat.revive` or `combat.trigger`. Authored animation/duration/audio metadata and theme-owned motion metrics may change how that event is presented, but playback may still auto-step, advance manually or skip to settlement independently; no tween or clip completion reruns combat, alters event order or mutates Core state.
 
-See `GAME.md` for the Godot ownership contract, `LOCALIZATION.md` for the presentation string contract and `PRESENTATION_ASSETS.md` for media/cue metadata and runtime ownership.
+See `GAME.md` for the Godot ownership contract, `LOCALIZATION.md` for the presentation string contract, `THEMING.md` for the visual contract and `PRESENTATION_ASSETS.md` for media/cue metadata and runtime ownership.
 
 ## Mod validation is mandatory
 
@@ -270,7 +290,9 @@ See `GAME.md` for the Godot ownership contract, `LOCALIZATION.md` for the presen
 
 `ModLoader.Validate(...)` and `ModValidator.Validate(...)` return a structured report suitable for UI, including the actual file, JSON path, issue code, severity and message. `ModDiscovery` applies the same validation while scanning direct child directories and exposes a lightweight `ModPackageSummary` (`schemaVersion`, `id`, `name`) plus the report without creating match state. Discovery order is ordinal and deterministic.
 
-Validation covers required global files/content directories, required and unknown keys, JSON types/ranges, one-object-per-entity-file structure, entity ID/file-name agreement, duplicate IDs/references, cross-file references, unsupported native handlers/triggers/effects/policies, taxonomy references, leader starting values, Leader → initial-Power references, persistent-effect phase legality, Action/choice/generation rules, Unit-combine references/constraints, required presentation terminology, locale identifiers, default-locale completeness, localization string shape, stable authored-entity localization references, presentation-asset entity/slot/path/type/existence constraints, and presentation cue roles/animation/duration/audio schema.
+Validation covers required global files/content directories, required and unknown keys, JSON types/ranges, one-object-per-entity-file structure, entity ID/file-name agreement, duplicate IDs/references, cross-file references, unsupported native handlers/triggers/effects/policies, taxonomy references, leader starting values, Leader → initial-Power references, persistent-effect phase legality, Action/choice/generation rules, Unit-combine references/constraints, required presentation terminology, locale identifiers, default-locale completeness, localization string shape, stable authored-entity localization references, presentation-asset entity/slot/path/type/existence constraints, presentation cue roles/animation/duration/audio schema, interaction settings, and strict theme metric/component/screen-role vocabularies.
+
+The validator is being incrementally cleaned so each specialized schema validator owns its accepted contract directly instead of relying on broad post-validation suppressions in `ModValidator`. `onCombine` no longer uses such a suppression: it is accepted for Unit triggers through the shared native-trigger contract and remains correctly rejected for Power triggers.
 
 Examples of required rules:
 
@@ -323,6 +345,9 @@ mods/
     localization/
       presentation.json
       <locale>.json
+    presentation/
+      theme.json
+      interaction.json
     assets/
       presentation.json
       leaders/
@@ -331,7 +356,9 @@ mods/
       audio/
 ```
 
-`Battlegrounds.Content` owns filesystem/JSON loading, discovery and validation. `Battlegrounds.Core` never reads files or JSON directly. `mods/example` is only a neutral schema/integration fixture.
+`presentation/theme.json`, `presentation/interaction.json` and `assets/presentation.json` are optional; omitted theme values inherit the engine presentation baseline.
+
+`Battlegrounds.Content` owns filesystem/JSON loading, discovery and validation. `Battlegrounds.Core` never reads files or JSON directly. `mods/example` is the neutral schema/integration fixture; `mods/warbands` is the current game-specific playable mod built on the same public contracts.
 
 ## Stack
 
@@ -351,6 +378,7 @@ src/
 
 mods/
   example/
+  warbands/
 
 tests/
   Battlegrounds.Core.Tests/
@@ -367,9 +395,10 @@ Read `ARCHITECTURE.md` before adding features. Its ownership, dependency, mutati
 - deterministic Leader offers/selection and explicit `PlayerSetup` creation;
 - neutral `LeaderDefinition`, `LeaderCatalog`, `LeaderState`, Health modifiers and Armor;
 - independent trigger-based `PowerDefinition`/`PowerCatalog`, active/passive lifecycle events and mutable current-power state;
-- `MatchEngine` round orchestration, explicit pairings, post-combat settlement and odd-player eliminated-opponent combat;
-- authoritative combat pairing history plus a history-aware pairing policy outside `MatchEngine`;
+- `MatchEngine` round orchestration, explicit pairings, post-combat settlement and odd-player bye/archived-opponent handling;
+- authoritative combat pairing history plus a history-aware pairing policy outside `MatchEngine`, including fair deterministic bye distribution;
 - immutable eliminated-player combat snapshots using the latest prior elimination;
+- one-human-plus-N-AI single-player sessions with odd/even participant counts constrained only by mod min/max rules;
 - mod-driven starting Health, starting-side policy and post-combat damage policy;
 - authoritative `PlayerState` with read-only Unit/Action offer and reserve views;
 - immutable `UnitDefinition` / `ActionDefinition` separated from mutable runtime instances;
@@ -378,7 +407,7 @@ Read `ARCHITECTURE.md` before adding features. Its ownership, dependency, mutati
 - authoritative shared `UnitPool` with explicit ownership on transform/copy/combine paths;
 - generic generation, pending Unit/Action choices and explicit resolution commands;
 - generic Action acquisition/play through the shared effect runtime;
-- explicit mod-defined Unit combines and `onCombine` reward lifecycle;
+- explicit mod-defined Unit combines and Unit-only `onCombine` reward lifecycle;
 - persistent Unit transform/copy and named modifier effects limited to Preparation-capable contexts;
 - dynamic effect values, expressive targets/conditions and scoped event history/activation limits;
 - preparation commands for acquire, release, deploy, Action play, combine, refresh, tier upgrade, Power use, choice resolution, freeze/unfreeze and end Preparation;
@@ -394,22 +423,26 @@ Read `ARCHITECTURE.md` before adding features. Its ownership, dependency, mutati
 - framework-free single-player session orchestration over validated Content + Core + AI + matchmaking;
 - immutable session combat observations that freeze starting boards before authoritative settlement advances the Match;
 - validated mod-owned presentation terminology/locales with deterministic fallback and immutable `ModPresentationCatalog`;
+- gameplay-facing static UI text resolved from mod-owned localization instead of scene/code literals;
 - stable localized authored display keys for Leaders, Powers, Units, Actions, behaviors, types, tags and combines, with content-file name fallback and optional descriptions;
 - validated ID-keyed Leader portrait and Unit/Action art metadata with an immutable `ModPresentationAssetCatalog` and optional per-entity fallback;
 - validated stable entity/event-role animation/audio metadata through immutable `ModPresentationCueCatalog` entries;
+- embedded asset-free engine presentation theme layered with optional selected-mod overrides;
+- strict data-driven theme ownership for colors, typography, layout/HUD/card geometry, semantic component roles, screen presentation, drag/drop visual feedback and presentation motion;
+- validated mod interaction settings for presentation policy such as manual/automatic combine intent collection;
 - Godot-owned runtime external-image/audio decoding and caching through `ModPresentationTextureStore` / `ModPresentationCuePlayer`, with no filesystem or timing dependency in Core/Application;
 - reusable Godot Leader/Unit/Action presentation cards combining optional art, localized names/descriptions and mechanical stats while preserving existing command wiring;
 - deterministic Content-owned mod discovery with lightweight summaries and validation diagnostics for valid/invalid direct-child packages;
 - Godot mod-selection launcher that starts gameplay only after explicit valid-package selection;
 - thin Godot presentation adapter over the Application boundary with a playable localized Preparation loop;
 - explicit Godot multi-step interaction state for selected targets, pending choices and combine components;
-- deterministic Godot combat playback over the Core event timeline with visual Unit cards, mod-owned art/cues, presentation-only event tweens/audio, manual/automatic stepping and settlement skip;
-- whole-mod validation before loading;
+- deterministic Godot combat playback over the Core event timeline with visual Unit cards, mod-owned art/cues, theme-owned motion, manual/automatic stepping and settlement skip;
+- whole-mod validation before loading, with specialized validator ownership being tightened incrementally instead of relying on broad compatibility suppressions;
 - regression/invariant tests and CI, including a Godot project build.
 
 ## Local development
 
-Open `src/Battlegrounds.Game/project.godot` with the .NET build of Godot 4.7.2. The project now opens on the mod-selection launcher; `mods/example` should appear as a valid package and can be selected to start the local single-player session.
+Open `src/Battlegrounds.Game/project.godot` with the .NET build of Godot 4.7.2. The project opens on the mod-selection launcher; `mods/example` is the neutral integration fixture and `mods/warbands` is the current game-specific playable package.
 
 Run tests/build with:
 
@@ -423,12 +456,8 @@ dotnet build src/Battlegrounds.Game/Battlegrounds.Game.csproj
 
 ## Current focus
 
-The immediate priority is to close structural and presentation debt before doing another content or balance pass. Prefer work that can be reviewed and validated headlessly while making the engine consistently mod-driven:
+The essential presentation hardcode sweep is complete: playable scene geometry, runtime-created combat layout, semantic visual roles, drag/drop feedback and presentation motion now resolve through engine-default-plus-mod presentation data rather than duplicated adapter literals.
 
-- remove remaining hardcoded presentation values and package-specific special cases that belong to mod contracts;
-- keep theme, layout and interaction semantics in validated mod data with stable engine fallbacks;
-- make validator ownership explicit and reduce compatibility filters or duplicated schema responsibility;
-- clean stale branches, pull requests and documentation that describe behavior no longer present;
-- add Core abstractions only for demonstrated neutral mechanical gaps, never for speculative content needs.
+The immediate priority is now **validator ownership cleanup**. Remove broad compatibility/supersession filters one family at a time by teaching the owning validator the real current schema, preserving focused regression coverage and avoiding behavior changes outside validation. The `onCombine` suppression has already been removed; the next candidate is the generation family around `generateUnitToReserve`, `generateUnitChoice`, `generateActionToReserve` and `generateActionChoice`.
 
-When manual testing is available, use it to validate feel, readability and input behavior rather than as a prerequisite for this cleanup. Content expansion and balance work can resume after these boundaries are coherent enough that mod presentation changes do not require engine-code changes.
+After validator ownership is coherent, continue with structural engine gaps demonstrated by real gameplay needs. Content expansion and balance work should not drive speculative Core abstractions, and manual testing should primarily validate feel, readability and input behavior rather than gate these headless structural cleanups.
