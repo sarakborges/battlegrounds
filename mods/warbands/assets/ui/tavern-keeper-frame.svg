@@ -11,6 +11,7 @@
       <stop offset="1" stop-color="#6f4328"/>
     </linearGradient>
   </defs>
+  <path d="M0 0H150V96H0Z M23 90V39C23 25 34 17 51 17H99C116 17 127 25 127 39V90Z" fill="#0d0907" fill-rule="evenodd"/>
   <path d="M9 94V35C9 13 26 4 47 4h56c21 0 38 9 38 31v59" fill="none" stroke="#321d13" stroke-width="10" stroke-linejoin="round"/>
   <path d="M13 92V36c0-18 14-27 35-27h54c21 0 35 9 35 27v56" fill="none" stroke="url(#wood)" stroke-width="6" stroke-linejoin="round"/>
   <path d="M23 90V39c0-14 11-22 28-22h48c17 0 28 8 28 22v51" fill="none" stroke="url(#gold)" stroke-width="3"/>
