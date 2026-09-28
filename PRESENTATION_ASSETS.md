@@ -70,6 +70,17 @@ Current animation names are `none`, `pulse`, `shake`, `lunge`, `fade` and `pop`.
 
 Audio references currently accept `.wav`. Audio is optional; mods without authored sound remain fully valid.
 
+## Theme-owned fallback motion
+
+Entity cue metadata and theme motion metrics solve different layers of the presentation contract:
+
+- `assets/presentation.json` chooses entity/role-specific animation intent, duration and audio;
+- the resolved `presentation/theme.json` owns the neutral numeric motion profile used when cue data is partial or absent.
+
+The theme controls combat playback cadence, UI-selection timing and the scale/rotation/opacity/duration parameters for `pulse`, `shake`, `lunge`, `fade` and `pop`. A selected mod may override those `motion.*` metrics without authoring cues for every entity. Entity-specific `durationSeconds` still wins over the theme's fallback duration for that cue.
+
+These values only animate already-created presentation controls. They cannot change command timing, combat resolution, deterministic RNG or any authoritative state.
+
 ## Path contract
 
 Asset references are untrusted mod input. `Battlegrounds.Content` validates them before exposing metadata:
@@ -97,11 +108,12 @@ The manifest may be partial. Missing art, audio or cue metadata is a presentatio
 - `ModPresentationTextureStore` loads/caches external images as `Texture2D`;
 - `ModPresentationCuePlayer` maps entity/role lookups to presentation-only tweens and optional cached `.wav` playback;
 - reusable cards emit `ui.select` cues when pressed;
-- deterministic combat playback maps the already-resolved current timeline event to the appropriate Unit cue role.
+- deterministic combat playback maps the already-resolved current timeline event to the appropriate Unit cue role;
+- numeric fallback motion is read from the resolved engine-default-plus-mod theme instead of duplicated as C# literals.
 
-Authored cue duration never delays, advances or gates the simulation. Combat playback continues on its own presentation clock/manual controls; clip completion is not observed by Core or Application.
+Authored cue duration never delays, advances or gates the simulation. Combat playback continues on its own presentation clock/manual controls; clip completion is not observed by Core or Application. That presentation clock is itself theme-owned and remains outside simulation.
 
-If a cue is absent, Godot uses its neutral fallback visual emphasis. If authored audio cannot be played at runtime, the event still advances normally and the visual/text fallback remains usable.
+If a cue is absent, Godot uses its neutral semantic fallback animation with theme-owned numeric tuning. If authored audio cannot be played at runtime, the event still advances normally and the visual/text fallback remains usable.
 
 ## Ownership invariant
 
