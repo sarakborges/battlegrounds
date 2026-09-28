@@ -437,7 +437,7 @@ Read `ARCHITECTURE.md` before adding features. Its ownership, dependency, mutati
 - thin Godot presentation adapter over the Application boundary with a playable localized Preparation loop;
 - explicit Godot multi-step interaction state for selected targets, pending choices and combine components;
 - deterministic Godot combat playback over the Core event timeline with visual Unit cards, mod-owned art/cues, theme-owned motion, manual/automatic stepping and settlement skip;
-- whole-mod validation before loading, with specialized validator ownership being tightened incrementally instead of relying on broad compatibility suppressions;
+- whole-mod validation before loading, with specialized validators owning their current schemas directly and no broad compatibility/supersession filters in `ModValidator`;
 - regression/invariant tests and CI, including a Godot project build.
 
 ## Local development
@@ -458,6 +458,6 @@ dotnet build src/Battlegrounds.Game/Battlegrounds.Game.csproj
 
 The essential presentation hardcode sweep is complete: playable scene geometry, runtime-created combat layout, semantic visual roles, drag/drop feedback and presentation motion now resolve through engine-default-plus-mod presentation data rather than duplicated adapter literals.
 
-The immediate priority is now **validator ownership cleanup**. Remove broad compatibility/supersession filters one family at a time by teaching the owning validator the real current schema, preserving focused regression coverage and avoiding behavior changes outside validation. The `onCombine`, generation-family, persistent Unit mutation, dynamic effect-value and specialized-schema compatibility bridges have been removed; the next candidate is the remaining broad effect-schema suppression around conditions, activation limits, counted triggers and advanced target selection.
+Validator ownership cleanup is complete: broad compatibility/supersession filtering has been removed, and the base plus specialized validators now accept and validate the current authored schemas directly.
 
-After validator ownership is coherent, continue with structural engine gaps demonstrated by real gameplay needs. Content expansion and balance work should not drive speculative Core abstractions, and manual testing should primarily validate feel, readability and input behavior rather than gate these headless structural cleanups.
+The immediate priority is **structural engine gaps demonstrated by real gameplay needs**. The first slices in this phase made the locked attack target available to neutral `onAttack` effects and added source-or-context-relative spatial targeting for adjacent selectors, with Warbands using those primitives as real consumers. Continue choosing the smallest neutral Core/Content capability that a playable mechanic already needs; content expansion and balance work should not drive speculative abstractions. Manual testing should primarily validate feel, readability and input behavior rather than gate headless structural work.

@@ -107,6 +107,7 @@ Targeting is composed instead of encoded as one enum value per combination. A ta
 
 - `scope`: `self`, `selected`, `friendly`, or `enemy`;
 - `selection`: `all`, `random`, `lowestAttack`, `highestAttack`, `lowestHealth`, `highestHealth`, `leftmost`, `rightmost`, `adjacent`, `leftAdjacent`, or `rightAdjacent`;
+- `relativeTo`: optional spatial anchor for adjacent selections, either `source` (default) or `selected`;
 - `excludeSource`: valid for `friendly` selectors;
 - `limit`: positive maximum number of selected units;
 - `typeId` and `tagId`: optional mod-defined filters.
@@ -130,7 +131,7 @@ For example:
 
 `selected` is context-owned rather than synonymous with UI selection. During an activatable Power's `onActivate`, the selected target is supplied by the command issued by UI or AI. During a Unit's `onAttack`, Combat supplies the already-locked attack target. Triggers that do not have an explicit context target cannot use `selected`.
 
-`self` and `selected` are already singular, so they cannot add another selection mode or a limit. Adjacent selections are only meaningful for friendly units because adjacency is resolved from the source unit's current field position. Random selection samples without replacement and uses the injected deterministic RNG.
+`self` and `selected` are already singular, so they cannot add another selection mode or a limit. Adjacent selections default to `relativeTo: "source"`, preserving the original friendly-only behavior around the source Unit's current field position. `relativeTo: "selected"` instead anchors `adjacent`, `leftAdjacent`, or `rightAdjacent` around the contextual selected Unit; it is valid only where such a context target exists and may use `scope: "enemy"` to select neighbors of an attack target. The anchor itself is not part of an adjacent result. Random selection samples without replacement and uses the injected deterministic RNG.
 
 ## Attack target context
 
