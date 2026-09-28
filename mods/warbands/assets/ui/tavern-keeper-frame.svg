@@ -1,19 +1,22 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 150 96">
   <defs>
     <linearGradient id="wood" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#d19a5d"/>
-      <stop offset=".55" stop-color="#8e5b34"/>
-      <stop offset="1" stop-color="#4d2f20"/>
+      <stop offset="0" stop-color="#e0ad6a"/>
+      <stop offset=".48" stop-color="#a3683c"/>
+      <stop offset="1" stop-color="#563421"/>
     </linearGradient>
-    <linearGradient id="room" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#5a3926"/>
-      <stop offset="1" stop-color="#241812"/>
+    <linearGradient id="gold" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#f4cd83"/>
+      <stop offset=".55" stop-color="#c88745"/>
+      <stop offset="1" stop-color="#6f4328"/>
     </linearGradient>
   </defs>
-  <path d="M10 94V36C10 13 27 4 47 4h56c20 0 37 9 37 32v58Z" fill="url(#wood)" stroke="#3a2418" stroke-width="6"/>
-  <path d="M24 90V38c0-14 11-22 27-22h48c16 0 27 8 27 22v52Z" fill="url(#room)" stroke="#e0ac69" stroke-width="3"/>
-  <path d="M75 25c12 0 21 9 21 21 0 7-3 13-8 17 12 5 19 14 21 27H41c2-13 9-22 21-27-5-4-8-10-8-17 0-12 9-21 21-21Z" fill="#17110e" opacity=".9"/>
-  <path d="M38 15c10-8 22-11 37-11s27 3 37 11" fill="none" stroke="#f0c37b" stroke-width="3" stroke-linecap="round"/>
-  <path d="M22 78h106" stroke="#d49855" stroke-width="5"/>
-  <path d="M28 84h94" stroke="#5b3825" stroke-width="4"/>
+  <path d="M9 94V35C9 13 26 4 47 4h56c21 0 38 9 38 31v59" fill="none" stroke="#321d13" stroke-width="10" stroke-linejoin="round"/>
+  <path d="M13 92V36c0-18 14-27 35-27h54c21 0 35 9 35 27v56" fill="none" stroke="url(#wood)" stroke-width="6" stroke-linejoin="round"/>
+  <path d="M23 90V39c0-14 11-22 28-22h48c17 0 28 8 28 22v51" fill="none" stroke="url(#gold)" stroke-width="3"/>
+  <path d="M37 15C47 7 60 4 75 4s28 3 38 11" fill="none" stroke="#f3c77f" stroke-width="3" stroke-linecap="round"/>
+  <path d="M18 78h114" stroke="#d89b55" stroke-width="6" stroke-linecap="round"/>
+  <path d="M23 86h104" stroke="#593520" stroke-width="5" stroke-linecap="round"/>
+  <circle cx="23" cy="79" r="4" fill="#f2ca82" stroke="#53301d" stroke-width="2"/>
+  <circle cx="127" cy="79" r="4" fill="#f2ca82" stroke="#53301d" stroke-width="2"/>
 </svg>
