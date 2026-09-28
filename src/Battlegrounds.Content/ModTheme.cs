@@ -80,6 +80,7 @@ public sealed class ModThemeCatalog
     private readonly ReadOnlyDictionary<string, int> _fontSizes;
     private readonly ReadOnlyDictionary<string, int> _spacing;
     private readonly ReadOnlyDictionary<string, int> _radii;
+    private readonly ReadOnlyDictionary<string, double> _metrics;
     private readonly ReadOnlyDictionary<string, ModThemeStyle> _components;
     private readonly ReadOnlyDictionary<string, ModThemeScreenStyle> _screens;
 
@@ -89,10 +90,11 @@ public sealed class ModThemeCatalog
     public IReadOnlyDictionary<string, int> FontSizes => _fontSizes;
     public IReadOnlyDictionary<string, int> Spacing => _spacing;
     public IReadOnlyDictionary<string, int> Radii => _radii;
+    public IReadOnlyDictionary<string, double> Metrics => _metrics;
     public IReadOnlyDictionary<string, ModThemeStyle> Components => _components;
     public IReadOnlyDictionary<string, ModThemeScreenStyle> Screens => _screens;
 
-    public bool IsEmpty => _colors.Count == 0 && _fonts.Count == 0 && _components.Count == 0 && _screens.Count == 0;
+    public bool IsEmpty => _colors.Count == 0 && _fonts.Count == 0 && _metrics.Count == 0 && _components.Count == 0 && _screens.Count == 0;
 
     internal ModThemeCatalog(
         int version,
@@ -101,6 +103,7 @@ public sealed class ModThemeCatalog
         IReadOnlyDictionary<string, int> fontSizes,
         IReadOnlyDictionary<string, int> spacing,
         IReadOnlyDictionary<string, int> radii,
+        IReadOnlyDictionary<string, double> metrics,
         IReadOnlyDictionary<string, ModThemeStyle> components,
         IReadOnlyDictionary<string, ModThemeScreenStyle> screens)
     {
@@ -110,6 +113,7 @@ public sealed class ModThemeCatalog
         _fontSizes = Copy(fontSizes);
         _spacing = Copy(spacing);
         _radii = Copy(radii);
+        _metrics = Copy(metrics);
         _components = Copy(components);
         _screens = Copy(screens);
     }
@@ -121,6 +125,7 @@ public sealed class ModThemeCatalog
         new Dictionary<string, int>(),
         new Dictionary<string, int>(),
         new Dictionary<string, int>(),
+        new Dictionary<string, double>(),
         new Dictionary<string, ModThemeStyle>(),
         new Dictionary<string, ModThemeScreenStyle>());
 
@@ -184,6 +189,7 @@ public sealed class ModThemeLoader
             data.Typography?.Sizes ?? new Dictionary<string, int>(),
             data.Spacing ?? new Dictionary<string, int>(),
             data.Shape ?? new Dictionary<string, int>(),
+            data.Metrics ?? new Dictionary<string, double>(),
             components,
             screens);
     }
@@ -217,6 +223,7 @@ public sealed class ModThemeLoader
         public ThemeTypographyData? Typography { get; set; }
         public Dictionary<string, int>? Spacing { get; set; }
         public Dictionary<string, int>? Shape { get; set; }
+        public Dictionary<string, double>? Metrics { get; set; }
         public Dictionary<string, ThemeStyleData>? Components { get; set; }
         public Dictionary<string, ThemeScreenData>? Screens { get; set; }
     }
