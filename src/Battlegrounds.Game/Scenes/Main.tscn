@@ -41,9 +41,11 @@ grow_vertical = 2
 [node name="Shell" type="HBoxContainer" parent="Margin"]
 layout_mode = 2
 
-[node name="OpponentRail" type="MarginContainer" parent="Margin/Shell"]
+[node name="OpponentRail" type="PanelContainer" parent="Margin/Shell"]
 layout_mode = 2
 size_flags_vertical = 3
+theme_type_variation = &"OpponentRailSurface"
+mouse_filter = 2
 
 [node name="Content" type="VBoxContainer" parent="Margin/Shell/OpponentRail"]
 layout_mode = 2
@@ -100,15 +102,20 @@ layout_mode = 2
 size_flags_vertical = 3
 visible = false
 
-[node name="TavernControls" type="HBoxContainer" parent="Margin/Shell/CenterStage/PreparationPanel"]
+[node name="TavernControls" type="PanelContainer" parent="Margin/Shell/CenterStage/PreparationPanel"]
+layout_mode = 2
+theme_type_variation = &"TavernControlsSurface"
+mouse_filter = 2
+
+[node name="ControlsRow" type="HBoxContainer" parent="Margin/Shell/CenterStage/PreparationPanel/TavernControls"]
 layout_mode = 2
 alignment = 1
 
-[node name="TierBadge" type="PanelContainer" parent="Margin/Shell/CenterStage/PreparationPanel/TavernControls"]
+[node name="TierBadge" type="PanelContainer" parent="Margin/Shell/CenterStage/PreparationPanel/TavernControls/ControlsRow"]
 layout_mode = 2
 theme_type_variation = &"TierBadge"
 
-[node name="HudTierValue" type="Label" parent="Margin/Shell/CenterStage/PreparationPanel/TavernControls/TierBadge"]
+[node name="HudTierValue" type="Label" parent="Margin/Shell/CenterStage/PreparationPanel/TavernControls/ControlsRow/TierBadge"]
 unique_name_in_owner = true
 layout_mode = 2
 text = "1"
@@ -116,27 +123,29 @@ horizontal_alignment = 1
 vertical_alignment = 1
 mouse_filter = 2
 
-[node name="UpgradeButton" type="Button" parent="Margin/Shell/CenterStage/PreparationPanel/TavernControls"]
+[node name="UpgradeButton" type="Button" parent="Margin/Shell/CenterStage/PreparationPanel/TavernControls/ControlsRow"]
 unique_name_in_owner = true
 layout_mode = 2
 text = ""
 
-[node name="ControlSpacer" type="Control" parent="Margin/Shell/CenterStage/PreparationPanel/TavernControls"]
+[node name="ControlSpacer" type="Control" parent="Margin/Shell/CenterStage/PreparationPanel/TavernControls/ControlsRow"]
 layout_mode = 2
 mouse_filter = 2
 
-[node name="RefreshButton" type="Button" parent="Margin/Shell/CenterStage/PreparationPanel/TavernControls"]
+[node name="RefreshButton" type="Button" parent="Margin/Shell/CenterStage/PreparationPanel/TavernControls/ControlsRow"]
 unique_name_in_owner = true
 layout_mode = 2
 text = ""
 
-[node name="FreezeButton" type="Button" parent="Margin/Shell/CenterStage/PreparationPanel/TavernControls"]
+[node name="FreezeButton" type="Button" parent="Margin/Shell/CenterStage/PreparationPanel/TavernControls/ControlsRow"]
 unique_name_in_owner = true
 layout_mode = 2
 text = ""
 
-[node name="TavernShelf" type="MarginContainer" parent="Margin/Shell/CenterStage/PreparationPanel"]
+[node name="TavernShelf" type="PanelContainer" parent="Margin/Shell/CenterStage/PreparationPanel"]
 layout_mode = 2
+theme_type_variation = &"TavernSurface"
+mouse_filter = 2
 
 [node name="ShelfRow" type="HBoxContainer" parent="Margin/Shell/CenterStage/PreparationPanel/TavernShelf"]
 layout_mode = 2
@@ -190,12 +199,11 @@ script = ExtResource("2_card_row")
 layout_mode = 2
 mouse_filter = 2
 
-[node name="BoardDivider" type="HSeparator" parent="Margin/Shell/CenterStage/PreparationPanel"]
-layout_mode = 2
-
-[node name="BoardStage" type="MarginContainer" parent="Margin/Shell/CenterStage/PreparationPanel"]
+[node name="BoardStage" type="PanelContainer" parent="Margin/Shell/CenterStage/PreparationPanel"]
 layout_mode = 2
 size_flags_vertical = 3
+theme_type_variation = &"BoardSurface"
+mouse_filter = 2
 
 [node name="FieldButtons" type="Container" parent="Margin/Shell/CenterStage/PreparationPanel/BoardStage"]
 unique_name_in_owner = true
@@ -205,8 +213,10 @@ size_flags_vertical = 3
 clip_contents = true
 script = ExtResource("2_card_row")
 
-[node name="ReserveShelf" type="MarginContainer" parent="Margin/Shell/CenterStage/PreparationPanel"]
+[node name="ReserveShelf" type="PanelContainer" parent="Margin/Shell/CenterStage/PreparationPanel"]
 layout_mode = 2
+theme_type_variation = &"ReserveSurface"
+mouse_filter = 2
 
 [node name="ReserveButtons" type="Container" parent="Margin/Shell/CenterStage/PreparationPanel/ReserveShelf"]
 unique_name_in_owner = true
@@ -216,20 +226,25 @@ size_flags_vertical = 3
 clip_contents = true
 script = ExtResource("2_card_row")
 
-[node name="HeroDock" type="HBoxContainer" parent="Margin/Shell/CenterStage/PreparationPanel"]
+[node name="HeroDock" type="PanelContainer" parent="Margin/Shell/CenterStage/PreparationPanel"]
+layout_mode = 2
+theme_type_variation = &"HeroDockSurface"
+mouse_filter = 2
+
+[node name="HeroDockRow" type="HBoxContainer" parent="Margin/Shell/CenterStage/PreparationPanel/HeroDock"]
 layout_mode = 2
 alignment = 1
 
-[node name="LeftSpacer" type="Control" parent="Margin/Shell/CenterStage/PreparationPanel/HeroDock"]
+[node name="LeftSpacer" type="Control" parent="Margin/Shell/CenterStage/PreparationPanel/HeroDock/HeroDockRow"]
 layout_mode = 2
 size_flags_horizontal = 3
 mouse_filter = 2
 
-[node name="HealthBadge" type="PanelContainer" parent="Margin/Shell/CenterStage/PreparationPanel/HeroDock"]
+[node name="HealthBadge" type="PanelContainer" parent="Margin/Shell/CenterStage/PreparationPanel/HeroDock/HeroDockRow"]
 layout_mode = 2
 theme_type_variation = &"HealthBadge"
 
-[node name="HudHealthValue" type="Label" parent="Margin/Shell/CenterStage/PreparationPanel/HeroDock/HealthBadge"]
+[node name="HudHealthValue" type="Label" parent="Margin/Shell/CenterStage/PreparationPanel/HeroDock/HeroDockRow/HealthBadge"]
 unique_name_in_owner = true
 layout_mode = 2
 text = "0"
@@ -237,13 +252,13 @@ horizontal_alignment = 1
 vertical_alignment = 1
 mouse_filter = 2
 
-[node name="HudArmorBadge" type="PanelContainer" parent="Margin/Shell/CenterStage/PreparationPanel/HeroDock"]
+[node name="HudArmorBadge" type="PanelContainer" parent="Margin/Shell/CenterStage/PreparationPanel/HeroDock/HeroDockRow"]
 unique_name_in_owner = true
 layout_mode = 2
 theme_type_variation = &"ArmorBadge"
 visible = false
 
-[node name="HudArmorValue" type="Label" parent="Margin/Shell/CenterStage/PreparationPanel/HeroDock/HudArmorBadge"]
+[node name="HudArmorValue" type="Label" parent="Margin/Shell/CenterStage/PreparationPanel/HeroDock/HeroDockRow/HudArmorBadge"]
 unique_name_in_owner = true
 layout_mode = 2
 text = "0"
@@ -251,10 +266,10 @@ horizontal_alignment = 1
 vertical_alignment = 1
 mouse_filter = 2
 
-[node name="HeroCore" type="VBoxContainer" parent="Margin/Shell/CenterStage/PreparationPanel/HeroDock"]
+[node name="HeroCore" type="VBoxContainer" parent="Margin/Shell/CenterStage/PreparationPanel/HeroDock/HeroDockRow"]
 layout_mode = 2
 
-[node name="HudHeroName" type="Label" parent="Margin/Shell/CenterStage/PreparationPanel/HeroDock/HeroCore"]
+[node name="HudHeroName" type="Label" parent="Margin/Shell/CenterStage/PreparationPanel/HeroDock/HeroDockRow/HeroCore"]
 unique_name_in_owner = true
 layout_mode = 2
 text = ""
@@ -262,22 +277,22 @@ horizontal_alignment = 1
 vertical_alignment = 1
 mouse_filter = 2
 
-[node name="PowerButton" type="Button" parent="Margin/Shell/CenterStage/PreparationPanel/HeroDock/HeroCore"]
+[node name="PowerButton" type="Button" parent="Margin/Shell/CenterStage/PreparationPanel/HeroDock/HeroDockRow/HeroCore"]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 4
 text = ""
 
-[node name="CombineButton" type="Button" parent="Margin/Shell/CenterStage/PreparationPanel/HeroDock"]
+[node name="CombineButton" type="Button" parent="Margin/Shell/CenterStage/PreparationPanel/HeroDock/HeroDockRow"]
 unique_name_in_owner = true
 layout_mode = 2
 text = ""
 
-[node name="ResourceBadge" type="PanelContainer" parent="Margin/Shell/CenterStage/PreparationPanel/HeroDock"]
+[node name="ResourceBadge" type="PanelContainer" parent="Margin/Shell/CenterStage/PreparationPanel/HeroDock/HeroDockRow"]
 layout_mode = 2
 theme_type_variation = &"ResourceBadge"
 
-[node name="HudResourceValue" type="Label" parent="Margin/Shell/CenterStage/PreparationPanel/HeroDock/ResourceBadge"]
+[node name="HudResourceValue" type="Label" parent="Margin/Shell/CenterStage/PreparationPanel/HeroDock/HeroDockRow/ResourceBadge"]
 unique_name_in_owner = true
 layout_mode = 2
 text = "0"
@@ -285,20 +300,22 @@ horizontal_alignment = 1
 vertical_alignment = 1
 mouse_filter = 2
 
-[node name="HumanSummary" type="Label" parent="Margin/Shell/CenterStage/PreparationPanel/HeroDock"]
+[node name="HumanSummary" type="Label" parent="Margin/Shell/CenterStage/PreparationPanel/HeroDock/HeroDockRow"]
 unique_name_in_owner = true
 layout_mode = 2
 text = ""
 visible = false
 
-[node name="RightSpacer" type="Control" parent="Margin/Shell/CenterStage/PreparationPanel/HeroDock"]
+[node name="RightSpacer" type="Control" parent="Margin/Shell/CenterStage/PreparationPanel/HeroDock/HeroDockRow"]
 layout_mode = 2
 size_flags_horizontal = 3
 mouse_filter = 2
 
-[node name="TurnRail" type="MarginContainer" parent="Margin/Shell"]
+[node name="TurnRail" type="PanelContainer" parent="Margin/Shell"]
 layout_mode = 2
 size_flags_vertical = 3
+theme_type_variation = &"TurnRailSurface"
+mouse_filter = 2
 
 [node name="Content" type="VBoxContainer" parent="Margin/Shell/TurnRail"]
 layout_mode = 2

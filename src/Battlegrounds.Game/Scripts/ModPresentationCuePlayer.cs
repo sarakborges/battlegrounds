@@ -31,6 +31,8 @@ internal sealed record ModPresentationMotionProfile(
 
 internal sealed class ModPresentationCuePlayer
 {
+    private const string LungeDirectionMeta = "presentation_lunge_direction";
+
     private readonly Node _owner;
     private readonly string _modDirectory;
     private readonly ModPresentationCueCatalog _cues;
@@ -112,6 +114,7 @@ internal sealed class ModPresentationCuePlayer
         if (animation == ModPresentationAnimation.None) return;
 
         var duration = Math.Clamp(durationSeconds, 0.05, 5.0);
+        target.PivotOffset = target.Size * 0.5f;
         var tween = target.CreateTween();
 
         switch (animation)
@@ -135,13 +138,53 @@ internal sealed class ModPresentationCuePlayer
                 tween.TweenProperty(target, "rotation", 0.0f, duration * 0.5);
                 break;
             case ModPresentationAnimation.Lunge:
-                target.Scale = new Vector2(_motion.LungeScale, _motion.LungeScale);
-                tween.TweenProperty(target, "scale", Vector2.One, duration);
+                ApplyLunge(target, tween, duration);
                 break;
             case ModPresentationAnimation.Pulse:
                 target.Scale = new Vector2(_motion.PulseScale, _motion.PulseScale);
                 tween.TweenProperty(target, "scale", Vector2.One, duration);
                 break;
         }
+    }
+
+    private void ApplyLunge(Control target, Tween tween, double duration)
+    {
+        if (!target.HasMeta(LungeDirectionMeta))
+        {
+            target.Scale = new Vector2(_motion.LungeScale, _motion.LungeScale);
+            tween.TweenProperty(target, "scale", Vector2.One, duration);
+            return;
+        }
+
+        var direction = target.GetMeta(LungeDirectionMeta).AsVector2().Normalized();
+        if (direction == Vector2.Zero)
+        {
+            target.Scale = new Vector2(_motion.LungeScale, _motion.LungeScale);
+            tween.TweenProperty(target, "scale", Vector2.One, duration);
+            return;
+        }
+
+        var origin = target.Position;
+        var magnitude = Mathf.Max(target.Size.X, target.Size.Y);
+        var distance = magnitude * Mathf.Max(0.18f, (_motion.LungeScale - 1.0f) * 4.0f);
+        var strikePosition = origin + direction * distance;
+        var strikeScale = new Vector2(_motion.LungeScale, _motion.LungeScale);
+        var outwardDuration = duration * 0.38;
+        var returnDuration = duration - outwardDuration;
+
+        tween.SetParallel();
+        tween.TweenProperty(target, "position", strikePosition, outwardDuration)
+            .SetTrans(Tween.TransitionType.Quad)
+            .SetEase(Tween.EaseType.Out);
+        tween.TweenProperty(target, "scale", strikeScale, outwardDuration)
+            .SetTrans(Tween.TransitionType.Quad)
+            .SetEase(Tween.EaseType.Out);
+        tween.Chain().SetParallel();
+        tween.TweenProperty(target, "position", origin, returnDuration)
+            .SetTrans(Tween.TransitionType.Back)
+            .SetEase(Tween.EaseType.Out);
+        tween.TweenProperty(target, "scale", Vector2.One, returnDuration)
+            .SetTrans(Tween.TransitionType.Quad)
+            .SetEase(Tween.EaseType.Out);
     }
 }

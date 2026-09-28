@@ -60,7 +60,7 @@ public partial class Main
 
     private void ApplyCombatLayoutTheme(PanelContainer overlay)
     {
-        var margin = overlay.GetChildren().OfType<MarginContainer>().FirstOrDefault();
+        var margin = overlay.FindChild("CombatMargin", recursive: true, owned: false) as MarginContainer;
         if (margin is not null)
         {
             var horizontal = Mathf.RoundToInt(ResolvePresentationMetric(
@@ -74,30 +74,31 @@ public partial class Main
             margin.AddThemeConstantOverride("margin_bottom", vertical);
         }
 
-        var root = margin?.GetChildren().OfType<VBoxContainer>().FirstOrDefault();
+        var root = overlay.FindChild("CombatRoot", recursive: true, owned: false) as VBoxContainer;
         if (root is not null)
         {
             root.AddThemeConstantOverride(
                 "separation",
                 Mathf.RoundToInt(ResolvePresentationMetric(
                     ModThemeMetricKeys.Layout.Combat.ContentGap, 0.0f, 512.0f)));
+        }
 
-            var horizontalRows = root.GetChildren().OfType<HBoxContainer>().ToArray();
-            if (horizontalRows.Length > 0)
-            {
-                horizontalRows[0].AddThemeConstantOverride(
-                    "separation",
-                    Mathf.RoundToInt(ResolvePresentationMetric(
-                        ModThemeMetricKeys.Layout.Combat.BoardsGap, 0.0f, 512.0f)));
-            }
+        var battlefield = overlay.FindChild("CombatBattlefield", recursive: true, owned: false) as VBoxContainer;
+        if (battlefield is not null)
+        {
+            battlefield.AddThemeConstantOverride(
+                "separation",
+                Mathf.RoundToInt(ResolvePresentationMetric(
+                    ModThemeMetricKeys.Layout.Combat.BoardsGap, 0.0f, 512.0f)));
+        }
 
-            if (horizontalRows.Length > 1)
-            {
-                horizontalRows[^1].AddThemeConstantOverride(
-                    "separation",
-                    Mathf.RoundToInt(ResolvePresentationMetric(
-                        ModThemeMetricKeys.Layout.Combat.ControlsGap, 0.0f, 512.0f)));
-            }
+        var controls = overlay.FindChild("CombatControls", recursive: true, owned: false) as HBoxContainer;
+        if (controls is not null)
+        {
+            controls.AddThemeConstantOverride(
+                "separation",
+                Mathf.RoundToInt(ResolvePresentationMetric(
+                    ModThemeMetricKeys.Layout.Combat.ControlsGap, 0.0f, 512.0f)));
         }
 
         var unitGap = Mathf.RoundToInt(ResolvePresentationMetric(

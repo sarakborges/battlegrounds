@@ -14,7 +14,10 @@ public partial class Main
     private Label _hudArmorValue = null!;
     private Label _hudTierValue = null!;
     private Label _hudResourceValue = null!;
+    private Label _hudResourcePips = null!;
+    private PanelContainer _hudHealthBadge = null!;
     private PanelContainer _hudArmorBadge = null!;
+    private PanelContainer _hudResourceBadge = null!;
     private bool _hudBound;
     private string? _hudSignature;
 
@@ -48,47 +51,148 @@ public partial class Main
         _hudArmorValue = GetNode<Label>("%HudArmorValue");
         _hudTierValue = GetNode<Label>("%HudTierValue");
         _hudResourceValue = GetNode<Label>("%HudResourceValue");
+        _hudHealthBadge = GetNode<PanelContainer>("Margin/Shell/CenterStage/PreparationPanel/HeroDock/HeroDockRow/HealthBadge");
         _hudArmorBadge = GetNode<PanelContainer>("%HudArmorBadge");
+        _hudResourceBadge = GetNode<PanelContainer>("Margin/Shell/CenterStage/PreparationPanel/HeroDock/HeroDockRow/ResourceBadge");
+        _hudResourcePips = EnsureResourcePips();
         _hudHeroPortrait = EnsureHeroPortraitSlot();
     }
 
     private TextureRect EnsureHeroPortraitSlot()
     {
-        var heroDock = GetNode<HBoxContainer>("Margin/Shell/CenterStage/PreparationPanel/HeroDock");
+        var heroDock = GetNode<HBoxContainer>("Margin/Shell/CenterStage/PreparationPanel/HeroDock/HeroDockRow");
         var dockHeight = ResolvePresentationMetric(ModThemeMetricKeys.Hud.HeroDockMinimumHeight, 1.0f, 2048.0f);
         var portraitSize = ResolvePresentationMetric(ModThemeMetricKeys.Hud.HeroPortraitSize, 1.0f, 2048.0f);
+        var healthWidth = ResolvePresentationMetric(ModThemeMetricKeys.Layout.HeroDockHealthBadgeWidth, 1.0f, 512.0f);
+        var healthHeight = ResolvePresentationMetric(ModThemeMetricKeys.Layout.HeroDockHealthBadgeHeight, 1.0f, 512.0f);
+        var armorWidth = ResolvePresentationMetric(ModThemeMetricKeys.Layout.HeroDockArmorBadgeWidth, 1.0f, 512.0f);
+        var armorHeight = ResolvePresentationMetric(ModThemeMetricKeys.Layout.HeroDockArmorBadgeHeight, 1.0f, 512.0f);
+        var powerWidth = ResolvePresentationMetric(ModThemeMetricKeys.Layout.HeroDockPowerButtonWidth, 1.0f, 1024.0f);
         heroDock.CustomMinimumSize = new Vector2(0, dockHeight);
 
-        var existing = heroDock.GetNodeOrNull<PanelContainer>("HeroPortraitFrame");
-        if (existing is not null && existing.GetNodeOrNull<TextureRect>("Portrait") is TextureRect existingPortrait)
+        var heroCore = heroDock.GetNode<VBoxContainer>("HeroCore");
+        heroCore.CustomMinimumSize = new Vector2(powerWidth, heroCore.CustomMinimumSize.Y);
+        var combineButton = heroDock.GetNode<Button>("CombineButton");
+        if (_hudResourceBadge.GetIndex() > combineButton.GetIndex())
+            heroDock.MoveChild(_hudResourceBadge, combineButton.GetIndex());
+
+        var cluster = heroDock.GetNodeOrNull<Control>("HeroPortraitCluster");
+        if (cluster is null)
         {
-            existing.CustomMinimumSize = new Vector2(portraitSize, portraitSize);
-            existingPortrait.CustomMinimumSize = new Vector2(portraitSize, portraitSize);
-            return existingPortrait;
+            cluster = new Control
+            {
+                Name = "HeroPortraitCluster",
+                MouseFilter = Control.MouseFilterEnum.Ignore,
+            };
+            var insertAt = _hudHealthBadge.GetIndex();
+            heroDock.AddChild(cluster);
+            heroDock.MoveChild(cluster, insertAt);
+
+            heroDock.RemoveChild(_hudHealthBadge);
+            cluster.AddChild(_hudHealthBadge);
+            heroDock.RemoveChild(_hudArmorBadge);
+            cluster.AddChild(_hudArmorBadge);
         }
 
-        var frame = new PanelContainer
-        {
-            Name = "HeroPortraitFrame",
-            CustomMinimumSize = new Vector2(portraitSize, portraitSize),
-            ThemeTypeVariation = "HeroPortraitFrame",
-            MouseFilter = Control.MouseFilterEnum.Ignore,
-        };
-        var portrait = new TextureRect
-        {
-            Name = "Portrait",
-            CustomMinimumSize = new Vector2(portraitSize, portraitSize),
-            ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize,
-            StretchMode = TextureRect.StretchModeEnum.KeepAspectCovered,
-            MouseFilter = Control.MouseFilterEnum.Ignore,
-        };
-        frame.AddChild(portrait);
+        var badgeAllowance = Mathf.Max(healthWidth, armorWidth) * 0.42f;
+        var clusterWidth = portraitSize + badgeAllowance;
+        var clusterHeight = portraitSize + Mathf.Max(healthHeight, armorHeight) * 0.28f;
+        cluster.CustomMinimumSize = new Vector2(clusterWidth, clusterHeight);
 
-        var heroCore = heroDock.GetNode<Control>("HeroCore");
-        var insertAt = heroCore.GetIndex();
-        heroDock.AddChild(frame);
-        heroDock.MoveChild(frame, insertAt);
+        var frame = cluster.GetNodeOrNull<PanelContainer>("HeroPortraitFrame");
+        TextureRect portrait;
+        if (frame is null)
+        {
+            frame = new PanelContainer
+            {
+                Name = "HeroPortraitFrame",
+                ThemeTypeVariation = "HeroPortraitFrame",
+                MouseFilter = Control.MouseFilterEnum.Ignore,
+                ZIndex = 0,
+            };
+            portrait = new TextureRect
+            {
+                Name = "Portrait",
+                ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize,
+                StretchMode = TextureRect.StretchModeEnum.KeepAspectCovered,
+                MouseFilter = Control.MouseFilterEnum.Ignore,
+            };
+            frame.AddChild(portrait);
+            cluster.AddChild(frame);
+            cluster.MoveChild(frame, 0);
+        }
+        else
+        {
+            portrait = frame.GetNode<TextureRect>("Portrait");
+        }
+
+        frame.AnchorLeft = 0.5f;
+        frame.AnchorTop = 0.5f;
+        frame.AnchorRight = 0.5f;
+        frame.AnchorBottom = 0.5f;
+        frame.OffsetLeft = -portraitSize * 0.5f;
+        frame.OffsetTop = -portraitSize * 0.5f;
+        frame.OffsetRight = portraitSize * 0.5f;
+        frame.OffsetBottom = portraitSize * 0.5f;
+        portrait.CustomMinimumSize = new Vector2(portraitSize, portraitSize);
+
+        AnchorHudBadge(_hudHealthBadge, right: true, healthWidth, healthHeight);
+        AnchorHudBadge(_hudArmorBadge, right: false, armorWidth, armorHeight);
         return portrait;
+    }
+
+    private Label EnsureResourcePips()
+    {
+        if (_hudResourceBadge.GetNodeOrNull<HBoxContainer>("ResourceContent") is { } existing &&
+            existing.GetNodeOrNull<Label>("ResourcePips") is { } existingPips)
+        {
+            return existingPips;
+        }
+
+        _hudResourceBadge.RemoveChild(_hudResourceValue);
+        var content = new HBoxContainer
+        {
+            Name = "ResourceContent",
+            Alignment = BoxContainer.AlignmentMode.Center,
+            SizeFlagsHorizontal = Control.SizeFlags.ExpandFill,
+            MouseFilter = Control.MouseFilterEnum.Ignore,
+        };
+        content.AddThemeConstantOverride("separation", 8);
+        _hudResourceBadge.AddChild(content);
+
+        _hudResourceValue.HorizontalAlignment = HorizontalAlignment.Center;
+        _hudResourceValue.VerticalAlignment = VerticalAlignment.Center;
+        _hudResourceValue.CustomMinimumSize = new Vector2(48, 0);
+        content.AddChild(_hudResourceValue);
+
+        var pips = new Label
+        {
+            Name = "ResourcePips",
+            ThemeTypeVariation = "CaptionLabel",
+            HorizontalAlignment = HorizontalAlignment.Left,
+            VerticalAlignment = VerticalAlignment.Center,
+            SizeFlagsHorizontal = Control.SizeFlags.ExpandFill,
+            MouseFilter = Control.MouseFilterEnum.Ignore,
+        };
+        if (ResolveThemeColor("resourceAccent", out var resourceColor))
+            pips.AddThemeColorOverride("font_color", resourceColor);
+        content.AddChild(pips);
+        return pips;
+    }
+
+    private static void AnchorHudBadge(PanelContainer badge, bool right, float width, float height)
+    {
+        badge.MouseFilter = Control.MouseFilterEnum.Ignore;
+        badge.ZIndex = 2;
+        badge.CustomMinimumSize = new Vector2(width, height);
+        badge.AnchorLeft = right ? 1.0f : 0.0f;
+        badge.AnchorTop = 1.0f;
+        badge.AnchorRight = right ? 1.0f : 0.0f;
+        badge.AnchorBottom = 1.0f;
+        badge.OffsetLeft = right ? -width : 0.0f;
+        badge.OffsetTop = -height;
+        badge.OffsetRight = right ? 0.0f : width;
+        badge.OffsetBottom = 0.0f;
     }
 
     private void RenderSemanticHud(MatchState match, PlayerState human)
@@ -100,7 +204,12 @@ public partial class Main
             : LeaderName(human.Leader.Definition.Id);
         _hudHealthValue.Text = human.Health.ToString();
         _hudTierValue.Text = human.Tier.ToString();
-        _hudResourceValue.Text = human.Resource.ToString();
+
+        var maximumResource = _session is null
+            ? human.Resource
+            : _session.Mod.PreparationRules.GetResourceForRound(Math.Max(1, match.Round));
+        _hudResourceValue.Text = $"{human.Resource}/{maximumResource}";
+        _hudResourcePips.Text = BuildResourcePips(human.Resource, maximumResource);
 
         var heroPortrait = ResolveLeaderPortrait(human);
         _hudHeroPortrait.Texture = heroPortrait;
@@ -113,9 +222,22 @@ public partial class Main
         _hudHealthValue.TooltipText = $"{Term("health")}: {human.Health}";
         _hudArmorValue.TooltipText = $"{Term("armor")}: {armor}";
         _hudTierValue.TooltipText = $"{Term("tier")}: {human.Tier}";
-        _hudResourceValue.TooltipText = $"{Term("resource")}: {human.Resource}";
+        _hudResourceValue.TooltipText = $"{Term("resource")}: {human.Resource}/{maximumResource}";
+        _hudResourcePips.TooltipText = _hudResourceValue.TooltipText;
         _hudHeroName.TooltipText = _hudHeroName.Text;
         _hudHeroPortrait.TooltipText = _hudHeroName.Text;
+    }
+
+    private static string BuildResourcePips(int current, int maximum)
+    {
+        if (maximum <= 0)
+            return string.Empty;
+
+        const int maximumVisiblePips = 12;
+        var visibleMaximum = Math.Min(maximum, maximumVisiblePips);
+        var visibleCurrent = Math.Clamp(current, 0, visibleMaximum);
+        var pips = new string('●', visibleCurrent) + new string('○', visibleMaximum - visibleCurrent);
+        return maximum > maximumVisiblePips ? pips + "…" : pips;
     }
 
     private void RenderOpponentRail(MatchState match)

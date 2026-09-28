@@ -25,23 +25,42 @@ internal sealed class ModThemeBuilder
         ApplySemanticLabelVariations(theme);
 
         theme.SetTypeVariation("PrimaryButton", "Button");
+        theme.SetTypeVariation("TavernActionButton", "Button");
+        theme.SetTypeVariation("TavernUpgradeButton", "TavernActionButton");
+        theme.SetTypeVariation("TavernRefreshButton", "TavernActionButton");
+        theme.SetTypeVariation("TavernFreezeButton", "TavernActionButton");
         theme.SetTypeVariation("CardButton", "Button");
+        theme.SetTypeVariation("BoardCardButton", "CardButton");
 
         ApplyComponent(theme, ModThemeComponentRoles.Button, "Button");
         ApplyComponent(theme, ModThemeComponentRoles.ButtonPrimary, "PrimaryButton", ModThemeComponentRoles.Button);
+        ApplyComponent(theme, ModThemeComponentRoles.ButtonTavernAction, "TavernActionButton", ModThemeComponentRoles.Button);
+        ApplyComponent(theme, ModThemeComponentRoles.ButtonTavernUpgrade, "TavernUpgradeButton", ModThemeComponentRoles.ButtonTavernAction);
+        ApplyComponent(theme, ModThemeComponentRoles.ButtonTavernRefresh, "TavernRefreshButton", ModThemeComponentRoles.ButtonTavernAction);
+        ApplyComponent(theme, ModThemeComponentRoles.ButtonTavernFreeze, "TavernFreezeButton", ModThemeComponentRoles.ButtonTavernAction);
         ApplyComponent(theme, ModThemeComponentRoles.Card, "CardButton", ModThemeComponentRoles.Button);
+        ApplyComponent(theme, ModThemeComponentRoles.CardBoard, "BoardCardButton", ModThemeComponentRoles.Card);
         ApplyComponent(theme, ModThemeComponentRoles.Input, "LineEdit");
         ApplyComponent(theme, ModThemeComponentRoles.Panel, "PanelContainer");
 
+        ApplyPanelVariation(theme, ModThemePanelRoles.OpponentRail, "OpponentRailSurface");
+        ApplyPanelVariation(theme, ModThemePanelRoles.TavernControls, "TavernControlsSurface");
+        ApplyPanelVariation(theme, ModThemePanelRoles.Tavern, "TavernSurface");
+        ApplyPanelVariation(theme, ModThemePanelRoles.Board, "BoardSurface");
+        ApplyPanelVariation(theme, ModThemePanelRoles.Reserve, "ReserveSurface");
+        ApplyPanelVariation(theme, ModThemePanelRoles.HeroDock, "HeroDockSurface");
+        ApplyPanelVariation(theme, ModThemePanelRoles.TurnRail, "TurnRailSurface");
         ApplyPanelVariation(theme, ModThemePanelRoles.HeroPortrait, "HeroPortraitFrame");
         ApplyPanelVariation(theme, ModThemePanelRoles.OpponentEntry, "OpponentEntry");
         ApplyPanelVariation(theme, ModThemePanelRoles.OpponentEntrySelf, "OpponentEntrySelf");
         ApplyPanelVariation(theme, ModThemePanelRoles.OpponentEntryEliminated, "OpponentEntryEliminated");
         ApplyPanelVariation(theme, ModThemePanelRoles.OpponentPortrait, "OpponentPortraitFrame");
         ApplyPanelVariation(theme, ModThemePanelRoles.TierBadge, "TierBadge");
+        ApplyPanelVariation(theme, ModThemePanelRoles.AttackBadge, "AttackBadge");
         ApplyPanelVariation(theme, ModThemePanelRoles.HealthBadge, "HealthBadge");
         ApplyPanelVariation(theme, ModThemePanelRoles.ArmorBadge, "ArmorBadge");
         ApplyPanelVariation(theme, ModThemePanelRoles.ResourceBadge, "ResourceBadge");
+        ApplyPanelVariation(theme, ModThemePanelRoles.CardInspect, "CardInspectSurface");
         ApplyPanelVariation(theme, ModThemePanelRoles.Interaction, "InteractionSurface");
         ApplyPanelVariation(theme, ModThemePanelRoles.Shopkeeper, "ShopkeeperDropTarget");
         ApplyPanelVariation(theme, ModThemePanelRoles.CombatOverlay, "CombatOverlay");
@@ -88,6 +107,7 @@ internal sealed class ModThemeBuilder
     private void ApplySemanticLabelVariations(Theme theme)
     {
         ApplySemanticLabelVariation(theme, ModThemeLabelRoles.HeroName, "HeroNameLabel", "heading", preferDisplayFont: true, "text");
+        ApplySemanticLabelVariation(theme, ModThemeLabelRoles.AttackValue, "AttackValueLabel", "heading", preferDisplayFont: true, "text");
         ApplySemanticLabelVariation(theme, ModThemeLabelRoles.HealthValue, "HealthValueLabel", "heading", preferDisplayFont: true, "text");
         ApplySemanticLabelVariation(theme, ModThemeLabelRoles.ArmorValue, "ArmorValueLabel", "heading", preferDisplayFont: true, "text");
         ApplySemanticLabelVariation(theme, ModThemeLabelRoles.TierValue, "TierValueLabel", "heading", preferDisplayFont: true, "text");

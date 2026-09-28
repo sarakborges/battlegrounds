@@ -90,6 +90,15 @@ public static class ModThemeMetricKeys
         public const string ReserveRole = "reserve";
         public const string ChoiceRole = "choice";
         public const string ContentGap = "card.contentGap";
+        public const string TokenBadgeSize = "card.token.badgeSize";
+        public const string TokenBadgeInset = "card.token.badgeInset";
+        public const string InspectWidth = "card.inspect.width";
+        public const string InspectMinimumHeight = "card.inspect.minimumHeight";
+        public const string InspectArtHeight = "card.inspect.artHeight";
+        public const string InspectOffset = "card.inspect.offset";
+        public const string InspectBadgeSize = "card.inspect.badgeSize";
+        public const string InspectBadgeInset = "card.inspect.badgeInset";
+        public const string InspectContentGap = "card.inspect.contentGap";
 
         public static string MinimumWidth(string role) => $"card.{role}.minimumWidth";
         public static string ArtHeight(string role) => $"card.{role}.artHeight";

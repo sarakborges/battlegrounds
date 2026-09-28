@@ -36,6 +36,7 @@ public partial class Main
             Disabled = disabled,
         };
         card.Configure(title, subtitle, stats, description, texture);
+        card.ConfigureIdentity(entityKind, entityId);
         ApplyPresentationCardLayout(card);
         if (selected)
             card.SetSelected(true);
@@ -47,6 +48,55 @@ public partial class Main
             ModPresentationAnimation.Pulse,
             ResolvePresentationMetric(ModThemeMetricKeys.Motion.UiSelectDurationSeconds, 0.05f, 5.0f));
         return card;
+    }
+
+    internal void ConfigureCompactTokenForParent(
+        PresentationCardButton card,
+        ModPresentationEntityKind entityKind,
+        string entityId)
+    {
+        if (_session is null || entityKind != ModPresentationEntityKind.Unit)
+            return;
+
+        var parent = card.GetParent();
+        var parentName = parent?.Name.ToString();
+        if (parentName == "OfferButtons")
+        {
+            var definition = _session.Mod.Units.GetRequired(new UnitId(entityId));
+            card.ConfigureToken(
+                definition.Tier,
+                definition.BaseAttack,
+                definition.BaseHealth,
+                BuildUnitInspectDetails(definition));
+            return;
+        }
+
+        if (parentName != "FieldButtons" ||
+            parent is null ||
+            _session.Match is not { } match ||
+            !match.TryGetPlayer(_session.HumanPlayerId, out var human))
+        {
+            return;
+        }
+
+        var fieldIndex = parent.GetChildren()
+            .OfType<PresentationCardButton>()
+            .Where(candidate => !candidate.IsQueuedForDeletion())
+            .TakeWhile(candidate => candidate != card)
+            .Count();
+        if (fieldIndex < 0 || fieldIndex >= human.Field.Count)
+            return;
+
+        var unit = human.Field[fieldIndex];
+        if (!string.Equals(unit.Definition.Id.Value, entityId, StringComparison.Ordinal))
+            return;
+
+        card.ConfigureToken(
+            null,
+            unit.Attack,
+            unit.Health,
+            BuildUnitInspectDetails(unit.Definition, unit),
+            inspectTier: unit.Definition.Tier);
     }
 
     private void PlayPresentationCue(
@@ -107,6 +157,33 @@ public partial class Main
 
     private string BuildUnitDefinitionStats(UnitDefinition definition) =>
         UnitCardStats(definition.Tier, definition.BaseAttack, definition.BaseHealth);
+
+    private string BuildUnitInspectDetails(UnitDefinition definition, UnitInstance? unit = null)
+    {
+        var lines = new List<string>();
+
+        if (definition.Types.Count > 0)
+            lines.Add(string.Join(" • ", definition.Types.Select(type => type.Name)));
+
+        var behaviors = unit is null ? definition.Behaviors : unit.Behaviors;
+        if (behaviors.Count > 0)
+            lines.Add(string.Join(" · ", behaviors.Select(behavior => behavior.Name)));
+
+        if (definition.Tags.Count > 0)
+            lines.Add(string.Join(" · ", definition.Tags.Select(tag => tag.Name)));
+
+        if (unit is not null && unit.Modifiers.Count > 0)
+        {
+            lines.Add(string.Join(
+                "\n",
+                unit.Modifiers.Select(modifier =>
+                    $"{modifier.Key}: {FormatSigned(modifier.AttackDelta)}/{FormatSigned(modifier.HealthDelta)}")));
+        }
+
+        return string.Join("\n", lines.Where(line => !string.IsNullOrWhiteSpace(line)));
+    }
+
+    private static string FormatSigned(int value) => value > 0 ? $"+{value}" : value.ToString();
 
     private string BuildActionDefinitionStats(string id)
     {

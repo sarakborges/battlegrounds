@@ -8,6 +8,8 @@ namespace Battlegrounds.Game;
 
 public partial class Main
 {
+    private const string CombatLungeDirectionMeta = "presentation_lunge_direction";
+
     private long _observedCombatSequence;
     private double _combatPlaybackAccumulator;
     private CombatPlaybackState? _combatPlayback;
@@ -18,8 +20,8 @@ public partial class Main
     private Label? _combatEvent;
     private Label? _combatLeftHeader;
     private Label? _combatRightHeader;
-    private VBoxContainer? _combatLeftUnits;
-    private VBoxContainer? _combatRightUnits;
+    private HBoxContainer? _combatLeftUnits;
+    private HBoxContainer? _combatRightUnits;
     private Button? _combatNextButton;
     private Button? _combatSkipButton;
 
@@ -112,11 +114,12 @@ public partial class Main
         };
         AddChild(_combatOverlay);
 
-        var margin = new MarginContainer();
+        var margin = new MarginContainer { Name = "CombatMargin" };
         _combatOverlay.AddChild(margin);
 
         var root = new VBoxContainer
         {
+            Name = "CombatRoot",
             SizeFlagsHorizontal = Control.SizeFlags.ExpandFill,
             SizeFlagsVertical = Control.SizeFlags.ExpandFill,
         };
@@ -126,50 +129,81 @@ public partial class Main
         {
             Text = Text("ui.combatPlayback", ("combat", Term("combat"))),
             ThemeTypeVariation = "TitleLabel",
+            HorizontalAlignment = HorizontalAlignment.Center,
         };
         root.AddChild(_combatTitle);
 
         _combatProgress = new Label
         {
             ThemeTypeVariation = "CaptionLabel",
+            HorizontalAlignment = HorizontalAlignment.Center,
         };
         root.AddChild(_combatProgress);
 
-        var boards = new HBoxContainer
+        var battlefield = new VBoxContainer
+        {
+            Name = "CombatBattlefield",
+            SizeFlagsHorizontal = Control.SizeFlags.ExpandFill,
+            SizeFlagsVertical = Control.SizeFlags.ExpandFill,
+        };
+        root.AddChild(battlefield);
+
+        var topSide = new VBoxContainer
+        {
+            Name = "CombatTopBoard",
+            SizeFlagsHorizontal = Control.SizeFlags.ExpandFill,
+            SizeFlagsVertical = Control.SizeFlags.ExpandFill,
+        };
+        _combatRightHeader = new Label
+        {
+            ThemeTypeVariation = "HeadingLabel",
+            HorizontalAlignment = HorizontalAlignment.Center,
+        };
+        topSide.AddChild(_combatRightHeader);
+        var topCenter = new CenterContainer
         {
             SizeFlagsHorizontal = Control.SizeFlags.ExpandFill,
             SizeFlagsVertical = Control.SizeFlags.ExpandFill,
         };
-        root.AddChild(boards);
-
-        var left = new VBoxContainer { SizeFlagsHorizontal = Control.SizeFlags.ExpandFill };
-        _combatLeftHeader = new Label
-        {
-            ThemeTypeVariation = "HeadingLabel",
-        };
-        _combatLeftUnits = new VBoxContainer();
-        left.AddChild(_combatLeftHeader);
-        left.AddChild(_combatLeftUnits);
-        boards.AddChild(left);
-
-        var right = new VBoxContainer { SizeFlagsHorizontal = Control.SizeFlags.ExpandFill };
-        _combatRightHeader = new Label
-        {
-            ThemeTypeVariation = "HeadingLabel",
-        };
-        _combatRightUnits = new VBoxContainer();
-        right.AddChild(_combatRightHeader);
-        right.AddChild(_combatRightUnits);
-        boards.AddChild(right);
+        _combatRightUnits = new HBoxContainer { Name = "CombatTopUnits" };
+        topCenter.AddChild(_combatRightUnits);
+        topSide.AddChild(topCenter);
+        battlefield.AddChild(topSide);
 
         _combatEvent = new Label
         {
+            Name = "CombatEvent",
             AutowrapMode = TextServer.AutowrapMode.WordSmart,
             ThemeTypeVariation = "BodyLabel",
+            HorizontalAlignment = HorizontalAlignment.Center,
+            VerticalAlignment = VerticalAlignment.Center,
+            SizeFlagsHorizontal = Control.SizeFlags.ExpandFill,
         };
-        root.AddChild(_combatEvent);
+        battlefield.AddChild(_combatEvent);
 
-        var controls = new HBoxContainer();
+        var bottomSide = new VBoxContainer
+        {
+            Name = "CombatBottomBoard",
+            SizeFlagsHorizontal = Control.SizeFlags.ExpandFill,
+            SizeFlagsVertical = Control.SizeFlags.ExpandFill,
+        };
+        var bottomCenter = new CenterContainer
+        {
+            SizeFlagsHorizontal = Control.SizeFlags.ExpandFill,
+            SizeFlagsVertical = Control.SizeFlags.ExpandFill,
+        };
+        _combatLeftUnits = new HBoxContainer { Name = "CombatBottomUnits" };
+        bottomCenter.AddChild(_combatLeftUnits);
+        bottomSide.AddChild(bottomCenter);
+        _combatLeftHeader = new Label
+        {
+            ThemeTypeVariation = "HeadingLabel",
+            HorizontalAlignment = HorizontalAlignment.Center,
+        };
+        bottomSide.AddChild(_combatLeftHeader);
+        battlefield.AddChild(bottomSide);
+
+        var controls = new HBoxContainer { Name = "CombatControls" };
         _combatNextButton = new Button
         {
             Text = Text("ui.next"),
@@ -207,8 +241,8 @@ public partial class Main
             archived: playback.Settlement.RightPlayerId is null);
         _combatEvent!.Text = playback.EventText;
 
-        RenderCombatUnits(_combatLeftUnits!, playback.LeftPlayerId, playback.LeftUnits);
-        RenderCombatUnits(_combatRightUnits!, playback.RightPlayerId, playback.RightUnits);
+        RenderCombatUnits(_combatRightUnits!, playback.RightPlayerId, playback.RightUnits, isTopSide: true);
+        RenderCombatUnits(_combatLeftUnits!, playback.LeftPlayerId, playback.LeftUnits, isTopSide: false);
 
         _combatNextButton!.Text = playback.SettlementVisible ? Text("ui.continue") : Text("ui.next");
         _combatSkipButton!.Text = Text("ui.skipSettlement");
@@ -226,9 +260,10 @@ public partial class Main
     }
 
     private void RenderCombatUnits(
-        VBoxContainer container,
+        HBoxContainer container,
         PlayerId playerId,
-        IReadOnlyList<CombatPlaybackUnitState> units)
+        IReadOnlyList<CombatPlaybackUnitState> units,
+        bool isTopSide)
     {
         ClearChildren(container);
         if (units.Count == 0 && !IsCurrentDeathFor(playerId))
@@ -241,25 +276,25 @@ public partial class Main
         {
             var unitId = ResolveCombatUnitId(unit.InstanceId);
             var tier = ResolveCombatUnitTier(unitId);
-            var stats = unit.IsAlive
-                ? UnitCardStats(tier, unit.Attack ?? 0, unit.Health)
-                : "—";
-            var subtitle = string.IsNullOrEmpty(unit.Status)
-                ? Term("unit")
-                : $"{Term("unit")} • {unit.Status}";
-            var card = CreateCombatUnitCard(unitId, unit.Name, subtitle, stats);
-            ApplyCombatCue(card, unitId, CueForUnit(unit.InstanceId));
+            var attack = unit.Attack ?? 0;
+            var health = Math.Max(0, unit.Health);
+            var details = string.IsNullOrWhiteSpace(unit.Status) ? null : unit.Status;
+            var card = CreateCombatUnitToken(unitId, unit.Name, attack, health, tier, details, isTopSide);
             container.AddChild(card);
+            QueueCombatCue(card, unitId, CueForUnit(unit.InstanceId));
         }
 
-        RenderTransientDeathCue(container, playerId);
+        RenderTransientDeathCue(container, playerId, isTopSide);
     }
 
-    private PresentationCardButton CreateCombatUnitCard(
+    private PresentationCardButton CreateCombatUnitToken(
         UnitId? unitId,
         string title,
-        string subtitle,
-        string stats)
+        int attack,
+        int health,
+        int tier,
+        string? details,
+        bool isTopSide)
     {
         PresentationCardButton card;
         if (unitId is UnitId knownUnitId)
@@ -269,16 +304,35 @@ public partial class Main
                 knownUnitId.Value,
                 ModPresentationAssetSlots.Art,
                 title,
-                subtitle,
-                stats);
+                Term("unit"),
+                string.Empty);
         }
         else
         {
             card = new PresentationCardButton();
-            card.Configure(title, subtitle, stats, description: null, texture: null);
+            card.Configure(title, Term("unit"), string.Empty, description: null, texture: null);
         }
 
-        card.MouseFilter = Control.MouseFilterEnum.Ignore;
+        card.SetMeta("presentation_skip_footprint", true);
+        card.SetMeta(CombatLungeDirectionMeta, isTopSide ? Vector2.Down : Vector2.Up);
+        card.ConfigureToken(
+            tier: null,
+            attack,
+            health,
+            inspectDetails: details,
+            inspectTier: tier > 0 ? tier : null);
+
+        var tokenWidth = ResolvePresentationMetric(
+            ModThemeMetricKeys.Card.MinimumWidth(ModThemeMetricKeys.Card.BoardRole),
+            32.0f,
+            512.0f);
+        var tokenHeight = ResolvePresentationMetric(
+            ModThemeMetricKeys.Row.PreferredCardHeight(ModThemeMetricKeys.Row.Field),
+            32.0f,
+            768.0f);
+        card.CustomMinimumSize = new Vector2(tokenWidth, tokenHeight);
+        card.MouseFilter = Control.MouseFilterEnum.Stop;
+        card.ButtonMask = (MouseButtonMask)0;
         card.FocusMode = Control.FocusModeEnum.None;
         return card;
     }
@@ -313,7 +367,7 @@ public partial class Main
     private bool IsCurrentDeathFor(PlayerId playerId) =>
         _combatPlayback?.CurrentEvent is CombatUnitDiedTimelineEvent died && died.PlayerId == playerId;
 
-    private void RenderTransientDeathCue(VBoxContainer container, PlayerId playerId)
+    private void RenderTransientDeathCue(HBoxContainer container, PlayerId playerId, bool isTopSide)
     {
         if (_combatPlayback?.CurrentEvent is not CombatUnitDiedTimelineEvent died || died.PlayerId != playerId)
             return;
@@ -322,11 +376,22 @@ public partial class Main
         var title = unitId is UnitId knownUnitId
             ? UnitName(knownUnitId)
             : Text("ui.combatUnitFallback", ("unit", Term("unit")), ("instance", died.UnitInstanceId.Value));
-        var card = CreateCombatUnitCard(unitId, title, Term("unit"), "—");
+        var tier = ResolveCombatUnitTier(unitId);
+        var card = CreateCombatUnitToken(unitId, title, 0, 0, tier, details: null, isTopSide);
         container.AddChild(card);
         var targetIndex = Math.Clamp(died.Position, 0, Math.Max(0, container.GetChildCount() - 1));
         container.MoveChild(card, targetIndex);
-        ApplyCombatCue(card, unitId, CombatVisualCue.Death);
+        QueueCombatCue(card, unitId, CombatVisualCue.Death);
+    }
+
+    private void QueueCombatCue(PresentationCardButton card, UnitId? unitId, CombatVisualCue cue)
+    {
+        if (cue == CombatVisualCue.None) return;
+        Callable.From(() =>
+        {
+            if (card.IsInsideTree())
+                ApplyCombatCue(card, unitId, cue);
+        }).CallDeferred();
     }
 
     private void ApplyCombatCue(PresentationCardButton card, UnitId? unitId, CombatVisualCue cue)
