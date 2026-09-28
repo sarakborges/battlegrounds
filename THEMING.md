@@ -51,6 +51,9 @@ The JSON contract intentionally contains no Godot class names or property names.
     "row.offer.minimumCardWidth": 88,
     "row.offer.preferredCardHeight": 142,
     "row.offer.padding": 4,
+    "card.shop.minimumWidth": 118,
+    "card.shop.artHeight": 76,
+    "card.contentGap": 2,
     "drag.preview.scale": 1.045,
     "drag.preview.rotationDegrees": -1.5
   },
@@ -166,6 +169,19 @@ For example:
   }
 }
 ```
+
+Card internals use semantic footprint roles based on where the card is shown:
+
+```text
+card.default.*
+card.leader.*
+card.shop.*
+card.board.*
+card.reserve.*
+card.choice.*
+```
+
+Each role may define `minimumWidth` and `artHeight`. `card.contentGap` controls the vertical separation between the art/title/stats content inside every presentation card. These values complement the responsive row metrics: row geometry controls available layout space, while card footprint geometry controls the card's internal visual proportions.
 
 Preparation drag feedback also exposes two semantic metrics:
 

@@ -7,6 +7,7 @@ internal sealed partial class PresentationCardButton : Button
     private const float DragThreshold = 5.0f;
 
     private readonly TextureRect _art;
+    private readonly VBoxContainer _column;
     private readonly Label _title;
     private readonly Label _subtitle;
     private readonly Label _stats;
@@ -34,13 +35,13 @@ internal sealed partial class PresentationCardButton : Button
         AddChild(margin);
         margin.SetAnchorsAndOffsetsPreset(LayoutPreset.FullRect);
 
-        var column = IgnoreMouse(new VBoxContainer
+        _column = IgnoreMouse(new VBoxContainer
         {
             SizeFlagsHorizontal = SizeFlags.ExpandFill,
             SizeFlagsVertical = SizeFlags.ExpandFill,
         });
-        column.AddThemeConstantOverride("separation", 2);
-        margin.AddChild(column);
+        _column.AddThemeConstantOverride("separation", 2);
+        margin.AddChild(_column);
 
         _art = IgnoreMouse(new TextureRect
         {
@@ -50,7 +51,7 @@ internal sealed partial class PresentationCardButton : Button
             ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize,
             StretchMode = TextureRect.StretchModeEnum.KeepAspectCovered,
         });
-        column.AddChild(_art);
+        _column.AddChild(_art);
 
         _title = CreateLabel("HeadingLabel");
         _title.HorizontalAlignment = HorizontalAlignment.Center;
@@ -65,10 +66,10 @@ internal sealed partial class PresentationCardButton : Button
         _description = CreateLabel("CaptionLabel", wrap: true);
         _description.Visible = false;
 
-        column.AddChild(_title);
-        column.AddChild(_subtitle);
-        column.AddChild(_stats);
-        column.AddChild(_description);
+        _column.AddChild(_title);
+        _column.AddChild(_subtitle);
+        _column.AddChild(_stats);
+        _column.AddChild(_description);
     }
 
     public override void _Ready()
@@ -217,6 +218,7 @@ internal sealed partial class PresentationCardButton : Button
             Rotation = Mathf.DegToRad(rotationDegrees),
             TooltipText = string.Empty,
         };
+        preview.SetMeta("presentation_skip_footprint", true);
         preview.Configure(
             _title.Text,
             _subtitle.Text,
@@ -229,29 +231,42 @@ internal sealed partial class PresentationCardButton : Button
 
     private void ApplyFootprintForParent()
     {
+        if (HasMeta("presentation_skip_footprint"))
+            return;
+
         var parentName = GetParent()?.Name.ToString();
-        switch (parentName)
+        var (minimumWidth, artHeight, role, disablePointerInteraction) = parentName switch
         {
-            case "LeaderButtons":
-                ApplyFootprint(156, 118, showSubtitle: false, "leader");
-                break;
-            case "OfferButtons":
-                ApplyFootprint(118, 76, showSubtitle: false, "shop");
-                break;
-            case "FieldButtons":
-                ApplyFootprint(138, 112, showSubtitle: false, "board");
-                ButtonMask = (MouseButtonMask)0;
-                FocusMode = FocusModeEnum.None;
-                break;
-            case "ReserveButtons":
-                ApplyFootprint(90, 34, showSubtitle: false, "reserve");
-                break;
-            case "InteractionButtons":
-                ApplyFootprint(124, 82, showSubtitle: false, "choice");
-                break;
-            default:
-                SetMeta("presentation_footprint", "default");
-                break;
+            "LeaderButtons" => (156.0f, 118.0f, "leader", false),
+            "OfferButtons" => (118.0f, 76.0f, "shop", false),
+            "FieldButtons" => (138.0f, 112.0f, "board", true),
+            "ReserveButtons" => (90.0f, 34.0f, "reserve", false),
+            "InteractionButtons" => (124.0f, 82.0f, "choice", false),
+            _ => (92.0f, 52.0f, "default", false),
+        };
+
+        var main = FindMain();
+        if (main is not null)
+        {
+            minimumWidth = main.ResolvePresentationMetric(
+                $"card.{role}.minimumWidth",
+                minimumWidth,
+                1.0f,
+                2048.0f);
+            artHeight = main.ResolvePresentationMetric(
+                $"card.{role}.artHeight",
+                artHeight,
+                0.0f,
+                2048.0f);
+            var contentGap = main.ResolvePresentationMetric("card.contentGap", 2.0f, 0.0f, 256.0f);
+            _column.AddThemeConstantOverride("separation", Mathf.RoundToInt(contentGap));
+        }
+
+        ApplyFootprint(minimumWidth, artHeight, showSubtitle: false, role);
+        if (disablePointerInteraction)
+        {
+            ButtonMask = (MouseButtonMask)0;
+            FocusMode = FocusModeEnum.None;
         }
     }
 

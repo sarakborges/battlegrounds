@@ -42,6 +42,9 @@ public partial class Main
         return Mathf.Clamp((float)value, minimum, maximum);
     }
 
+    internal float ResolvePresentationMetric(string key, float fallback, float minimum, float maximum) =>
+        ResolveThemeMetric(key, fallback, minimum, maximum);
+
     private void ApplyPresentationCardLayout(PresentationCardButton card)
     {
         if (_modTheme is null ||
