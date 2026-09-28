@@ -6,6 +6,7 @@ import json
 import pathlib
 import sys
 import urllib.error
+import urllib.parse
 import urllib.request
 from dataclasses import dataclass
 
@@ -13,6 +14,7 @@ from PIL import Image
 
 CARDS_URL = "https://api.hearthstonejson.com/v1/latest/enUS/cards.json"
 ART_URL = "https://art.hearthstonejson.com/v1/512x/{card_id}.jpg"
+WARCRAFT_API = "https://warcraft.wiki.gg/api.php"
 OUTPUT_ROOT = pathlib.Path("mods/warbands/assets/cosmetics/leaders")
 REPORT_PATH = OUTPUT_ROOT / "sources.json"
 
@@ -71,13 +73,23 @@ LEADERS = {
     "zentabra": "Zentabra",
 }
 
-# Only used when Hearthstone itself spells a character differently than the
-# Warbands content name. Keep this intentionally small: exact matches remain the
-# default and the report records when an alias was needed.
+# Prefer Hearthstone art even when Hearthstone uses a different card/title for
+# the same Warcraft character. These aliases are deliberately explicit so we do
+# not silently match unrelated fuzzy names.
 ALIASES = {
+    "altruis-the-sufferer": ["Altruis the Outcast"],
     "arthas-menethil": ["Prince Arthas", "The Lich King"],
-    "garona-halforcen": ["Garona Halforcen", "Garona"],
-    "nekros-skullcrusher": ["Nekros Skullcrusher", "Nekros"],
+    "chen-stormstout": ["Youthful Brewmaster"],
+    "first-arcanist-thalyssra": ["Thalyssra"],
+    "garona-halforcen": ["Garona"],
+    "geyarah": ["Overlord Geyarah"],
+    "nekros-skullcrusher": ["Nekros"],
+    "scalecommander-azurathel": ["Azurathel"],
+    "scalecommander-cindrethresh": ["Cindrethresh"],
+    "scalecommander-emberthal": ["Emberthal"],
+    "scalecommander-sarkareth": ["Sarkareth"],
+    "sunwalker-dezco": ["Dezco"],
+    "zentabra": ["Zen'tabra"],
 }
 
 TYPE_PRIORITY = {
@@ -98,14 +110,21 @@ class Match:
 def fetch_bytes(url: str) -> bytes:
     request = urllib.request.Request(
         url,
-        headers={"User-Agent": "Battlegrounds-Warbands-Art-Fetcher/1.0"},
+        headers={"User-Agent": "Battlegrounds-Warbands-Art-Fetcher/1.1"},
     )
     with urllib.request.urlopen(request, timeout=60) as response:
         return response.read()
 
 
+def fetch_json(url: str) -> dict | list:
+    return json.loads(fetch_bytes(url).decode("utf-8"))
+
+
 def load_cards() -> list[dict]:
-    return json.loads(fetch_bytes(CARDS_URL).decode("utf-8"))
+    payload = fetch_json(CARDS_URL)
+    if not isinstance(payload, list):
+        raise ValueError("HearthstoneJSON cards endpoint did not return a list")
+    return payload
 
 
 def score(card: dict) -> tuple[int, int, int]:
@@ -136,6 +155,7 @@ def find_card(cards: list[dict], slug: str, display_name: str) -> Match | None:
 
 def save_png(data: bytes, target: pathlib.Path) -> tuple[int, int]:
     with Image.open(io.BytesIO(data)) as source:
+        source.seek(0)
         source.load()
         image = source.convert("RGBA")
         target.parent.mkdir(parents=True, exist_ok=True)
@@ -143,57 +163,120 @@ def save_png(data: bytes, target: pathlib.Path) -> tuple[int, int]:
         return image.size
 
 
+def warcraft_page_image(display_name: str) -> tuple[str, str] | None:
+    query = urllib.parse.urlencode(
+        {
+            "action": "query",
+            "format": "json",
+            "redirects": "1",
+            "prop": "pageimages",
+            "piprop": "original|thumbnail",
+            "pithumbsize": "1024",
+            "titles": display_name,
+        }
+    )
+    payload = fetch_json(f"{WARCRAFT_API}?{query}")
+    if not isinstance(payload, dict):
+        return None
+    pages = payload.get("query", {}).get("pages", {})
+    if not isinstance(pages, dict):
+        return None
+    for page in pages.values():
+        if not isinstance(page, dict) or "missing" in page:
+            continue
+        source = None
+        original = page.get("original")
+        thumbnail = page.get("thumbnail")
+        if isinstance(original, dict):
+            source = original.get("source")
+        if not source and isinstance(thumbnail, dict):
+            source = thumbnail.get("source")
+        if source:
+            title = str(page.get("title", display_name)).replace(" ", "_")
+            page_url = f"https://warcraft.wiki.gg/wiki/{urllib.parse.quote(title)}"
+            return str(source), page_url
+    return None
+
+
+def import_hearthstone(cards: list[dict], slug: str, display_name: str, target: pathlib.Path) -> dict | None:
+    match = find_card(cards, slug, display_name)
+    if match is None:
+        return None
+
+    card = match.card
+    card_id = str(card["id"])
+    art_url = ART_URL.format(card_id=card_id)
+    width, height = save_png(fetch_bytes(art_url), target)
+    print(f"HS    {slug}: {match.matched_name} -> {card_id} ({width}x{height})")
+    return {
+        "displayName": display_name,
+        "status": "hearthstone",
+        "source": "HearthstoneJSON",
+        "cardId": card_id,
+        "dbfId": card.get("dbfId"),
+        "matchedName": match.matched_name,
+        "exactName": match.exact,
+        "cardType": card.get("type"),
+        "artist": card.get("artist"),
+        "artUrl": art_url,
+        "output": target.as_posix(),
+    }
+
+
+def import_warcraft(display_name: str, slug: str, target: pathlib.Path) -> dict | None:
+    page_image = warcraft_page_image(display_name)
+    if page_image is None:
+        return None
+    image_url, page_url = page_image
+    width, height = save_png(fetch_bytes(image_url), target)
+    print(f"WOW   {slug}: {page_url} ({width}x{height})")
+    return {
+        "displayName": display_name,
+        "status": "warcraft-wiki",
+        "source": "Warcraft Wiki",
+        "pageUrl": page_url,
+        "imageUrl": image_url,
+        "output": target.as_posix(),
+    }
+
+
 def main() -> int:
     cards = load_cards()
     report: dict[str, dict] = {}
-    found = 0
-    missing = 0
+    hearthstone_count = 0
+    warcraft_count = 0
+    missing_count = 0
 
     for slug, display_name in LEADERS.items():
-        match = find_card(cards, slug, display_name)
-        if match is None:
-            print(f"MISS  {slug}: no Hearthstone card named {display_name!r}")
-            report[slug] = {
-                "displayName": display_name,
-                "status": "missing",
-                "source": "hearthstonejson",
-            }
-            missing += 1
-            continue
-
-        card = match.card
-        card_id = str(card["id"])
-        art_url = ART_URL.format(card_id=card_id)
         target = OUTPUT_ROOT / slug / "base.png"
         try:
-            width, height = save_png(fetch_bytes(art_url), target)
-        except (urllib.error.URLError, urllib.error.HTTPError, OSError) as exc:
-            print(f"MISS  {slug}: {card_id} art download/decode failed: {exc}")
-            report[slug] = {
-                "displayName": display_name,
-                "status": "missing-art",
-                "source": "hearthstonejson",
-                "cardId": card_id,
-                "matchedName": match.matched_name,
-            }
-            missing += 1
+            entry = import_hearthstone(cards, slug, display_name, target)
+        except (urllib.error.URLError, urllib.error.HTTPError, OSError, ValueError) as exc:
+            print(f"WARN  {slug}: Hearthstone import failed: {exc}")
+            entry = None
+
+        if entry is not None:
+            report[slug] = entry
+            hearthstone_count += 1
             continue
 
-        print(f"OK    {slug}: {match.matched_name} -> {card_id} ({width}x{height})")
+        try:
+            entry = import_warcraft(display_name, slug, target)
+        except (urllib.error.URLError, urllib.error.HTTPError, OSError, ValueError) as exc:
+            print(f"WARN  {slug}: Warcraft fallback failed: {exc}")
+            entry = None
+
+        if entry is not None:
+            report[slug] = entry
+            warcraft_count += 1
+            continue
+
+        print(f"MISS  {slug}: no usable art found for {display_name!r}")
         report[slug] = {
             "displayName": display_name,
-            "status": "hearthstone",
-            "source": "HearthstoneJSON",
-            "cardId": card_id,
-            "dbfId": card.get("dbfId"),
-            "matchedName": match.matched_name,
-            "exactName": match.exact,
-            "cardType": card.get("type"),
-            "artist": card.get("artist"),
-            "artUrl": art_url,
-            "output": target.as_posix(),
+            "status": "missing",
         }
-        found += 1
+        missing_count += 1
 
     OUTPUT_ROOT.mkdir(parents=True, exist_ok=True)
     REPORT_PATH.write_text(
@@ -201,8 +284,9 @@ def main() -> int:
             {
                 "generatedFrom": CARDS_URL,
                 "artApi": "https://art.hearthstonejson.com/",
-                "found": found,
-                "missing": missing,
+                "hearthstone": hearthstone_count,
+                "warcraftWiki": warcraft_count,
+                "missing": missing_count,
                 "leaders": report,
             },
             indent=2,
@@ -211,7 +295,11 @@ def main() -> int:
         encoding="utf-8",
     )
 
-    print(f"\nHearthstone art: {found}/{len(LEADERS)}; missing: {missing}")
+    total = len(LEADERS)
+    print(
+        f"\nImported {total - missing_count}/{total}: "
+        f"Hearthstone={hearthstone_count}, WarcraftWiki={warcraft_count}, missing={missing_count}"
+    )
     return 0
 
 
