@@ -6,6 +6,11 @@ namespace Battlegrounds.Game;
 public partial class ModLauncher : Control
 {
     private static readonly Color DefaultBackgroundColor = new(0.055f, 0.063f, 0.082f, 1f);
+    private const float DefaultMarginHorizontal = 64.0f;
+    private const float DefaultMarginVertical = 48.0f;
+    private const int DefaultRootGap = 14;
+    private const int DefaultModGap = 8;
+    private const float DefaultDiagnosticsHeight = 180.0f;
 
     [Export] public string ModsRoot { get; set; } = "res://../../mods";
     [Export] public string GameplayScenePath { get; set; } = "res://Scenes/Main.tscn";
@@ -115,6 +120,7 @@ public partial class ModLauncher : Control
         Theme = _themeBuilder.Build();
         ApplyLauncherTypography(theme);
         ApplyLauncherScreen(theme);
+        ApplyLauncherLayout(theme);
     }
 
     private void ApplyLauncherTypography(ModThemeCatalog theme)
@@ -171,6 +177,29 @@ public partial class ModLauncher : Control
         _themeBackgroundImage.Visible = true;
     }
 
+    private void ApplyLauncherLayout(ModThemeCatalog theme)
+    {
+        var horizontal = ResolveMetric(theme, "launcher.marginHorizontal", DefaultMarginHorizontal, 0, 1024);
+        var vertical = ResolveMetric(theme, "launcher.marginVertical", DefaultMarginVertical, 0, 1024);
+        var margin = GetNode<MarginContainer>("Margin");
+        margin.OffsetLeft = horizontal;
+        margin.OffsetRight = -horizontal;
+        margin.OffsetTop = vertical;
+        margin.OffsetBottom = -vertical;
+
+        var root = GetNode<VBoxContainer>("Margin/Root");
+        root.AddThemeConstantOverride(
+            "separation",
+            Mathf.RoundToInt(ResolveMetric(theme, "launcher.gap", DefaultRootGap, 0, 512)));
+        _modButtons.AddThemeConstantOverride(
+            "separation",
+            Mathf.RoundToInt(ResolveMetric(theme, "launcher.modGap", DefaultModGap, 0, 512)));
+
+        _diagnostics.CustomMinimumSize = new Vector2(
+            _diagnostics.CustomMinimumSize.X,
+            ResolveMetric(theme, "launcher.diagnosticsMinimumHeight", DefaultDiagnosticsHeight, 0, 4096));
+    }
+
     private void ResetLauncherTheme()
     {
         Theme = null;
@@ -179,6 +208,8 @@ public partial class ModLauncher : Control
         _background.Color = DefaultBackgroundColor;
         if (_themeBackgroundImage is not null)
             _themeBackgroundImage.Visible = false;
+
+        ResetLauncherLayout();
 
         var title = GetNode<Label>("Margin/Root/Title");
         title.ThemeTypeVariation = string.Empty;
@@ -194,6 +225,25 @@ public partial class ModLauncher : Control
 
         _status.ThemeTypeVariation = string.Empty;
         _refreshButton.ThemeTypeVariation = string.Empty;
+    }
+
+    private void ResetLauncherLayout()
+    {
+        var margin = GetNode<MarginContainer>("Margin");
+        margin.OffsetLeft = DefaultMarginHorizontal;
+        margin.OffsetRight = -DefaultMarginHorizontal;
+        margin.OffsetTop = DefaultMarginVertical;
+        margin.OffsetBottom = -DefaultMarginVertical;
+        GetNode<VBoxContainer>("Margin/Root").AddThemeConstantOverride("separation", DefaultRootGap);
+        _modButtons.AddThemeConstantOverride("separation", DefaultModGap);
+        _diagnostics.CustomMinimumSize = new Vector2(_diagnostics.CustomMinimumSize.X, DefaultDiagnosticsHeight);
+    }
+
+    private static float ResolveMetric(ModThemeCatalog theme, string key, float fallback, float minimum, float maximum)
+    {
+        if (!theme.Metrics.TryGetValue(key, out var value))
+            return fallback;
+        return Mathf.Clamp((float)value, minimum, maximum);
     }
 
     private void SelectCandidate(ModDiscoveryEntry entry)
