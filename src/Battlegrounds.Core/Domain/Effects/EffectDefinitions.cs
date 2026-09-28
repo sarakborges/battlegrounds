@@ -1,6 +1,7 @@
 using System.Collections.ObjectModel;
 using Battlegrounds.Core.Domain.Behaviors;
 using Battlegrounds.Core.Domain.Ids;
+using Battlegrounds.Core.Domain.Units;
 
 namespace Battlegrounds.Core.Domain.Effects;
 
@@ -280,11 +281,16 @@ public sealed record AddBehaviorEffectDefinition : EffectDefinition
     public override NativeEffectKey Kind => NativeEffectKeys.AddBehavior;
     public EffectTargetSelector Target { get; }
     public BehaviorId BehaviorId { get; }
+    public UnitModifierDuration Duration { get; }
 
-    public AddBehaviorEffectDefinition(EffectTargetSelector target, BehaviorId behaviorId)
+    public AddBehaviorEffectDefinition(
+        EffectTargetSelector target,
+        BehaviorId behaviorId,
+        UnitModifierDuration duration = UnitModifierDuration.Persistent)
     {
         Target = target ?? throw new ArgumentNullException(nameof(target));
         BehaviorId = behaviorId;
+        Duration = duration;
     }
 }
 

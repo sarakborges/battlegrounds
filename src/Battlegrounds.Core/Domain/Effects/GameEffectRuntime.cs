@@ -31,7 +31,7 @@ internal interface IEffectRuntimeWorld
     IReadOnlyList<IEffectRuntimeUnit> GetHistoryEventListeners(PlayerId playerId);
     void ModifyStats(IEffectRuntimeUnit unit, int attackDelta, int healthDelta);
     bool TryConsumeBehavior(IEffectRuntimeUnit unit, NativeBehaviorKey handler);
-    bool AddBehavior(IEffectRuntimeUnit unit, BehaviorDefinition behavior);
+    bool AddBehavior(IEffectRuntimeUnit unit, BehaviorDefinition behavior, UnitModifierDuration duration);
     bool RemoveBehavior(IEffectRuntimeUnit unit, BehaviorId behaviorId);
     void TakeDamage(IEffectRuntimeUnit unit, int amount);
     void Destroy(IEffectRuntimeUnit unit);
@@ -311,7 +311,7 @@ internal sealed class GameEffectRuntime
             {
                 var behaviorCatalog = _behaviorCatalog ?? throw new InvalidOperationException("addBehavior requires a BehaviorCatalog in the effect runtime.");
                 var behavior = behaviorCatalog.GetRequired(addBehavior.BehaviorId);
-                foreach (var target in GetCurrentTargets(resolved.TargetInstanceIds)) _world.AddBehavior(target, behavior);
+                foreach (var target in GetCurrentTargets(resolved.TargetInstanceIds)) _world.AddBehavior(target, behavior, addBehavior.Duration);
                 break;
             }
             case RemoveBehaviorEffectDefinition removeBehavior:

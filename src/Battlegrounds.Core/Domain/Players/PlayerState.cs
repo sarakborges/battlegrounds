@@ -301,6 +301,11 @@ public sealed partial class PlayerState
         foreach (var unit in _reserve.Concat(_field)) unit.ExpireModifiers(duration);
     }
 
+    internal void ExpireUnitBehaviors(UnitModifierDuration duration)
+    {
+        foreach (var unit in _reserve.Concat(_field)) unit.ExpireBehaviors(duration);
+    }
+
     internal void MarkReadyForCombat()
     {
         if (PendingChoice is not null)

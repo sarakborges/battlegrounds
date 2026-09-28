@@ -14,6 +14,7 @@ public sealed class UnitInstance
 {
     private readonly List<BehaviorDefinition> _behaviors;
     private readonly ReadOnlyCollection<BehaviorDefinition> _behaviorsView;
+    private readonly Dictionary<BehaviorId, UnitModifierDuration> _addedBehaviorDurations = [];
     private readonly List<UnitModifierState> _modifiers = [];
     private readonly ReadOnlyCollection<UnitModifierState> _modifiersView;
 
@@ -100,6 +101,7 @@ public sealed class UnitInstance
         Health = definition.BaseHealth;
         _behaviors.Clear();
         _behaviors.AddRange(definition.Behaviors);
+        _addedBehaviorDurations.Clear();
         _modifiers.Clear();
     }
 
@@ -113,6 +115,8 @@ public sealed class UnitInstance
         Health = source.Health;
         _behaviors.Clear();
         _behaviors.AddRange(source.Behaviors);
+        _addedBehaviorDurations.Clear();
+        foreach (var pair in source._addedBehaviorDurations) _addedBehaviorDurations.Add(pair.Key, pair.Value);
         _modifiers.Clear();
         _modifiers.AddRange(source.Modifiers.Select(modifier =>
             new UnitModifierState(modifier.Key, modifier.AttackDelta, modifier.HealthDelta, modifier.Duration)));
@@ -133,22 +137,35 @@ public sealed class UnitInstance
         _behaviors.Clear();
         _behaviors.AddRange(
             Definition.Behaviors.Where(behavior => behavior.Handler != NativeBehaviorKeys.ReviveOnce));
+        _addedBehaviorDurations.Clear();
         _modifiers.Clear();
     }
 
-    internal bool AddBehavior(BehaviorDefinition behavior)
+    internal bool AddBehavior(BehaviorDefinition behavior, UnitModifierDuration duration = UnitModifierDuration.Persistent)
     {
         ArgumentNullException.ThrowIfNull(behavior);
         if (_behaviors.Any(existing => existing.Id == behavior.Id || existing.Handler == behavior.Handler)) return false;
         _behaviors.Add(behavior);
+        _addedBehaviorDurations[behavior.Id] = duration;
         return true;
+    }
+
+    internal void ExpireBehaviors(UnitModifierDuration duration)
+    {
+        var ids = _addedBehaviorDurations
+            .Where(pair => pair.Value == duration)
+            .Select(pair => pair.Key)
+            .ToArray();
+        foreach (var id in ids) RemoveBehavior(id);
     }
 
     internal bool RemoveBehavior(BehaviorId behaviorId)
     {
         var index = _behaviors.FindIndex(behavior => behavior.Id == behaviorId);
         if (index < 0) return false;
+        var behavior = _behaviors[index];
         _behaviors.RemoveAt(index);
+        _addedBehaviorDurations.Remove(behavior.Id);
         return true;
     }
 
@@ -156,7 +173,9 @@ public sealed class UnitInstance
     {
         var index = _behaviors.FindIndex(behavior => behavior.Handler == handler);
         if (index < 0) return false;
+        var behavior = _behaviors[index];
         _behaviors.RemoveAt(index);
+        _addedBehaviorDurations.Remove(behavior.Id);
         return true;
     }
 }

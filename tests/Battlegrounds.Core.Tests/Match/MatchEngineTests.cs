@@ -52,6 +52,8 @@ public sealed class MatchEngineTests
         AddUnit(engine, match, new PlayerId(1));
         var unit = Assert.Single(match.Players[0].Field);
         unit.ApplyModifier("next-combat", 4, 3, UnitModifierDuration.UntilCombatEnd);
+        var temporaryBehavior = new BehaviorDefinition(new BehaviorId("temporary-ward"), "Temporary Ward", NativeBehaviorKeys.DamageBarrier);
+        Assert.True(unit.AddBehavior(temporaryBehavior, UnitModifierDuration.UntilCombatEnd));
         Assert.Equal(6, unit.Attack);
         Assert.Equal(5, unit.Health);
         ReadyActive(engine, match);
@@ -61,6 +63,7 @@ public sealed class MatchEngineTests
         Assert.Equal(2, unit.Attack);
         Assert.Equal(2, unit.Health);
         Assert.DoesNotContain(unit.Modifiers, modifier => modifier.Key == "next-combat");
+        Assert.DoesNotContain(unit.Behaviors, behavior => behavior.Id == temporaryBehavior.Id);
     }
 
     [Fact]
@@ -73,12 +76,15 @@ public sealed class MatchEngineTests
         AddUnit(engine, match, ids[2]);
         var byeUnit = Assert.Single(match.Players[2].Field);
         byeUnit.ApplyModifier("next-combat", 3, 0, UnitModifierDuration.UntilCombatEnd);
+        var temporaryBehavior = new BehaviorDefinition(new BehaviorId("temporary-guard"), "Temporary Guard", NativeBehaviorKeys.TargetPriority);
+        Assert.True(byeUnit.AddBehavior(temporaryBehavior, UnitModifierDuration.UntilCombatEnd));
         ReadyActive(engine, match);
 
         engine.ResolveCombatRound(match, [new CombatPairing(ids[0], ids[1]), CombatPairing.Bye(ids[2])]);
 
         Assert.Equal(5, byeUnit.Attack);
         Assert.Contains(byeUnit.Modifiers, modifier => modifier.Key == "next-combat");
+        Assert.Contains(byeUnit.Behaviors, behavior => behavior.Id == temporaryBehavior.Id);
     }
 
     [Fact]

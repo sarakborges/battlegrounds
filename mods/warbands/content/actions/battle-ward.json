@@ -1,0 +1,16 @@
+{
+  "id": "battle-ward",
+  "name": "Battle Ward",
+  "tier": 2,
+  "cost": 1,
+  "effects": [
+    {
+      "kind": "addBehavior",
+      "target": {
+        "scope": "selected"
+      },
+      "behaviorId": "warded",
+      "duration": "untilCombatEnd"
+    }
+  ]
+}

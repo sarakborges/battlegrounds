@@ -247,7 +247,7 @@ internal sealed partial class PreparationEffectEngine
 
         public void ModifyStats(IEffectRuntimeUnit unit, int attackDelta, int healthDelta) => GetUnit(unit).ModifyStats(attackDelta, healthDelta);
         public bool TryConsumeBehavior(IEffectRuntimeUnit unit, NativeBehaviorKey handler) => unit is PreparationRuntimeUnit && GetUnit(unit).RemoveBehavior(handler);
-        public bool AddBehavior(IEffectRuntimeUnit unit, BehaviorDefinition behavior) => GetUnit(unit).AddBehavior(behavior);
+        public bool AddBehavior(IEffectRuntimeUnit unit, BehaviorDefinition behavior, UnitModifierDuration duration) => GetUnit(unit).AddBehavior(behavior, duration);
         public bool RemoveBehavior(IEffectRuntimeUnit unit, BehaviorId behaviorId) => GetUnit(unit).RemoveBehavior(behaviorId);
         public void TakeDamage(IEffectRuntimeUnit unit, int amount) => GetUnit(unit).TakeDamage(amount);
         public void Destroy(IEffectRuntimeUnit unit) => GetUnit(unit).Destroy();

@@ -1,0 +1,23 @@
+{
+  "id": "holy-aegis",
+  "name": "Holy Aegis",
+  "activation": {
+    "cost": 1,
+    "maxUsesPerTurn": 1
+  },
+  "triggers": [
+    {
+      "event": "onActivate",
+      "effects": [
+        {
+          "kind": "addBehavior",
+          "target": {
+            "scope": "selected"
+          },
+          "behaviorId": "warded",
+          "duration": "untilCombatEnd"
+        }
+      ]
+    }
+  ]
+}

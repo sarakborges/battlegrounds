@@ -255,6 +255,12 @@ internal sealed class PowerLifecycleModValidator
                 break;
 
             case "addBehavior":
+                ValidateKeys(effect, file, path, ["kind", "target", "behaviorId", "duration"], ["kind", "target", "behaviorId"], issues);
+                ValidateTarget(file, effect, path, triggerEvent, typeIds, tagIds, issues);
+                if (TryRequiredString(effect, "behaviorId", file, path + ".behaviorId", issues, out var addedBehaviorId) &&
+                    !behaviorIds.Contains(addedBehaviorId!))
+                    issues.Add(new("UNKNOWN_REFERENCE", file, path + ".behaviorId", $"Unknown behavior '{addedBehaviorId}'."));
+                break;
             case "removeBehavior":
                 ValidateKeys(effect, file, path, ["kind", "target", "behaviorId"], ["kind", "target", "behaviorId"], issues);
                 ValidateTarget(file, effect, path, triggerEvent, typeIds, tagIds, issues);

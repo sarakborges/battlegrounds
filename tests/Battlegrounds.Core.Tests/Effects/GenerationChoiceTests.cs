@@ -159,7 +159,7 @@ public sealed class GenerationChoiceTests
         public IReadOnlyList<IEffectRuntimeUnit> GetHistoryEventListeners(PlayerId playerId) => [_source];
         public void ModifyStats(IEffectRuntimeUnit unit, int attackDelta, int healthDelta) => throw new NotSupportedException();
         public bool TryConsumeBehavior(IEffectRuntimeUnit unit, NativeBehaviorKey handler) => false;
-        public bool AddBehavior(IEffectRuntimeUnit unit, BehaviorDefinition behavior) => false;
+        public bool AddBehavior(IEffectRuntimeUnit unit, BehaviorDefinition behavior, UnitModifierDuration duration) => false;
         public bool RemoveBehavior(IEffectRuntimeUnit unit, BehaviorId behaviorId) => false;
         public void TakeDamage(IEffectRuntimeUnit unit, int amount) => throw new NotSupportedException();
         public void Destroy(IEffectRuntimeUnit unit) => throw new NotSupportedException();

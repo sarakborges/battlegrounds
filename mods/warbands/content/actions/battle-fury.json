@@ -1,0 +1,16 @@
+{
+  "id": "battle-fury",
+  "name": "Battle Fury",
+  "tier": 3,
+  "cost": 2,
+  "effects": [
+    {
+      "kind": "addBehavior",
+      "target": {
+        "scope": "selected"
+      },
+      "behaviorId": "double-strike",
+      "duration": "untilCombatEnd"
+    }
+  ]
+}

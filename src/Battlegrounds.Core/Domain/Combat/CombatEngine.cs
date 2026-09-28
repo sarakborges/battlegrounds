@@ -519,7 +519,7 @@ public sealed class CombatEngine
             return true;
         }
 
-        public bool AddBehavior(IEffectRuntimeUnit unit, BehaviorDefinition behavior)
+        public bool AddBehavior(IEffectRuntimeUnit unit, BehaviorDefinition behavior, UnitModifierDuration duration)
         {
             var runtimeUnit = GetUnit(unit);
             if (!runtimeUnit.AddBehavior(behavior)) return false;

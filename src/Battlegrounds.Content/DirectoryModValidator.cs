@@ -671,6 +671,11 @@ internal sealed class DirectoryModValidator
                     issues.Add(new("UNKNOWN_REFERENCE", file, path + ".unitId", $"Unknown unit '{unitId}'."));
                 break;
             case "addBehavior":
+                ValidateKeys(effect, file, path, ["kind", "target", "behaviorId", "duration"], ["kind"], issues);
+                ValidateRequiredTarget(file, effect, path, typeIds, tagIds, issues);
+                if (RequireParameterString(file, effect, "behaviorId", path, issues, out var addBehaviorId) && !behaviorIds.Contains(addBehaviorId!))
+                    issues.Add(new("UNKNOWN_REFERENCE", file, path + ".behaviorId", $"Unknown behavior '{addBehaviorId}'."));
+                break;
             case "removeBehavior":
                 ValidateKeys(effect, file, path, ["kind", "target", "behaviorId"], ["kind"], issues);
                 ValidateRequiredTarget(file, effect, path, typeIds, tagIds, issues);

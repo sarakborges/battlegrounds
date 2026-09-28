@@ -195,7 +195,10 @@ public sealed class MatchEngine
         foreach (var playerId in playersWhoFought)
         {
             if (match.TryGetPlayer(playerId, out var player))
+            {
                 player.ExpireUnitModifiers(UnitModifierDuration.UntilCombatEnd);
+                player.ExpireUnitBehaviors(UnitModifierDuration.UntilCombatEnd);
+            }
         }
 
         ApplyPowerChanges(match, powerChanges);

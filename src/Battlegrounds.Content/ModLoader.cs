@@ -169,7 +169,10 @@ public sealed class ModLoader
             "removeUnitModifier" => new RemoveUnitModifierEffectDefinition(
                 BuildTarget(data.Target),
                 data.ModifierKey ?? throw new InvalidDataException("Validated removeUnitModifier effect is missing modifierKey.")),
-            "addBehavior" => new AddBehaviorEffectDefinition(BuildTarget(data.Target), new BehaviorId(data.BehaviorId ?? throw new InvalidDataException("Validated addBehavior effect is missing behaviorId."))),
+            "addBehavior" => new AddBehaviorEffectDefinition(
+                BuildTarget(data.Target),
+                new BehaviorId(data.BehaviorId ?? throw new InvalidDataException("Validated addBehavior effect is missing behaviorId.")),
+                data.Duration ?? UnitModifierDuration.Persistent),
             "removeBehavior" => new RemoveBehaviorEffectDefinition(BuildTarget(data.Target), new BehaviorId(data.BehaviorId ?? throw new InvalidDataException("Validated removeBehavior effect is missing behaviorId."))),
             "addResource" => new AddResourceEffectDefinition(BuildRequiredValue(data.Amount, "addResource.amount")),
             "adjustUpgradeCost" => new AdjustUpgradeCostEffectDefinition(BuildRequiredValue(data.Amount, "adjustUpgradeCost.amount")),
