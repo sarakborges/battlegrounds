@@ -1,3 +1,4 @@
+using Battlegrounds.Content;
 using Battlegrounds.Core.Domain.Match;
 using Godot;
 
@@ -76,10 +77,10 @@ public partial class Main
 
         controlSpacer.Visible = false;
         balanceSpacer.Visible = false;
+        shopkeeper.SizeFlagsHorizontal = Control.SizeFlags.ShrinkCenter;
         shopkeeper.SizeFlagsVertical = Control.SizeFlags.ExpandFill;
         shopkeeper.MouseFilter = Control.MouseFilterEnum.Stop;
         shopkeeper.ClipContents = true;
-        BindShopkeeperCosmetic(shopkeeper);
 
         controlsRow.MoveChild(_upgradeButton, 0);
         controlsRow.MoveChild(tierBadge, 1);
@@ -91,6 +92,7 @@ public partial class Main
         if (shopkeeper.GetNodeOrNull<Control>("Content") is VBoxContainer shopkeeperContent)
         {
             shopkeeperContent.Alignment = BoxContainer.AlignmentMode.End;
+            shopkeeperContent.ZIndex = 2;
             if (shopkeeperContent.GetNodeOrNull<Label>("Name") is { } name)
                 name.Visible = false;
             if (shopkeeperContent.GetNodeOrNull<Label>("SellHint") is { } sellHint)
@@ -100,6 +102,8 @@ public partial class Main
                 sellHint.HorizontalAlignment = HorizontalAlignment.Center;
             }
         }
+
+        BindShopkeeperCosmetic(shopkeeper);
 
         _tavernUpgradeCost = EnsureTavernCostBadge(_upgradeButton, "UpgradeCost");
         _tavernRefreshCost = EnsureTavernCostBadge(_refreshButton, "RefreshCost");
@@ -125,17 +129,24 @@ public partial class Main
                 Name = "CosmeticArt",
                 ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize,
                 StretchMode = TextureRect.StretchModeEnum.KeepAspectCovered,
+                SizeFlagsHorizontal = Control.SizeFlags.ExpandFill,
+                SizeFlagsVertical = Control.SizeFlags.ExpandFill,
                 MouseFilter = Control.MouseFilterEnum.Ignore,
-                ZIndex = 0,
+                ZIndex = 1,
             };
+            art.CustomMinimumSize = new Vector2(
+                ResolvePresentationMetric(ModThemeMetricKeys.Layout.TavernShopkeeperWidth, 1.0f, 2048.0f),
+                ResolvePresentationMetric(ModThemeMetricKeys.Layout.TavernControlHeight, 1.0f, 2048.0f));
             shopkeeper.AddChild(art);
             shopkeeper.MoveChild(art, 0);
-            art.SetAnchorsAndOffsetsPreset(Control.LayoutPreset.FullRect);
         }
 
         var hasImage = PresentationTextures.TryGetShopkeeperImage(out var texture);
         art.Texture = texture;
         art.Visible = hasImage && texture is not null;
+
+        if (!art.Visible)
+            GD.PushWarning("Shopkeeper cosmetic could not be resolved; rendering the shopkeeper slot without art.");
     }
 
     private Label EnsureTavernCostBadge(Button button, string name)
