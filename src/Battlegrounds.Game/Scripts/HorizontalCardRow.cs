@@ -14,11 +14,11 @@ namespace Battlegrounds.Game;
 /// </summary>
 public partial class HorizontalCardRow : Container
 {
-    [Export] public float Gap { get; set; } = 8.0f;
-    [Export] public float PreferredCardWidth { get; set; } = 138.0f;
-    [Export] public float MinimumCardWidth { get; set; } = 78.0f;
-    [Export] public float PreferredCardHeight { get; set; } = 168.0f;
-    [Export] public float Padding { get; set; } = 4.0f;
+    [Export] public float Gap { get; set; }
+    [Export] public float PreferredCardWidth { get; set; }
+    [Export] public float MinimumCardWidth { get; set; }
+    [Export] public float PreferredCardHeight { get; set; }
+    [Export] public float Padding { get; set; }
 
     private bool IsOfferRow => Name == "OfferButtons";
     private bool IsFieldRow => Name == "FieldButtons";
@@ -29,7 +29,6 @@ public partial class HorizontalCardRow : Container
 
     public override void _Ready()
     {
-        ApplySemanticGeometry();
         SetProcess(IsOfferRow || IsFieldRow || IsReserveRow);
         QueueSort();
     }
@@ -85,41 +84,6 @@ public partial class HorizontalCardRow : Container
 
         if (IsFieldRow)
             LayoutInsertionZones(cards.Length, normalGeometry);
-    }
-
-    private void ApplySemanticGeometry()
-    {
-        switch (Name.ToString())
-        {
-            case "LeaderButtons":
-                Gap = 18.0f;
-                PreferredCardWidth = 164.0f;
-                MinimumCardWidth = 116.0f;
-                PreferredCardHeight = 200.0f;
-                Padding = 8.0f;
-                break;
-            case "OfferButtons":
-                Gap = 10.0f;
-                PreferredCardWidth = 124.0f;
-                MinimumCardWidth = 88.0f;
-                PreferredCardHeight = 142.0f;
-                Padding = 4.0f;
-                break;
-            case "FieldButtons":
-                Gap = 16.0f;
-                PreferredCardWidth = 148.0f;
-                MinimumCardWidth = 98.0f;
-                PreferredCardHeight = 204.0f;
-                Padding = 10.0f;
-                break;
-            case "ReserveButtons":
-                Gap = 4.0f;
-                PreferredCardWidth = 96.0f;
-                MinimumCardWidth = 70.0f;
-                PreferredCardHeight = 70.0f;
-                Padding = 2.0f;
-                break;
-        }
     }
 
     private void ConfigureOfferDrag()
