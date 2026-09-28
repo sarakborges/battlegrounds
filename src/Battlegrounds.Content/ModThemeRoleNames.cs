@@ -15,6 +15,10 @@ public static class ModThemeRoleNames
     {
         ModThemeComponentRoles.Button,
         ModThemeComponentRoles.ButtonPrimary,
+        ModThemeComponentRoles.ButtonTavernAction,
+        ModThemeComponentRoles.ButtonTavernUpgrade,
+        ModThemeComponentRoles.ButtonTavernRefresh,
+        ModThemeComponentRoles.ButtonTavernFreeze,
         ModThemeComponentRoles.Card,
         ModThemeComponentRoles.CardBoard,
         ModThemeComponentRoles.Input,
