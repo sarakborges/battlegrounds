@@ -1,0 +1,38 @@
+name: docs-turn-lifecycle-snapshot
+on:
+  push:
+    branches: [docs-turn-lifecycle-snapshot]
+permissions:
+  contents: write
+jobs:
+  docs:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+      - name: Update README
+        shell: python
+        run: |
+          from pathlib import Path
+          path = Path('README.md')
+          text = path.read_text()
+          old = 'Current trigger families include Unit events such as `onAcquire`, `onPlay`, `onCombine`, `onSummon`, `onAttack`, `onDamage`, `onDeath` and counted `afterFriendlyDeaths`'
+          new = 'Current trigger families include Unit events such as `onAcquire`, `onRelease`, `onPlay`, `onCombine`, `onSummon`, `onAttack`, `onDamage`, `onDeath` and counted `afterFriendlyDeaths`'
+          if old not in text:
+              raise SystemExit('trigger-family README text not found')
+          text = text.replace(old, new, 1)
+          anchor = 'Scoped event history supports counted conditions and activation limits without introducing a global event bus.\n'
+          addition = anchor + '\nPreparation `onTurnStart` / `onTurnEnd` freeze their eligible Unit listener list before resolving the current Power. Units created during that lifecycle wait until the next matching lifecycle, while snapshotted Units that die or leave the Field before their turn are skipped.\n'
+          if anchor not in text:
+              raise SystemExit('lifecycle README anchor not found')
+          path.write_text(text.replace(anchor, addition, 1))
+      - name: Commit docs to main
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add README.md
+          git commit -m "Document turn lifecycle listener snapshot" || exit 0
+          git push origin HEAD:main
