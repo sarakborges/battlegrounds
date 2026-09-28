@@ -7,14 +7,12 @@ public partial class Main
 {
     private PanelContainer? _cardInspectPanel;
     private Control? _cardInspectCanvas;
-    private VBoxContainer? _cardInspectContent;
     private TextureRect? _cardInspectArt;
     private Label? _cardInspectTitle;
     private Label? _cardInspectSubtitle;
     private Label? _cardInspectStats;
     private Label? _cardInspectDescription;
     private Label? _cardInspectDetails;
-    private Control? _cardInspectFooterSpacer;
     private PanelContainer? _cardInspectTierBadge;
     private Label? _cardInspectTierValue;
     private PanelContainer? _cardInspectAttackBadge;
@@ -45,18 +43,13 @@ public partial class Main
 
         var width = ResolvePresentationMetric(ModThemeMetricKeys.Card.InspectWidth, 120.0f, 1024.0f);
         var minimumHeight = ResolvePresentationMetric(ModThemeMetricKeys.Card.InspectMinimumHeight, 120.0f, 1400.0f);
-        var artHeight = ResolvePresentationMetric(ModThemeMetricKeys.Card.InspectArtHeight, 0.0f, 1024.0f);
-        var contentGap = ResolvePresentationMetric(ModThemeMetricKeys.Card.InspectContentGap, 0.0f, 128.0f);
         var badgeSize = ResolvePresentationMetric(ModThemeMetricKeys.Card.InspectBadgeSize, 16.0f, 160.0f);
         var badgeInset = ResolvePresentationMetric(ModThemeMetricKeys.Card.InspectBadgeInset, 0.0f, 96.0f);
 
         _cardInspectPanel!.CustomMinimumSize = new Vector2(width, minimumHeight);
         _cardInspectCanvas!.CustomMinimumSize = new Vector2(width, minimumHeight);
-        _cardInspectArt.CustomMinimumSize = new Vector2(0, artHeight);
-        _cardInspectContent!.AddThemeConstantOverride("separation", Mathf.RoundToInt(contentGap));
-        _cardInspectFooterSpacer!.CustomMinimumSize = hasTokenStats
-            ? new Vector2(0, badgeSize * 0.72f)
-            : Vector2.Zero;
+
+        LayoutInspectCardSlots(hasTokenStats);
         LayoutInspectBadge(_cardInspectTierBadge!, 0.0f, 0.0f, badgeInset, badgeInset, badgeSize);
         LayoutInspectBadge(_cardInspectAttackBadge!, 0.0f, 1.0f, badgeInset, -badgeInset - badgeSize, badgeSize);
         LayoutInspectBadge(_cardInspectHealthBadge!, 1.0f, 1.0f, -badgeInset - badgeSize, -badgeInset - badgeSize, badgeSize);
@@ -95,48 +88,40 @@ public partial class Main
             MouseFilter = Control.MouseFilterEnum.Ignore,
         };
         _cardInspectPanel.AddChild(_cardInspectCanvas);
-
-        _cardInspectContent = new VBoxContainer
-        {
-            MouseFilter = Control.MouseFilterEnum.Ignore,
-        };
-        _cardInspectCanvas.AddChild(_cardInspectContent);
-        _cardInspectContent.SetAnchorsAndOffsetsPreset(Control.LayoutPreset.FullRect);
+        _cardInspectCanvas.SetAnchorsAndOffsetsPreset(Control.LayoutPreset.FullRect);
 
         _cardInspectArt = new TextureRect
         {
-            SizeFlagsHorizontal = Control.SizeFlags.ExpandFill,
             ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize,
             StretchMode = TextureRect.StretchModeEnum.KeepAspectCovered,
             MouseFilter = Control.MouseFilterEnum.Ignore,
         };
-        _cardInspectContent.AddChild(_cardInspectArt);
+        _cardInspectCanvas.AddChild(_cardInspectArt);
 
         _cardInspectTitle = CreateInspectLabel("HeadingLabel", wrap: true);
         _cardInspectTitle.HorizontalAlignment = HorizontalAlignment.Center;
-        _cardInspectContent.AddChild(_cardInspectTitle);
+        _cardInspectTitle.VerticalAlignment = VerticalAlignment.Center;
+        _cardInspectCanvas.AddChild(_cardInspectTitle);
 
         _cardInspectSubtitle = CreateInspectLabel("CaptionLabel", wrap: true);
         _cardInspectSubtitle.HorizontalAlignment = HorizontalAlignment.Center;
-        _cardInspectContent.AddChild(_cardInspectSubtitle);
+        _cardInspectSubtitle.VerticalAlignment = VerticalAlignment.Center;
+        _cardInspectCanvas.AddChild(_cardInspectSubtitle);
 
         _cardInspectStats = CreateInspectLabel("BodyLabel", wrap: true);
         _cardInspectStats.HorizontalAlignment = HorizontalAlignment.Center;
-        _cardInspectContent.AddChild(_cardInspectStats);
+        _cardInspectStats.VerticalAlignment = VerticalAlignment.Center;
+        _cardInspectCanvas.AddChild(_cardInspectStats);
 
         _cardInspectDescription = CreateInspectLabel("BodyLabel", wrap: true);
         _cardInspectDescription.HorizontalAlignment = HorizontalAlignment.Center;
-        _cardInspectContent.AddChild(_cardInspectDescription);
+        _cardInspectDescription.VerticalAlignment = VerticalAlignment.Center;
+        _cardInspectCanvas.AddChild(_cardInspectDescription);
 
         _cardInspectDetails = CreateInspectLabel("CaptionLabel", wrap: true);
         _cardInspectDetails.HorizontalAlignment = HorizontalAlignment.Center;
-        _cardInspectContent.AddChild(_cardInspectDetails);
-
-        _cardInspectFooterSpacer = new Control
-        {
-            MouseFilter = Control.MouseFilterEnum.Ignore,
-        };
-        _cardInspectContent.AddChild(_cardInspectFooterSpacer);
+        _cardInspectDetails.VerticalAlignment = VerticalAlignment.Center;
+        _cardInspectCanvas.AddChild(_cardInspectDetails);
 
         (_cardInspectTierBadge, _cardInspectTierValue) = CreateInspectBadge("TierBadge", "TierValueLabel");
         (_cardInspectAttackBadge, _cardInspectAttackValue) = CreateInspectBadge("AttackBadge", "AttackValueLabel");
@@ -144,6 +129,41 @@ public partial class Main
         _cardInspectCanvas.AddChild(_cardInspectTierBadge);
         _cardInspectCanvas.AddChild(_cardInspectAttackBadge);
         _cardInspectCanvas.AddChild(_cardInspectHealthBadge);
+    }
+
+    private void LayoutInspectCardSlots(bool hasTokenStats)
+    {
+        // Stable semantic geometry inspired by the Battlegrounds full-card hover:
+        // portrait on top, name ribbon crossing its lower edge, rules text in the
+        // parchment body, type/details near the footer, and stat gems on corners.
+        LayoutInspectSlot(_cardInspectArt!, 0.105f, 0.055f, 0.895f, 0.485f);
+        LayoutInspectSlot(_cardInspectTitle!, 0.105f, 0.425f, 0.895f, 0.545f);
+        LayoutInspectSlot(_cardInspectSubtitle!, 0.15f, 0.535f, 0.85f, 0.595f);
+
+        if (hasTokenStats)
+        {
+            LayoutInspectSlot(_cardInspectDescription!, 0.13f, 0.59f, 0.87f, 0.775f);
+            LayoutInspectSlot(_cardInspectDetails!, 0.13f, 0.775f, 0.87f, 0.895f);
+            LayoutInspectSlot(_cardInspectStats!, 0.2f, 0.60f, 0.8f, 0.67f);
+        }
+        else
+        {
+            LayoutInspectSlot(_cardInspectStats!, 0.16f, 0.585f, 0.84f, 0.65f);
+            LayoutInspectSlot(_cardInspectDescription!, 0.13f, 0.65f, 0.87f, 0.80f);
+            LayoutInspectSlot(_cardInspectDetails!, 0.13f, 0.80f, 0.87f, 0.90f);
+        }
+    }
+
+    private static void LayoutInspectSlot(Control control, float left, float top, float right, float bottom)
+    {
+        control.AnchorLeft = left;
+        control.AnchorTop = top;
+        control.AnchorRight = right;
+        control.AnchorBottom = bottom;
+        control.OffsetLeft = 0;
+        control.OffsetTop = 0;
+        control.OffsetRight = 0;
+        control.OffsetBottom = 0;
     }
 
     private void PositionCardInspect(Control source)
@@ -217,8 +237,8 @@ public partial class Main
         var label = new Label
         {
             ThemeTypeVariation = variation,
-            SizeFlagsHorizontal = Control.SizeFlags.ExpandFill,
             MouseFilter = Control.MouseFilterEnum.Ignore,
+            ClipText = true,
         };
         if (wrap)
             label.AutowrapMode = TextServer.AutowrapMode.WordSmart;
