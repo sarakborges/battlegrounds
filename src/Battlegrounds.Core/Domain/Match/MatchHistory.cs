@@ -18,6 +18,7 @@ public sealed record MatchCombatPairing(
     PlayerId? EliminatedOpponentSourcePlayerId)
 {
     public bool UsesEliminatedOpponent => EliminatedOpponentSourcePlayerId is not null;
+    public bool IsBye => RightPlayerId is null && EliminatedOpponentSourcePlayerId is null;
 }
 
 public sealed class EliminatedOpponentSnapshot

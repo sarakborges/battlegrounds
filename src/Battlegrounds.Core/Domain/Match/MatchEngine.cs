@@ -16,22 +16,26 @@ public readonly record struct CombatPairing
 {
     public PlayerId LeftPlayerId { get; }
     public PlayerId? RightPlayerId { get; }
-    public bool UsesEliminatedOpponent => RightPlayerId is null;
+    public bool UsesEliminatedOpponent { get; }
+    public bool IsBye => RightPlayerId is null && !UsesEliminatedOpponent;
 
     public CombatPairing(PlayerId leftPlayerId, PlayerId rightPlayerId)
     {
         if (leftPlayerId == rightPlayerId) throw new ArgumentException("A player cannot be paired against itself.", nameof(rightPlayerId));
         LeftPlayerId = leftPlayerId;
         RightPlayerId = rightPlayerId;
+        UsesEliminatedOpponent = false;
     }
 
-    private CombatPairing(PlayerId playerId)
+    private CombatPairing(PlayerId playerId, bool usesEliminatedOpponent)
     {
         LeftPlayerId = playerId;
         RightPlayerId = null;
+        UsesEliminatedOpponent = usesEliminatedOpponent;
     }
 
-    public static CombatPairing VersusEliminatedOpponent(PlayerId playerId) => new(playerId);
+    public static CombatPairing VersusEliminatedOpponent(PlayerId playerId) => new(playerId, usesEliminatedOpponent: true);
+    public static CombatPairing Bye(PlayerId playerId) => new(playerId, usesEliminatedOpponent: false);
 }
 
 public sealed record CombatSettlement(
@@ -150,6 +154,9 @@ public sealed class MatchEngine
 
         foreach (var pairing in materializedPairings)
         {
+            if (pairing.IsBye)
+                continue;
+
             if (pairing.UsesEliminatedOpponent)
             {
                 var player = GetActivePlayer(match, pairing.LeftPlayerId);
@@ -285,29 +292,58 @@ public sealed class MatchEngine
 
     private static void ValidatePairings(IReadOnlyList<PlayerId> activePlayerIds, IReadOnlyList<CombatPairing> pairings, EliminatedOpponentSnapshot? eliminatedOpponent)
     {
-        var requiresEliminatedOpponent = activePlayerIds.Count % 2 != 0;
+        var requiresSpecialPairing = activePlayerIds.Count % 2 != 0;
         var eliminatedOpponentPairingCount = pairings.Count(pairing => pairing.UsesEliminatedOpponent);
-        if (requiresEliminatedOpponent && eliminatedOpponent is null)
-            throw new InvalidOperationException("An odd active-player count requires a snapshot from a previously eliminated player.");
-        var expectedEliminatedOpponentPairings = requiresEliminatedOpponent ? 1 : 0;
-        if (eliminatedOpponentPairingCount != expectedEliminatedOpponentPairings)
-            throw new ArgumentException(requiresEliminatedOpponent
-                ? "Odd-player combat requires exactly one eliminated-opponent pairing."
-                : "Eliminated-opponent pairing is only valid when the active-player count is odd.", nameof(pairings));
-        var expectedPairingCount = (activePlayerIds.Count / 2) + expectedEliminatedOpponentPairings;
-        if (pairings.Count != expectedPairingCount) throw new ArgumentException("Combat pairings must cover every active player exactly once.", nameof(pairings));
+        var byePairingCount = pairings.Count(pairing => pairing.IsBye);
+
+        if (!requiresSpecialPairing)
+        {
+            if (eliminatedOpponentPairingCount != 0 || byePairingCount != 0)
+            {
+                throw new ArgumentException(
+                    "Eliminated-opponent and bye pairings are only valid when the active-player count is odd.",
+                    nameof(pairings));
+            }
+        }
+        else if (eliminatedOpponent is null)
+        {
+            if (eliminatedOpponentPairingCount != 0 || byePairingCount != 1)
+            {
+                throw new ArgumentException(
+                    "Odd-player combat without an eliminated-opponent snapshot requires exactly one bye pairing.",
+                    nameof(pairings));
+            }
+        }
+        else if (eliminatedOpponentPairingCount != 1 || byePairingCount != 0)
+        {
+            throw new ArgumentException(
+                "Odd-player combat with an eliminated-opponent snapshot requires exactly one eliminated-opponent pairing.",
+                nameof(pairings));
+        }
+
+        var expectedPairingCount = (activePlayerIds.Count / 2) + (requiresSpecialPairing ? 1 : 0);
+        if (pairings.Count != expectedPairingCount)
+            throw new ArgumentException("Combat pairings must cover every active player exactly once.", nameof(pairings));
 
         var active = activePlayerIds.ToHashSet();
         var paired = new HashSet<PlayerId>();
         foreach (var pairing in pairings)
         {
-            if (!active.Contains(pairing.LeftPlayerId)) throw new ArgumentException("Combat pairings may only contain active match players.", nameof(pairings));
-            if (!paired.Add(pairing.LeftPlayerId)) throw new ArgumentException("An active player cannot appear in more than one combat pairing.", nameof(pairings));
-            if (pairing.UsesEliminatedOpponent) continue;
+            if (!active.Contains(pairing.LeftPlayerId))
+                throw new ArgumentException("Combat pairings may only contain active match players.", nameof(pairings));
+            if (!paired.Add(pairing.LeftPlayerId))
+                throw new ArgumentException("An active player cannot appear in more than one combat pairing.", nameof(pairings));
+            if (pairing.UsesEliminatedOpponent || pairing.IsBye)
+                continue;
+
             var rightPlayerId = pairing.RightPlayerId!.Value;
-            if (!active.Contains(rightPlayerId)) throw new ArgumentException("Combat pairings may only contain active match players.", nameof(pairings));
-            if (!paired.Add(rightPlayerId)) throw new ArgumentException("An active player cannot appear in more than one combat pairing.", nameof(pairings));
+            if (!active.Contains(rightPlayerId))
+                throw new ArgumentException("Combat pairings may only contain active match players.", nameof(pairings));
+            if (!paired.Add(rightPlayerId))
+                throw new ArgumentException("An active player cannot appear in more than one combat pairing.", nameof(pairings));
         }
-        if (paired.Count != active.Count) throw new ArgumentException("Combat pairings must cover every active player exactly once.", nameof(pairings));
+
+        if (paired.Count != active.Count)
+            throw new ArgumentException("Combat pairings must cover every active player exactly once.", nameof(pairings));
     }
 }

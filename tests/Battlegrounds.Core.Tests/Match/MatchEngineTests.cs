@@ -94,20 +94,30 @@ public sealed class MatchEngineTests
     }
 
     [Fact]
-    public void ResolveCombatRound_InitialOddPlayerCountWithoutEliminationSnapshot_IsRejected()
+    public void ResolveCombatRound_InitialOddPlayerCountUsesByeWithoutFakeSettlement()
     {
         var engine = CreateEngine(startingHealth: 10, minimumPlayers: 2, maximumPlayers: 3);
-        var match = engine.CreateMatch([new PlayerId(0), new PlayerId(1), new PlayerId(2)]);
+        var players = new[] { new PlayerId(0), new PlayerId(1), new PlayerId(2) };
+        var match = engine.CreateMatch(players);
         engine.BeginMatch(match);
         ReadyActive(engine, match);
 
-        Assert.Equal(MatchPhase.Combat, match.Phase);
-        Assert.Throws<InvalidOperationException>(() => engine.ResolveCombatRound(
+        var round = engine.ResolveCombatRound(
             match,
             [
-                new CombatPairing(new PlayerId(0), new PlayerId(1)),
-                CombatPairing.VersusEliminatedOpponent(new PlayerId(2)),
-            ]));
+                new CombatPairing(players[0], players[1]),
+                CombatPairing.Bye(players[2]),
+            ]);
+
+        Assert.Single(round.Settlements);
+        Assert.False(round.MatchFinished);
+        Assert.Equal(MatchPhase.Preparation, match.Phase);
+        Assert.Equal(2, match.Round);
+        Assert.Equal(10, match.Players.Single(player => player.Id == players[2]).Health);
+        var byeHistory = Assert.Single(match.CombatPairingHistory, entry => entry.IsBye);
+        Assert.Equal(players[2], byeHistory.LeftPlayerId);
+        Assert.Null(byeHistory.RightPlayerId);
+        Assert.Null(byeHistory.EliminatedOpponentSourcePlayerId);
     }
 
     [Fact]

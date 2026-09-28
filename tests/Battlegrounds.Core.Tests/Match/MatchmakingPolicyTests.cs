@@ -36,6 +36,31 @@ public sealed class MatchmakingPolicyTests
     }
 
     [Fact]
+    public void CreatePairings_InitialOddCountAssignsAndRotatesByeByHistory()
+    {
+        var players = Enumerable.Range(0, 3).Select(value => new PlayerId(value)).ToArray();
+        var match = MatchState.Create(players, new MatchRules(2, 3));
+        match.BeginPreparation();
+        match.BeginCombat();
+        var policy = new HistoryAwareCombatPairingPolicy();
+
+        var firstPairings = policy.CreatePairings(match, new MinimumRandomSource());
+
+        var firstBye = Assert.Single(firstPairings, pairing => pairing.IsBye);
+        Assert.Equal(players[0], firstBye.LeftPlayerId);
+        Assert.Single(firstPairings, pairing => !pairing.IsBye && !pairing.UsesEliminatedOpponent);
+
+        match.RecordCombatPairings(firstPairings, eliminatedOpponent: null);
+        match.BeginPreparation();
+        match.BeginCombat();
+
+        var secondPairings = policy.CreatePairings(match, new MinimumRandomSource());
+
+        var secondBye = Assert.Single(secondPairings, pairing => pairing.IsBye);
+        Assert.Equal(players[1], secondBye.LeftPlayerId);
+    }
+
+    [Fact]
     public void CreatePairings_DistributesEliminatedOpponentPairingsByHistory()
     {
         var players = Enumerable.Range(0, 4).Select(value => new PlayerId(value)).ToArray();
@@ -60,7 +85,7 @@ public sealed class MatchmakingPolicyTests
 
         var eliminatedOpponentPairing = Assert.Single(pairings, pairing => pairing.UsesEliminatedOpponent);
         Assert.Equal(players[1], eliminatedOpponentPairing.LeftPlayerId);
-        var livePairing = Assert.Single(pairings, pairing => !pairing.UsesEliminatedOpponent);
+        var livePairing = Assert.Single(pairings, pairing => !pairing.UsesEliminatedOpponent && !pairing.IsBye);
         Assert.Equal(players[0], livePairing.LeftPlayerId);
         Assert.Equal(players[2], livePairing.RightPlayerId);
     }
@@ -97,6 +122,7 @@ public sealed class MatchmakingPolicyTests
         Assert.Equal(left, history.LeftPlayerId);
         Assert.Equal(right, history.RightPlayerId);
         Assert.False(history.UsesEliminatedOpponent);
+        Assert.False(history.IsBye);
         Assert.Null(history.EliminatedOpponentSourcePlayerId);
     }
 
