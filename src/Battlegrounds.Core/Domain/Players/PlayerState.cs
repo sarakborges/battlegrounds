@@ -264,5 +264,10 @@ public sealed partial class PlayerState
 
     internal void ClearOfferFrozen() => IsOfferFrozen = false;
 
-    internal void MarkReadyForCombat() => IsReadyForCombat = true;
+    internal void MarkReadyForCombat()
+    {
+        if (PendingChoice is not null)
+            throw new InvalidOperationException("Players with a pending choice cannot be marked ready for combat.");
+        IsReadyForCombat = true;
+    }
 }

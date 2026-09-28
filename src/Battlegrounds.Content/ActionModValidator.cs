@@ -92,8 +92,15 @@ internal sealed class ActionModValidator
                                         ? eventName is "onActivate" or "onMatchStart" or "onTurnStart" or "onTurnEnd"
                                         : eventName is "onAcquire" or "onPlay" or "onTurnStart" or "onTurnEnd";
                                     var path = $"$.triggers[{triggerIndex}].effects[{effectIndex}]";
+                                    if (kind == "generateActionChoice" && eventName == "onTurnEnd")
+                                        allowed = false;
                                     if (!allowed)
-                                        issues.Add(new("INVALID_EFFECT_CONTEXT", file.Path, path + ".kind", "Action generation is only valid in preparation-only triggers."));
+                                    {
+                                        var message = kind == "generateActionChoice" && eventName == "onTurnEnd"
+                                            ? "Pending Action choices are not valid in onTurnEnd because preparation must transition cleanly to combat."
+                                            : "Action generation is only valid in preparation-only triggers.";
+                                        issues.Add(new("INVALID_EFFECT_CONTEXT", file.Path, path + ".kind", message));
+                                    }
                                     ValidateActionGenerationEffect(file.Path, effect, path, actionIds, issues);
                                 }
                             }

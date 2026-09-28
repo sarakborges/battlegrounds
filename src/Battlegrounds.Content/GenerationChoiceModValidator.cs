@@ -88,7 +88,18 @@ internal sealed class GenerationChoiceModValidator
                     }
                     else if (kind == "generateUnitChoice")
                     {
-                        ValidatePreparationContext(file.Path, path, eventName, powerMode, issues);
+                        if (eventName == "onTurnEnd")
+                        {
+                            issues.Add(new(
+                                "INVALID_EFFECT_CONTEXT",
+                                file.Path,
+                                path + ".kind",
+                                "Pending Unit choices are not valid in onTurnEnd because preparation must transition cleanly to combat."));
+                        }
+                        else
+                        {
+                            ValidatePreparationContext(file.Path, path, eventName, powerMode, issues);
+                        }
                         ValidateGenerateChoice(file.Path, effect, path, typeIds, tagIds, issues);
                     }
                 }
