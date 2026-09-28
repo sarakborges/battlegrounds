@@ -35,6 +35,9 @@ public sealed class ModValidator
         var actionIssues = new ActionModValidator().Validate(modDirectory)
             .Where(issue => !IsSupersededPersistentMutationIssue(issue))
             .Where(issue => !IsSupersededCombineIssue(issue));
+        var themeIssues = new ModThemeValidator().Validate(modDirectory)
+            .Where(issue => !ModThemeLoader.IsMetricsRootCompatibilityIssue(issue))
+            .Concat(new ModThemeMetricsValidator().Validate(modDirectory));
 
         var issues = baseIssues
             .Concat(powerIssues)
@@ -48,7 +51,7 @@ public sealed class ModValidator
             .Concat(new PresentationModValidator().Validate(modDirectory))
             .Concat(new PresentationAssetModValidator().Validate(modDirectory))
             .Concat(new ModInteractionSettingsValidator().Validate(modDirectory))
-            .Concat(new ModThemeValidator().Validate(modDirectory))
+            .Concat(themeIssues)
             .ToArray();
 
         var preliminaryReport = new ModValidationReport(issues);
