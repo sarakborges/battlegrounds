@@ -143,7 +143,10 @@ public sealed class CombatEngine
                         NativeGameEventKeys.UnitDamaged,
                         target.Definition,
                         resolveDeaths: false);
-                    damageEvents.Add(new GameEffectEvent(NativeTriggerKeys.OnDamage, target));
+                    damageEvents.Add(new GameEffectEvent(
+                        NativeTriggerKeys.OnDamage,
+                        target,
+                        GetLivingContextTargetInstanceId(world, attacker)));
                 }
                 if (damageToAttacker.DamageDealt > 0)
                 {
@@ -152,7 +155,10 @@ public sealed class CombatEngine
                         NativeGameEventKeys.UnitDamaged,
                         attacker.Definition,
                         resolveDeaths: false);
-                    damageEvents.Add(new GameEffectEvent(NativeTriggerKeys.OnDamage, attacker));
+                    damageEvents.Add(new GameEffectEvent(
+                        NativeTriggerKeys.OnDamage,
+                        attacker,
+                        GetLivingContextTargetInstanceId(world, target)));
                 }
                 if (damageEvents.Count > 0)
                 {
@@ -266,6 +272,13 @@ public sealed class CombatEngine
             runtime.Process(new GameEffectEvent(eventKey, unit));
         }
     }
+
+    private static UnitInstanceId? GetLivingContextTargetInstanceId(
+        CombatEffectWorld world,
+        CombatRuntimeUnit source) =>
+        source.IsAlive && world.TryGetUnit(source.InstanceId, out var current) && current.IsAlive
+            ? source.InstanceId
+            : null;
 
     private static DamageResult ApplyAttackDamage(
         CombatEffectWorld world,

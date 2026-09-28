@@ -129,7 +129,7 @@ For example:
 }
 ```
 
-`selected` is context-owned rather than synonymous with UI selection. During an activatable Power's `onActivate`, the selected target is supplied by the command issued by UI or AI. During a Unit's `onAttack`, Combat supplies the already-locked attack target. Triggers that do not have an explicit context target cannot use `selected`.
+`selected` is context-owned rather than synonymous with UI selection. During an activatable Power's `onActivate`, the selected target is supplied by the command issued by UI or AI. During a Unit's `onAttack`, Combat supplies the already-locked attack target. During a Unit's `onDamage`, Combat supplies the living targetable Unit that caused that damage when one exists. Triggers without an available context target resolve `selected` as empty.
 
 `self` and `selected` are already singular, so they cannot add another selection mode or a limit. Adjacent selections default to `relativeTo: "source"`, preserving the original friendly-only behavior around the source Unit's current field position. `relativeTo: "selected"` instead anchors `adjacent`, `leftAdjacent`, or `rightAdjacent` around the contextual selected Unit; it is valid only where such a context target exists and may use `scope: "enemy"` to select neighbors of an attack target. The anchor itself is not part of an adjacent result. Random selection samples without replacement and uses the injected deterministic RNG.
 
@@ -163,6 +163,12 @@ One attack attempt resolves in this order:
 If the attacker disappears before the strike, the attack ends. If the locked target disappears before the strike, the attack attempt does not silently choose a replacement target. A later extra-attack attempt, when applicable, performs its own fresh target selection. Because target locking happens first, its RNG draw also occurs before any random draws performed by that attempt's `onAttack` effects.
 
 This context is an engine mechanic, not a presentation keyword. A mod may label `onAttack` effects with any terminology it wants or expose no keyword at all.
+
+## Damage source context
+
+`onDamage` is the neutral trigger for effects that occur after a Unit actually takes positive damage. When the damage was caused by another Unit that is still alive and targetable when the trigger resolves, that source Unit is exposed through `scope: "selected"`. This applies uniformly to ordinary strike damage and authored `dealDamage` effects.
+
+If the damage source is not a targetable living Unit at resolution time—for example, an `onDeath` source that has already left the combat field—`selected` is absent and selected-target effects resolve no targets. Damage provenance never makes a dead or synthetic effect source targetable. Damage prevented by a barrier does not produce `onDamage`, because no positive damage occurred.
 
 ## Trigger conditions
 
