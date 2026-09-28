@@ -3,6 +3,14 @@ using Godot;
 
 namespace Battlegrounds.Game;
 
+internal sealed record PresentationCardInspectData(
+    string Title,
+    string Subtitle,
+    string Stats,
+    string? Description,
+    string? Details,
+    Texture2D? Texture);
+
 internal sealed partial class PresentationCardButton : Button
 {
     private const float DragThreshold = 5.0f;
@@ -13,6 +21,12 @@ internal sealed partial class PresentationCardButton : Button
     private readonly Label _subtitle;
     private readonly Label _stats;
     private readonly Label _description;
+    private readonly PanelContainer _tierBadge;
+    private readonly Label _tierValue;
+    private readonly PanelContainer _attackBadge;
+    private readonly Label _attackValue;
+    private readonly PanelContainer _healthBadge;
+    private readonly Label _healthValue;
     private string? _dragPayload;
     private bool _dragEnabled;
     private bool _dragActive;
@@ -20,12 +34,19 @@ internal sealed partial class PresentationCardButton : Button
     private Vector2 _dragPressPosition;
     private Action? _dragStarted;
     private Action? _dragEnded;
+    private bool _tokenMode;
+    private int? _tokenTier;
+    private int _tokenAttack;
+    private int _tokenHealth;
+    private PresentationCardInspectData? _inspectData;
 
     public PresentationCardButton()
     {
         Text = string.Empty;
         ThemeTypeVariation = "CardButton";
         ClipContents = true;
+        MouseEntered += HandleMouseEntered;
+        MouseExited += HandleMouseExited;
 
         var margin = IgnoreMouse(new MarginContainer());
         AddChild(margin);
@@ -64,11 +85,25 @@ internal sealed partial class PresentationCardButton : Button
         _column.AddChild(_subtitle);
         _column.AddChild(_stats);
         _column.AddChild(_description);
+
+        (_tierBadge, _tierValue) = CreateStatBadge("TierBadge", "TierValueLabel");
+        (_attackBadge, _attackValue) = CreateStatBadge("AttackBadge", "AttackValueLabel");
+        (_healthBadge, _healthValue) = CreateStatBadge("HealthBadge", "HealthValueLabel");
+        AddChild(_tierBadge);
+        AddChild(_attackBadge);
+        AddChild(_healthBadge);
+        AnchorStatBadges();
     }
 
     public override void _Ready()
     {
         ApplyFootprintForParent();
+        ApplyTokenVisualMode();
+    }
+
+    public override void _ExitTree()
+    {
+        FindMain()?.HideCardInspect(this);
     }
 
     public override void _GuiInput(InputEvent @event)
@@ -136,6 +171,37 @@ internal sealed partial class PresentationCardButton : Button
 
         _art.Texture = texture;
         _art.Visible = texture is not null;
+        _inspectData = new PresentationCardInspectData(
+            title,
+            subtitle,
+            stats,
+            description,
+            null,
+            texture);
+    }
+
+    public void ConfigureInspectDetails(string? details)
+    {
+        if (_inspectData is not null)
+            _inspectData = _inspectData with { Details = details };
+    }
+
+    public void ConfigureToken(int? tier, int attack, int health, string? inspectDetails = null)
+    {
+        _tokenMode = true;
+        _tokenTier = tier;
+        _tokenAttack = attack;
+        _tokenHealth = health;
+        _tierValue.Text = tier?.ToString() ?? string.Empty;
+        _attackValue.Text = attack.ToString();
+        _healthValue.Text = health.ToString();
+        TooltipText = string.Empty;
+
+        if (_inspectData is not null)
+            _inspectData = _inspectData with { Details = inspectDetails };
+
+        if (IsInsideTree())
+            ApplyTokenVisualMode();
     }
 
     public void ConfigureOfferDrag(int slot, bool enabled, Action? dragEnded = null) =>
@@ -184,6 +250,7 @@ internal sealed partial class PresentationCardButton : Button
     {
         _dragActive = true;
         var main = FindMain() ?? throw new InvalidOperationException("Presentation card is not attached to Main.");
+        main.HideCardInspect(this);
         SelfModulate = new Color(1, 1, 1, main.PreparationDragSourceOpacity);
         _dragStarted?.Invoke();
     }
@@ -216,6 +283,9 @@ internal sealed partial class PresentationCardButton : Button
             _stats.Text,
             _description.Text,
             _art.Texture);
+        preview.ConfigureInspectDetails(_inspectData?.Details);
+        if (_tokenMode)
+            preview.ConfigureToken(_tokenTier, _tokenAttack, _tokenHealth, _inspectData?.Details);
         root.AddChild(preview);
         return root;
     }
@@ -262,6 +332,77 @@ internal sealed partial class PresentationCardButton : Button
         _art.CustomMinimumSize = new Vector2(0, artHeight);
         _subtitle.Visible = showSubtitle && !string.IsNullOrWhiteSpace(_subtitle.Text);
         SetMeta("presentation_footprint", role);
+    }
+
+    private void ApplyTokenVisualMode()
+    {
+        if (!_tokenMode)
+            return;
+
+        ThemeTypeVariation = "BoardCardButton";
+        _title.Visible = false;
+        _subtitle.Visible = false;
+        _stats.Visible = false;
+        _description.Visible = false;
+        _tierBadge.Visible = _tokenTier.HasValue;
+        _attackBadge.Visible = true;
+        _healthBadge.Visible = true;
+        _art.SizeFlagsVertical = SizeFlags.ExpandFill;
+    }
+
+    private void HandleMouseEntered()
+    {
+        if (_dragActive || _inspectData is null)
+            return;
+
+        FindMain()?.ShowCardInspect(this, _inspectData);
+    }
+
+    private void HandleMouseExited()
+    {
+        FindMain()?.HideCardInspect(this);
+    }
+
+    private void AnchorStatBadges()
+    {
+        AnchorBadge(_tierBadge, 0, 0, 0, 0, 5, 5, 37, 37);
+        AnchorBadge(_attackBadge, 0, 1, 0, 1, 5, -37, 37, -5);
+        AnchorBadge(_healthBadge, 1, 1, 1, 1, -37, -37, -5, -5);
+    }
+
+    private static void AnchorBadge(
+        Control badge,
+        float anchorLeft,
+        float anchorTop,
+        float anchorRight,
+        float anchorBottom,
+        float offsetLeft,
+        float offsetTop,
+        float offsetRight,
+        float offsetBottom)
+    {
+        badge.AnchorLeft = anchorLeft;
+        badge.AnchorTop = anchorTop;
+        badge.AnchorRight = anchorRight;
+        badge.AnchorBottom = anchorBottom;
+        badge.OffsetLeft = offsetLeft;
+        badge.OffsetTop = offsetTop;
+        badge.OffsetRight = offsetRight;
+        badge.OffsetBottom = offsetBottom;
+    }
+
+    private static (PanelContainer Panel, Label Label) CreateStatBadge(string panelVariation, string labelVariation)
+    {
+        var panel = IgnoreMouse(new PanelContainer
+        {
+            ThemeTypeVariation = panelVariation,
+            Visible = false,
+        });
+        var label = CreateLabel(labelVariation);
+        label.HorizontalAlignment = HorizontalAlignment.Center;
+        label.VerticalAlignment = VerticalAlignment.Center;
+        panel.AddChild(label);
+        return (panel, label);
     }
 
     private Main? FindMain()
