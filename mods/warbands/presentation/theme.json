@@ -143,6 +143,23 @@
         "horizontal": "lg",
         "vertical": "lg"
       }
+    },
+    "drag.preview": {
+      "opacity": 0.12
+    },
+    "dropTarget": {
+      "backgroundColor": "success",
+      "borderColor": "success",
+      "borderWidth": 2,
+      "radius": "large",
+      "opacity": 0.18
+    },
+    "dropTarget.active": {
+      "backgroundColor": "focus",
+      "borderColor": "focus",
+      "borderWidth": 3,
+      "radius": "large",
+      "opacity": 0.34
     }
   },
   "screens": {
