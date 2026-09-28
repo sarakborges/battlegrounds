@@ -5,13 +5,7 @@ public sealed class ModValidator
     public ModValidationReport Validate(string modDirectory)
     {
         var baseIssues = new DirectoryModValidator().Validate(modDirectory).Issues
-            .Where(issue => !IsSupersededEffectSchemaIssue(issue))
-            .Where(issue => !IsSupersededStaticEffectValueIssue(issue))
-            .Where(issue => !IsSupersededGenerationIssue(issue))
-            .Where(issue => !IsSupersededPersistentMutationIssue(issue))
-            .Where(issue => !IsSupersededCombineIssue(issue))
-            .Where(issue => !(issue.Code == "UNKNOWN_KEY" && issue.File == "rules/preparation.json" && issue.Path == "$.actionOfferSizesByTier"))
-            .Where(issue => !(issue.Code == "UNKNOWN_KEY" && issue.File.StartsWith("content/leaders/", StringComparison.Ordinal) && issue.Path == "$.initialPowerId"));
+            .Where(issue => !IsSupersededBaseIssue(issue));
 
         var powerIssues = new PowerLifecycleModValidator().Validate(modDirectory)
             .Where(issue => !IsSupersededEffectSchemaIssue(issue))
@@ -56,6 +50,25 @@ public sealed class ModValidator
 
         var preliminaryReport = new ModValidationReport(issues);
         return new ModValidationReport(issues.Concat(new LeaderSelectionModValidator().Validate(modDirectory, preliminaryReport)));
+    }
+
+    private static bool IsSupersededBaseIssue(ModValidationIssue issue) =>
+        IsSupersededEffectSchemaIssue(issue) ||
+        IsSupersededStaticEffectValueIssue(issue) ||
+        IsSupersededGenerationIssue(issue) ||
+        IsSupersededPersistentMutationIssue(issue) ||
+        IsSupersededCombineIssue(issue) ||
+        IsSpecializedValidatorOwnedSchemaIssue(issue);
+
+    private static bool IsSpecializedValidatorOwnedSchemaIssue(ModValidationIssue issue)
+    {
+        if (issue.Code != "UNKNOWN_KEY") return false;
+
+        if (issue.File == "rules/preparation.json" && issue.Path == "$.actionOfferSizesByTier")
+            return true;
+
+        return issue.File.StartsWith("content/leaders/", StringComparison.Ordinal) &&
+               issue.Path == "$.initialPowerId";
     }
 
     private static bool IsSupersededEffectSchemaIssue(ModValidationIssue issue)
