@@ -16,7 +16,9 @@
     "border": "#584334",
     "focus": "#E4AF62",
     "danger": "#A93E35",
-    "success": "#759B54"
+    "dangerActive": "#E36A59",
+    "success": "#759B54",
+    "successActive": "#A6C979"
   },
   "typography": {
     "fonts": {},
@@ -147,19 +149,33 @@
     "drag.preview": {
       "opacity": 0.12
     },
-    "dropTarget": {
-      "backgroundColor": "success",
+    "dropTarget.valid": {
       "borderColor": "success",
       "borderWidth": 2,
       "radius": "large",
-      "opacity": 0.18
+      "padding": {
+        "horizontal": "sm",
+        "vertical": "sm"
+      }
     },
-    "dropTarget.active": {
-      "backgroundColor": "focus",
-      "borderColor": "focus",
-      "borderWidth": 3,
+    "dropTarget.valid.active": {
+      "borderColor": "successActive",
+      "borderWidth": 4,
+      "radius": "large"
+    },
+    "dropTarget.invalid": {
+      "borderColor": "danger",
+      "borderWidth": 2,
       "radius": "large",
-      "opacity": 0.34
+      "padding": {
+        "horizontal": "sm",
+        "vertical": "sm"
+      }
+    },
+    "dropTarget.invalid.active": {
+      "borderColor": "dangerActive",
+      "borderWidth": 4,
+      "radius": "large"
     }
   },
   "screens": {
