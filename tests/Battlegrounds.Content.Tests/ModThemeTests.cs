@@ -50,6 +50,61 @@ public sealed class ModThemeTests
     }
 
     [Fact]
+    public void Load_ThemeMetricsAreValidatedAndExposed()
+    {
+        var path = CreateTempMod();
+        try
+        {
+            UpdateTheme(path, root =>
+            {
+                root["metrics"] = new JsonObject
+                {
+                    ["row.offer.gap"] = 13.5,
+                    ["row.offer.preferredCardWidth"] = 144,
+                };
+            });
+
+            var report = new ModValidator().Validate(path);
+            var theme = new ModThemeLoader().Load(path);
+
+            Assert.True(report.IsValid);
+            Assert.Equal(13.5, theme.Metrics["row.offer.gap"]);
+            Assert.Equal(144, theme.Metrics["row.offer.preferredCardWidth"]);
+        }
+        finally
+        {
+            Directory.Delete(path, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void Validate_InvalidThemeMetricIsReported()
+    {
+        var path = CreateTempMod();
+        try
+        {
+            UpdateTheme(path, root =>
+            {
+                root["metrics"] = new JsonObject
+                {
+                    ["row.offer.gap"] = "wide",
+                };
+            });
+
+            var report = new ModValidator().Validate(path);
+
+            Assert.Contains(report.Issues, issue =>
+                issue.Code == "INVALID_VALUE" &&
+                issue.File == "presentation/theme.json" &&
+                issue.Path == "$.metrics.row.offer.gap");
+        }
+        finally
+        {
+            Directory.Delete(path, recursive: true);
+        }
+    }
+
+    [Fact]
     public void Load_MissingThemeProducesEmptyCatalog()
     {
         var path = CreateTempMod();
