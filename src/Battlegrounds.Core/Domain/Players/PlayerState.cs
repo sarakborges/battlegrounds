@@ -108,6 +108,24 @@ public sealed partial class PlayerState
             Health);
     }
 
+    internal IReadOnlyList<UnitDefinition> ReleasePoolClaimsAfterElimination()
+    {
+        if (!IsEliminated)
+            throw new InvalidOperationException("Pool claims may only be released after player elimination.");
+
+        var released = new List<UnitDefinition>(_offer);
+        _offer.Clear();
+        IsOfferFrozen = false;
+
+        foreach (var unit in _reserve.Concat(_field))
+        {
+            if (unit.ReleasePoolReturnDefinition() is UnitDefinition definition)
+                released.Add(definition);
+        }
+
+        return released.ToArray();
+    }
+
     internal bool CanAfford(int amount) => Resource >= amount;
 
     internal void SpendResource(int amount)

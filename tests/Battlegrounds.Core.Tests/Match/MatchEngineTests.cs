@@ -70,6 +70,56 @@ public sealed class MatchEngineTests
     }
 
     [Fact]
+    public void ResolveCombatRound_EliminationReturnsOwnedAndOfferedPoolCopies()
+    {
+        var unit = new UnitDefinition(new UnitId("fighter"), "Fighter", 1, 2, 2);
+        var catalog = new UnitCatalog([unit]);
+        var pool = new UnitPool(catalog, [new UnitPoolEntry(unit.Id, 10)]);
+        var engine = new MatchEngine(
+            new MatchRules(2, 2, startingHealth: 2),
+            new PreparationRules(
+                startingResource: 3,
+                resourcePerRound: 1,
+                maximumResource: 10,
+                acquireCost: 0,
+                releaseValue: 1,
+                refreshCost: 0,
+                fieldCapacity: 7,
+                reserveCapacity: 10,
+                maximumTier: 2,
+                offerSizesByTier: [1, 1],
+                initialUpgradeCostsByTier: [5]),
+            new CombatRules(StartingSidePolicy.LargerFieldThenRandom, PostCombatDamagePolicy.WinnerTierPlusSurvivorTiers),
+            pool,
+            new MinimumRandomSource(),
+            catalog,
+            new BehaviorCatalog([]));
+        var winnerId = new PlayerId(0);
+        var loserId = new PlayerId(1);
+        var match = engine.CreateMatch([winnerId, loserId]);
+        engine.BeginMatch(match);
+
+        AddUnit(engine, match, winnerId);
+        AddUnit(engine, match, winnerId);
+        AddUnit(engine, match, loserId);
+        Assert.True(engine.ExecutePreparation(match, new RefreshOfferCommand(loserId)).Succeeded);
+        Assert.Equal(6, pool.GetAvailableCopies(unit.Id));
+
+        ReadyActive(engine, match);
+        var round = engine.ResolveCombatRound(match, [new CombatPairing(winnerId, loserId)]);
+
+        Assert.True(round.MatchFinished);
+        var loser = match.Players.Single(player => player.Id == loserId);
+        Assert.True(loser.IsEliminated);
+        Assert.Empty(loser.Offer);
+        Assert.Single(loser.Field);
+        Assert.Equal(8, pool.GetAvailableCopies(unit.Id));
+        Assert.NotNull(match.LatestEliminatedOpponent);
+        Assert.Equal(loserId, match.LatestEliminatedOpponent!.SourcePlayerId);
+        Assert.Single(match.LatestEliminatedOpponent.Participant.Units);
+    }
+
+    [Fact]
     public void ResolveCombatRound_DrawDealsNoPlayerDamage()
     {
         var engine = CreateEngine(startingHealth: 10);
