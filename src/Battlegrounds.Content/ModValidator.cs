@@ -8,8 +8,7 @@ public sealed class ModValidator
             .Where(issue => !IsSupersededBaseIssue(issue));
 
         var powerIssues = new PowerLifecycleModValidator().Validate(modDirectory)
-            .Where(issue => !IsSupersededEffectSchemaIssue(issue))
-            .Where(issue => !IsSupersededStaticEffectValueIssue(issue));
+            .Where(issue => !IsSupersededEffectSchemaIssue(issue));
 
         var advancedIssues = new AdvancedEffectModValidator().Validate(modDirectory);
         var dynamicIssues = new DynamicEffectValueModValidator().Validate(modDirectory);
@@ -41,7 +40,6 @@ public sealed class ModValidator
 
     private static bool IsSupersededBaseIssue(ModValidationIssue issue) =>
         IsSupersededEffectSchemaIssue(issue) ||
-        IsSupersededStaticEffectValueIssue(issue) ||
         IsSpecializedValidatorOwnedSchemaIssue(issue);
 
     private static bool IsSpecializedValidatorOwnedSchemaIssue(ModValidationIssue issue)
@@ -69,18 +67,5 @@ public sealed class ModValidator
         if (issue.Code == "INVALID_PARAMETER" && issue.Path.EndsWith(".count", StringComparison.Ordinal)) return true;
         if (issue.Code == "UNSUPPORTED_TRIGGER" && issue.Message.Contains("afterEventCount", StringComparison.Ordinal)) return true;
         return issue.Code == "INVALID_VALUE" && issue.Path.EndsWith(".target.scope", StringComparison.Ordinal);
-    }
-
-    private static bool IsSupersededStaticEffectValueIssue(ModValidationIssue issue)
-    {
-        if (!issue.Path.Contains(".effects[", StringComparison.Ordinal) ||
-            !(issue.File.StartsWith("content/units/", StringComparison.Ordinal) || issue.File.StartsWith("content/powers/", StringComparison.Ordinal)))
-            return false;
-        var numericPath = issue.Path.EndsWith(".attack", StringComparison.Ordinal) ||
-                          issue.Path.EndsWith(".health", StringComparison.Ordinal) ||
-                          issue.Path.EndsWith(".amount", StringComparison.Ordinal) ||
-                          issue.Path.EndsWith(".count", StringComparison.Ordinal);
-        if (numericPath && issue.Code is "INVALID_TYPE" or "INVALID_VALUE") return true;
-        return issue.Code == "INVALID_VALUE" && issue.Message.StartsWith("modifyStats requires", StringComparison.Ordinal);
     }
 }
