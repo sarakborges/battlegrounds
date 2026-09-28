@@ -122,12 +122,6 @@ public partial class Main : Control
             throw new InvalidOperationException(
                 $"ParticipantCount must be between {mod.MatchRules.MinimumPlayers} and {mod.MatchRules.MaximumPlayers} for this mod.");
         }
-
-        if (ParticipantCount % 2 != 0)
-        {
-            throw new InvalidOperationException(
-                "ParticipantCount must currently be even because round one has no eliminated-opponent snapshot.");
-        }
     }
 
     private void Render()
