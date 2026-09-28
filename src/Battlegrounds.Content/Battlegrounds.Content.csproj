@@ -9,4 +9,8 @@
   <ItemGroup>
     <ProjectReference Include="../Battlegrounds.Core/Battlegrounds.Core.csproj" />
   </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="Defaults/presentation/theme.json" LogicalName="Battlegrounds.Content.EngineDefaultTheme.json" />
+  </ItemGroup>
 </Project>
