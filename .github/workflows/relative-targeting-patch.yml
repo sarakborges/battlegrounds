@@ -19,7 +19,9 @@ jobs:
         with:
           dotnet-version: '8.0.x'
       - name: Apply implementation
-        run: python3 .github/relative-targeting-patch.py
+        run: |
+          sed -i '425,479d' .github/relative-targeting-patch.py
+          python3 .github/relative-targeting-patch.py
       - name: Test core and content
         run: |
           dotnet test tests/Battlegrounds.Core.Tests/Battlegrounds.Core.Tests.csproj
