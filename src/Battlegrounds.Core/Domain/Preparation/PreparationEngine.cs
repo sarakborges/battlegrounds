@@ -83,6 +83,13 @@ public sealed class PreparationEngine
         match.MarkChanged();
     }
 
+    internal void ReclaimEliminatedPlayerPoolCopies(PlayerState player)
+    {
+        ArgumentNullException.ThrowIfNull(player);
+        foreach (var definition in player.ReleasePoolClaimsAfterElimination())
+            _unitPool.ReturnUnit(definition);
+    }
+
     public PreparationCommandResult Execute(MatchState match, IPreparationCommand command)
     {
         ArgumentNullException.ThrowIfNull(match);
