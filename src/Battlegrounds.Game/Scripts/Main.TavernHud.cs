@@ -14,6 +14,7 @@ public partial class Main
     private Label _tavernFreezeCost = null!;
     private HorizontalCardRow? _tavernActionOffers;
     private Label? _heroPortraitFallback;
+    private Label? _heroPortraitNameplate;
 
     private void RefreshTavernHud()
     {
@@ -119,6 +120,7 @@ public partial class Main
             _offerButtons.RemoveChild(card);
             _tavernActionOffers.AddChild(card);
             card.ThemeTypeVariation = "TavernActionButton";
+            ConfigureTavernActionPresentation(card);
             card.ConfigureOfferDrag(
                 slot,
                 CanUsePreparationDrag && !card.Disabled,
@@ -128,6 +130,30 @@ public partial class Main
         _tavernActionOffers.Visible = true;
         _offerButtons.QueueSort();
         _tavernActionOffers.QueueSort();
+    }
+
+    private static void ConfigureTavernActionPresentation(PresentationCardButton card)
+    {
+        var margin = card.GetChildren().OfType<MarginContainer>().FirstOrDefault();
+        var column = margin?.GetChildren().OfType<VBoxContainer>().FirstOrDefault();
+        if (column is null)
+            return;
+
+        column.Alignment = BoxContainer.AlignmentMode.Center;
+        var labels = column.GetChildren().OfType<Label>().ToArray();
+        if (labels.Length > 0)
+        {
+            labels[0].HorizontalAlignment = HorizontalAlignment.Center;
+            labels[0].VerticalAlignment = VerticalAlignment.Center;
+        }
+        if (labels.Length > 1)
+            labels[1].Visible = false;
+        if (labels.Length > 2)
+        {
+            labels[2].HorizontalAlignment = HorizontalAlignment.Center;
+            labels[2].VerticalAlignment = VerticalAlignment.Center;
+            labels[2].ThemeTypeVariation = "CaptionLabel";
+        }
     }
 
     private void CompleteSeparatedOfferDrag(int offerSlot)
@@ -390,6 +416,35 @@ public partial class Main
 
         _heroPortraitFallback.Text = BuildPortraitMonogram(_hudHeroName.Text);
         _heroPortraitFallback.Visible = !_hudHeroPortrait.Visible || _hudHeroPortrait.Texture is null;
+
+        _heroPortraitNameplate ??= frame.GetNodeOrNull<Label>("PortraitNameplate");
+        if (_heroPortraitNameplate is null)
+        {
+            _heroPortraitNameplate = new Label
+            {
+                Name = "PortraitNameplate",
+                ThemeTypeVariation = "CaptionLabel",
+                HorizontalAlignment = HorizontalAlignment.Center,
+                VerticalAlignment = VerticalAlignment.Center,
+                TextOverrunBehavior = TextServer.OverrunBehavior.TrimEllipsis,
+                MouseFilter = Control.MouseFilterEnum.Ignore,
+                ZIndex = 2,
+            };
+            _heroPortraitNameplate.AnchorLeft = 0.0f;
+            _heroPortraitNameplate.AnchorTop = 1.0f;
+            _heroPortraitNameplate.AnchorRight = 1.0f;
+            _heroPortraitNameplate.AnchorBottom = 1.0f;
+            _heroPortraitNameplate.OffsetLeft = 4.0f;
+            _heroPortraitNameplate.OffsetTop = -28.0f;
+            _heroPortraitNameplate.OffsetRight = -4.0f;
+            _heroPortraitNameplate.OffsetBottom = -4.0f;
+            frame.AddChild(_heroPortraitNameplate);
+        }
+
+        _heroPortraitNameplate.Text = _hudHeroName.Text;
+        _hudHeroName.Visible = false;
+        if (_hudHeroName.GetParent() is VBoxContainer heroCore)
+            heroCore.Alignment = BoxContainer.AlignmentMode.Center;
     }
 
     private static string BuildPortraitMonogram(string displayName)
