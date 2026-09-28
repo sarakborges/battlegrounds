@@ -93,18 +93,18 @@
     "layout.board.minimumHeight": 238,
     "layout.reserve.minimumHeight": 72,
     "layout.heroDock.gap": 8,
-    "layout.heroDock.healthBadge.width": 52,
-    "layout.heroDock.healthBadge.height": 52,
-    "layout.heroDock.armorBadge.width": 46,
-    "layout.heroDock.armorBadge.height": 46,
-    "layout.heroDock.heroCoreWidth": 210,
+    "layout.heroDock.healthBadge.width": 42,
+    "layout.heroDock.healthBadge.height": 42,
+    "layout.heroDock.armorBadge.width": 38,
+    "layout.heroDock.armorBadge.height": 38,
+    "layout.heroDock.heroCoreWidth": 116,
     "layout.heroDock.heroCoreGap": 2,
-    "layout.heroDock.powerButton.width": 136,
-    "layout.heroDock.powerButton.height": 34,
-    "layout.heroDock.combineButton.width": 96,
-    "layout.heroDock.combineButton.height": 38,
-    "layout.heroDock.resourceBadge.width": 58,
-    "layout.heroDock.resourceBadge.height": 52,
+    "layout.heroDock.powerButton.width": 116,
+    "layout.heroDock.powerButton.height": 56,
+    "layout.heroDock.combineButton.width": 84,
+    "layout.heroDock.combineButton.height": 32,
+    "layout.heroDock.resourceBadge.width": 176,
+    "layout.heroDock.resourceBadge.height": 42,
     "layout.turnRail.width": 108,
     "layout.turnRail.gap": 8,
     "layout.turnRail.endButtonHeight": 68,
@@ -159,8 +159,8 @@
     "card.reserve.artHeight": 30,
     "card.choice.minimumWidth": 116,
     "card.choice.artHeight": 78,
-    "hud.heroDock.minimumHeight": 102,
-    "hud.heroPortrait.size": 80,
+    "hud.heroDock.minimumHeight": 110,
+    "hud.heroPortrait.size": 88,
     "hud.opponent.entryHeight": 58,
     "hud.opponent.marginHorizontal": 5,
     "hud.opponent.marginVertical": 4,
@@ -349,9 +349,9 @@
       }
     },
     "panel.heroDock": {
-      "backgroundColor": "surfaceRaised",
-      "borderColor": "primary",
-      "borderWidth": 2,
+      "backgroundColor": "#00000000",
+      "borderColor": "#00000000",
+      "borderWidth": 0,
       "padding": {
         "horizontal": "sm",
         "vertical": "xs"
@@ -368,7 +368,7 @@
     "panel.heroPortrait": {
       "backgroundColor": "surfaceWarm",
       "borderColor": "primary",
-      "borderWidth": 2,
+      "borderWidth": 3,
       "padding": {
         "horizontal": "xs",
         "vertical": "xs"
@@ -424,6 +424,7 @@
       "backgroundColor": "healthSurface",
       "borderColor": "healthAccent",
       "borderWidth": 2,
+      "radius": "large",
       "padding": {
         "horizontal": "xs",
         "vertical": "xs"
@@ -433,6 +434,7 @@
       "backgroundColor": "armorSurface",
       "borderColor": "armorAccent",
       "borderWidth": 2,
+      "radius": "large",
       "padding": {
         "horizontal": "xs",
         "vertical": "xs"
@@ -442,8 +444,9 @@
       "backgroundColor": "resourceSurface",
       "borderColor": "resourceAccent",
       "borderWidth": 2,
+      "radius": "large",
       "padding": {
-        "horizontal": "xs",
+        "horizontal": "sm",
         "vertical": "xs"
       }
     },
@@ -481,8 +484,8 @@
       "borderWidth": 2
     },
     "label.heroName": {
-      "textColor": "text",
-      "fontSize": "heading"
+      "textColor": "textMuted",
+      "fontSize": "body"
     },
     "label.attack": {
       "textColor": "attackAccent",
