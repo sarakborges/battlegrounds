@@ -129,9 +129,23 @@ For example:
 }
 ```
 
-`selected` is context-owned rather than synonymous with UI selection. During an activatable Power's `onActivate`, the selected target is supplied by the command issued by UI or AI. During a Unit's `onAttack`, Combat supplies the already-locked attack target. During a Unit's `onDamage`, Combat supplies the living targetable Unit that caused that damage when one exists. Triggers without an available context target resolve `selected` as empty.
+`selected` is context-owned rather than synonymous with UI selection. During an activatable Power's `onActivate`, the selected target is supplied by the command issued by UI or AI. During a Unit's `onPlay`, the selected target is supplied by `DeployUnitCommand` when that trigger requires one. During a Unit's `onAttack`, Combat supplies the already-locked attack target. During a Unit's `onDamage`, Combat supplies the living targetable Unit that caused that damage when one exists. `onAcquire` has no interactive target-selection step, so it does not expose `selected`. Triggers without an available context target resolve `selected` as empty.
 
 `self` and `selected` are already singular, so they cannot add another selection mode or a limit. Adjacent selections default to `relativeTo: "source"`, preserving the original friendly-only behavior around the source Unit's current field position. `relativeTo: "selected"` instead anchors `adjacent`, `leftAdjacent`, or `rightAdjacent` around the contextual selected Unit; it is valid only where such a context target exists and may use `scope: "enemy"` to select neighbors of an attack target. The anchor itself is not part of an adjacent result. Random selection samples without replacement and uses the injected deterministic RNG.
+
+## Acquisition lifecycle
+
+`onAcquire` is the neutral Unit trigger for a real successful Unit acquisition from the current Offer. It is not synthesized by Unit generation, pending-choice resolution, copying, combining, summoning, or deployment.
+
+A successful Unit acquisition resolves in this order:
+
+1. remove the authored Unit copy from the Offer;
+2. create its pooled runtime instance and place that instance in Reserve;
+3. spend the normal acquisition resource cost;
+4. record the mechanical `unitAcquired` history event;
+5. resolve that instance's authored `onAcquire` triggers through `GameEffectRuntime`.
+
+Because the acquired instance is already in Reserve when the trigger resolves, `self` reads and persistent mutations apply to that exact authoritative runtime Unit. Resource effects also observe the post-payment state, so an authored reward may refund part or all of the acquisition cost. `onAcquire` is a Preparation-only context and may use Preparation-only generation, choice, Action-generation, and persistent-Unit-mutation effects. It does not expose `selected`, because acquisition itself has no interactive target-selection step.
 
 ## Attack target context
 

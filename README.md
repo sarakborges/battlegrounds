@@ -150,7 +150,7 @@ Current native handlers:
 
 Battlecry-like, Deathrattle-like, summon, damage, destroy, buff, Action and Power mechanics belong to the shared game domain, not to a specific phase.
 
-Current trigger families include Unit events such as `onPlay`, `onCombine`, `onSummon`, `onAttack`, `onDamage`, `onDeath` and counted `afterFriendlyDeaths`, plus shared lifecycle events such as `onMatchStart`, `onTurnStart`, `onTurnEnd`, `onCombatStart`, `onCombatEnd` and active-power `onActivate`.
+Current trigger families include Unit events such as `onAcquire`, `onPlay`, `onCombine`, `onSummon`, `onAttack`, `onDamage`, `onDeath` and counted `afterFriendlyDeaths`, plus shared lifecycle events such as `onMatchStart`, `onTurnStart`, `onTurnEnd`, `onCombatStart`, `onCombatEnd` and active-power `onActivate`.
 
 `onCombine` is specifically a Unit result lifecycle hook; Powers do not accept it as a Power trigger.
 
