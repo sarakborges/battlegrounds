@@ -77,7 +77,7 @@ jobs:
       - name: Test content
         run: dotnet test tests/Battlegrounds.Content.Tests/Battlegrounds.Content.Tests.csproj --no-restore
       - name: Smoke Warbands
-        run: dotnet run --project tools/Battlegrounds.Smoke/Battlegrounds.Smoke.csproj --no-restore -- mods/warbands
+        run: dotnet run --project tools/Battlegrounds.Simulator/Battlegrounds.Simulator.csproj --configuration Release -- --mod mods/warbands --matches 2 --players 4 --seed 23
       - name: Commit implementation
         run: |
           rm .github/workflows/unit-on-acquire-patch.yml
