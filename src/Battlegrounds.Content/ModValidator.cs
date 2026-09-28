@@ -30,7 +30,8 @@ public sealed class ModValidator
             .Where(issue => !IsSupersededPersistentMutationIssue(issue))
             .Where(issue => !IsSupersededCombineIssue(issue));
         var themeIssues = new ModThemeValidator().Validate(modDirectory)
-            .Concat(new ModThemeMetricsValidator().Validate(modDirectory));
+            .Concat(new ModThemeMetricsValidator().Validate(modDirectory))
+            .Concat(new ModThemeRoleValidator().Validate(modDirectory));
 
         var issues = baseIssues
             .Concat(powerIssues)
