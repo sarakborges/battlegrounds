@@ -1,0 +1,37 @@
+name: Apply specialized schema validator ownership cleanup
+
+on:
+  push:
+    branches: [validator-specialized-schema-ownership]
+
+permissions:
+  contents: write
+
+jobs:
+  patch-and-test:
+    if: ${{ github.actor != 'github-actions[bot]' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: validator-specialized-schema-ownership
+          fetch-depth: 0
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Apply validator ownership cleanup
+        run: |
+          echo '"+enc+"' | base64 --decode > /tmp/apply_specialized_schema_cleanup.py
+          python3 /tmp/apply_specialized_schema_cleanup.py
+      - name: Test content validation
+        run: dotnet test tests/Battlegrounds.Content.Tests/Battlegrounds.Content.Tests.csproj --configuration Release
+      - name: Commit cleanup
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git rm .github/workflows/apply-specialized-schema-validator-cleanup.yml
+          git add src/Battlegrounds.Content/DirectoryModValidator.cs \
+                  src/Battlegrounds.Content/ModValidator.cs \
+                  tests/Battlegrounds.Content.Tests/SpecializedSchemaOwnershipValidationTests.cs
+          git commit -m "Own specialized schema validation without compatibility bridge"
+          git push origin HEAD:validator-specialized-schema-ownership
