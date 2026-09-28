@@ -1,6 +1,6 @@
 # Mod-driven theming
 
-Visual theme data belongs to the selected mod. `Battlegrounds.Core` and `Battlegrounds.Application` do not interpret colors, fonts, button imagery, borders or screen backgrounds.
+Visual theme data belongs to the selected mod. `Battlegrounds.Core` and `Battlegrounds.Application` do not interpret colors, fonts, button imagery, borders, screen backgrounds or presentation layout metrics.
 
 A mod may provide an optional aggregate theme file at:
 
@@ -8,7 +8,7 @@ A mod may provide an optional aggregate theme file at:
 presentation/theme.json
 ```
 
-`Battlegrounds.Content` validates this file and all referenced assets. `Battlegrounds.Game` translates the validated, engine-neutral theme model into Godot `Theme`, font, texture and style resources at runtime.
+`Battlegrounds.Content` validates this file and all referenced assets. `Battlegrounds.Game` translates the validated, engine-neutral theme model into Godot `Theme`, font, texture, style and layout resources at runtime.
 
 The JSON contract intentionally contains no Godot class names or property names.
 
@@ -26,7 +26,7 @@ The JSON contract intentionally contains no Godot class names or property names.
   "typography": {
     "fonts": {
       "body": { "asset": "assets/fonts/body.ttf" },
-      "display": { "asset": "assets/fonts/display.otf" }
+      "display": { "asset": "assets/fonts/title.ttf" }
     },
     "sizes": {
       "caption": 12,
@@ -44,6 +44,15 @@ The JSON contract intentionally contains no Godot class names or property names.
   "shape": {
     "medium": 9,
     "large": 15
+  },
+  "metrics": {
+    "row.offer.gap": 10,
+    "row.offer.preferredCardWidth": 124,
+    "row.offer.minimumCardWidth": 88,
+    "row.offer.preferredCardHeight": 142,
+    "row.offer.padding": 4,
+    "drag.preview.scale": 1.045,
+    "drag.preview.rotationDegrees": -1.5
   },
   "components": {
     "button": {
@@ -84,11 +93,13 @@ Every section other than `version` is optional. Missing theme files and missing 
 The intended hierarchy is:
 
 ```text
-raw value -> semantic token -> component style
+raw value -> semantic token -> component/layout role
 #E7A93D -> primary -> button.primary.backgroundColor
+12 -> md -> card.padding.horizontal
+124 -> row.offer.preferredCardWidth
 ```
 
-UI code should consume semantic component roles rather than fandom-specific colors or files. Mods can therefore produce radically different visual identities without changing game mechanics or scene logic.
+UI code should consume semantic roles rather than fandom-specific colors, files or dimensions. Mods can therefore produce radically different visual identities without changing game mechanics or scene logic.
 
 ## Colors
 
@@ -118,6 +129,56 @@ A mod does not need to ship custom fonts. An empty `fonts` object keeps the plat
 `shape` contains integer corner-radius tokens. Component `radius` references one of these values.
 
 These remain presentation values; they do not alter game rules or authoritative state.
+
+## Layout metrics
+
+`metrics` is an optional map of finite numeric presentation values. It exists for semantic geometry that should be owned by the mod but is not naturally a reusable spacing token.
+
+The preparation adapter currently recognizes these row-role families:
+
+```text
+row.leader.*
+row.offer.*
+row.field.*
+row.reserve.*
+```
+
+Each family may define:
+
+```text
+gap
+preferredCardWidth
+minimumCardWidth
+preferredCardHeight
+padding
+```
+
+For example:
+
+```json
+{
+  "metrics": {
+    "row.field.gap": 16,
+    "row.field.preferredCardWidth": 148,
+    "row.field.minimumCardWidth": 98,
+    "row.field.preferredCardHeight": 204,
+    "row.field.padding": 10
+  }
+}
+```
+
+Preparation drag feedback also exposes two semantic metrics:
+
+```text
+drag.preview.scale
+drag.preview.rotationDegrees
+```
+
+They control only the lifted visual preview while dragging a card. The card's source opacity remains a component property on `components.drag.preview.opacity`.
+
+Missing metrics keep the adapter defaults, so existing mods do not need to declare layout values. The adapter clamps consumed metrics to safe presentation ranges; malformed or non-finite metric values reject the mod during validation.
+
+The `card` component's existing `padding` tokens are also consumed by the card's actual content container, rather than only by its background style. This keeps component styling and content geometry under the same mod-owned contract.
 
 ## Component roles
 
@@ -190,7 +251,7 @@ The contract currently reserves:
 - `preparation`
 - `combat`
 
-A screen style supports `backgroundColor` and `backgroundAsset`. Background assets are loaded from the selected mod at runtime.
+A screen style supports `backgroundColor` and `backgroundAsset`. Background assets are loaded from the selected mod at runtime. The launcher previews valid mod themes; preparation and combat switch between their semantic screen roles during play.
 
 ## Asset safety
 
@@ -209,7 +270,7 @@ A theme with invalid token references, malformed values or invalid asset paths r
 mod files
   -> Battlegrounds.Content validation + immutable theme catalog
   -> Battlegrounds.Game runtime translation
-  -> Godot Theme / FontFile / Texture2D / StyleBox resources
+  -> Godot Theme / FontFile / Texture2D / StyleBox / semantic layout values
 ```
 
 Core mechanics never read theme data. Theme choices cannot affect deterministic simulation, gameplay identity, pool ownership or command legality.

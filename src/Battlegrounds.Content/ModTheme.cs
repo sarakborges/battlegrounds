@@ -80,6 +80,7 @@ public sealed class ModThemeCatalog
     private readonly ReadOnlyDictionary<string, int> _fontSizes;
     private readonly ReadOnlyDictionary<string, int> _spacing;
     private readonly ReadOnlyDictionary<string, int> _radii;
+    private readonly ReadOnlyDictionary<string, double> _metrics;
     private readonly ReadOnlyDictionary<string, ModThemeStyle> _components;
     private readonly ReadOnlyDictionary<string, ModThemeScreenStyle> _screens;
 
@@ -89,10 +90,19 @@ public sealed class ModThemeCatalog
     public IReadOnlyDictionary<string, int> FontSizes => _fontSizes;
     public IReadOnlyDictionary<string, int> Spacing => _spacing;
     public IReadOnlyDictionary<string, int> Radii => _radii;
+    public IReadOnlyDictionary<string, double> Metrics => _metrics;
     public IReadOnlyDictionary<string, ModThemeStyle> Components => _components;
     public IReadOnlyDictionary<string, ModThemeScreenStyle> Screens => _screens;
 
-    public bool IsEmpty => _colors.Count == 0 && _fonts.Count == 0 && _components.Count == 0 && _screens.Count == 0;
+    public bool IsEmpty =>
+        _colors.Count == 0 &&
+        _fonts.Count == 0 &&
+        _fontSizes.Count == 0 &&
+        _spacing.Count == 0 &&
+        _radii.Count == 0 &&
+        _metrics.Count == 0 &&
+        _components.Count == 0 &&
+        _screens.Count == 0;
 
     internal ModThemeCatalog(
         int version,
@@ -101,6 +111,7 @@ public sealed class ModThemeCatalog
         IReadOnlyDictionary<string, int> fontSizes,
         IReadOnlyDictionary<string, int> spacing,
         IReadOnlyDictionary<string, int> radii,
+        IReadOnlyDictionary<string, double> metrics,
         IReadOnlyDictionary<string, ModThemeStyle> components,
         IReadOnlyDictionary<string, ModThemeScreenStyle> screens)
     {
@@ -110,6 +121,7 @@ public sealed class ModThemeCatalog
         _fontSizes = Copy(fontSizes);
         _spacing = Copy(spacing);
         _radii = Copy(radii);
+        _metrics = Copy(metrics);
         _components = Copy(components);
         _screens = Copy(screens);
     }
@@ -121,6 +133,7 @@ public sealed class ModThemeCatalog
         new Dictionary<string, int>(),
         new Dictionary<string, int>(),
         new Dictionary<string, int>(),
+        new Dictionary<string, double>(),
         new Dictionary<string, ModThemeStyle>(),
         new Dictionary<string, ModThemeScreenStyle>());
 
@@ -154,10 +167,16 @@ public sealed class ModThemeLoader
     public ModThemeCatalog Load(string modDirectory)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(modDirectory);
-        var issues = new ModThemeValidator().Validate(modDirectory);
-        if (issues.Count > 0) throw new ModValidationException(new ModValidationReport(issues));
+        var issues = new ModThemeValidator().Validate(modDirectory)
+            .Where(issue => !IsMetricsRootCompatibilityIssue(issue))
+            .Concat(new ModThemeMetricsValidator().Validate(modDirectory))
+            .ToArray();
+        if (issues.Length > 0) throw new ModValidationException(new ModValidationReport(issues));
         return LoadValidated(modDirectory);
     }
+
+    internal static bool IsMetricsRootCompatibilityIssue(ModValidationIssue issue) =>
+        issue.Code == "UNKNOWN_KEY" && issue.File == "presentation/theme.json" && issue.Path == "$.metrics";
 
     internal static ModThemeCatalog LoadValidated(string modDirectory)
     {
@@ -184,6 +203,7 @@ public sealed class ModThemeLoader
             data.Typography?.Sizes ?? new Dictionary<string, int>(),
             data.Spacing ?? new Dictionary<string, int>(),
             data.Shape ?? new Dictionary<string, int>(),
+            data.Metrics ?? new Dictionary<string, double>(),
             components,
             screens);
     }
@@ -217,6 +237,7 @@ public sealed class ModThemeLoader
         public ThemeTypographyData? Typography { get; set; }
         public Dictionary<string, int>? Spacing { get; set; }
         public Dictionary<string, int>? Shape { get; set; }
+        public Dictionary<string, double>? Metrics { get; set; }
         public Dictionary<string, ThemeStyleData>? Components { get; set; }
         public Dictionary<string, ThemeScreenData>? Screens { get; set; }
     }

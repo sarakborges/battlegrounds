@@ -21,6 +21,7 @@ public partial class Main
 
         ApplyScreenTheme(ModThemeScreenRoles.Preparation);
         ApplySemanticTypography();
+        ApplySemanticLayout();
         AppendLog($"Presentation theme v{_modTheme.Version} loaded from the selected mod.");
     }
 

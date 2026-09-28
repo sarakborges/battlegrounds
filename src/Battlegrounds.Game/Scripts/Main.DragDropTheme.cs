@@ -25,8 +25,11 @@ public partial class Main
         }
     }
 
-    internal float PreparationDragPreviewScale => 1.045f;
-    internal float PreparationDragPreviewRotationDegrees => -1.5f;
+    internal float PreparationDragPreviewScale =>
+        ResolveThemeMetric("drag.preview.scale", 1.045f, 0.5f, 2.0f);
+
+    internal float PreparationDragPreviewRotationDegrees =>
+        ResolveThemeMetric("drag.preview.rotationDegrees", -1.5f, -45.0f, 45.0f);
 
     internal float PreparationDropTargetPadding
     {
