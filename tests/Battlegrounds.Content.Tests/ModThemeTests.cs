@@ -29,12 +29,24 @@ public sealed class ModThemeTests
 
         var dragPreview = theme.Components["drag.preview"];
         Assert.Equal(0.12, dragPreview.Opacity);
-        var dropTarget = theme.Components["dropTarget"];
-        Assert.Equal("success", dropTarget.BorderColor);
-        Assert.Equal(2, dropTarget.BorderWidth);
-        var activeDropTarget = theme.Components["dropTarget.active"];
-        Assert.Equal("focus", activeDropTarget.BorderColor);
-        Assert.Equal(3, activeDropTarget.BorderWidth);
+
+        var validDropTarget = theme.Components["dropTarget.valid"];
+        Assert.Equal("success", validDropTarget.BorderColor);
+        Assert.Equal(2, validDropTarget.BorderWidth);
+        Assert.Equal("sm", validDropTarget.Padding?.Horizontal);
+
+        var activeValidDropTarget = theme.Components["dropTarget.valid.active"];
+        Assert.Equal("successActive", activeValidDropTarget.BorderColor);
+        Assert.Equal(4, activeValidDropTarget.BorderWidth);
+
+        var invalidDropTarget = theme.Components["dropTarget.invalid"];
+        Assert.Equal("danger", invalidDropTarget.BorderColor);
+        Assert.Equal(2, invalidDropTarget.BorderWidth);
+        Assert.Equal("sm", invalidDropTarget.Padding?.Horizontal);
+
+        var activeInvalidDropTarget = theme.Components["dropTarget.invalid.active"];
+        Assert.Equal("dangerActive", activeInvalidDropTarget.BorderColor);
+        Assert.Equal(4, activeInvalidDropTarget.BorderWidth);
     }
 
     [Fact]
