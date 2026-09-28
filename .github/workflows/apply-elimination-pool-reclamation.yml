@@ -1,0 +1,76 @@
+name: Apply elimination pool reclamation
+
+on:
+  push:
+    branches:
+      - elimination-pool-reclamation
+    paths:
+      - .github/workflows/apply-elimination-pool-reclamation.yml
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: elimination-pool-reclamation
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Reclaim eliminated player pool copies
+        shell: python
+        run: |
+          from pathlib import Path
+
+          path = Path('src/Battlegrounds.Core/Domain/Units/UnitInstance.cs')
+          text = path.read_text()
+          needle = '''    internal void ModifyStats(int attackDelta, int healthDelta)\n    {\n'''
+          insert = '''    internal UnitDefinition? ReleasePoolReturnDefinition()\n    {\n        var definition = PoolReturnDefinition;\n        PoolReturnDefinition = null;\n        return definition;\n    }\n\n    internal void ModifyStats(int attackDelta, int healthDelta)\n    {\n'''
+          if needle not in text:
+              raise SystemExit('UnitInstance insertion point not found')
+          path.write_text(text.replace(needle, insert, 1))
+
+          path = Path('src/Battlegrounds.Core/Domain/Players/PlayerState.cs')
+          text = path.read_text()
+          needle = '''    internal bool CanAfford(int amount) => Resource >= amount;\n'''
+          insert = '''    internal IReadOnlyList<UnitDefinition> ReleasePoolClaimsAfterElimination()\n    {\n        if (!IsEliminated)\n            throw new InvalidOperationException("Pool claims may only be released after player elimination.");\n\n        var released = new List<UnitDefinition>(_offer);\n        _offer.Clear();\n        IsOfferFrozen = false;\n\n        foreach (var unit in _reserve.Concat(_field))\n        {\n            if (unit.ReleasePoolReturnDefinition() is UnitDefinition definition)\n                released.Add(definition);\n        }\n\n        return released.ToArray();\n    }\n\n    internal bool CanAfford(int amount) => Resource >= amount;\n'''
+          if needle not in text:
+              raise SystemExit('PlayerState insertion point not found')
+          path.write_text(text.replace(needle, insert, 1))
+
+          path = Path('src/Battlegrounds.Core/Domain/Preparation/PreparationEngine.cs')
+          text = path.read_text()
+          needle = '''    public PreparationCommandResult Execute(MatchState match, IPreparationCommand command)\n    {\n'''
+          insert = '''    internal void ReclaimEliminatedPlayerPoolCopies(PlayerState player)\n    {\n        ArgumentNullException.ThrowIfNull(player);\n        foreach (var definition in player.ReleasePoolClaimsAfterElimination())\n            _unitPool.ReturnUnit(definition);\n    }\n\n    public PreparationCommandResult Execute(MatchState match, IPreparationCommand command)\n    {\n'''
+          if needle not in text:
+              raise SystemExit('PreparationEngine insertion point not found')
+          path.write_text(text.replace(needle, insert, 1))
+
+          path = Path('src/Battlegrounds.Core/Domain/Match/MatchEngine.cs')
+          text = path.read_text()
+          needle = '''        ApplyPowerChanges(match, powerChanges);\n        match.RecordEliminations(newlyEliminated, healthBeforeCombat);\n        match.RecordCombatPairings(materializedPairings, eliminatedOpponent);\n'''
+          insert = '''        ApplyPowerChanges(match, powerChanges);\n        match.RecordEliminations(newlyEliminated, healthBeforeCombat);\n        foreach (var playerId in newlyEliminated)\n        {\n            if (!match.TryGetPlayer(playerId, out var eliminatedPlayer))\n                throw new InvalidOperationException($"Cannot reclaim pool copies for unknown eliminated player '{playerId}'.");\n            _preparationEngine.ReclaimEliminatedPlayerPoolCopies(eliminatedPlayer);\n        }\n        match.RecordCombatPairings(materializedPairings, eliminatedOpponent);\n'''
+          if needle not in text:
+              raise SystemExit('MatchEngine settlement insertion point not found')
+          path.write_text(text.replace(needle, insert, 1))
+
+          path = Path('tests/Battlegrounds.Core.Tests/Match/MatchEngineTests.cs')
+          text = path.read_text()
+          needle = '''    [Fact]\n    public void ResolveCombatRound_DrawDealsNoPlayerDamage()\n'''
+          test = '''    [Fact]\n    public void ResolveCombatRound_EliminationReturnsOwnedAndOfferedPoolCopies()\n    {\n        var unit = new UnitDefinition(new UnitId("fighter"), "Fighter", 1, 2, 2);\n        var catalog = new UnitCatalog([unit]);\n        var pool = new UnitPool(catalog, [new UnitPoolEntry(unit.Id, 10)]);\n        var engine = new MatchEngine(\n            new MatchRules(2, 2, startingHealth: 2),\n            new PreparationRules(\n                startingResource: 3,\n                resourcePerRound: 1,\n                maximumResource: 10,\n                acquireCost: 0,\n                releaseValue: 1,\n                refreshCost: 0,\n                fieldCapacity: 7,\n                reserveCapacity: 10,\n                maximumTier: 2,\n                offerSizesByTier: [1, 1],\n                initialUpgradeCostsByTier: [5]),\n            new CombatRules(StartingSidePolicy.LargerFieldThenRandom, PostCombatDamagePolicy.WinnerTierPlusSurvivorTiers),\n            pool,\n            new MinimumRandomSource(),\n            catalog,\n            new BehaviorCatalog([]));\n        var winnerId = new PlayerId(0);\n        var loserId = new PlayerId(1);\n        var match = engine.CreateMatch([winnerId, loserId]);\n        engine.BeginMatch(match);\n\n        AddUnit(engine, match, winnerId);\n        AddUnit(engine, match, winnerId);\n        AddUnit(engine, match, loserId);\n        Assert.True(engine.ExecutePreparation(match, new RefreshOfferCommand(loserId)).Succeeded);\n        Assert.Equal(6, pool.GetAvailableCopies(unit.Id));\n\n        ReadyActive(engine, match);\n        var round = engine.ResolveCombatRound(match, [new CombatPairing(winnerId, loserId)]);\n\n        Assert.True(round.MatchFinished);\n        var loser = match.Players.Single(player => player.Id == loserId);\n        Assert.True(loser.IsEliminated);\n        Assert.Empty(loser.Offer);\n        Assert.Single(loser.Field);\n        Assert.Equal(8, pool.GetAvailableCopies(unit.Id));\n        Assert.NotNull(match.LatestEliminatedOpponent);\n        Assert.Equal(loserId, match.LatestEliminatedOpponent!.SourcePlayerId);\n        Assert.Single(match.LatestEliminatedOpponent.Participant.Units);\n    }\n\n    [Fact]\n    public void ResolveCombatRound_DrawDealsNoPlayerDamage()\n'''
+          if needle not in text:
+              raise SystemExit('MatchEngineTests insertion point not found')
+          path.write_text(text.replace(needle, test, 1))
+      - name: Test core
+        run: dotnet test tests/Battlegrounds.Core.Tests/Battlegrounds.Core.Tests.csproj --configuration Release
+      - name: Commit implementation
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git rm .github/workflows/apply-elimination-pool-reclamation.yml
+          git add src/Battlegrounds.Core/Domain/Units/UnitInstance.cs src/Battlegrounds.Core/Domain/Players/PlayerState.cs src/Battlegrounds.Core/Domain/Preparation/PreparationEngine.cs src/Battlegrounds.Core/Domain/Match/MatchEngine.cs tests/Battlegrounds.Core.Tests/Match/MatchEngineTests.cs
+          git commit -m "Reclaim pooled units on player elimination"
+          git push origin HEAD:elimination-pool-reclamation
