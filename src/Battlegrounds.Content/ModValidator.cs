@@ -34,5 +34,4 @@ public sealed class ModValidator
         var preliminaryReport = new ModValidationReport(issues);
         return new ModValidationReport(issues.Concat(new LeaderSelectionModValidator().Validate(modDirectory, preliminaryReport)));
     }
-
 }
