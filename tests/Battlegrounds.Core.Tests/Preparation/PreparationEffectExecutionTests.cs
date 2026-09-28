@@ -281,6 +281,47 @@ public sealed class PreparationEffectExecutionTests
         Assert.Empty(player.Field);
     }
 
+    [Fact]
+    public void Release_OnReleaseRunsAfterSourceLeavesFieldAndBaseRewardIsApplied()
+    {
+        var released = new UnitDefinition(
+            new UnitId("released"),
+            "Released",
+            1,
+            2,
+            2,
+            triggers:
+            [
+                new TriggerDefinition(
+                    NativeTriggerKeys.OnRelease,
+                    [
+                        new ModifyStatsEffectDefinition(new EffectTargetSelector(EffectTargetScope.Friendly), 1, 2),
+                        new AddResourceEffectDefinition(new SourceStatEffectValueExpression(EffectStat.Attack)),
+                    ]),
+            ]);
+        var ally = new UnitDefinition(new UnitId("ally"), "Ally", 1, 1, 1);
+
+        var setup = CreateStartedMatch([released, ally], [released, ally], startingResource: 0, acquireCost: 0);
+        var player = setup.Match.Players[0];
+        AcquireById(setup.Engine, setup.Match, player.Id, released.Id);
+        Assert.True(setup.Engine.Execute(setup.Match, new DeployUnitCommand(player.Id, 0)).Succeeded);
+        AcquireById(setup.Engine, setup.Match, player.Id, ally.Id);
+        Assert.True(setup.Engine.Execute(setup.Match, new DeployUnitCommand(player.Id, 0)).Succeeded);
+
+        var releasedUnit = player.Field.Single(unit => unit.Definition.Id == released.Id);
+        var releasedIndex = Enumerable.Range(0, player.Field.Count).Single(index => player.Field[index].Id == releasedUnit.Id);
+        Assert.True(setup.Engine.Execute(setup.Match, new ReleaseUnitCommand(player.Id, releasedIndex)).Succeeded);
+
+        var remaining = Assert.Single(player.Field);
+        Assert.Equal(ally.Id, remaining.Definition.Id);
+        Assert.Equal(2, remaining.Attack);
+        Assert.Equal(3, remaining.Health);
+        Assert.Equal(2, releasedUnit.Attack);
+        Assert.Equal(2, releasedUnit.Health);
+        Assert.Equal(3, player.Resource);
+        Assert.Equal(1, setup.Pool.GetAvailableCopies(released.Id));
+    }
+
     private static void AcquireById(
         PreparationEngine engine,
         MatchState match,

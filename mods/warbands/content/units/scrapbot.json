@@ -7,5 +7,12 @@
   "behaviors": ["warded"],
   "types": ["machine"],
   "tags": ["starter"],
-  "triggers": []
+  "triggers": [
+    {
+      "event": "onRelease",
+      "effects": [
+        { "kind": "addResource", "amount": 1 }
+      ]
+    }
+  ]
 }
