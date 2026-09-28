@@ -5,13 +5,41 @@
   "attack": 5,
   "health": 6,
   "behaviors": [],
-  "types": ["machine"],
+  "types": [
+    "machine"
+  ],
   "tags": [],
   "triggers": [
     {
       "event": "onCombatStart",
       "effects": [
-        { "kind": "modifyStats", "target": { "scope": "friendly", "selection": "all", "typeId": "machine" }, "health": 1 }
+        {
+          "kind": "modifyStats",
+          "target": {
+            "scope": "friendly",
+            "selection": "all",
+            "typeId": "machine"
+          },
+          "health": 1
+        }
+      ]
+    },
+    {
+      "event": "afterEventCount",
+      "count": 1,
+      "counter": {
+        "event": "unitAcquired",
+        "scope": "turn",
+        "typeId": "machine"
+      },
+      "effects": [
+        {
+          "kind": "modifyStats",
+          "target": {
+            "scope": "self"
+          },
+          "health": 1
+        }
       ]
     }
   ]

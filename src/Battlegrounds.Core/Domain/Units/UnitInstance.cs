@@ -56,13 +56,17 @@ public sealed class UnitInstance
         Health += healthDelta;
     }
 
-    internal void ApplyModifier(string key, int attackDelta, int healthDelta)
+    internal void ApplyModifier(
+        string key,
+        int attackDelta,
+        int healthDelta,
+        UnitModifierDuration duration = UnitModifierDuration.Persistent)
     {
         if (string.IsNullOrWhiteSpace(key)) throw new ArgumentException("Modifier key cannot be empty.", nameof(key));
         if (attackDelta == 0 && healthDelta == 0) return;
 
         RemoveModifier(key);
-        var modifier = new UnitModifierState(key, attackDelta, healthDelta);
+        var modifier = new UnitModifierState(key, attackDelta, healthDelta, duration);
         _modifiers.Add(modifier);
         ModifyStats(attackDelta, healthDelta);
     }
@@ -76,6 +80,15 @@ public sealed class UnitInstance
         _modifiers.RemoveAt(index);
         ModifyStats(-modifier.AttackDelta, -modifier.HealthDelta);
         return true;
+    }
+
+    internal void ExpireModifiers(UnitModifierDuration duration)
+    {
+        var keys = _modifiers
+            .Where(modifier => modifier.Duration == duration)
+            .Select(modifier => modifier.Key)
+            .ToArray();
+        foreach (var key in keys) RemoveModifier(key);
     }
 
     internal void Transform(UnitDefinition definition)
@@ -102,7 +115,7 @@ public sealed class UnitInstance
         _behaviors.AddRange(source.Behaviors);
         _modifiers.Clear();
         _modifiers.AddRange(source.Modifiers.Select(modifier =>
-            new UnitModifierState(modifier.Key, modifier.AttackDelta, modifier.HealthDelta)));
+            new UnitModifierState(modifier.Key, modifier.AttackDelta, modifier.HealthDelta, modifier.Duration)));
     }
 
     internal void TakeDamage(int amount)

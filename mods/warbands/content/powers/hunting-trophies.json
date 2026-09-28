@@ -1,0 +1,21 @@
+{
+  "id": "hunting-trophies",
+  "name": "Hunting Trophies",
+  "triggers": [
+    {
+      "event": "afterEventCount",
+      "count": 2,
+      "counter": {
+        "event": "unitAcquired",
+        "scope": "turn",
+        "typeId": "beast"
+      },
+      "effects": [
+        {
+          "kind": "addResource",
+          "amount": 1
+        }
+      ]
+    }
+  ]
+}

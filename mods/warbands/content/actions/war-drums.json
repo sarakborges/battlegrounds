@@ -1,0 +1,17 @@
+{
+  "id": "war-drums",
+  "name": "War Drums",
+  "tier": 2,
+  "cost": 1,
+  "effects": [
+    {
+      "kind": "applyUnitModifier",
+      "target": {
+        "scope": "selected"
+      },
+      "modifierKey": "war-drums-next-combat",
+      "attack": 4,
+      "duration": "untilCombatEnd"
+    }
+  ]
+}

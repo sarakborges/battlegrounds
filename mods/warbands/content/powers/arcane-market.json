@@ -1,0 +1,18 @@
+{
+  "id": "arcane-market",
+  "name": "Arcane Market",
+  "activation": {
+    "cost": 0,
+    "maxUsesPerTurn": 1
+  },
+  "triggers": [
+    {
+      "event": "onActivate",
+      "effects": [
+        {
+          "kind": "refreshOffer"
+        }
+      ]
+    }
+  ]
+}

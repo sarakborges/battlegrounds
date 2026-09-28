@@ -151,6 +151,7 @@ public sealed class MatchEngine
         var powerChanges = new Dictionary<PlayerId, PowerId>();
         var settlements = new List<CombatSettlement>(materializedPairings.Length);
         var newlyEliminated = new List<PlayerId>();
+        var playersWhoFought = new HashSet<PlayerId>();
 
         foreach (var pairing in materializedPairings)
         {
@@ -160,6 +161,7 @@ public sealed class MatchEngine
             if (pairing.UsesEliminatedOpponent)
             {
                 var player = GetActivePlayer(match, pairing.LeftPlayerId);
+                playersWhoFought.Add(player.Id);
                 var snapshot = eliminatedOpponent ?? throw new InvalidOperationException("No eliminated-opponent snapshot is available for this round.");
                 var input = new CombatInput(
                     CombatParticipant.FromField(player.Id, player.Field, player.Leader?.CurrentPowerId, player.EffectHistory.Snapshot()),
@@ -176,6 +178,8 @@ public sealed class MatchEngine
             var rightPlayerId = pairing.RightPlayerId!.Value;
             var left = GetActivePlayer(match, pairing.LeftPlayerId);
             var right = GetActivePlayer(match, rightPlayerId);
+            playersWhoFought.Add(left.Id);
+            playersWhoFought.Add(right.Id);
             var liveInput = new CombatInput(
                 CombatParticipant.FromField(left.Id, left.Field, left.Leader?.CurrentPowerId, left.EffectHistory.Snapshot()),
                 CombatParticipant.FromField(right.Id, right.Field, right.Leader?.CurrentPowerId, right.EffectHistory.Snapshot()));
@@ -186,6 +190,12 @@ public sealed class MatchEngine
             settlements.Add(SettleLiveCombat(left, right, liveInput, liveResult));
             if (left.IsEliminated) newlyEliminated.Add(left.Id);
             if (right.IsEliminated) newlyEliminated.Add(right.Id);
+        }
+
+        foreach (var playerId in playersWhoFought)
+        {
+            if (match.TryGetPlayer(playerId, out var player))
+                player.ExpireUnitModifiers(UnitModifierDuration.UntilCombatEnd);
         }
 
         ApplyPowerChanges(match, powerChanges);

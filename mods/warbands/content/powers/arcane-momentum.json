@@ -1,0 +1,20 @@
+{
+  "id": "arcane-momentum",
+  "name": "Arcane Momentum",
+  "triggers": [
+    {
+      "event": "afterEventCount",
+      "count": 2,
+      "counter": {
+        "event": "actionPlayed",
+        "scope": "turn"
+      },
+      "effects": [
+        {
+          "kind": "addResource",
+          "amount": 1
+        }
+      ]
+    }
+  ]
+}

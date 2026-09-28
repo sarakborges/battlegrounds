@@ -5,13 +5,38 @@
   "attack": 1,
   "health": 3,
   "behaviors": [],
-  "types": ["machine"],
-  "tags": ["starter"],
+  "types": [
+    "machine"
+  ],
+  "tags": [
+    "starter"
+  ],
   "triggers": [
     {
       "event": "onAcquire",
       "effects": [
-        { "kind": "addResource", "amount": 1 }
+        {
+          "kind": "addResource",
+          "amount": 1
+        }
+      ]
+    },
+    {
+      "event": "afterEventCount",
+      "count": 1,
+      "counter": {
+        "event": "actionPlayed",
+        "scope": "turn"
+      },
+      "effects": [
+        {
+          "kind": "modifyStats",
+          "target": {
+            "scope": "self"
+          },
+          "attack": 1,
+          "health": 1
+        }
       ]
     }
   ]

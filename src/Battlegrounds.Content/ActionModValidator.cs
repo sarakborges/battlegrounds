@@ -15,7 +15,7 @@ internal sealed class ActionModValidator
         "modifyStats", "dealDamage", "destroyUnit", "triggerEvent", "summonUnit",
         "generateUnitToReserve", "generateUnitChoice", "generateActionToReserve", "generateActionChoice",
         "transformUnit", "copyUnitToReserve", "applyUnitModifier", "removeUnitModifier",
-        "addBehavior", "removeBehavior", "addResource", "setPower",
+        "addBehavior", "removeBehavior", "addResource", "adjustUpgradeCost", "refreshOffer", "setPower",
     ];
 
     public IReadOnlyList<ModValidationIssue> Validate(string modDirectory)

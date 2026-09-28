@@ -22,6 +22,8 @@ public static class NativeGameEventKeys
     public static NativeGameEventKey UnitAcquired { get; } = new("unitAcquired");
     public static NativeGameEventKey UnitReleased { get; } = new("unitReleased");
     public static NativeGameEventKey UnitPlayed { get; } = new("unitPlayed");
+    public static NativeGameEventKey ActionAcquired { get; } = new("actionAcquired");
+    public static NativeGameEventKey ActionPlayed { get; } = new("actionPlayed");
     public static NativeGameEventKey UnitSummoned { get; } = new("unitSummoned");
     public static NativeGameEventKey UnitDied { get; } = new("unitDied");
     public static NativeGameEventKey UnitAttacked { get; } = new("unitAttacked");
@@ -35,6 +37,8 @@ public static class NativeGameEventKeys
         UnitAcquired,
         UnitReleased,
         UnitPlayed,
+        ActionAcquired,
+        ActionPlayed,
         UnitSummoned,
         UnitDied,
         UnitAttacked,

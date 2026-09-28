@@ -16,7 +16,7 @@ internal sealed class DynamicEffectValueModValidator
     private static readonly HashSet<string> HistoryScopes = ["turn", "combat", "match"];
     private static readonly HashSet<string> GameEvents =
     [
-        "unitAcquired", "unitReleased", "unitPlayed", "unitSummoned", "unitDied",
+        "unitAcquired", "unitReleased", "unitPlayed", "actionAcquired", "actionPlayed", "unitSummoned", "unitDied",
         "unitAttacked", "unitDamaged", "powerActivated", "offerRefreshed", "tierUpgraded",
     ];
     private static readonly HashSet<string> Stats = ["attack", "health"];
@@ -161,6 +161,7 @@ internal sealed class DynamicEffectValueModValidator
                 break;
 
             case "addResource":
+            case "adjustUpgradeCost":
                 if (effect.TryGetProperty("amount", out var resource))
                 {
                     ValidateValue(file, resource, path + ".amount", false, allowSelected, typeIds, tagIds, 0, issues);

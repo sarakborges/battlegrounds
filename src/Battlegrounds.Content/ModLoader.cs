@@ -163,13 +163,16 @@ public sealed class ModLoader
                 BuildTarget(data.Target),
                 data.ModifierKey ?? throw new InvalidDataException("Validated applyUnitModifier effect is missing modifierKey."),
                 BuildOptionalValue(data.Attack),
-                BuildOptionalValue(data.Health)),
+                BuildOptionalValue(data.Health),
+                data.Duration ?? UnitModifierDuration.Persistent),
             "removeUnitModifier" => new RemoveUnitModifierEffectDefinition(
                 BuildTarget(data.Target),
                 data.ModifierKey ?? throw new InvalidDataException("Validated removeUnitModifier effect is missing modifierKey.")),
             "addBehavior" => new AddBehaviorEffectDefinition(BuildTarget(data.Target), new BehaviorId(data.BehaviorId ?? throw new InvalidDataException("Validated addBehavior effect is missing behaviorId."))),
             "removeBehavior" => new RemoveBehaviorEffectDefinition(BuildTarget(data.Target), new BehaviorId(data.BehaviorId ?? throw new InvalidDataException("Validated removeBehavior effect is missing behaviorId."))),
             "addResource" => new AddResourceEffectDefinition(BuildRequiredValue(data.Amount, "addResource.amount")),
+            "adjustUpgradeCost" => new AdjustUpgradeCostEffectDefinition(BuildRequiredValue(data.Amount, "adjustUpgradeCost.amount")),
+            "refreshOffer" => new RefreshOfferEffectDefinition(),
             "setPower" => new SetPowerEffectDefinition(new PowerId(data.PowerId ?? throw new InvalidDataException("Validated setPower effect is missing powerId."))),
             _ => throw new InvalidDataException($"Validated effect kind '{data.Kind}' is unsupported."),
         };
@@ -325,7 +328,8 @@ public sealed class ModLoader
         int? OptionCount,
         string? ActionId,
         ActionQueryData? ActionQuery,
-        string? ModifierKey);
+        string? ModifierKey,
+        UnitModifierDuration? Duration);
     private sealed record GenerationQueryData(int? MinimumTier, int? MaximumTier, string? TypeId, string? TagId, bool? ExcludeSource);
     private sealed record ActionQueryData(int? MinimumTier, int? MaximumTier, string? ExcludeActionId);
     private record QueryData(EffectTargetScope Scope, bool? ExcludeSource, string? TypeId, string? TagId);
