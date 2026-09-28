@@ -48,6 +48,35 @@ public partial class Main
                human.Field.Count < _session.Mod.PreparationRules.FieldCapacity;
     }
 
+    internal bool CanResolvePreparationDrag(Variant data)
+    {
+        if (PreparationDragPayload.TryReadOffer(data, out var offerSlot))
+            return CanAcquireOfferFromDrag(offerSlot);
+        if (PreparationDragPayload.TryReadField(data, out var fieldIndex))
+            return CanSellFieldUnitFromDrag(fieldIndex);
+        if (PreparationDragPayload.TryReadReserveUnit(data, out var reserveSlot))
+            return CanDeployReserveFromDrag(reserveSlot);
+        return false;
+    }
+
+    internal void ResolvePreparationDropFromPointer(Variant data, Vector2 pointer)
+    {
+        if (PreparationDragPayload.TryReadOffer(data, out var offerSlot))
+        {
+            CompleteOfferDragFromPointer(offerSlot, pointer);
+            return;
+        }
+
+        if (PreparationDragPayload.TryReadField(data, out var fieldIndex))
+        {
+            CompleteFieldDragFromPointer(fieldIndex, pointer, ResolveFieldInsertionFromPointer(pointer));
+            return;
+        }
+
+        if (PreparationDragPayload.TryReadReserveUnit(data, out var reserveSlot))
+            CompleteReserveDragFromPointer(reserveSlot, pointer, ResolveFieldInsertionFromPointer(pointer));
+    }
+
     internal void AcquireOfferFromDrag(int offerSlot)
     {
         if (!CanAcquireOfferFromDrag(offerSlot))
@@ -69,12 +98,9 @@ public partial class Main
         if (!CanAcquireOfferFromDrag(offerSlot))
             return;
 
-        // Buying mirrors Hearthstone/Battlegrounds: drag a tavern offer onto the hero,
-        // never onto the shopkeeper. Keep the fallback target exactly on HeroCore so the
-        // pointer affordance and the action agree with what the player sees.
         var heroCore = GetNodeOrNull<Control>(
             "Margin/Shell/CenterStage/PreparationPanel/HeroDock/HeroCore");
-        if (!ContainsPointer(heroCore, pointer, 12.0f))
+        if (!ContainsPointer(heroCore, pointer, PreparationDropTargetPadding))
             return;
 
         AcquireOfferFromDrag(offerSlot);
@@ -87,13 +113,13 @@ public partial class Main
 
         var shopkeeper = GetNodeOrNull<Control>(
             "Margin/Shell/CenterStage/PreparationPanel/TavernShelf/ShelfRow/ShopkeeperSlot");
-        if (ContainsPointer(shopkeeper, pointer, 18.0f))
+        if (ContainsPointer(shopkeeper, pointer, PreparationDropTargetPadding))
         {
             SellFieldUnitFromDrag(fieldIndex);
             return;
         }
 
-        if (insertionIndex is not int insertion || !ContainsPointer(_fieldButtons, pointer, 28.0f))
+        if (insertionIndex is not int insertion || !ContainsPointer(_fieldButtons, pointer, PreparationDropTargetPadding + 20.0f))
             return;
 
         ReorderHumanFieldAtInsertion(fieldIndex, insertion);
@@ -101,10 +127,30 @@ public partial class Main
 
     internal void CompleteReserveDragFromPointer(int reserveSlot, Vector2 pointer, int? insertionIndex)
     {
-        if (!CanDeployReserveFromDrag(reserveSlot) || !ContainsPointer(_fieldButtons, pointer, 28.0f))
+        if (!CanDeployReserveFromDrag(reserveSlot) ||
+            !ContainsPointer(_fieldButtons, pointer, PreparationDropTargetPadding + 20.0f))
             return;
 
         DeployReserveAtInsertion(reserveSlot, insertionIndex ?? int.MaxValue);
+    }
+
+    private int? ResolveFieldInsertionFromPointer(Vector2 pointer)
+    {
+        if (!ContainsPointer(_fieldButtons, pointer, PreparationDropTargetPadding + 20.0f))
+            return null;
+
+        var cards = _fieldButtons.GetChildren()
+            .OfType<PresentationCardButton>()
+            .Where(card => card.Visible && !card.IsQueuedForDeletion())
+            .ToArray();
+
+        for (var index = 0; index < cards.Length; index++)
+        {
+            if (pointer.X < cards[index].GetGlobalRect().GetCenter().X)
+                return index;
+        }
+
+        return cards.Length;
     }
 
     private void DeployReserveAtInsertion(int reserveSlot, int insertionIndex)
