@@ -34,6 +34,7 @@ public partial class PreparationSpatialTargetsDriver : Node
         }
 
         var pointer = viewport.GetMousePosition();
+        var overAnyTarget = false;
         var overValidTarget = false;
 
         var hero = main.GetNodeOrNull<Control>(
@@ -44,24 +45,32 @@ public partial class PreparationSpatialTargetsDriver : Node
 
         if (PreparationDragPayload.TryReadOffer(data, out var offerSlot))
         {
-            var enabled = main.CanAcquireOfferFromDrag(offerSlot);
-            overValidTarget |= ConfigureFeedback(main, heroFeedback, hero, enabled, pointer);
+            var valid = main.CanAcquireOfferFromDrag(offerSlot);
+            var active = ConfigureFeedback(main, heroFeedback, hero, valid, pointer);
+            overAnyTarget |= active;
+            overValidTarget |= active && valid;
             HideFeedback(shopkeeperFeedback);
             HideFeedback(boardFeedback);
         }
         else if (PreparationDragPayload.TryReadField(data, out var fieldIndex))
         {
-            var enabled = main.CanSellFieldUnitFromDrag(fieldIndex);
+            var valid = main.CanSellFieldUnitFromDrag(fieldIndex);
             HideFeedback(heroFeedback);
-            overValidTarget |= ConfigureFeedback(main, shopkeeperFeedback, shopkeeper, enabled, pointer);
-            overValidTarget |= ConfigureFeedback(main, boardFeedback, board, enabled, pointer);
+
+            var shopkeeperActive = ConfigureFeedback(main, shopkeeperFeedback, shopkeeper, valid, pointer);
+            var boardActive = ConfigureFeedback(main, boardFeedback, board, valid, pointer);
+            overAnyTarget |= shopkeeperActive || boardActive;
+            overValidTarget |= valid && (shopkeeperActive || boardActive);
         }
         else if (PreparationDragPayload.TryReadReserveUnit(data, out var reserveSlot))
         {
-            var enabled = main.CanDeployReserveFromDrag(reserveSlot);
+            var valid = main.CanDeployReserveFromDrag(reserveSlot);
             HideFeedback(heroFeedback);
             HideFeedback(shopkeeperFeedback);
-            overValidTarget |= ConfigureFeedback(main, boardFeedback, board, enabled, pointer);
+
+            var active = ConfigureFeedback(main, boardFeedback, board, valid, pointer);
+            overAnyTarget |= active;
+            overValidTarget |= active && valid;
         }
         else
         {
@@ -73,7 +82,9 @@ public partial class PreparationSpatialTargetsDriver : Node
         catcher.MouseFilter = Control.MouseFilterEnum.Stop;
         catcher.MouseDefaultCursorShape = overValidTarget
             ? main.PreparationValidDropCursor
-            : main.PreparationDragCursor;
+            : overAnyTarget
+                ? main.PreparationInvalidDropCursor
+                : main.PreparationDragCursor;
     }
 
     private static PreparationDropTarget EnsureCatcher(Main main)
@@ -117,10 +128,10 @@ public partial class PreparationSpatialTargetsDriver : Node
         Main main,
         PanelContainer feedback,
         Control? target,
-        bool enabled,
+        bool valid,
         Vector2 pointer)
     {
-        if (!enabled || target is null || !target.Visible)
+        if (target is null || !target.Visible)
         {
             HideFeedback(feedback);
             return false;
@@ -135,7 +146,7 @@ public partial class PreparationSpatialTargetsDriver : Node
 
         feedback.Position = expanded.Position - mainRect.Position;
         feedback.Size = expanded.Size;
-        feedback.AddThemeStyleboxOverride("panel", main.BuildPreparationDropTargetStyle(active));
+        feedback.AddThemeStyleboxOverride("panel", main.BuildPreparationDropTargetStyle(valid, active));
         feedback.Visible = true;
         return active;
     }
