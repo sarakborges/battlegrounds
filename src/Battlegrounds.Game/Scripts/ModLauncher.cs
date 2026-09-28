@@ -179,8 +179,8 @@ public partial class ModLauncher : Control
 
     private void ApplyLauncherLayout(ModThemeCatalog theme)
     {
-        var horizontal = ResolveMetric(theme, "launcher.marginHorizontal", DefaultMarginHorizontal, 0, 1024);
-        var vertical = ResolveMetric(theme, "launcher.marginVertical", DefaultMarginVertical, 0, 1024);
+        var horizontal = ResolveMetric(theme, ModThemeMetricKeys.Launcher.MarginHorizontal, DefaultMarginHorizontal, 0, 1024);
+        var vertical = ResolveMetric(theme, ModThemeMetricKeys.Launcher.MarginVertical, DefaultMarginVertical, 0, 1024);
         var margin = GetNode<MarginContainer>("Margin");
         margin.OffsetLeft = horizontal;
         margin.OffsetRight = -horizontal;
@@ -190,14 +190,14 @@ public partial class ModLauncher : Control
         var root = GetNode<VBoxContainer>("Margin/Root");
         root.AddThemeConstantOverride(
             "separation",
-            Mathf.RoundToInt(ResolveMetric(theme, "launcher.gap", DefaultRootGap, 0, 512)));
+            Mathf.RoundToInt(ResolveMetric(theme, ModThemeMetricKeys.Launcher.Gap, DefaultRootGap, 0, 512)));
         _modButtons.AddThemeConstantOverride(
             "separation",
-            Mathf.RoundToInt(ResolveMetric(theme, "launcher.modGap", DefaultModGap, 0, 512)));
+            Mathf.RoundToInt(ResolveMetric(theme, ModThemeMetricKeys.Launcher.ModGap, DefaultModGap, 0, 512)));
 
         _diagnostics.CustomMinimumSize = new Vector2(
             _diagnostics.CustomMinimumSize.X,
-            ResolveMetric(theme, "launcher.diagnosticsMinimumHeight", DefaultDiagnosticsHeight, 0, 4096));
+            ResolveMetric(theme, ModThemeMetricKeys.Launcher.DiagnosticsMinimumHeight, DefaultDiagnosticsHeight, 0, 4096));
     }
 
     private void ResetLauncherTheme()
