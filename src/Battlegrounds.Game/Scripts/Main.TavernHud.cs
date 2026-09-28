@@ -93,9 +93,6 @@ public partial class Main
             .Where(card => !card.IsQueuedForDeletion())
             .ToArray();
 
-        // A freshly rendered offer contains every playable in OfferButtons. Once the
-        // action cards are reparented this count no longer matches, which makes this
-        // operation idempotent while the HUD driver ticks every frame.
         if (cards.Length != entries.Count)
             return;
 
@@ -246,9 +243,11 @@ public partial class Main
 
     private void BindShopkeeperFrame(PanelContainer shopkeeper)
     {
-        if (_modTheme?.Components.TryGetValue(ModThemePanelRoles.Shopkeeper, out var style) != true ||
-            string.IsNullOrWhiteSpace(style.BackgroundAsset) ||
-            _themeBuilder is null)
+        if (_modTheme is null ||
+            _themeBuilder is null ||
+            !_modTheme.Components.TryGetValue(ModThemePanelRoles.Shopkeeper, out var style) ||
+            style is null ||
+            string.IsNullOrWhiteSpace(style.BackgroundAsset))
         {
             return;
         }
