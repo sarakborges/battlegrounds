@@ -46,10 +46,8 @@ public sealed class SinglePlayerSessionTests
     {
         var minimum = CreateStartedSession(new MinimumRandomSource());
         var maximum = CreateStartedSession(new MaximumRandomSource());
-
         var minimumAi = Assert.Single(minimum.AiPlayerIds);
         var maximumAi = Assert.Single(maximum.AiPlayerIds);
-
         Assert.Equal(PreparationAiPersonality.Tempo, minimum.AiPersonalities[minimumAi]);
         Assert.Equal(PreparationAiPersonality.Roller, maximum.AiPersonalities[maximumAi]);
     }
@@ -59,9 +57,7 @@ public sealed class SinglePlayerSessionTests
     {
         var session = CreateStartedSession(new MaximumRandomSource());
         var ai = Assert.Single(session.AiPlayerIds);
-
-        Assert.Throws<ArgumentException>(() =>
-            session.ExecuteHumanPreparation(new EndPreparationCommand(ai)));
+        Assert.Throws<ArgumentException>(() => session.ExecuteHumanPreparation(new EndPreparationCommand(ai)));
     }
 
     [Fact]
@@ -70,11 +66,8 @@ public sealed class SinglePlayerSessionTests
         var session = CreateStartedSession(new MaximumRandomSource());
         var human = session.HumanPlayerId;
         var ai = Assert.Single(session.AiPlayerIds);
-
         Assert.Equal(new[] { human, ai }, session.PreparationInitiative);
-
         var advance = session.AdvanceAutomated();
-
         Assert.Equal(0, advance.AiPreparationsCompleted);
         Assert.Null(advance.CombatRound);
         Assert.Empty(advance.Pairings);
@@ -89,11 +82,8 @@ public sealed class SinglePlayerSessionTests
         var session = CreateStartedSession(new MinimumRandomSource());
         var human = session.HumanPlayerId;
         var ai = Assert.Single(session.AiPlayerIds);
-
         Assert.Equal(new[] { ai, human }, session.PreparationInitiative);
-
         var advance = session.AdvanceAutomated();
-
         Assert.Equal(1, advance.AiPreparationsCompleted);
         Assert.Null(advance.CombatRound);
         Assert.Empty(advance.Pairings);
@@ -109,13 +99,9 @@ public sealed class SinglePlayerSessionTests
         var session = CreateStartedSession(new MinimumRandomSource());
         var human = session.HumanPlayerId;
         var ai = Assert.Single(session.AiPlayerIds);
-
         Assert.Equal(ai, session.CurrentPreparationPlayerId);
-        Assert.Throws<InvalidOperationException>(() =>
-            session.ExecuteHumanPreparation(new EndPreparationCommand(human)));
-
+        Assert.Throws<InvalidOperationException>(() => session.ExecuteHumanPreparation(new EndPreparationCommand(human)));
         session.AdvanceAutomated();
-
         Assert.Equal(human, session.CurrentPreparationPlayerId);
         var humanEnd = session.ExecuteHumanPreparation(new EndPreparationCommand(human));
         Assert.True(humanEnd.Succeeded);
@@ -128,16 +114,12 @@ public sealed class SinglePlayerSessionTests
         var session = CreateStartedSession(new MaximumRandomSource());
         var human = session.HumanPlayerId;
         var ai = Assert.Single(session.AiPlayerIds);
-
         Assert.Equal(new[] { human, ai }, session.PreparationInitiative);
-
         var humanEnd = session.ExecuteHumanPreparation(new EndPreparationCommand(human));
         Assert.True(humanEnd.Succeeded);
         Assert.Equal(MatchPhase.Preparation, session.Match!.Phase);
         Assert.Equal(ai, session.CurrentPreparationPlayerId);
-
         var advance = session.AdvanceAutomated();
-
         Assert.Equal(1, advance.AiPreparationsCompleted);
         Assert.NotNull(advance.CombatRound);
         Assert.Single(advance.Pairings);
@@ -150,18 +132,18 @@ public sealed class SinglePlayerSessionTests
     }
 
     [Fact]
-    public void Create_RejectsOddInitialParticipantCountWithoutArchivedOpponent()
+    public void Create_AcceptsOneHumanWithTwoAiPlayers()
     {
         var mod = LoadExampleMod();
+        var session = SinglePlayerSession.Create(
+            mod,
+            new PlayerId(0),
+            [new PlayerId(1), new PlayerId(2)],
+            seed: 7);
 
-        var error = Assert.Throws<ArgumentException>(() =>
-            SinglePlayerSession.Create(
-                mod,
-                new PlayerId(0),
-                [new PlayerId(1), new PlayerId(2)],
-                seed: 7));
-
-        Assert.Contains("even initial participant count", error.Message, StringComparison.Ordinal);
+        Assert.Equal(2, session.AiPlayerIds.Count);
+        Assert.Equal(2, session.LeaderSelection.SelectedCount);
+        Assert.False(session.HasStarted);
     }
 
     private static SinglePlayerSession CreateStartedSession(IRandomSource? randomSource = null)
