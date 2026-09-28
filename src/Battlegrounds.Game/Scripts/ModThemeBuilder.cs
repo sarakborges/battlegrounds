@@ -22,6 +22,7 @@ internal sealed class ModThemeBuilder
         var theme = new Theme();
         ApplyDefaults(theme);
         ApplyTypographyVariations(theme);
+        ApplySemanticLabelVariations(theme);
 
         theme.SetTypeVariation("PrimaryButton", "Button");
         theme.SetTypeVariation("CardButton", "Button");
@@ -31,6 +32,19 @@ internal sealed class ModThemeBuilder
         ApplyComponent(theme, ModThemeComponentRoles.Card, "CardButton", ModThemeComponentRoles.Button);
         ApplyComponent(theme, ModThemeComponentRoles.Input, "LineEdit");
         ApplyComponent(theme, ModThemeComponentRoles.Panel, "PanelContainer");
+
+        ApplyPanelVariation(theme, ModThemePanelRoles.HeroPortrait, "HeroPortraitFrame");
+        ApplyPanelVariation(theme, ModThemePanelRoles.OpponentEntry, "OpponentEntry");
+        ApplyPanelVariation(theme, ModThemePanelRoles.OpponentEntrySelf, "OpponentEntrySelf");
+        ApplyPanelVariation(theme, ModThemePanelRoles.OpponentEntryEliminated, "OpponentEntryEliminated");
+        ApplyPanelVariation(theme, ModThemePanelRoles.OpponentPortrait, "OpponentPortraitFrame");
+        ApplyPanelVariation(theme, ModThemePanelRoles.TierBadge, "TierBadge");
+        ApplyPanelVariation(theme, ModThemePanelRoles.HealthBadge, "HealthBadge");
+        ApplyPanelVariation(theme, ModThemePanelRoles.ArmorBadge, "ArmorBadge");
+        ApplyPanelVariation(theme, ModThemePanelRoles.ResourceBadge, "ResourceBadge");
+        ApplyPanelVariation(theme, ModThemePanelRoles.Interaction, "InteractionSurface");
+        ApplyPanelVariation(theme, ModThemePanelRoles.Shopkeeper, "ShopkeeperDropTarget");
+        ApplyPanelVariation(theme, ModThemePanelRoles.CombatOverlay, "CombatOverlay");
         return theme;
     }
 
@@ -71,6 +85,27 @@ internal sealed class ModThemeBuilder
         ApplyLabelVariation(theme, "CaptionLabel", "caption", preferDisplayFont: false, colorToken: "textMuted");
     }
 
+    private void ApplySemanticLabelVariations(Theme theme)
+    {
+        ApplySemanticLabelVariation(theme, ModThemeLabelRoles.HeroName, "HeroNameLabel", "heading", preferDisplayFont: true, "text");
+        ApplySemanticLabelVariation(theme, ModThemeLabelRoles.HealthValue, "HealthValueLabel", "heading", preferDisplayFont: true, "text");
+        ApplySemanticLabelVariation(theme, ModThemeLabelRoles.ArmorValue, "ArmorValueLabel", "heading", preferDisplayFont: true, "text");
+        ApplySemanticLabelVariation(theme, ModThemeLabelRoles.TierValue, "TierValueLabel", "heading", preferDisplayFont: true, "text");
+        ApplySemanticLabelVariation(theme, ModThemeLabelRoles.ResourceValue, "ResourceValueLabel", "heading", preferDisplayFont: true, "text");
+    }
+
+    private void ApplySemanticLabelVariation(
+        Theme theme,
+        string role,
+        string variation,
+        string sizeToken,
+        bool preferDisplayFont,
+        string colorToken)
+    {
+        ApplyLabelVariation(theme, variation, sizeToken, preferDisplayFont, colorToken);
+        ApplyComponent(theme, role, variation);
+    }
+
     private void ApplyLabelVariation(Theme theme, string variation, string sizeToken, bool preferDisplayFont, string colorToken)
     {
         theme.SetTypeVariation(variation, "Label");
@@ -78,6 +113,12 @@ internal sealed class ModThemeBuilder
         if (_source.Fonts.TryGetValue(fontKey, out var font)) theme.SetFont("font", variation, LoadFont(font.RelativePath));
         if (_source.FontSizes.TryGetValue(sizeToken, out var size)) theme.SetFontSize("font_size", variation, size);
         if (TryColor(colorToken, out var color)) theme.SetColor("font_color", variation, color);
+    }
+
+    private void ApplyPanelVariation(Theme theme, string role, string variation)
+    {
+        theme.SetTypeVariation(variation, "PanelContainer");
+        ApplyComponent(theme, role, variation, ModThemeComponentRoles.Panel);
     }
 
     private void ApplyComponent(Theme theme, string role, string godotType, string? inheritedRole = null)
