@@ -44,7 +44,10 @@ internal interface IEffectRuntimeWorld
     void FinalizeDeath(IEffectRuntimeUnit deadUnit);
 }
 
-internal sealed record GameEffectEvent(NativeTriggerKey Event, IEffectRuntimeUnit Subject);
+internal sealed record GameEffectEvent(
+    NativeTriggerKey Event,
+    IEffectRuntimeUnit Subject,
+    UnitInstanceId? ContextTargetInstanceId = null);
 
 internal sealed class GameEffectRuntime
 {
@@ -155,7 +158,8 @@ internal sealed class GameEffectRuntime
         for (var index = 0; index < listener.Definition.Triggers.Count; index++)
         {
             var trigger = listener.Definition.Triggers[index];
-            if (trigger.Event == effectEvent.Event) ResolveSpecificTrigger(listener, index, trigger, queue);
+            if (trigger.Event == effectEvent.Event)
+                ResolveSpecificTrigger(listener, index, trigger, queue, effectEvent.ContextTargetInstanceId);
         }
     }
 
