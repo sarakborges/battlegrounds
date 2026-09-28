@@ -172,7 +172,7 @@ internal sealed partial class PresentationCardButton : Button
         _dragEnabled = enabled;
         _dragStarted = dragStarted;
         _dragEnded = dragEnded;
-        MouseDefaultCursorShape = enabled ? CursorShape.Drag : CursorShape.Arrow;
+        MouseDefaultCursorShape = enabled ? CursorShape.PointingHand : CursorShape.Arrow;
         ButtonMask = enabled ? (MouseButtonMask)0 : MouseButtonMask.Left;
         FocusMode = enabled ? FocusModeEnum.None : FocusModeEnum.All;
 
