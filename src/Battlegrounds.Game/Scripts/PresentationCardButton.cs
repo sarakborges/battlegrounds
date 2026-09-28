@@ -4,6 +4,8 @@ namespace Battlegrounds.Game;
 
 internal sealed partial class PresentationCardButton : Button
 {
+    private const float DragThreshold = 5.0f;
+
     private readonly TextureRect _art;
     private readonly Label _title;
     private readonly Label _subtitle;
@@ -12,6 +14,8 @@ internal sealed partial class PresentationCardButton : Button
     private string? _dragPayload;
     private bool _dragEnabled;
     private bool _dragActive;
+    private bool _dragPointerDown;
+    private Vector2 _dragPressPosition;
     private Action? _dragStarted;
     private Action? _dragEnded;
 
@@ -72,15 +76,39 @@ internal sealed partial class PresentationCardButton : Button
         ApplyFootprintForParent();
     }
 
+    public override void _GuiInput(InputEvent @event)
+    {
+        if (!_dragEnabled || _dragActive || string.IsNullOrWhiteSpace(_dragPayload))
+            return;
+
+        if (@event is InputEventMouseButton mouseButton && mouseButton.ButtonIndex == MouseButton.Left)
+        {
+            _dragPointerDown = mouseButton.Pressed;
+            if (mouseButton.Pressed)
+                _dragPressPosition = mouseButton.Position;
+            return;
+        }
+
+        if (!_dragPointerDown || @event is not InputEventMouseMotion motion)
+            return;
+
+        if (motion.Position.DistanceTo(_dragPressPosition) < DragThreshold)
+            return;
+
+        _dragPointerDown = false;
+        BeginDrag();
+        ForceDrag(_dragPayload!, CreateDragPreview(_dragPressPosition));
+        AcceptEvent();
+    }
+
     public override Variant _GetDragData(Vector2 atPosition)
     {
-        if (!_dragEnabled || string.IsNullOrWhiteSpace(_dragPayload))
+        if (!_dragEnabled || _dragActive || string.IsNullOrWhiteSpace(_dragPayload))
             return default;
 
-        _dragActive = true;
-        SelfModulate = new Color(1, 1, 1, 0.06f);
-        _dragStarted?.Invoke();
-        SetDragPreview(CreateDragPreview());
+        _dragPointerDown = false;
+        BeginDrag();
+        SetDragPreview(CreateDragPreview(atPosition));
         return _dragPayload;
     }
 
@@ -90,6 +118,7 @@ internal sealed partial class PresentationCardButton : Button
             return;
 
         _dragActive = false;
+        _dragPointerDown = false;
         SelfModulate = Colors.White;
         _dragEnded?.Invoke();
     }
@@ -114,8 +143,11 @@ internal sealed partial class PresentationCardButton : Button
         _art.Visible = texture is not null;
     }
 
-    public void ConfigureOfferDrag(int slot, bool enabled) =>
-        ConfigureDrag(PreparationDragPayload.Offer(slot), enabled, null, null);
+    public void ConfigureOfferDrag(int slot, bool enabled, Action? dragEnded = null) =>
+        ConfigureDrag(PreparationDragPayload.Offer(slot), enabled, null, dragEnded);
+
+    public void ConfigureReserveUnitDrag(int slot, bool enabled, Action? dragEnded = null) =>
+        ConfigureDrag(PreparationDragPayload.ReserveUnit(slot), enabled, null, dragEnded);
 
     public void ConfigureFieldDrag(
         int index,
@@ -143,53 +175,49 @@ internal sealed partial class PresentationCardButton : Button
         MouseDefaultCursorShape = enabled ? CursorShape.Drag : CursorShape.Arrow;
         ButtonMask = enabled ? (MouseButtonMask)0 : MouseButtonMask.Left;
         FocusMode = enabled ? FocusModeEnum.None : FocusModeEnum.All;
+
+        if (!enabled && !_dragActive)
+        {
+            _dragPointerDown = false;
+            SelfModulate = Colors.White;
+        }
     }
 
-    private Control CreateDragPreview()
+    private void BeginDrag()
     {
-        var preview = new PanelContainer
+        _dragActive = true;
+        SelfModulate = new Color(1, 1, 1, 0.10f);
+        _dragStarted?.Invoke();
+    }
+
+    private Control CreateDragPreview(Vector2 grabOffset)
+    {
+        var root = new Control
         {
-            CustomMinimumSize = new Vector2(
-                Mathf.Max(108.0f, Size.X * 0.94f),
-                Mathf.Max(96.0f, Size.Y * 0.88f)),
-            ThemeTypeVariation = "DragPreview",
             MouseFilter = MouseFilterEnum.Ignore,
-            Scale = new Vector2(1.035f, 1.035f),
-            Rotation = Mathf.DegToRad(-2.0f),
         };
 
-        var column = new VBoxContainer
+        var preview = new PresentationCardButton
         {
+            Position = -grabOffset,
+            Size = Size,
+            CustomMinimumSize = Size,
             MouseFilter = MouseFilterEnum.Ignore,
-            SizeFlagsHorizontal = SizeFlags.ExpandFill,
-            SizeFlagsVertical = SizeFlags.ExpandFill,
+            FocusMode = FocusModeEnum.None,
+            ButtonMask = (MouseButtonMask)0,
+            PivotOffset = grabOffset,
+            Scale = new Vector2(1.045f, 1.045f),
+            Rotation = Mathf.DegToRad(-1.5f),
+            TooltipText = string.Empty,
         };
-        column.AddThemeConstantOverride("separation", 2);
-        preview.AddChild(column);
-
-        if (_art.Texture is not null)
-        {
-            column.AddChild(new TextureRect
-            {
-                Texture = _art.Texture,
-                CustomMinimumSize = new Vector2(0, Mathf.Max(56.0f, Size.Y * 0.58f)),
-                SizeFlagsHorizontal = SizeFlags.ExpandFill,
-                SizeFlagsVertical = SizeFlags.ExpandFill,
-                ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize,
-                StretchMode = TextureRect.StretchModeEnum.KeepAspectCovered,
-                MouseFilter = MouseFilterEnum.Ignore,
-            });
-        }
-
-        column.AddChild(new Label
-        {
-            Text = _title.Text,
-            HorizontalAlignment = HorizontalAlignment.Center,
-            ThemeTypeVariation = "HeadingLabel",
-            MouseFilter = MouseFilterEnum.Ignore,
-        });
-
-        return preview;
+        preview.Configure(
+            _title.Text,
+            _subtitle.Text,
+            _stats.Text,
+            _description.Text,
+            _art.Texture);
+        root.AddChild(preview);
+        return root;
     }
 
     private void ApplyFootprintForParent()
