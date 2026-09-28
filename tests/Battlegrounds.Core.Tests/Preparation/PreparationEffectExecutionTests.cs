@@ -434,6 +434,36 @@ public sealed class PreparationEffectExecutionTests
         Assert.Equal(0, player.NextAcquireDiscount);
     }
 
+    [Fact]
+    public void TierUpgrade_CountedPreparationEventCanQueueUnitChoiceReward()
+    {
+        var option = new UnitDefinition(new UnitId("milestone-option"), "Milestone Option", 1, 2, 2);
+        var source = new UnitDefinition(
+            new UnitId("milestone-source"),
+            "Milestone Source",
+            1,
+            1,
+            3,
+            triggers:
+            [
+                new TriggerDefinition(
+                    NativeTriggerKeys.AfterEventCount,
+                    [new GenerateUnitChoiceEffectDefinition(new UnitDefinitionQuery(excludeSource: true), optionCount: 1)],
+                    count: 1,
+                    counter: new EffectHistoryQuery(NativeGameEventKeys.TierUpgraded, EffectHistoryScope.Match)),
+            ]);
+
+        var setup = CreateStartedMatch([source, option], [source, option], startingResource: 10, acquireCost: 0);
+        var player = setup.Match.Players[0];
+        AcquireById(setup.Engine, setup.Match, player.Id, source.Id);
+        Assert.True(setup.Engine.Execute(setup.Match, new DeployUnitCommand(player.Id, 0)).Succeeded);
+
+        Assert.True(setup.Engine.Execute(setup.Match, new UpgradeTierCommand(player.Id)).Succeeded);
+
+        Assert.Equal(2, player.Tier);
+        Assert.NotNull(player.PendingChoice);
+    }
+
     private static void AcquireById(
         PreparationEngine engine,
         MatchState match,

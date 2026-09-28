@@ -26,6 +26,18 @@ internal sealed class GenerationChoiceModValidator
         "onTurnEnd",
     ];
 
+    private static readonly HashSet<string> PreparationOnlyGameEvents =
+    [
+        "unitAcquired",
+        "unitReleased",
+        "unitPlayed",
+        "actionAcquired",
+        "actionPlayed",
+        "powerActivated",
+        "offerRefreshed",
+        "tierUpgraded",
+    ];
+
     public IReadOnlyList<ModValidationIssue> Validate(string modDirectory)
     {
         var issues = new List<ModValidationIssue>();
@@ -83,7 +95,7 @@ internal sealed class GenerationChoiceModValidator
                     var kind = kindElement.GetString();
                     if (kind == "generateUnitToReserve")
                     {
-                        ValidatePreparationContext(file.Path, path, eventName, powerMode, issues);
+                        ValidatePreparationContext(file.Path, path, eventName, trigger, powerMode, issues);
                         ValidateGenerateToReserve(file.Path, effect, path, unitIds, issues);
                     }
                     else if (kind == "generateUnitChoice")
@@ -98,7 +110,7 @@ internal sealed class GenerationChoiceModValidator
                         }
                         else
                         {
-                            ValidatePreparationContext(file.Path, path, eventName, powerMode, issues);
+                            ValidatePreparationContext(file.Path, path, eventName, trigger, powerMode, issues);
                         }
                         ValidateGenerateChoice(file.Path, effect, path, typeIds, tagIds, issues);
                     }
@@ -114,11 +126,12 @@ internal sealed class GenerationChoiceModValidator
         string file,
         string path,
         string? eventName,
+        JsonElement trigger,
         bool powerMode,
         List<ModValidationIssue> issues)
     {
         var allowed = powerMode ? PowerPreparationEvents : UnitPreparationEvents;
-        if (eventName is null || !allowed.Contains(eventName))
+        if ((eventName is null || !allowed.Contains(eventName)) && !IsPreparationOnlyCountedEvent(trigger, eventName))
         {
             issues.Add(new(
                 "INVALID_EFFECT_CONTEXT",
@@ -126,6 +139,19 @@ internal sealed class GenerationChoiceModValidator
                 path + ".kind",
                 "Reserve generation and pending choices are only valid in preparation-only triggers."));
         }
+    }
+
+    private static bool IsPreparationOnlyCountedEvent(JsonElement trigger, string? eventName)
+    {
+        if (eventName != "afterEventCount" ||
+            !trigger.TryGetProperty("counter", out var counter) ||
+            counter.ValueKind != JsonValueKind.Object ||
+            !counter.TryGetProperty("event", out var counterEvent) ||
+            counterEvent.ValueKind != JsonValueKind.String)
+            return false;
+
+        var value = counterEvent.GetString();
+        return value is not null && PreparationOnlyGameEvents.Contains(value);
     }
 
     private static void ValidateGenerateToReserve(
