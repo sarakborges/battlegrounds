@@ -1,6 +1,6 @@
 # Mod-driven theming
 
-The effective visual theme is resolved from the engine presentation baseline plus the selected mod's overrides. `Battlegrounds.Core` and `Battlegrounds.Application` do not interpret colors, fonts, button imagery, borders, screen backgrounds or presentation layout metrics.
+The effective visual theme is resolved from the engine presentation baseline plus the selected mod's overrides. `Battlegrounds.Core` and `Battlegrounds.Application` do not interpret colors, fonts, button imagery, borders, screen backgrounds, presentation layout metrics or motion tuning.
 
 A mod may provide an optional aggregate theme file at:
 
@@ -8,7 +8,7 @@ A mod may provide an optional aggregate theme file at:
 presentation/theme.json
 ```
 
-`Battlegrounds.Content` validates this file and all referenced assets. It also owns the asset-free engine default theme used as the baseline for missing mod values. `Battlegrounds.Game` translates the resolved, engine-neutral theme model into Godot `Theme`, font, texture, style and layout resources at runtime.
+`Battlegrounds.Content` validates this file and all referenced assets. It also owns the asset-free engine default theme used as the baseline for missing mod values. `Battlegrounds.Game` translates the resolved, engine-neutral theme model into Godot `Theme`, font, texture, style, layout and motion resources at runtime.
 
 The JSON contract intentionally contains no Godot class names or property names.
 
@@ -62,7 +62,11 @@ The JSON contract intentionally contains no Godot class names or property names.
     "layout.combat.marginVertical": 24,
     "drag.preview.scale": 1.045,
     "drag.preview.rotationDegrees": -1.5,
-    "drag.dropTarget.shadowScale": 3
+    "drag.dropTarget.shadowScale": 3,
+    "motion.combatPlayback.stepSeconds": 0.9,
+    "motion.ui.select.durationSeconds": 0.18,
+    "motion.cue.pulse.scale": 1.05,
+    "motion.cue.pulse.durationSeconds": 0.24
   },
   "components": {
     "button": {
@@ -111,7 +115,7 @@ raw value -> semantic token -> component/layout role
 
 UI code should consume semantic roles rather than fandom-specific colors, files or dimensions. Mods can therefore produce radically different visual identities without changing game mechanics or scene logic.
 
-The gameplay and launcher scene files own hierarchy, structural relationships, visibility and input wiring. Playable colors, typography sizes, spacing and visual dimensions are supplied by the resolved theme rather than duplicated as scene defaults.
+The gameplay and launcher scene files own hierarchy, structural relationships, visibility and input wiring. Playable colors, typography sizes, spacing, visual dimensions and presentation timing are supplied by the resolved theme rather than duplicated as scene or script defaults.
 
 ## Colors
 
@@ -142,9 +146,9 @@ A mod does not need to ship custom fonts. An empty `fonts` object keeps the plat
 
 These remain presentation values; they do not alter game rules or authoritative state.
 
-## Layout metrics
+## Layout and motion metrics
 
-`metrics` is an optional map of finite numeric presentation values. It exists for semantic geometry that should be owned by presentation data but is not naturally a reusable spacing token.
+`metrics` is an optional map of finite numeric presentation values. It exists for semantic geometry and motion values that should be owned by presentation data but are not naturally reusable spacing tokens.
 
 Theme schema v1 recognizes a fixed metric vocabulary. Unknown metric names are rejected with `UNKNOWN_THEME_METRIC` instead of being silently ignored by the presentation adapter. Adding a new engine-consumed metric therefore requires extending the v1 metric registry (or introducing a future schema version) together with the runtime consumer.
 
@@ -235,7 +239,30 @@ layout.combat.unitGap
 layout.combat.controlsGap
 ```
 
-They control only the presentation-owned combat overlay: outer content margins, vertical content separation, spacing between the two combat boards, spacing between units, and spacing between playback controls. Values omitted by the mod inherit the engine baseline (`32`, `24`, `12`, `24`, `6`, `8` respectively in theme v1). Combat still consumes immutable resolved timeline data; these metrics cannot alter combat resolution, event ordering or authoritative state.
+They control only the presentation-owned combat overlay: outer content margins, vertical content separation, spacing between the two combat boards, spacing between units, and spacing between playback controls. Values omitted by the mod inherit the engine baseline (`32`, `24`, `12`, `24`, `6`, `8` respectively in theme v1). Runtime-created combat controls start structurally neutral and receive these resolved values before the overlay is shown; the same values are not duplicated as C# defaults.
+
+Combat and cue motion uses:
+
+```text
+motion.combatPlayback.stepSeconds
+motion.ui.select.durationSeconds
+motion.cue.pulse.scale
+motion.cue.pulse.durationSeconds
+motion.cue.shake.rotationDegrees
+motion.cue.shake.durationSeconds
+motion.cue.lunge.scale
+motion.cue.lunge.durationSeconds
+motion.cue.fade.scale
+motion.cue.fade.opacity
+motion.cue.fade.durationSeconds
+motion.cue.pop.scale
+motion.cue.pop.opacity
+motion.cue.pop.durationSeconds
+```
+
+These values tune only presentation playback. `motion.combatPlayback.stepSeconds` controls how often the already-resolved combat timeline advances automatically. The `motion.cue.*` metrics control the neutral fallback tween profile. Entity-specific cue metadata in `assets/presentation.json` may still choose an animation, override its duration or explicitly suppress it with `none`.
+
+Combat still consumes immutable resolved timeline data. Motion metrics cannot alter combat resolution, event ordering, commands, RNG or authoritative state.
 
 Preparation drag feedback exposes these semantic metrics:
 
@@ -247,7 +274,7 @@ drag.dropTarget.shadowScale
 
 They control only visual drag feedback: lifted-preview transform and the drop-target shadow derived from the themed border width. Source opacity remains a component property on `components.drag.preview.opacity`. Drop-target background, border, radius and padding are owned by the semantic `dropTarget.*` component roles.
 
-Pointer hit tolerances, insertion hitboxes and cursor semantics are interaction behavior rather than visual theme values and remain adapter-owned.
+Pointer hit tolerances, insertion hitboxes, drag threshold and cursor semantics are interaction behavior rather than visual theme values and remain adapter-owned.
 
 Missing mod metrics inherit from the engine default theme. A metric that is still absent after theme layering is a presentation-contract error rather than a silent code fallback. Consumed metrics are clamped to safe presentation ranges; malformed, non-finite or unknown metric values reject the mod during validation.
 
@@ -345,7 +372,7 @@ A theme with invalid token references, malformed values or invalid asset paths r
 engine default theme + mod overrides
   -> Battlegrounds.Content validation + immutable resolved theme catalog
   -> Battlegrounds.Game runtime translation
-  -> Godot Theme / FontFile / Texture2D / StyleBox / semantic layout values
+  -> Godot Theme / FontFile / Texture2D / StyleBox / semantic layout and motion values
 ```
 
 Core mechanics never read theme data. Theme choices cannot affect deterministic simulation, gameplay identity, pool ownership or command legality.
