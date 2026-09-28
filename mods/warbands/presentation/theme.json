@@ -62,7 +62,9 @@
     "row.reserve.preferredCardWidth": 96,
     "row.reserve.minimumCardWidth": 70,
     "row.reserve.preferredCardHeight": 70,
-    "row.reserve.padding": 2
+    "row.reserve.padding": 2,
+    "drag.preview.scale": 1.045,
+    "drag.preview.rotationDegrees": -1.5
   },
   "components": {
     "button": {
