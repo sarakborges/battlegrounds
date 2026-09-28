@@ -56,6 +56,8 @@ The JSON contract intentionally contains no Godot class names or property names.
     "card.contentGap": 2,
     "hud.heroPortrait.size": 88,
     "hud.opponent.portraitSize": 44,
+    "layout.combat.marginHorizontal": 32,
+    "layout.combat.marginVertical": 24,
     "drag.preview.scale": 1.045,
     "drag.preview.rotationDegrees": -1.5
   },
@@ -202,6 +204,19 @@ hud.opponent.statsGap
 ```
 
 They control HUD geometry only. Leader identity, Health, Armor, Tier, Resource and opponent state still come exclusively from authoritative match state and presentation text/assets.
+
+Combat playback uses these semantic layout metrics:
+
+```text
+layout.combat.marginHorizontal
+layout.combat.marginVertical
+layout.combat.contentGap
+layout.combat.boardsGap
+layout.combat.unitGap
+layout.combat.controlsGap
+```
+
+They control only the presentation-owned combat overlay: outer content margins, vertical content separation, spacing between the two combat boards, spacing between units, and spacing between playback controls. Missing values keep the adapter defaults (`32`, `24`, `12`, `24`, `6`, `8` respectively). Combat still consumes immutable resolved timeline data; these metrics cannot alter combat resolution, event ordering or authoritative state.
 
 Preparation drag feedback also exposes two semantic metrics:
 
