@@ -26,6 +26,15 @@ public sealed class ModThemeTests
         Assert.Equal(14, primary.Slice?.Left);
         Assert.Equal("primaryHover", primary.States["hover"].BackgroundColor);
         Assert.Equal("background", theme.Screens[ModThemeScreenRoles.Preparation].BackgroundColor);
+
+        var dragPreview = theme.Components["drag.preview"];
+        Assert.Equal(0.12, dragPreview.Opacity);
+        var dropTarget = theme.Components["dropTarget"];
+        Assert.Equal("success", dropTarget.BorderColor);
+        Assert.Equal(2, dropTarget.BorderWidth);
+        var activeDropTarget = theme.Components["dropTarget.active"];
+        Assert.Equal("focus", activeDropTarget.BorderColor);
+        Assert.Equal(3, activeDropTarget.BorderWidth);
     }
 
     [Fact]
