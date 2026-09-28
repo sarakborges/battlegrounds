@@ -230,16 +230,17 @@ internal sealed class DirectoryModValidator
         const string file = "rules/preparation.json";
         if (root is null) return null;
 
-        string[] keys =
+        string[] requiredKeys =
         [
             "startingResource", "resourcePerRound", "maximumResource", "acquireCost", "releaseValue",
             "refreshCost", "fieldCapacity", "reserveCapacity", "maximumTier", "offerSizesByTier",
             "initialUpgradeCostsByTier",
         ];
-        ValidateKeys(root.Value, file, "$", keys, keys, issues);
+        var allowedKeys = requiredKeys.Append("actionOfferSizesByTier");
+        ValidateKeys(root.Value, file, "$", allowedKeys, requiredKeys, issues);
 
         var values = new Dictionary<string, int>(StringComparer.Ordinal);
-        foreach (var key in keys.Take(9))
+        foreach (var key in requiredKeys.Take(9))
         {
             if (TryInt(root.Value, key, file, "$." + key, issues, out var value))
                 values[key] = value;
@@ -360,7 +361,7 @@ internal sealed class DirectoryModValidator
                 file.Root,
                 file.RelativePath,
                 "$",
-                ["id", "name", "healthModifier", "armor"],
+                ["id", "name", "healthModifier", "armor", "initialPowerId"],
                 ["id", "name", "healthModifier", "armor"],
                 issues);
 
