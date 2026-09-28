@@ -5,12 +5,6 @@ namespace Battlegrounds.Game;
 
 public partial class Main
 {
-    private const string DragPreviewRole = "drag.preview";
-    private const string DropTargetValidRole = "dropTarget.valid";
-    private const string DropTargetValidActiveRole = "dropTarget.valid.active";
-    private const string DropTargetInvalidRole = "dropTarget.invalid";
-    private const string DropTargetInvalidActiveRole = "dropTarget.invalid.active";
-
     internal CursorShape PreparationDragCursor => CursorShape.PointingHand;
     internal CursorShape PreparationValidDropCursor => CursorShape.CanDrop;
     internal CursorShape PreparationInvalidDropCursor => CursorShape.Forbidden;
@@ -19,24 +13,24 @@ public partial class Main
     {
         get
         {
-            if (_modTheme?.Components.TryGetValue(DragPreviewRole, out var style) == true && style.Opacity is double opacity)
+            if (_modTheme?.Components.TryGetValue(ModThemeInteractionRoles.DragPreview, out var style) == true && style.Opacity is double opacity)
                 return Mathf.Clamp((float)opacity, 0.0f, 1.0f);
             return 0.12f;
         }
     }
 
     internal float PreparationDragPreviewScale =>
-        ResolveThemeMetric("drag.preview.scale", 1.045f, 0.5f, 2.0f);
+        ResolveThemeMetric(ModThemeMetricKeys.Drag.PreviewScale, 1.045f, 0.5f, 2.0f);
 
     internal float PreparationDragPreviewRotationDegrees =>
-        ResolveThemeMetric("drag.preview.rotationDegrees", -1.5f, -45.0f, 45.0f);
+        ResolveThemeMetric(ModThemeMetricKeys.Drag.PreviewRotationDegrees, -1.5f, -45.0f, 45.0f);
 
     internal float PreparationDropTargetPadding
     {
         get
         {
-            if (TryResolveDropTargetPadding(DropTargetValidRole, out var padding) ||
-                TryResolveDropTargetPadding(DropTargetInvalidRole, out padding))
+            if (TryResolveDropTargetPadding(ModThemeInteractionRoles.DropTargetValid, out var padding) ||
+                TryResolveDropTargetPadding(ModThemeInteractionRoles.DropTargetInvalid, out padding))
                 return padding;
             if (_modTheme?.Spacing.TryGetValue("sm", out var spacing) == true)
                 return spacing;
@@ -48,10 +42,10 @@ public partial class Main
     {
         var role = (valid, active) switch
         {
-            (true, true) => DropTargetValidActiveRole,
-            (true, false) => DropTargetValidRole,
-            (false, true) => DropTargetInvalidActiveRole,
-            _ => DropTargetInvalidRole,
+            (true, true) => ModThemeInteractionRoles.DropTargetValidActive,
+            (true, false) => ModThemeInteractionRoles.DropTargetValid,
+            (false, true) => ModThemeInteractionRoles.DropTargetInvalidActive,
+            _ => ModThemeInteractionRoles.DropTargetInvalid,
         };
 
         ModThemeStyle? style = null;
