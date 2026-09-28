@@ -10,8 +10,8 @@ public interface ICombatPairingPolicy
 
 /// <summary>
 /// Neutral history-aware pairing policy. Live opponents with fewer prior meetings are preferred;
-/// ties prefer the least-recent meeting and then use the injected RNG. When an eliminated-opponent
-/// pairing is required, it is assigned to the active player who has received it least often.
+/// ties prefer the least-recent meeting and then use the injected RNG. For odd active-player counts,
+/// the policy uses an archived eliminated opponent when available and otherwise assigns a fair bye.
 /// </summary>
 public sealed class HistoryAwareCombatPairingPolicy : ICombatPairingPolicy
 {
@@ -40,13 +40,16 @@ public sealed class HistoryAwareCombatPairingPolicy : ICombatPairingPolicy
         {
             if (match.LatestEliminatedOpponent is null)
             {
-                throw new InvalidOperationException(
-                    "An odd active-player count requires a snapshot from a previously eliminated player.");
+                var byePlayer = ChooseByePlayer(match, remaining, randomSource);
+                result.Add(CombatPairing.Bye(byePlayer));
+                remaining.Remove(byePlayer);
             }
-
-            var eliminatedOpponentPlayer = ChooseEliminatedOpponentPlayer(match, remaining, randomSource);
-            result.Add(CombatPairing.VersusEliminatedOpponent(eliminatedOpponentPlayer));
-            remaining.Remove(eliminatedOpponentPlayer);
+            else
+            {
+                var eliminatedOpponentPlayer = ChooseEliminatedOpponentPlayer(match, remaining, randomSource);
+                result.Add(CombatPairing.VersusEliminatedOpponent(eliminatedOpponentPlayer));
+                remaining.Remove(eliminatedOpponentPlayer);
+            }
         }
 
         while (remaining.Count > 0)
@@ -61,6 +64,26 @@ public sealed class HistoryAwareCombatPairingPolicy : ICombatPairingPolicy
         return Array.AsReadOnly(result.ToArray());
     }
 
+    private static PlayerId ChooseByePlayer(
+        MatchState match,
+        IReadOnlyList<PlayerId> candidates,
+        IRandomSource randomSource)
+    {
+        var scored = candidates
+            .Select(playerId =>
+            {
+                var history = match.CombatPairingHistory
+                    .Where(entry => entry.IsBye && entry.LeftPlayerId == playerId)
+                    .ToArray();
+                return new SpecialPairingCandidate(
+                    playerId,
+                    history.Length,
+                    history.Length == 0 ? int.MinValue : history.Max(entry => entry.Round));
+            })
+            .ToArray();
+        return ChooseLeastUsedSpecialPairing(scored, randomSource);
+    }
+
     private static PlayerId ChooseEliminatedOpponentPlayer(
         MatchState match,
         IReadOnlyList<PlayerId> candidates,
@@ -72,12 +95,19 @@ public sealed class HistoryAwareCombatPairingPolicy : ICombatPairingPolicy
                 var history = match.CombatPairingHistory
                     .Where(entry => entry.UsesEliminatedOpponent && entry.LeftPlayerId == playerId)
                     .ToArray();
-                return new EliminatedOpponentCandidate(
+                return new SpecialPairingCandidate(
                     playerId,
                     history.Length,
                     history.Length == 0 ? int.MinValue : history.Max(entry => entry.Round));
             })
             .ToArray();
+        return ChooseLeastUsedSpecialPairing(scored, randomSource);
+    }
+
+    private static PlayerId ChooseLeastUsedSpecialPairing(
+        IReadOnlyList<SpecialPairingCandidate> scored,
+        IRandomSource randomSource)
+    {
         var minimumCount = scored.Min(candidate => candidate.Count);
         var oldestRound = scored
             .Where(candidate => candidate.Count == minimumCount)
@@ -125,9 +155,10 @@ public sealed class HistoryAwareCombatPairingPolicy : ICombatPairingPolicy
 
     private static bool IsLiveMeeting(MatchCombatPairing entry, PlayerId leftPlayerId, PlayerId rightPlayerId) =>
         !entry.UsesEliminatedOpponent &&
+        !entry.IsBye &&
         ((entry.LeftPlayerId == leftPlayerId && entry.RightPlayerId == rightPlayerId) ||
          (entry.LeftPlayerId == rightPlayerId && entry.RightPlayerId == leftPlayerId));
 
     private readonly record struct LiveOpponentCandidate(PlayerId PlayerId, int Meetings, int LastRound);
-    private readonly record struct EliminatedOpponentCandidate(PlayerId PlayerId, int Count, int LastRound);
+    private readonly record struct SpecialPairingCandidate(PlayerId PlayerId, int Count, int LastRound);
 }
