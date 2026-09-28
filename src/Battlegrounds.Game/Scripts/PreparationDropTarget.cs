@@ -6,6 +6,7 @@ public enum PreparationDropTargetRole
 {
     AcquireOffer = 0,
     SellFieldUnit = 1,
+    SpatialResolver = 2,
 }
 
 public partial class PreparationDropTarget : Control
@@ -30,6 +31,7 @@ public partial class PreparationDropTarget : Control
                 main.CanAcquireOfferFromDrag(slot),
             PreparationDropTargetRole.SellFieldUnit when PreparationDragPayload.TryReadField(data, out var fieldIndex) =>
                 main.CanSellFieldUnitFromDrag(fieldIndex),
+            PreparationDropTargetRole.SpatialResolver => main.CanResolvePreparationDrag(data),
             _ => false,
         };
     }
@@ -44,15 +46,15 @@ public partial class PreparationDropTarget : Control
         {
             case PreparationDropTargetRole.AcquireOffer
                 when PreparationDragPayload.TryReadOffer(data, out var slot):
-                // Offer drags are caught globally so the cursor never turns into the
-                // forbidden/disabled icon. The actual purchase decision is spatial:
-                // only releasing over the player's HeroCore buys the offer.
                 main.CompleteOfferDragFromPointer(slot, main.GetViewport().GetMousePosition());
                 break;
             case PreparationDropTargetRole.SellFieldUnit
                 when PreparationDragPayload.TryReadField(data, out var fieldIndex):
                 main.GetNodeOrNull<HorizontalCardRow>("%FieldButtons")?.EndFieldDrag();
                 main.SellFieldUnitFromDrag(fieldIndex);
+                break;
+            case PreparationDropTargetRole.SpatialResolver:
+                main.ResolvePreparationDropFromPointer(data, main.GetViewport().GetMousePosition());
                 break;
         }
     }
