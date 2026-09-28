@@ -103,9 +103,11 @@ public partial class Main
     private bool TryResolveDropTargetPadding(string role, out float padding)
     {
         padding = 0;
-        if (_modTheme?.Components.TryGetValue(role, out var style) != true ||
+        var theme = _modTheme;
+        if (theme is null ||
+            !theme.Components.TryGetValue(role, out var style) ||
             style.Padding?.Horizontal is not string token ||
-            !_modTheme.Spacing.TryGetValue(token, out var spacing))
+            !theme.Spacing.TryGetValue(token, out var spacing))
             return false;
 
         padding = spacing;
