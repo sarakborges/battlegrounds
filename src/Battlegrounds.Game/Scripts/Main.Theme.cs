@@ -12,8 +12,10 @@ public partial class Main
     private void InitializeTheme()
     {
         var modDirectory = ProjectSettings.GlobalizePath(ModPath);
-        _modTheme = new ModThemeLoader().Load(modDirectory);
-        if (_modTheme.IsEmpty) return;
+        var loader = new ModThemeLoader();
+        var engineTheme = loader.LoadEngineDefault();
+        var modTheme = loader.Load(modDirectory);
+        _modTheme = ModThemeCatalog.Layer(engineTheme, modTheme);
 
         _themeBuilder = new ModThemeBuilder(modDirectory, _modTheme);
         Theme = _themeBuilder.Build();
@@ -22,7 +24,9 @@ public partial class Main
         ApplyScreenTheme(ModThemeScreenRoles.Preparation);
         ApplySemanticTypography();
         ApplySemanticLayout();
-        AppendLog($"Presentation theme v{_modTheme.Version} loaded from the selected mod.");
+        AppendLog(modTheme.IsEmpty
+            ? $"Presentation theme v{_modTheme.Version} loaded from engine defaults."
+            : $"Presentation theme v{_modTheme.Version} loaded from engine defaults + selected mod overrides.");
     }
 
     private void ApplyScreenTheme(string role)
