@@ -1,0 +1,25 @@
+{
+  "id": "arcane-breakthrough",
+  "name": "Arcane Breakthrough",
+  "triggers": [
+    {
+      "event": "onTurnStart",
+      "activationLimit": { "scope": "match", "count": 1 },
+      "conditions": [
+        {
+          "kind": "value",
+          "left": { "kind": "eventCount", "event": "actionPlayed", "scope": "match" },
+          "comparison": "greaterThanOrEqual",
+          "right": 3
+        }
+      ],
+      "effects": [
+        {
+          "kind": "generateActionChoice",
+          "actionQuery": {},
+          "optionCount": 3
+        }
+      ]
+    }
+  ]
+}

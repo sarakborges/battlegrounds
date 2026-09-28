@@ -1,0 +1,25 @@
+{
+  "id": "sentinel-hunt",
+  "name": "Sentinel Hunt",
+  "triggers": [
+    {
+      "event": "onTurnStart",
+      "activationLimit": { "scope": "match", "count": 1 },
+      "conditions": [
+        {
+          "kind": "value",
+          "left": { "kind": "eventCount", "event": "unitAcquired", "scope": "match", "typeId": "beast" },
+          "comparison": "greaterThanOrEqual",
+          "right": 4
+        }
+      ],
+      "effects": [
+        {
+          "kind": "generateUnitChoice",
+          "generationQuery": { "minimumTier": 3, "maximumTier": 5, "typeId": "beast" },
+          "optionCount": 3
+        }
+      ]
+    }
+  ]
+}
