@@ -16,7 +16,9 @@ jobs:
         with:
           dotnet-version: '8.0.x'
       - name: Apply temporary behavior slice
-        run: python3 .github/temporary-behavior-patch.py
+        run: |
+          python3 .github/temporary-behavior-patch.py
+          grep -rl 'public bool AddBehavior(IEffectRuntimeUnit unit, BehaviorDefinition behavior)' tests/Battlegrounds.Core.Tests | xargs -r sed -i 's/public bool AddBehavior(IEffectRuntimeUnit unit, BehaviorDefinition behavior)/public bool AddBehavior(IEffectRuntimeUnit unit, BehaviorDefinition behavior, UnitModifierDuration duration)/g'
       - name: Test core
         run: dotnet test tests/Battlegrounds.Core.Tests/Battlegrounds.Core.Tests.csproj --configuration Release
       - name: Test content
