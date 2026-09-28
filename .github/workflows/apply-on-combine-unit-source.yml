@@ -1,0 +1,68 @@
+name: Apply onCombine unit source fix
+
+'on':
+  push:
+    branches:
+      - on-combine-unit-source
+    paths:
+      - .github/workflows/apply-on-combine-unit-source.yml
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: on-combine-unit-source
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Apply direct onCombine runtime source
+        shell: python
+        run: |
+          from pathlib import Path
+
+          def replace_once(path, old, new):
+              p = Path(path)
+              text = p.read_text()
+              if old not in text:
+                  raise SystemExit(f'{path}: replacement anchor not found')
+              p.write_text(text.replace(old, new, 1))
+
+          replace_once(
+              'src/Battlegrounds.Core/Domain/Preparation/PreparationEffectEngine.cs',
+              'internal sealed class PreparationEffectEngine\n',
+              'internal sealed partial class PreparationEffectEngine\n')
+
+          Path('src/Battlegrounds.Core/Domain/Preparation/PreparationEffectEngineCombines.cs').write_text('''using Battlegrounds.Core.Domain.Effects;\nusing Battlegrounds.Core.Domain.Match;\nusing Battlegrounds.Core.Domain.Players;\nusing Battlegrounds.Core.Domain.Units;\n\nnamespace Battlegrounds.Core.Domain.Preparation;\n\ninternal sealed partial class PreparationEffectEngine\n{\n    public void ProcessCombinedUnit(\n        MatchState match,\n        PlayerState owner,\n        UnitInstance unit)\n    {\n        ArgumentNullException.ThrowIfNull(match);\n        ArgumentNullException.ThrowIfNull(owner);\n        ArgumentNullException.ThrowIfNull(unit);\n\n        var triggers = unit.Definition.Triggers\n            .Where(value => value.Event == NativeTriggerKeys.OnCombine)\n            .ToArray();\n        if (triggers.Length == 0) return;\n\n        if (triggers.Any(trigger =>\n                trigger.Conditions.Count != 0 ||\n                trigger.ActivationLimit is not null ||\n                trigger.Counter is not null ||\n                trigger.Count is not null))\n        {\n            throw new InvalidOperationException(\n                "onCombine currently supports direct reward effects only; conditions, counters, and activation limits are not valid in this context.");\n        }\n\n        var (world, runtime) = GetRuntime(match);\n        runtime.Process(new GameEffectEvent(NativeTriggerKeys.OnCombine, world.Wrap(unit, owner.Id)));\n    }\n}\n''')
+
+          replace_once(
+              'tests/Battlegrounds.Core.Tests/Preparation/UnitCombineTests.cs',
+              '''                new TriggerDefinition(\n                    NativeTriggerKeys.OnCombine,\n                    [new AddResourceEffectDefinition(1)])\n''',
+              '''                new TriggerDefinition(\n                    NativeTriggerKeys.OnCombine,\n                    [new AddResourceEffectDefinition(new SourceStatEffectValueExpression(EffectStat.Attack))]),\n                new TriggerDefinition(\n                    NativeTriggerKeys.OnCombine,\n                    [new AddResourceEffectDefinition(1)])\n''')
+          replace_once(
+              'tests/Battlegrounds.Core.Tests/Preparation/UnitCombineTests.cs',
+              '        Assert.Equal(11, player.Resource);\n',
+              '        Assert.Equal(15, player.Resource);\n')
+
+          replace_once(
+              'COMBINES.md',
+              '''7. execute the result Unit's optional `onCombine` reward trigger;\n8. resolve any consequences produced by that reward through the existing Preparation effect runtime.\n''',
+              '''7. execute the result Unit's authored `onCombine` reward triggers in definition order, using that result Unit itself as the effect source;\n8. resolve any consequences produced by those rewards through the existing Preparation effect runtime.\n''')
+          replace_once(
+              'COMBINES.md',
+              '''The result Unit is already in Reserve when its `onCombine` effects run. The hook exists for reward-style consequences such as resource changes, generated playables, pending choices, or other targetless Preparation effects that already use `GameEffectRuntime` semantics.\n''',
+              '''The result Unit is already in Reserve when its `onCombine` effects run. The result Unit itself is the runtime effect source, so source-relative dynamic values such as `sourceStat` read the result's authored/current runtime stats rather than a synthetic proxy. Multiple authored `onCombine` triggers resolve in definition order. The hook exists for reward-style consequences such as resource changes, generated playables, pending choices, or other targetless Preparation effects that already use `GameEffectRuntime` semantics.\n''')
+      - name: Test core
+        run: dotnet test tests/Battlegrounds.Core.Tests/Battlegrounds.Core.Tests.csproj --configuration Release
+      - name: Commit implementation
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git rm .github/workflows/apply-on-combine-unit-source.yml
+          git add src/Battlegrounds.Core/Domain/Preparation/PreparationEffectEngine.cs src/Battlegrounds.Core/Domain/Preparation/PreparationEffectEngineCombines.cs tests/Battlegrounds.Core.Tests/Preparation/UnitCombineTests.cs COMBINES.md
+          git commit -m "Use combined unit as onCombine effect source"
+          git push origin HEAD:on-combine-unit-source
