@@ -85,7 +85,10 @@ public static class ModThemeMetricNames
 
     private static readonly HashSet<string> RowRoles = new(StringComparer.Ordinal)
     {
-        "leader", "offer", "field", "reserve",
+        ModThemeMetricKeys.Row.LeaderRole,
+        ModThemeMetricKeys.Row.OfferRole,
+        ModThemeMetricKeys.Row.FieldRole,
+        ModThemeMetricKeys.Row.ReserveRole,
     };
 
     private static readonly HashSet<string> RowProperties = new(StringComparer.Ordinal)
@@ -95,7 +98,12 @@ public static class ModThemeMetricNames
 
     private static readonly HashSet<string> CardRoles = new(StringComparer.Ordinal)
     {
-        "default", "leader", "shop", "board", "reserve", "choice",
+        ModThemeMetricKeys.Card.DefaultRole,
+        ModThemeMetricKeys.Card.LeaderRole,
+        ModThemeMetricKeys.Card.ShopRole,
+        ModThemeMetricKeys.Card.BoardRole,
+        ModThemeMetricKeys.Card.ReserveRole,
+        ModThemeMetricKeys.Card.ChoiceRole,
     };
 
     private static readonly HashSet<string> CardProperties = new(StringComparer.Ordinal)
