@@ -6,25 +6,14 @@ namespace Battlegrounds.Game;
 public partial class Main
 {
     private bool _combatThemeUiApplied;
-    private bool _combatScreenThemeActive;
 
     private void RefreshCombatThemeState()
     {
-        if (_combatOverlay is null)
+        if (_combatOverlay is null || _combatThemeUiApplied)
             return;
 
-        if (!_combatThemeUiApplied)
-        {
-            ApplyCombatSemanticTheme();
-            _combatThemeUiApplied = true;
-        }
-
-        var combatVisible = _combatOverlay.Visible;
-        if (combatVisible == _combatScreenThemeActive)
-            return;
-
-        _combatScreenThemeActive = combatVisible;
-        ApplyScreenTheme(combatVisible ? ModThemeScreenRoles.Combat : ModThemeScreenRoles.Preparation);
+        ApplyCombatSemanticTheme();
+        _combatThemeUiApplied = true;
     }
 
     private void ApplyCombatSemanticTheme()
