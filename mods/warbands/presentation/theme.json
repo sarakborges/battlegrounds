@@ -23,6 +23,8 @@
     "dangerActive": "#E36A59",
     "success": "#759B54",
     "successActive": "#A6C979",
+    "attackSurface": "#2A2012",
+    "attackAccent": "#F0BE58",
     "healthSurface": "#321817",
     "healthAccent": "#E16B58",
     "armorSurface": "#1A252B",
@@ -88,7 +90,7 @@
     "layout.tavern.shopkeeperWidth": 104,
     "layout.tavern.shopkeeperContentGap": 2,
     "layout.tavern.balanceSpacerWidth": 104,
-    "layout.board.minimumHeight": 258,
+    "layout.board.minimumHeight": 238,
     "layout.reserve.minimumHeight": 72,
     "layout.heroDock.gap": 8,
     "layout.heroDock.healthBadge.width": 52,
@@ -107,9 +109,9 @@
     "layout.turnRail.gap": 8,
     "layout.turnRail.endButtonHeight": 68,
     "layout.interaction.anchorLeft": 0.24,
-    "layout.interaction.anchorTop": 0.20,
+    "layout.interaction.anchorTop": 0.2,
     "layout.interaction.anchorRight": 0.76,
-    "layout.interaction.anchorBottom": 0.80,
+    "layout.interaction.anchorBottom": 0.8,
     "layout.interaction.marginHorizontal": 16,
     "layout.interaction.marginVertical": 14,
     "layout.interaction.contentGap": 8,
@@ -129,12 +131,12 @@
     "row.offer.gap": 10,
     "row.offer.preferredCardWidth": 112,
     "row.offer.minimumCardWidth": 80,
-    "row.offer.preferredCardHeight": 136,
+    "row.offer.preferredCardHeight": 138,
     "row.offer.padding": 5,
     "row.field.gap": 12,
     "row.field.preferredCardWidth": 126,
     "row.field.minimumCardWidth": 82,
-    "row.field.preferredCardHeight": 190,
+    "row.field.preferredCardHeight": 168,
     "row.field.padding": 10,
     "row.reserve.gap": 5,
     "row.reserve.preferredCardWidth": 84,
@@ -142,14 +144,17 @@
     "row.reserve.preferredCardHeight": 64,
     "row.reserve.padding": 3,
     "card.contentGap": 2,
+    "card.inspect.width": 292,
+    "card.inspect.artHeight": 164,
+    "card.inspect.offset": 16,
     "card.default.minimumWidth": 88,
     "card.default.artHeight": 50,
     "card.leader.minimumWidth": 146,
     "card.leader.artHeight": 112,
     "card.shop.minimumWidth": 106,
-    "card.shop.artHeight": 72,
+    "card.shop.artHeight": 96,
     "card.board.minimumWidth": 118,
-    "card.board.artHeight": 104,
+    "card.board.artHeight": 132,
     "card.reserve.minimumWidth": 78,
     "card.reserve.artHeight": 30,
     "card.choice.minimumWidth": 116,
@@ -244,6 +249,30 @@
         "focus": {
           "borderColor": "focus",
           "borderWidth": 2
+        }
+      }
+    },
+    "card.board": {
+      "backgroundColor": "surfaceDeep",
+      "borderColor": "borderStrong",
+      "borderWidth": 2,
+      "radius": "large",
+      "padding": {
+        "horizontal": "xs",
+        "vertical": "xs"
+      },
+      "states": {
+        "hover": {
+          "backgroundColor": "surfaceRaised",
+          "borderColor": "focus",
+          "borderWidth": 3
+        },
+        "pressed": {
+          "backgroundColor": "surfacePressed"
+        },
+        "focus": {
+          "borderColor": "focus",
+          "borderWidth": 3
         }
       }
     },
@@ -381,6 +410,16 @@
         "vertical": "xs"
       }
     },
+    "panel.attackBadge": {
+      "backgroundColor": "attackSurface",
+      "borderColor": "attackAccent",
+      "borderWidth": 2,
+      "radius": "medium",
+      "padding": {
+        "horizontal": "xs",
+        "vertical": "xs"
+      }
+    },
     "panel.healthBadge": {
       "backgroundColor": "healthSurface",
       "borderColor": "healthAccent",
@@ -408,6 +447,16 @@
         "vertical": "xs"
       }
     },
+    "panel.cardInspect": {
+      "backgroundColor": "surfaceRaised",
+      "borderColor": "focus",
+      "borderWidth": 2,
+      "radius": "large",
+      "padding": {
+        "horizontal": "md",
+        "vertical": "md"
+      }
+    },
     "panel.interaction": {
       "backgroundColor": "surfaceDeep",
       "borderColor": "focus",
@@ -433,6 +482,10 @@
     },
     "label.heroName": {
       "textColor": "text",
+      "fontSize": "heading"
+    },
+    "label.attack": {
+      "textColor": "attackAccent",
       "fontSize": "heading"
     },
     "label.health": {
