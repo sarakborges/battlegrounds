@@ -1,0 +1,18 @@
+{
+  "id": "market-mastery",
+  "name": "Market Mastery",
+  "triggers": [
+    {
+      "event": "afterEventCount",
+      "counter": { "event": "offerRefreshed", "scope": "turn" },
+      "count": 3,
+      "effects": [
+        {
+          "kind": "generateActionChoice",
+          "actionQuery": {},
+          "optionCount": 3
+        }
+      ]
+    }
+  ]
+}

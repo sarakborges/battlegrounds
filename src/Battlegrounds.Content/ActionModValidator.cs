@@ -18,6 +18,18 @@ internal sealed class ActionModValidator
         "addBehavior", "removeBehavior", "addResource", "adjustUpgradeCost", "addAcquireDiscount", "refreshOffer", "setPower",
     ];
 
+    private static readonly HashSet<string> PreparationOnlyGameEvents =
+    [
+        "unitAcquired",
+        "unitReleased",
+        "unitPlayed",
+        "actionAcquired",
+        "actionPlayed",
+        "powerActivated",
+        "offerRefreshed",
+        "tierUpgraded",
+    ];
+
     public IReadOnlyList<ModValidationIssue> Validate(string modDirectory)
     {
         var issues = new List<ModValidationIssue>();
@@ -91,6 +103,7 @@ internal sealed class ActionModValidator
                                     var allowed = pair.Power
                                         ? eventName is "onActivate" or "onMatchStart" or "onTurnStart" or "onTurnEnd"
                                         : eventName is "onAcquire" or "onPlay" or "onTurnStart" or "onTurnEnd";
+                                    if (!allowed && IsPreparationOnlyCountedEvent(trigger, eventName)) allowed = true;
                                     var path = $"$.triggers[{triggerIndex}].effects[{effectIndex}]";
                                     if (kind == "generateActionChoice" && eventName == "onTurnEnd")
                                         allowed = false;
@@ -111,6 +124,20 @@ internal sealed class ActionModValidator
                 }
             }
         }
+    }
+
+    private static bool IsPreparationOnlyCountedEvent(JsonElement trigger, string? eventName)
+    {
+        if (eventName != "afterEventCount" ||
+            trigger.ValueKind != JsonValueKind.Object ||
+            !trigger.TryGetProperty("counter", out var counter) ||
+            counter.ValueKind != JsonValueKind.Object ||
+            !counter.TryGetProperty("event", out var counterEvent) ||
+            counterEvent.ValueKind != JsonValueKind.String)
+            return false;
+
+        var value = counterEvent.GetString();
+        return value is not null && PreparationOnlyGameEvents.Contains(value);
     }
 
     private static void ValidateEffects(

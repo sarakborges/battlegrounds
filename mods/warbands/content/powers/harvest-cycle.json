@@ -1,0 +1,18 @@
+{
+  "id": "harvest-cycle",
+  "name": "Harvest Cycle",
+  "triggers": [
+    {
+      "event": "afterEventCount",
+      "counter": { "event": "tierUpgraded", "scope": "match" },
+      "count": 1,
+      "effects": [
+        {
+          "kind": "generateUnitChoice",
+          "generationQuery": { "minimumTier": 2, "maximumTier": 5, "typeId": "beast" },
+          "optionCount": 3
+        }
+      ]
+    }
+  ]
+}

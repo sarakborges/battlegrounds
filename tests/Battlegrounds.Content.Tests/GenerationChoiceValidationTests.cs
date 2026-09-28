@@ -220,6 +220,64 @@ public sealed class GenerationChoiceValidationTests
         }
     }
 
+    [Fact]
+    public void Validate_AcceptsGenerationFromPreparationOnlyCountedEvents()
+    {
+        var path = CreateTempMod();
+        try
+        {
+            WriteScout(
+                path,
+                """
+                {
+                  "event": "afterEventCount",
+                  "counter": { "event": "tierUpgraded", "scope": "match" },
+                  "count": 1,
+                  "effects": [
+                    {
+                      "kind": "generateUnitChoice",
+                      "generationQuery": { "typeId": "construct" },
+                      "optionCount": 2
+                    }
+                  ]
+                }
+                """);
+
+            File.WriteAllText(
+                Path.Combine(path, "content", "powers", "milestone-reward.json"),
+                """
+                {
+                  "id": "milestone-reward",
+                  "name": "Milestone Reward",
+                  "triggers": [
+                    {
+                      "event": "afterEventCount",
+                      "counter": { "event": "offerRefreshed", "scope": "turn" },
+                      "count": 2,
+                      "effects": [
+                        {
+                          "kind": "generateActionChoice",
+                          "actionQuery": {},
+                          "optionCount": 2
+                        }
+                      ]
+                    }
+                  ]
+                }
+                """);
+
+            var report = new ModValidator().Validate(path);
+
+            Assert.True(
+                report.IsValid,
+                string.Join(Environment.NewLine, report.Issues.Select(issue => $"{issue.Code} {issue.File} {issue.Path}: {issue.Message}")));
+        }
+        finally
+        {
+            Directory.Delete(path, recursive: true);
+        }
+    }
+
     private static void WriteScout(string root, string triggerJson)
     {
         File.WriteAllText(
