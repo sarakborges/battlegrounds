@@ -94,9 +94,8 @@ public partial class Main
             }
         }
 
-        var glow = box.BorderColor;
-        box.ShadowColor = new Color(glow, active ? glow.A * 0.8f : glow.A * 0.5f);
-        box.ShadowSize = Math.Max(active ? 8 : 5, box.BorderWidthLeft * 3);
+        box.ShadowColor = box.BorderColor;
+        box.ShadowSize = Math.Max(1, box.BorderWidthLeft * 3);
         box.ShadowOffset = Vector2.Zero;
         return box;
     }
