@@ -8,7 +8,7 @@
   "fieldCapacity": 7,
   "reserveCapacity": 10,
   "maximumTier": 6,
-  "offerSizesByTier": [3, 4, 4, 5, 5, 6],
+  "offerSizesByTier": [4, 5, 5, 6, 6, 7],
   "actionOfferSizesByTier": [1, 1, 1, 1, 1, 1],
   "initialUpgradeCostsByTier": [5, 7, 8, 11, 11]
 }
