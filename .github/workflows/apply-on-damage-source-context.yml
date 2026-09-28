@@ -1,0 +1,121 @@
+name: Apply on-damage source context
+
+'on':
+  push:
+    branches:
+      - on-damage-source-context
+    paths:
+      - .github/workflows/apply-on-damage-source-context.yml
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: on-damage-source-context
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Apply damage provenance slice
+        shell: python
+        run: |
+          from pathlib import Path
+
+          def replace_once(path, old, new):
+              p = Path(path)
+              text = p.read_text()
+              if old not in text:
+                  raise SystemExit(f'{path}: replacement anchor not found')
+              p.write_text(text.replace(old, new, 1))
+
+          # GameEffectRuntime: effect damage propagates a living, targetable Unit source.
+          replace_once(
+              'src/Battlegrounds.Core/Domain/Effects/GameEffectRuntime.cs',
+              '''                    queue.Enqueue(new GameEffectEvent(NativeTriggerKeys.OnDamage, target));\n''',
+              '''                    queue.Enqueue(new GameEffectEvent(\n                        NativeTriggerKeys.OnDamage,\n                        target,\n                        GetLivingContextTargetInstanceId(source)));\n''')
+          replace_once(
+              'src/Battlegrounds.Core/Domain/Effects/GameEffectRuntime.cs',
+              '''    private UnitCatalog RequireUnitCatalog(string effect) =>\n''',
+              '''    private UnitInstanceId? GetLivingContextTargetInstanceId(IEffectRuntimeUnit source)\n    {\n        if (!source.IsAlive) return null;\n        return _world.TryGetUnit(source.InstanceId, out var current) && current.IsAlive\n            ? source.InstanceId\n            : null;\n    }\n\n    private UnitCatalog RequireUnitCatalog(string effect) =>\n''')
+
+          # Combat strike damage propagates the opposite living Unit as onDamage context.
+          replace_once(
+              'src/Battlegrounds.Core/Domain/Combat/CombatEngine.cs',
+              '''                    damageEvents.Add(new GameEffectEvent(NativeTriggerKeys.OnDamage, target));\n''',
+              '''                    damageEvents.Add(new GameEffectEvent(\n                        NativeTriggerKeys.OnDamage,\n                        target,\n                        GetLivingContextTargetInstanceId(world, attacker)));\n''')
+          replace_once(
+              'src/Battlegrounds.Core/Domain/Combat/CombatEngine.cs',
+              '''                    damageEvents.Add(new GameEffectEvent(NativeTriggerKeys.OnDamage, attacker));\n''',
+              '''                    damageEvents.Add(new GameEffectEvent(\n                        NativeTriggerKeys.OnDamage,\n                        attacker,\n                        GetLivingContextTargetInstanceId(world, target)));\n''')
+          replace_once(
+              'src/Battlegrounds.Core/Domain/Combat/CombatEngine.cs',
+              '''    private static DamageResult ApplyAttackDamage(\n''',
+              '''    private static UnitInstanceId? GetLivingContextTargetInstanceId(\n        CombatEffectWorld world,\n        CombatRuntimeUnit source) =>\n        source.IsAlive && world.TryGetUnit(source.InstanceId, out var current) && current.IsAlive\n            ? source.InstanceId\n            : null;\n\n    private static DamageResult ApplyAttackDamage(\n''')
+
+          # Content validators: Unit onDamage is now a context-providing trigger.
+          for path in [
+              'src/Battlegrounds.Content/AdvancedEffectModValidator.cs',
+              'src/Battlegrounds.Content/DynamicEffectValueModValidator.cs',
+          ]:
+              replace_once(
+                  path,
+                  '''                (!powerMode && eventName == "onAttack");\n''',
+                  '''                (!powerMode && (eventName == "onAttack" || eventName == "onDamage"));\n''')
+              replace_once(
+                  path,
+                  '''"selected requires a trigger context target, currently unit onAttack or activatable power onActivate."''',
+                  '''"selected requires a trigger context target, currently unit onAttack, unit onDamage, or activatable power onActivate."''')
+
+          # Core regressions for strike damage, effect damage, and a non-targetable damage source.
+          path = Path('tests/Battlegrounds.Core.Tests/Combat/CombatEffectExecutionTests.cs')
+          text = path.read_text()
+          anchor = '''    [Fact]\n    public void CombatEffectsDoNotMutatePersistentDefinitionsOrInput()\n'''
+          tests = '''    [Fact]\n    public void OnDamageSelectedTarget_UsesLivingAttackDamageSource()\n    {\n        var attacker = new UnitDefinition(new UnitId("attacker"), "Attacker", 1, 3, 10);\n        var retaliator = new UnitDefinition(\n            new UnitId("retaliator"),\n            "Retaliator",\n            1,\n            0,\n            3,\n            triggers:\n            [\n                new TriggerDefinition(\n                    NativeTriggerKeys.OnDamage,\n                    [\n                        new DealDamageEffectDefinition(\n                            new EffectTargetSelector(EffectTargetScope.Selected),\n                            2),\n                    ]),\n            ]);\n        var catalog = new UnitCatalog([attacker, retaliator]);\n        var input = new CombatInput(\n            Participant(0, Snapshot(1, attacker)),\n            Participant(1, Snapshot(2, retaliator)));\n\n        var result = new CombatEngine(7, catalog, new BehaviorCatalog([]))\n            .Resolve(input, new CombatRules(StartingSidePolicy.Random), new MinimumRandomSource());\n\n        Assert.Equal(new PlayerId(0), result.WinnerPlayerId);\n        var survivor = Assert.Single(result.LeftSurvivors);\n        Assert.Equal(8, survivor.Health);\n    }\n\n    [Fact]\n    public void OnDamageSelectedTarget_UsesLivingEffectDamageSource()\n    {\n        var source = new UnitDefinition(\n            new UnitId("source"),\n            "Source",\n            1,\n            5,\n            10,\n            triggers:\n            [\n                new TriggerDefinition(\n                    NativeTriggerKeys.OnCombatStart,\n                    [\n                        new DealDamageEffectDefinition(\n                            new EffectTargetSelector(EffectTargetScope.Enemy),\n                            1),\n                    ]),\n            ]);\n        var retaliator = new UnitDefinition(\n            new UnitId("retaliator"),\n            "Retaliator",\n            1,\n            0,\n            1,\n            triggers:\n            [\n                new TriggerDefinition(\n                    NativeTriggerKeys.OnDamage,\n                    [\n                        new DealDamageEffectDefinition(\n                            new EffectTargetSelector(EffectTargetScope.Selected),\n                            2),\n                    ]),\n            ]);\n        var catalog = new UnitCatalog([source, retaliator]);\n        var input = new CombatInput(\n            Participant(0, Snapshot(1, source)),\n            Participant(1, Snapshot(2, retaliator)));\n\n        var result = new CombatEngine(7, catalog, new BehaviorCatalog([]))\n            .Resolve(input, new CombatRules(StartingSidePolicy.Random), new MinimumRandomSource());\n\n        Assert.Equal(new PlayerId(0), result.WinnerPlayerId);\n        var survivor = Assert.Single(result.LeftSurvivors);\n        Assert.Equal(8, survivor.Health);\n        Assert.Empty(result.Attacks);\n    }\n\n    [Fact]\n    public void OnDamageSelectedTarget_IsAbsentWhenDamageSourceIsNotTargetable()\n    {\n        var doomed = new UnitDefinition(\n            new UnitId("doomed"),\n            "Doomed",\n            1,\n            0,\n            1,\n            triggers:\n            [\n                new TriggerDefinition(\n                    NativeTriggerKeys.OnDeath,\n                    [\n                        new DealDamageEffectDefinition(\n                            new EffectTargetSelector(EffectTargetScope.Enemy),\n                            1),\n                    ]),\n            ]);\n        var reactive = new UnitDefinition(\n            new UnitId("reactive"),\n            "Reactive",\n            1,\n            2,\n            5,\n            triggers:\n            [\n                new TriggerDefinition(\n                    NativeTriggerKeys.OnDamage,\n                    [\n                        new DestroyUnitEffectDefinition(\n                            new EffectTargetSelector(EffectTargetScope.Selected)),\n                    ]),\n            ]);\n        var catalog = new UnitCatalog([doomed, reactive]);\n        var input = new CombatInput(\n            Participant(0, Snapshot(1, doomed)),\n            Participant(1, Snapshot(2, reactive)));\n\n        var result = new CombatEngine(7, catalog, new BehaviorCatalog([]))\n            .Resolve(input, new CombatRules(StartingSidePolicy.Random), new MinimumRandomSource());\n\n        Assert.Equal(new PlayerId(1), result.WinnerPlayerId);\n        var survivor = Assert.Single(result.RightSurvivors);\n        Assert.Equal(4, survivor.Health);\n    }\n\n    [Fact]\n    public void CombatEffectsDoNotMutatePersistentDefinitionsOrInput()\n'''
+          if anchor not in text:
+              raise SystemExit('CombatEffectExecutionTests insertion point not found')
+          path.write_text(text.replace(anchor, tests, 1))
+
+          # Content regression: selected is valid for both onAttack and onDamage, not generic lifecycle events.
+          path = Path('tests/Battlegrounds.Content.Tests/AdvancedEffectValidationTests.cs')
+          text = path.read_text()
+          text = text.replace(
+              'public void Validate_SelectedUnitTargetRequiresAttackContext()',
+              'public void Validate_SelectedUnitTargetRequiresContextProvidingTrigger()',
+              1)
+          anchor = '''            File.WriteAllText(unitPath, attackJson.Replace("onAttack", "onCombatStart", StringComparison.Ordinal));\n            var invalidReport = new ModValidator().Validate(path);\n'''
+          replacement = '''            File.WriteAllText(unitPath, attackJson.Replace("onAttack", "onDamage", StringComparison.Ordinal));\n            var damageReport = new ModValidator().Validate(path);\n            Assert.True(damageReport.IsValid, string.Join(Environment.NewLine, damageReport.Issues.Select(issue => $"{issue.Code}: {issue.File} {issue.Path} {issue.Message}")));\n\n            File.WriteAllText(unitPath, attackJson.Replace("onAttack", "onCombatStart", StringComparison.Ordinal));\n            var invalidReport = new ModValidator().Validate(path);\n'''
+          if anchor not in text:
+              raise SystemExit('AdvancedEffectValidationTests context insertion point not found')
+          path.write_text(text.replace(anchor, replacement, 1))
+
+          # Warbands consumer: neutral onDamage retaliation against the living damage source.
+          Path('mods/warbands/content/units/thornhide-bear.json').write_text('''{\n  "id": "thornhide-bear",\n  "name": "Thornhide Bear",\n  "tier": 4,\n  "attack": 5,\n  "health": 8,\n  "behaviors": ["guarded", "warded"],\n  "types": ["beast"],\n  "tags": [],\n  "triggers": [\n    {\n      "event": "onDamage",\n      "effects": [\n        {\n          "kind": "dealDamage",\n          "target": { "scope": "selected" },\n          "amount": 2\n        }\n      ]\n    }\n  ]\n}\n''')
+
+          # Document the context contract alongside attack-target context.
+          path = Path('EFFECTS.md')
+          text = path.read_text()
+          text = text.replace(
+              '`selected` is context-owned rather than synonymous with UI selection. During an activatable Power\'s `onActivate`, the selected target is supplied by the command issued by UI or AI. During a Unit\'s `onAttack`, Combat supplies the already-locked attack target. Triggers that do not have an explicit context target cannot use `selected`.',
+              '`selected` is context-owned rather than synonymous with UI selection. During an activatable Power\'s `onActivate`, the selected target is supplied by the command issued by UI or AI. During a Unit\'s `onAttack`, Combat supplies the already-locked attack target. During a Unit\'s `onDamage`, Combat supplies the living targetable Unit that caused that damage when one exists. Triggers without an available context target resolve `selected` as empty.',
+              1)
+          anchor = '''This context is an engine mechanic, not a presentation keyword. A mod may label `onAttack` effects with any terminology it wants or expose no keyword at all.\n\n## Trigger conditions\n'''
+          replacement = '''This context is an engine mechanic, not a presentation keyword. A mod may label `onAttack` effects with any terminology it wants or expose no keyword at all.\n\n## Damage source context\n\n`onDamage` is the neutral trigger for effects that occur after a Unit actually takes positive damage. When the damage was caused by another Unit that is still alive and targetable when the trigger resolves, that source Unit is exposed through `scope: "selected"`. This applies uniformly to ordinary strike damage and authored `dealDamage` effects.\n\nIf the damage source is not a targetable living Unit at resolution time—for example, an `onDeath` source that has already left the combat field—`selected` is absent and selected-target effects resolve no targets. Damage provenance never makes a dead or synthetic effect source targetable. Damage prevented by a barrier does not produce `onDamage`, because no positive damage occurred.\n\n## Trigger conditions\n'''
+          if anchor not in text:
+              raise SystemExit('EFFECTS.md damage context insertion point not found')
+          path.write_text(text.replace(anchor, replacement, 1))
+      - name: Test core
+        run: dotnet test tests/Battlegrounds.Core.Tests/Battlegrounds.Core.Tests.csproj --configuration Release
+      - name: Test content
+        run: dotnet test tests/Battlegrounds.Content.Tests/Battlegrounds.Content.Tests.csproj --configuration Release
+      - name: Commit implementation
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git rm .github/workflows/apply-on-damage-source-context.yml
+          git add src/Battlegrounds.Core/Domain/Effects/GameEffectRuntime.cs src/Battlegrounds.Core/Domain/Combat/CombatEngine.cs src/Battlegrounds.Content/AdvancedEffectModValidator.cs src/Battlegrounds.Content/DynamicEffectValueModValidator.cs tests/Battlegrounds.Core.Tests/Combat/CombatEffectExecutionTests.cs tests/Battlegrounds.Content.Tests/AdvancedEffectValidationTests.cs mods/warbands/content/units/thornhide-bear.json EFFECTS.md
+          git commit -m "Propagate damage source context to onDamage"
+          git push origin HEAD:on-damage-source-context
