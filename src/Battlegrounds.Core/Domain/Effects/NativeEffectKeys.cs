@@ -65,6 +65,7 @@ public static class NativeEffectKeys
     public static NativeEffectKey RemoveBehavior { get; } = new("removeBehavior");
     public static NativeEffectKey AddResource { get; } = new("addResource");
     public static NativeEffectKey AdjustUpgradeCost { get; } = new("adjustUpgradeCost");
+    public static NativeEffectKey AddAcquireDiscount { get; } = new("addAcquireDiscount");
     public static NativeEffectKey RefreshOffer { get; } = new("refreshOffer");
     public static NativeEffectKey SetPower { get; } = new("setPower");
     public static NativeEffectKey GenerateUnitToReserve { get; } = new("generateUnitToReserve");
@@ -87,6 +88,7 @@ public static class NativeEffectKeys
         RemoveBehavior,
         AddResource,
         AdjustUpgradeCost,
+        AddAcquireDiscount,
         RefreshOffer,
         SetPower,
         GenerateUnitToReserve,

@@ -144,13 +144,15 @@ public sealed class PreparationEngine
             return PreparationCommandResult.Failure(PreparationFailureCode.InvalidOfferSlot);
         if (player.PlayableReserveCount >= _rules.ReserveCapacity)
             return PreparationCommandResult.Failure(PreparationFailureCode.ReserveFull);
-        if (!player.CanAfford(_rules.AcquireCost))
+        var acquireCost = player.GetUnitAcquireCost(_rules);
+        if (!player.CanAfford(acquireCost))
             return PreparationCommandResult.Failure(PreparationFailureCode.InsufficientResource);
 
         var definition = player.TakeOfferedUnit(command.OfferSlot);
         var unit = match.CreateUnit(definition, UnitInstanceOrigin.Pooled);
         player.AddToReserve(unit);
-        player.SpendResource(_rules.AcquireCost);
+        player.SpendResource(acquireCost);
+        player.ConsumeAcquireDiscount();
         _effectEngine.ProcessAcquiredUnit(match, player, unit);
         return PreparationCommandResult.Success();
     }
@@ -162,12 +164,14 @@ public sealed class PreparationEngine
         if (player.PlayableReserveCount >= _rules.ReserveCapacity)
             return PreparationCommandResult.Failure(PreparationFailureCode.ReserveFull);
         var definition = player.ActionOffer[actionSlot];
-        if (!player.CanAfford(definition.Cost))
+        var acquireCost = player.GetActionAcquireCost(definition);
+        if (!player.CanAfford(acquireCost))
             return PreparationCommandResult.Failure(PreparationFailureCode.InsufficientResource);
 
         player.TakeOfferedAction(actionSlot);
         player.AddActionToReserve(match.CreateAction(definition));
-        player.SpendResource(definition.Cost);
+        player.SpendResource(acquireCost);
+        player.ConsumeAcquireDiscount();
         _effectEngine.ProcessGameEvent(match, player, NativeGameEventKeys.ActionAcquired);
         return PreparationCommandResult.Success();
     }

@@ -173,6 +173,7 @@ public sealed class ModLoader
             "removeBehavior" => new RemoveBehaviorEffectDefinition(BuildTarget(data.Target), new BehaviorId(data.BehaviorId ?? throw new InvalidDataException("Validated removeBehavior effect is missing behaviorId."))),
             "addResource" => new AddResourceEffectDefinition(BuildRequiredValue(data.Amount, "addResource.amount")),
             "adjustUpgradeCost" => new AdjustUpgradeCostEffectDefinition(BuildRequiredValue(data.Amount, "adjustUpgradeCost.amount")),
+            "addAcquireDiscount" => new AddAcquireDiscountEffectDefinition(BuildRequiredValue(data.Amount, "addAcquireDiscount.amount")),
             "refreshOffer" => new RefreshOfferEffectDefinition(),
             "setPower" => new SetPowerEffectDefinition(new PowerId(data.PowerId ?? throw new InvalidDataException("Validated setPower effect is missing powerId."))),
             _ => throw new InvalidDataException($"Validated effect kind '{data.Kind}' is unsupported."),

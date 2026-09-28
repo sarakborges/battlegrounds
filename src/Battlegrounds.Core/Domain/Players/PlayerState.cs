@@ -1,7 +1,9 @@
 using System.Collections.ObjectModel;
+using Battlegrounds.Core.Domain.Actions;
 using Battlegrounds.Core.Domain.Effects;
 using Battlegrounds.Core.Domain.Ids;
 using Battlegrounds.Core.Domain.Leaders;
+using Battlegrounds.Core.Domain.Playables;
 using Battlegrounds.Core.Domain.Preparation;
 using Battlegrounds.Core.Domain.Units;
 
@@ -23,6 +25,7 @@ public sealed partial class PlayerState
     public int Resource { get; private set; }
     public int Tier { get; private set; } = 1;
     public int? UpgradeCost { get; private set; }
+    public int NextAcquireDiscount { get; private set; }
     public bool IsReadyForCombat { get; private set; }
     public bool IsOfferFrozen { get; private set; }
     public IReadOnlyList<UnitInstance> Reserve => _reserveView;
@@ -125,6 +128,28 @@ public sealed partial class PlayerState
 
         return released.ToArray();
     }
+
+    public int GetAcquireCost(PlayableOfferEntry entry, PreparationRules rules)
+    {
+        ArgumentNullException.ThrowIfNull(entry);
+        ArgumentNullException.ThrowIfNull(rules);
+        var baseCost = entry.Action?.Cost ?? rules.AcquireCost;
+        return Math.Max(0, baseCost - NextAcquireDiscount);
+    }
+
+    internal int GetUnitAcquireCost(PreparationRules rules) =>
+        Math.Max(0, rules.AcquireCost - NextAcquireDiscount);
+
+    internal int GetActionAcquireCost(ActionDefinition definition) =>
+        Math.Max(0, definition.Cost - NextAcquireDiscount);
+
+    internal void AddAcquireDiscount(int amount)
+    {
+        if (amount <= 0) return;
+        NextAcquireDiscount = (int)Math.Min(int.MaxValue, (long)NextAcquireDiscount + amount);
+    }
+
+    internal void ConsumeAcquireDiscount() => NextAcquireDiscount = 0;
 
     internal bool CanAfford(int amount) => Resource >= amount;
 

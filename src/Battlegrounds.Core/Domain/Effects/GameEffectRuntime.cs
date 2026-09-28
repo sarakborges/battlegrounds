@@ -20,6 +20,7 @@ internal interface IEffectRuntimeUnit
 internal interface IPreparationEconomyEffectWorld
 {
     void AdjustUpgradeCost(PlayerId playerId, int amount);
+    void AddAcquireDiscount(PlayerId playerId, int amount);
     void RefreshOffer(PlayerId playerId);
 }
 
@@ -326,6 +327,12 @@ internal sealed class GameEffectRuntime
             {
                 var amount = _pipeline.EvaluateValue(adjustUpgradeCost.Amount, BuildContext(source));
                 if (amount != 0) GetPreparationEconomyWorld(adjustUpgradeCost.Kind).AdjustUpgradeCost(source.OwnerPlayerId, amount);
+                break;
+            }
+            case AddAcquireDiscountEffectDefinition acquireDiscount:
+            {
+                var amount = _pipeline.EvaluateValue(acquireDiscount.Amount, BuildContext(source));
+                if (amount > 0) GetPreparationEconomyWorld(acquireDiscount.Kind).AddAcquireDiscount(source.OwnerPlayerId, amount);
                 break;
             }
             case RefreshOfferEffectDefinition refreshOffer:

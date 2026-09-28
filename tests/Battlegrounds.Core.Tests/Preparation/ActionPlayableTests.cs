@@ -1,3 +1,4 @@
+using Battlegrounds.Core.Domain.Playables;
 using Battlegrounds.Core.Domain.Actions;
 using Battlegrounds.Core.Domain.Effects;
 using Battlegrounds.Core.Domain.Ids;
@@ -116,6 +117,28 @@ public sealed class ActionPlayableTests
         Assert.True(engine.Execute(match, new PlayActionCommand(player.Id, 0)).Succeeded);
         Assert.Equal(2, field.Attack);
         Assert.Equal(2, field.Health);
+    }
+
+    [Fact]
+    public void AcquireDiscount_AppliesToActionAndIsConsumed()
+    {
+        var unit = new UnitDefinition(new UnitId("unit"), "Unit", 1, 1, 1);
+        var action = new ActionDefinition(new ActionId("action"), "Action", 1, 4, [new AddResourceEffectDefinition(1)]);
+        var units = new UnitCatalog([unit]);
+        var actions = new ActionCatalog([action]);
+        var rules = new PreparationRules(10, 0, 10, 3, 1, 1, 7, 10, 2, [2, 2], [5], [1, 1]);
+        var pool = new UnitPool(units, [new UnitPoolEntry(unit.Id, 10)]);
+        var engine = new PreparationEngine(rules, pool, new MinimumRandomSource(), units, null, null, actions);
+        var match = MatchState.Create([new PlayerId(0), new PlayerId(1)], new MatchRules(2, 2));
+        engine.BeginPreparation(match);
+        var player = match.Players[0];
+        player.AddAcquireDiscount(3);
+        var actionEntry = player.PlayableOffer.Single(entry => entry.Kind == PlayableKind.Action);
+        Assert.Equal(1, player.GetAcquireCost(actionEntry, rules));
+
+        Assert.True(engine.Execute(match, new AcquirePlayableCommand(player.Id, actionEntry.Slot)).Succeeded);
+        Assert.Equal(9, player.Resource);
+        Assert.Equal(0, player.NextAcquireDiscount);
     }
 
     private sealed class MinimumRandomSource : IRandomSource

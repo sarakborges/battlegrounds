@@ -500,7 +500,7 @@ public partial class Main : Control
         var blocked = human.PendingChoice is not null || _interaction.IsActive;
         foreach (var entry in human.PlayableOffer)
         {
-            var cost = entry.Cost ?? _session.Mod.PreparationRules.AcquireCost;
+            var cost = human.GetAcquireCost(entry, _session.Mod.PreparationRules);
             var button = CreatePresentationCard(
                 PlayableEntityKind(entry.Kind),
                 entry.Id,
