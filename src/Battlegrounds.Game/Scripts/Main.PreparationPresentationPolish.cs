@@ -8,6 +8,8 @@ public partial class Main
 {
     private bool _preparationPresentationPolishBound;
     private PanelContainer? _preparationReserveShelf;
+    private HBoxContainer? _bottomHandRow;
+    private Control? _bottomHandBalanceSpacer;
 
     private void RefreshPreparationPresentationPolish()
     {
@@ -20,31 +22,22 @@ public partial class Main
             _preparationPresentationPolishBound = true;
         }
 
-        // A short readiness label keeps the turn control from forcing a giant
-        // right-hand rail. The command is still EndPreparationCommand; this is
-        // presentation only.
         _endPreparationButton.Text = Text("ui.ready");
 
         if (match.TryGetPlayer(_session.HumanPlayerId, out var human) && _preparationReserveShelf is not null)
         {
-            // An empty hand should not read as a permanent dashboard strip. The
-            // reserve shelf returns as soon as there is something to show.
-            _preparationReserveShelf.Visible = human.PlayableReserveCount > 0;
+            // The hand belongs to the bottom cockpit. Keep that bottom bar present
+            // even when the hand is empty because the resource display still lives
+            // there, exactly like the Battlegrounds reference.
+            _preparationReserveShelf.Visible = true;
+            _reserveButtons.Visible = human.PlayableReserveCount > 0;
         }
 
         if (!_hudBound)
             return;
 
-        // Until the mod provides coin art, the numeric current/max resource is
-        // substantially cleaner than the unicode dot row (which several fonts
-        // render as an ellipsis-like cluster).
         _hudResourcePips.Visible = false;
         _hudResourcePips.Text = string.Empty;
-
-        // The leader name is already available via the portrait tooltip and the
-        // opponent rail. Keeping another nameplate inside the compact hero
-        // portrait caused the fallback monogram, name, health, and armor to
-        // overlap.
         _hudHeroName.Visible = false;
         if (_hudHeroPortrait.GetParent() is PanelContainer portraitFrame &&
             portraitFrame.GetNodeOrNull<Label>("PortraitNameplate") is { } nameplate)
@@ -53,6 +46,7 @@ public partial class Main
         }
 
         ApplyBattlegroundsHeroComposition();
+        ApplyBottomHandComposition();
     }
 
     private void BindPreparationPresentationPolish()
@@ -64,12 +58,9 @@ public partial class Main
         var heroDock = GetNode<PanelContainer>($"{preparationPath}/HeroDock");
         _preparationReserveShelf = reserve;
 
-        // Board/hand should occupy their semantic rows, not consume every spare
-        // vertical pixel. The remaining height is still part of the board surface,
-        // so the center reads as one table instead of stacked dashboard panels.
         board.SizeFlagsVertical = Control.SizeFlags.ShrinkBegin;
-        reserve.SizeFlagsVertical = Control.SizeFlags.ShrinkBegin;
         heroDock.SizeFlagsVertical = Control.SizeFlags.ShrinkEnd;
+        reserve.SizeFlagsVertical = Control.SizeFlags.ShrinkEnd;
 
         var tableSpace = preparation.GetNodeOrNull<PanelContainer>("TableSpace");
         if (tableSpace is null)
@@ -82,23 +73,23 @@ public partial class Main
                 MouseFilter = Control.MouseFilterEnum.Ignore,
             };
             preparation.AddChild(tableSpace);
-            preparation.MoveChild(tableSpace, heroDock.GetIndex());
         }
 
-        // Battlegrounds bottom grammar: portrait is the visual anchor; Hero Power
-        // sits immediately to its right and the resource readout follows as a
-        // compact secondary element. Health/armor remain attached to the portrait.
+        // Reference grammar, top to bottom: board -> open table -> hero/power -> hand.
+        // The hand is the actual bottom row, not a strip above the hero.
+        preparation.MoveChild(tableSpace, board.GetIndex() + 1);
+        preparation.MoveChild(heroDock, tableSpace.GetIndex() + 1);
+        preparation.MoveChild(reserve, heroDock.GetIndex() + 1);
+
         var heroRow = heroDock.GetNode<HBoxContainer>("HeroDockRow");
         var leftSpacer = heroRow.GetNode<Control>("LeftSpacer");
         var heroCore = heroRow.GetNode<VBoxContainer>("HeroCore");
         var portraitCluster = heroRow.GetNodeOrNull<Control>("HeroPortraitCluster");
-        var resourceBadge = heroRow.GetNode<PanelContainer>("ResourceBadge");
         if (portraitCluster is not null)
         {
             var first = leftSpacer.GetIndex() + 1;
             heroRow.MoveChild(portraitCluster, first);
             heroRow.MoveChild(heroCore, first + 1);
-            heroRow.MoveChild(resourceBadge, first + 2);
             heroRow.Alignment = BoxContainer.AlignmentMode.Center;
 
             heroCore.SizeFlagsHorizontal = Control.SizeFlags.ShrinkCenter;
@@ -106,15 +97,79 @@ public partial class Main
             heroCore.Alignment = BoxContainer.AlignmentMode.End;
             portraitCluster.SizeFlagsHorizontal = Control.SizeFlags.ShrinkCenter;
             portraitCluster.SizeFlagsVertical = Control.SizeFlags.ShrinkEnd;
-            resourceBadge.SizeFlagsHorizontal = Control.SizeFlags.ShrinkCenter;
-            resourceBadge.SizeFlagsVertical = Control.SizeFlags.ShrinkEnd;
             _powerButton.SizeFlagsHorizontal = Control.SizeFlags.ShrinkCenter;
             _powerButton.SizeFlagsVertical = Control.SizeFlags.ShrinkEnd;
         }
 
+        BuildBottomHandRow(reserve);
+
         var turnRail = GetNode<PanelContainer>("Margin/Shell/TurnRail");
         turnRail.SizeFlagsHorizontal = Control.SizeFlags.ShrinkEnd;
         _endPreparationButton.SizeFlagsHorizontal = Control.SizeFlags.ShrinkCenter;
+    }
+
+    private void BuildBottomHandRow(PanelContainer reserve)
+    {
+        if (_bottomHandRow is not null)
+            return;
+
+        if (_reserveButtons.GetParent() is Node reserveParent)
+            reserveParent.RemoveChild(_reserveButtons);
+        if (_hudResourceBadge.GetParent() is Node resourceParent)
+            resourceParent.RemoveChild(_hudResourceBadge);
+
+        _bottomHandRow = new HBoxContainer
+        {
+            Name = "BottomHandRow",
+            Alignment = BoxContainer.AlignmentMode.Center,
+            SizeFlagsHorizontal = Control.SizeFlags.ExpandFill,
+            MouseFilter = Control.MouseFilterEnum.Ignore,
+        };
+        reserve.AddChild(_bottomHandRow);
+
+        _bottomHandBalanceSpacer = new Control
+        {
+            Name = "HandBalanceSpacer",
+            MouseFilter = Control.MouseFilterEnum.Ignore,
+            SizeFlagsVertical = Control.SizeFlags.ShrinkEnd,
+        };
+        _bottomHandRow.AddChild(_bottomHandBalanceSpacer);
+
+        _reserveButtons.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
+        _reserveButtons.SizeFlagsVertical = Control.SizeFlags.ShrinkEnd;
+        _bottomHandRow.AddChild(_reserveButtons);
+
+        _hudResourceBadge.SizeFlagsHorizontal = Control.SizeFlags.ShrinkEnd;
+        _hudResourceBadge.SizeFlagsVertical = Control.SizeFlags.ShrinkEnd;
+        _bottomHandRow.AddChild(_hudResourceBadge);
+    }
+
+    private void ApplyBottomHandComposition()
+    {
+        if (_bottomHandRow is null || _bottomHandBalanceSpacer is null)
+            return;
+
+        var resourceWidth = ResolvePresentationMetric(
+            ModThemeMetricKeys.Layout.HeroDockResourceBadgeWidth,
+            1.0f,
+            1024.0f);
+        var resourceHeight = ResolvePresentationMetric(
+            ModThemeMetricKeys.Layout.HeroDockResourceBadgeHeight,
+            1.0f,
+            512.0f);
+        var handHeight = ResolvePresentationMetric(
+            ModThemeMetricKeys.Row.PreferredCardHeight(ModThemeMetricKeys.Row.Reserve),
+            1.0f,
+            1024.0f);
+        var handPadding = ResolvePresentationMetric(
+            ModThemeMetricKeys.Row.Padding(ModThemeMetricKeys.Row.Reserve),
+            0.0f,
+            256.0f);
+
+        _bottomHandBalanceSpacer.CustomMinimumSize = new Vector2(resourceWidth, resourceHeight);
+        _hudResourceBadge.CustomMinimumSize = new Vector2(resourceWidth, resourceHeight);
+        _reserveButtons.CustomMinimumSize = new Vector2(0.0f, handHeight + handPadding * 2.0f);
+        _reserveButtons.QueueSort();
     }
 
     private void ApplyBattlegroundsHeroComposition()
@@ -130,10 +185,6 @@ public partial class Main
             ModThemeMetricKeys.Hud.HeroPortraitSize,
             1.0f,
             2048.0f);
-        var dockHeight = ResolvePresentationMetric(
-            ModThemeMetricKeys.Hud.HeroDockMinimumHeight,
-            1.0f,
-            2048.0f);
         var healthWidth = ResolvePresentationMetric(
             ModThemeMetricKeys.Layout.HeroDockHealthBadgeWidth,
             1.0f,
@@ -143,32 +194,28 @@ public partial class Main
             1.0f,
             512.0f);
 
-        // Use the dock's own semantic height to give the portrait a vertical hero
-        // silhouette instead of the square dashboard thumbnail we had before.
-        var portraitWidth = portraitSize;
-        var portraitHeight = Mathf.Max(portraitSize, dockHeight - 8.0f);
+        // The reference uses a compact framed hero above the bottom hand, not a
+        // tall portrait card. Keep this footprint square so it can share the same
+        // frame grammar used by the bartender and leader selection.
         var badgeAllowance = Mathf.Max(healthWidth, armorWidth) * 0.42f;
         portraitCluster.CustomMinimumSize = new Vector2(
-            portraitWidth + badgeAllowance,
-            portraitHeight + badgeAllowance * 0.35f);
+            portraitSize + badgeAllowance,
+            portraitSize + badgeAllowance * 0.35f);
 
         frame.AnchorLeft = 0.5f;
         frame.AnchorTop = 0.5f;
         frame.AnchorRight = 0.5f;
         frame.AnchorBottom = 0.5f;
-        frame.OffsetLeft = -portraitWidth * 0.5f;
-        frame.OffsetTop = -portraitHeight * 0.5f;
-        frame.OffsetRight = portraitWidth * 0.5f;
-        frame.OffsetBottom = portraitHeight * 0.5f;
+        frame.OffsetLeft = -portraitSize * 0.5f;
+        frame.OffsetTop = -portraitSize * 0.5f;
+        frame.OffsetRight = portraitSize * 0.5f;
+        frame.OffsetBottom = portraitSize * 0.5f;
         frame.ClipContents = true;
-        _hudHeroPortrait.CustomMinimumSize = new Vector2(portraitWidth, portraitHeight);
+        _hudHeroPortrait.CustomMinimumSize = new Vector2(portraitSize, portraitSize);
         _hudHeroPortrait.StretchMode = TextureRect.StretchModeEnum.KeepAspectCovered;
 
-        ApplyHeroPortraitFrameStyle(frame, portraitWidth);
-        ApplyHeroPowerStyle(portraitWidth, portraitHeight);
-
-        _hudResourceBadge.SizeFlagsHorizontal = Control.SizeFlags.ShrinkCenter;
-        _hudResourceBadge.SizeFlagsVertical = Control.SizeFlags.ShrinkEnd;
+        ApplyHeroPortraitFrameStyle(frame, portraitSize);
+        ApplyHeroPowerStyle(portraitSize, portraitSize);
     }
 
     private void ApplyHeroPortraitFrameStyle(PanelContainer frame, float portraitWidth)
@@ -178,24 +225,23 @@ public partial class Main
         if (!ResolveThemeColor("focus", out var border))
             border = new Color(0.9f, 0.68f, 0.38f, 1.0f);
 
-        var topRadius = Mathf.RoundToInt(portraitWidth * 0.28f);
-        var bottomRadius = Mathf.RoundToInt(portraitWidth * 0.08f);
+        var radius = Mathf.RoundToInt(portraitWidth * 0.18f);
         var box = new StyleBoxFlat
         {
             BgColor = background,
             BorderColor = border,
-            BorderWidthLeft = 4,
-            BorderWidthTop = 4,
-            BorderWidthRight = 4,
-            BorderWidthBottom = 4,
-            CornerRadiusTopLeft = topRadius,
-            CornerRadiusTopRight = topRadius,
-            CornerRadiusBottomLeft = bottomRadius,
-            CornerRadiusBottomRight = bottomRadius,
-            ContentMarginLeft = 4,
-            ContentMarginTop = 4,
-            ContentMarginRight = 4,
-            ContentMarginBottom = 4,
+            BorderWidthLeft = 3,
+            BorderWidthTop = 3,
+            BorderWidthRight = 3,
+            BorderWidthBottom = 3,
+            CornerRadiusTopLeft = radius,
+            CornerRadiusTopRight = radius,
+            CornerRadiusBottomLeft = radius,
+            CornerRadiusBottomRight = radius,
+            ContentMarginLeft = 3,
+            ContentMarginTop = 3,
+            ContentMarginRight = 3,
+            ContentMarginBottom = 3,
         };
         frame.AddThemeStyleboxOverride("panel", box);
     }
