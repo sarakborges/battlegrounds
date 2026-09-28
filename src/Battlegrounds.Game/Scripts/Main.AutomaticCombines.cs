@@ -20,7 +20,7 @@ public partial class Main
     private bool UsesAutomaticCombines =>
         InteractionSettings.CombineMode == CombineInteractionMode.Automatic;
 
-    public override void _PhysicsProcess(double delta)
+    private void UpdateAutomaticCombines()
     {
         UpdateCombineButtonVisibility();
         TrySubmitAutomaticCombine();
