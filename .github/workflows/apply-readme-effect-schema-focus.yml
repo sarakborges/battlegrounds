@@ -1,0 +1,29 @@
+name: Apply README effect schema focus
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  update-readme:
+    if: ${{ github.actor != 'github-actions[bot]' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - name: Update README focus
+        run: |
+          echo 'ZnJvbSBwYXRobGliIGltcG9ydCBQYXRoCnBhdGggPSBQYXRoKCJSRUFETUUubWQiKQp0ZXh0ID0gcGF0aC5yZWFkX3RleHQoKQpvbGQgPSAnVGhlIGltbWVkaWF0ZSBwcmlvcml0eSBpcyBub3cgKip2YWxpZGF0b3Igb3duZXJzaGlwIGNsZWFudXAqKi4gUmVtb3ZlIGJyb2FkIGNvbXBhdGliaWxpdHkvc3VwZXJzZXNzaW9uIGZpbHRlcnMgb25lIGZhbWlseSBhdCBhIHRpbWUgYnkgdGVhY2hpbmcgdGhlIG93bmluZyB2YWxpZGF0b3IgdGhlIHJlYWwgY3VycmVudCBzY2hlbWEsIHByZXNlcnZpbmcgZm9jdXNlZCByZWdyZXNzaW9uIGNvdmVyYWdlIGFuZCBhdm9pZGluZyBiZWhhdmlvciBjaGFuZ2VzIG91dHNpZGUgdmFsaWRhdGlvbi4gVGhlIGBvbkNvbWJpbmVgLCBnZW5lcmF0aW9uLWZhbWlseSwgcGVyc2lzdGVudCBVbml0IG11dGF0aW9uIGFuZCBkeW5hbWljIGVmZmVjdC12YWx1ZSBzdXBwcmVzc2lvbnMgaGF2ZSBiZWVuIHJlbW92ZWQ7IHRoZSBuZXh0IGNhbmRpZGF0ZSBpcyB0aGUgc21hbGwgc3BlY2lhbGl6ZWQtc2NoZW1hIGJyaWRnZSBhcm91bmQgYHJ1bGVzL3ByZXBhcmF0aW9uLmpzb25gIGBhY3Rpb25PZmZlclNpemVzQnlUaWVyYCBhbmQgTGVhZGVyIGBpbml0aWFsUG93ZXJJZGAuJwpuZXcgPSAnVGhlIGltbWVkaWF0ZSBwcmlvcml0eSBpcyBub3cgKip2YWxpZGF0b3Igb3duZXJzaGlwIGNsZWFudXAqKi4gUmVtb3ZlIGJyb2FkIGNvbXBhdGliaWxpdHkvc3VwZXJzZXNzaW9uIGZpbHRlcnMgb25lIGZhbWlseSBhdCBhIHRpbWUgYnkgdGVhY2hpbmcgdGhlIG93bmluZyB2YWxpZGF0b3IgdGhlIHJlYWwgY3VycmVudCBzY2hlbWEsIHByZXNlcnZpbmcgZm9jdXNlZCByZWdyZXNzaW9uIGNvdmVyYWdlIGFuZCBhdm9pZGluZyBiZWhhdmlvciBjaGFuZ2VzIG91dHNpZGUgdmFsaWRhdGlvbi4gVGhlIGBvbkNvbWJpbmVgLCBnZW5lcmF0aW9uLWZhbWlseSwgcGVyc2lzdGVudCBVbml0IG11dGF0aW9uLCBkeW5hbWljIGVmZmVjdC12YWx1ZSBhbmQgc3BlY2lhbGl6ZWQtc2NoZW1hIGNvbXBhdGliaWxpdHkgYnJpZGdlcyBoYXZlIGJlZW4gcmVtb3ZlZDsgdGhlIG5leHQgY2FuZGlkYXRlIGlzIHRoZSByZW1haW5pbmcgYnJvYWQgZWZmZWN0LXNjaGVtYSBzdXBwcmVzc2lvbiBhcm91bmQgY29uZGl0aW9ucywgYWN0aXZhdGlvbiBsaW1pdHMsIGNvdW50ZWQgdHJpZ2dlcnMgYW5kIGFkdmFuY2VkIHRhcmdldCBzZWxlY3Rpb24uJwppZiB0ZXh0LmNvdW50KG9sZCkgIT0gMToKICAgIHJhaXNlIFN5c3RlbUV4aXQoZiJFeHBlY3RlZCBvbmUgY3VycmVudC1mb2N1cyBwYXJhZ3JhcGgsIGZvdW5kIHt0ZXh0LmNvdW50KG9sZCl9IikKcGF0aC53cml0ZV90ZXh0KHRleHQucmVwbGFjZShvbGQsIG5ldywgMSkpCg==' | base64 --decode > /tmp/update_readme.py
+          python3 /tmp/update_readme.py
+      - name: Commit docs update
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git rm .github/workflows/apply-readme-effect-schema-focus.yml
+          git add README.md
+          git commit -m "Advance validator cleanup focus"
+          git push origin HEAD:main
