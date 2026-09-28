@@ -95,7 +95,8 @@ public partial class Main
             null,
             unit.Attack,
             unit.Health,
-            BuildUnitInspectDetails(unit.Definition, unit));
+            BuildUnitInspectDetails(unit.Definition, unit),
+            inspectTier: unit.Definition.Tier);
     }
 
     private void PlayPresentationCue(
