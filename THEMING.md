@@ -54,6 +54,8 @@ The JSON contract intentionally contains no Godot class names or property names.
     "card.shop.minimumWidth": 118,
     "card.shop.artHeight": 76,
     "card.contentGap": 2,
+    "hud.heroPortrait.size": 88,
+    "hud.opponent.portraitSize": 44,
     "drag.preview.scale": 1.045,
     "drag.preview.rotationDegrees": -1.5
   },
@@ -182,6 +184,24 @@ card.choice.*
 ```
 
 Each role may define `minimumWidth` and `artHeight`. `card.contentGap` controls the vertical separation between the art/title/stats content inside every presentation card. These values complement the responsive row metrics: row geometry controls available layout space, while card footprint geometry controls the card's internal visual proportions.
+
+The semantic HUD uses these metric keys:
+
+```text
+hud.heroDock.minimumHeight
+hud.heroPortrait.size
+hud.opponent.entryHeight
+hud.opponent.marginHorizontal
+hud.opponent.marginVertical
+hud.opponent.gap
+hud.opponent.rankWidth
+hud.opponent.portraitSize
+hud.opponent.statsWidth
+hud.opponent.identityGap
+hud.opponent.statsGap
+```
+
+They control HUD geometry only. Leader identity, Health, Armor, Tier, Resource and opponent state still come exclusively from authoritative match state and presentation text/assets.
 
 Preparation drag feedback also exposes two semantic metrics:
 
