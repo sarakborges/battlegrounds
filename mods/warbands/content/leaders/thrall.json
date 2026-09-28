@@ -1,7 +1,0 @@
-{
-  "id": "thrall",
-  "name": "Thrall",
-  "healthModifier": 0,
-  "armor": 4,
-  "initialPowerId": "ancestral-strength"
-}
