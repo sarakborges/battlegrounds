@@ -45,7 +45,7 @@ public partial class Main
             entityId,
             ModPresentationCueRoles.UiSelect,
             ModPresentationAnimation.Pulse,
-            0.18);
+            ResolvePresentationMetric(ModThemeMetricKeys.Motion.UiSelectDurationSeconds, 0.05f, 5.0f));
         return card;
     }
 
@@ -55,7 +55,7 @@ public partial class Main
         string entityId,
         string role,
         ModPresentationAnimation fallbackAnimation = ModPresentationAnimation.Pulse,
-        double fallbackDurationSeconds = 0.18) =>
+        double? fallbackDurationSeconds = null) =>
         PresentationCues.Play(target, entityKind, entityId, role, fallbackAnimation, fallbackDurationSeconds);
 
     private string UnitCardStats(int tier, int attack, int health) =>
@@ -132,5 +132,22 @@ public partial class Main
         _presentationTextures ??= new ModPresentationTextureStore(ProjectSettings.GlobalizePath(ModPath));
 
     private ModPresentationCuePlayer PresentationCues =>
-        _presentationCues ??= new ModPresentationCuePlayer(this, ProjectSettings.GlobalizePath(ModPath));
+        _presentationCues ??= new ModPresentationCuePlayer(
+            this,
+            ProjectSettings.GlobalizePath(ModPath),
+            BuildPresentationMotionProfile());
+
+    private ModPresentationMotionProfile BuildPresentationMotionProfile() => new(
+        ResolvePresentationMetric(ModThemeMetricKeys.Motion.Cue.PulseScale, 0.01f, 4.0f),
+        ResolvePresentationMetric(ModThemeMetricKeys.Motion.Cue.PulseDurationSeconds, 0.05f, 5.0f),
+        ResolvePresentationMetric(ModThemeMetricKeys.Motion.Cue.ShakeRotationDegrees, 0.0f, 180.0f),
+        ResolvePresentationMetric(ModThemeMetricKeys.Motion.Cue.ShakeDurationSeconds, 0.05f, 5.0f),
+        ResolvePresentationMetric(ModThemeMetricKeys.Motion.Cue.LungeScale, 0.01f, 4.0f),
+        ResolvePresentationMetric(ModThemeMetricKeys.Motion.Cue.LungeDurationSeconds, 0.05f, 5.0f),
+        ResolvePresentationMetric(ModThemeMetricKeys.Motion.Cue.FadeScale, 0.01f, 4.0f),
+        ResolvePresentationMetric(ModThemeMetricKeys.Motion.Cue.FadeOpacity, 0.0f, 1.0f),
+        ResolvePresentationMetric(ModThemeMetricKeys.Motion.Cue.FadeDurationSeconds, 0.05f, 5.0f),
+        ResolvePresentationMetric(ModThemeMetricKeys.Motion.Cue.PopScale, 0.01f, 4.0f),
+        ResolvePresentationMetric(ModThemeMetricKeys.Motion.Cue.PopOpacity, 0.0f, 1.0f),
+        ResolvePresentationMetric(ModThemeMetricKeys.Motion.Cue.PopDurationSeconds, 0.05f, 5.0f));
 }
