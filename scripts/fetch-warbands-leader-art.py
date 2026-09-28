@@ -9,12 +9,13 @@ import urllib.error
 import urllib.parse
 import urllib.request
 from dataclasses import dataclass
+from html.parser import HTMLParser
 
 from PIL import Image
 
 CARDS_URL = "https://api.hearthstonejson.com/v1/latest/enUS/cards.json"
 ART_URL = "https://art.hearthstonejson.com/v1/512x/{card_id}.jpg"
-WARCRAFT_API = "https://warcraft.wiki.gg/api.php"
+WARCRAFT_PAGE = "https://warcraft.wiki.gg/wiki/{title}"
 OUTPUT_ROOT = pathlib.Path("mods/warbands/assets/cosmetics/leaders")
 REPORT_PATH = OUTPUT_ROOT / "sources.json"
 
@@ -73,9 +74,6 @@ LEADERS = {
     "zentabra": "Zentabra",
 }
 
-# Prefer Hearthstone art even when Hearthstone uses a different card/title for
-# the same Warcraft character. These aliases are deliberately explicit so we do
-# not silently match unrelated fuzzy names.
 ALIASES = {
     "altruis-the-sufferer": ["Altruis the Outcast"],
     "arthas-menethil": ["Prince Arthas", "The Lich King"],
@@ -92,12 +90,7 @@ ALIASES = {
     "zentabra": ["Zen'tabra"],
 }
 
-TYPE_PRIORITY = {
-    "HERO": 5,
-    "MINION": 4,
-    "SPELL": 2,
-    "WEAPON": 1,
-}
+TYPE_PRIORITY = {"HERO": 5, "MINION": 4, "SPELL": 2, "WEAPON": 1}
 
 
 @dataclass(frozen=True)
@@ -107,12 +100,26 @@ class Match:
     exact: bool
 
 
-def fetch_bytes(url: str) -> bytes:
+class SocialImageParser(HTMLParser):
+    def __init__(self) -> None:
+        super().__init__()
+        self.image_url: str | None = None
+
+    def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+        if tag != "meta" or self.image_url is not None:
+            return
+        values = {key.lower(): value for key, value in attrs if value is not None}
+        marker = values.get("property") or values.get("name")
+        if marker in {"og:image", "twitter:image"} and values.get("content"):
+            self.image_url = values["content"]
+
+
+def fetch_bytes(url: str, timeout: int = 25) -> bytes:
     request = urllib.request.Request(
         url,
-        headers={"User-Agent": "Battlegrounds-Warbands-Art-Fetcher/1.1"},
+        headers={"User-Agent": "Battlegrounds-Warbands-Art-Fetcher/1.2"},
     )
-    with urllib.request.urlopen(request, timeout=60) as response:
+    with urllib.request.urlopen(request, timeout=timeout) as response:
         return response.read()
 
 
@@ -164,38 +171,14 @@ def save_png(data: bytes, target: pathlib.Path) -> tuple[int, int]:
 
 
 def warcraft_page_image(display_name: str) -> tuple[str, str] | None:
-    query = urllib.parse.urlencode(
-        {
-            "action": "query",
-            "format": "json",
-            "redirects": "1",
-            "prop": "pageimages",
-            "piprop": "original|thumbnail",
-            "pithumbsize": "1024",
-            "titles": display_name,
-        }
-    )
-    payload = fetch_json(f"{WARCRAFT_API}?{query}")
-    if not isinstance(payload, dict):
+    title = urllib.parse.quote(display_name.replace(" ", "_"), safe="'_-")
+    page_url = WARCRAFT_PAGE.format(title=title)
+    html = fetch_bytes(page_url, timeout=12).decode("utf-8", errors="replace")
+    parser = SocialImageParser()
+    parser.feed(html)
+    if not parser.image_url:
         return None
-    pages = payload.get("query", {}).get("pages", {})
-    if not isinstance(pages, dict):
-        return None
-    for page in pages.values():
-        if not isinstance(page, dict) or "missing" in page:
-            continue
-        source = None
-        original = page.get("original")
-        thumbnail = page.get("thumbnail")
-        if isinstance(original, dict):
-            source = original.get("source")
-        if not source and isinstance(thumbnail, dict):
-            source = thumbnail.get("source")
-        if source:
-            title = str(page.get("title", display_name)).replace(" ", "_")
-            page_url = f"https://warcraft.wiki.gg/wiki/{urllib.parse.quote(title)}"
-            return str(source), page_url
-    return None
+    return urllib.parse.urljoin(page_url, parser.image_url), page_url
 
 
 def import_hearthstone(cards: list[dict], slug: str, display_name: str, target: pathlib.Path) -> dict | None:
@@ -228,7 +211,7 @@ def import_warcraft(display_name: str, slug: str, target: pathlib.Path) -> dict 
     if page_image is None:
         return None
     image_url, page_url = page_image
-    width, height = save_png(fetch_bytes(image_url), target)
+    width, height = save_png(fetch_bytes(image_url, timeout=20), target)
     print(f"WOW   {slug}: {page_url} ({width}x{height})")
     return {
         "displayName": display_name,
@@ -272,10 +255,7 @@ def main() -> int:
             continue
 
         print(f"MISS  {slug}: no usable art found for {display_name!r}")
-        report[slug] = {
-            "displayName": display_name,
-            "status": "missing",
-        }
+        report[slug] = {"displayName": display_name, "status": "missing"}
         missing_count += 1
 
     OUTPUT_ROOT.mkdir(parents=True, exist_ok=True)
