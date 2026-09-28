@@ -103,7 +103,7 @@
     "layout.heroDock.powerButton.height": 56,
     "layout.heroDock.combineButton.width": 84,
     "layout.heroDock.combineButton.height": 32,
-    "layout.heroDock.resourceBadge.width": 176,
+    "layout.heroDock.resourceBadge.width": 188,
     "layout.heroDock.resourceBadge.height": 42,
     "layout.turnRail.width": 108,
     "layout.turnRail.gap": 8,
