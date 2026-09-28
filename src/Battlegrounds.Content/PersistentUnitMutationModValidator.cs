@@ -71,7 +71,7 @@ internal sealed class PersistentUnitMutationModValidator
                 : null;
             var contextAllowed = powerMode
                 ? eventName is "onActivate" or "onMatchStart" or "onTurnStart" or "onTurnEnd"
-                : eventName is "onPlay" or "onTurnStart" or "onTurnEnd";
+                : eventName is "onAcquire" or "onPlay" or "onTurnStart" or "onTurnEnd";
 
             if (trigger.TryGetProperty("effects", out var effects))
             {

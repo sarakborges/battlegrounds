@@ -49,6 +49,14 @@ internal sealed partial class PreparationEffectEngine
         runtime.RecordGameEvent(owner.Id, @event, unit);
     }
 
+    public void ProcessAcquiredUnit(MatchState match, PlayerState owner, UnitInstance unit)
+    {
+        var (world, runtime) = GetRuntime(match);
+        var subject = world.Wrap(unit, owner.Id);
+        runtime.RecordGameEvent(owner.Id, NativeGameEventKeys.UnitAcquired, unit.Definition);
+        runtime.Process(new GameEffectEvent(NativeTriggerKeys.OnAcquire, subject));
+    }
+
     public void ProcessPlayedUnit(
         MatchState match,
         PlayerState owner,

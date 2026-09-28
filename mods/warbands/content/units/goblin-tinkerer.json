@@ -9,7 +9,7 @@
   "tags": ["starter"],
   "triggers": [
     {
-      "event": "onPlay",
+      "event": "onAcquire",
       "effects": [
         { "kind": "addResource", "amount": 1 }
       ]

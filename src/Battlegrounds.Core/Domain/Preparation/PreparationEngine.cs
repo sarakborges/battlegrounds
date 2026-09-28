@@ -148,9 +148,10 @@ public sealed class PreparationEngine
             return PreparationCommandResult.Failure(PreparationFailureCode.InsufficientResource);
 
         var definition = player.TakeOfferedUnit(command.OfferSlot);
-        player.AddToReserve(match.CreateUnit(definition, UnitInstanceOrigin.Pooled));
+        var unit = match.CreateUnit(definition, UnitInstanceOrigin.Pooled);
+        player.AddToReserve(unit);
         player.SpendResource(_rules.AcquireCost);
-        _effectEngine.ProcessGameEvent(match, player, NativeGameEventKeys.UnitAcquired, definition);
+        _effectEngine.ProcessAcquiredUnit(match, player, unit);
         return PreparationCommandResult.Success();
     }
 

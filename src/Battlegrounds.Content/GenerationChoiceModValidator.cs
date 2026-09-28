@@ -12,6 +12,7 @@ internal sealed class GenerationChoiceModValidator
 
     private static readonly HashSet<string> UnitPreparationEvents =
     [
+        "onAcquire",
         "onPlay",
         "onTurnStart",
         "onTurnEnd",
