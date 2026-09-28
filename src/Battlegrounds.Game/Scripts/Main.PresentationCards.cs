@@ -58,7 +58,8 @@ public partial class Main
         if (_session is null || entityKind != ModPresentationEntityKind.Unit)
             return;
 
-        var parentName = card.GetParent()?.Name.ToString();
+        var parent = card.GetParent();
+        var parentName = parent?.Name.ToString();
         if (parentName == "OfferButtons")
         {
             var definition = _session.Mod.Units.GetRequired(new UnitId(entityId));
@@ -71,13 +72,18 @@ public partial class Main
         }
 
         if (parentName != "FieldButtons" ||
+            parent is null ||
             _session.Match is not { } match ||
             !match.TryGetPlayer(_session.HumanPlayerId, out var human))
         {
             return;
         }
 
-        var fieldIndex = card.GetIndex();
+        var fieldIndex = parent.GetChildren()
+            .OfType<PresentationCardButton>()
+            .Where(candidate => !candidate.IsQueuedForDeletion())
+            .TakeWhile(candidate => candidate != card)
+            .Count();
         if (fieldIndex < 0 || fieldIndex >= human.Field.Count)
             return;
 
@@ -86,7 +92,7 @@ public partial class Main
             return;
 
         card.ConfigureToken(
-            tier: null,
+            null,
             unit.Attack,
             unit.Health,
             BuildUnitInspectDetails(unit.Definition, unit));
