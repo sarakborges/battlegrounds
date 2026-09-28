@@ -46,6 +46,8 @@ The JSON contract intentionally contains no Godot class names or property names.
     "large": 15
   },
   "metrics": {
+    "launcher.marginHorizontal": 64,
+    "launcher.marginVertical": 48,
     "row.offer.gap": 10,
     "row.offer.preferredCardWidth": 124,
     "row.offer.minimumCardWidth": 88,
@@ -141,6 +143,20 @@ These remain presentation values; they do not alter game rules or authoritative 
 
 `metrics` is an optional map of finite numeric presentation values. It exists for semantic geometry that should be owned by the mod but is not naturally a reusable spacing token.
 
+Theme schema v1 recognizes a fixed metric vocabulary. Unknown metric names are rejected with `UNKNOWN_THEME_METRIC` instead of being silently ignored by the presentation adapter. Adding a new engine-consumed metric therefore requires extending the v1 metric registry (or introducing a future schema version) together with the runtime consumer.
+
+The launcher preview consumes:
+
+```text
+launcher.marginHorizontal
+launcher.marginVertical
+launcher.gap
+launcher.modGap
+launcher.diagnosticsMinimumHeight
+```
+
+They control the selected mod's launcher preview geometry only. Missing values use the neutral adapter defaults (`64`, `48`, `14`, `8`, `180` respectively).
+
 The preparation adapter currently recognizes these row-role families:
 
 ```text
@@ -227,19 +243,21 @@ drag.preview.rotationDegrees
 
 They control only the lifted visual preview while dragging a card. The card's source opacity remains a component property on `components.drag.preview.opacity`.
 
-Missing metrics keep the adapter defaults, so existing mods do not need to declare layout values. The adapter clamps consumed metrics to safe presentation ranges; malformed or non-finite metric values reject the mod during validation.
+Missing metrics keep the adapter defaults, so existing mods do not need to declare every layout value. Consumed metrics are clamped to safe presentation ranges; malformed, non-finite or unknown metric values reject the mod during validation.
 
 The `card` component's existing `padding` tokens are also consumed by the card's actual content container, rather than only by its background style. This keeps component styling and content geometry under the same mod-owned contract.
 
 ## Component roles
 
-The current adapter recognizes these semantic component roles:
+The base adapter roles are:
 
 - `button` — base button styling;
 - `button.primary` — primary call-to-action styling, inheriting unspecified values from `button`;
 - `card` — presentation cards, inheriting unspecified values from `button`;
 - `input` — text input styling;
 - `panel` — panel/container styling.
+
+Additional semantic panel, HUD label and interaction roles are documented in `THEME_ROLES.md`. Theme schema v1 rejects unknown component and screen role names rather than accepting inert styles that the adapter cannot consume.
 
 A component style may contain:
 
@@ -296,13 +314,13 @@ When both `backgroundAsset` and `backgroundColor` are present, the color acts as
 
 ## Screen roles
 
-The contract currently reserves:
+The contract currently reserves exactly:
 
 - `launcher`
 - `preparation`
 - `combat`
 
-A screen style supports `backgroundColor` and `backgroundAsset`. Background assets are loaded from the selected mod at runtime. The launcher previews valid mod themes; preparation and combat switch between their semantic screen roles during play.
+Unknown screen role names reject theme v1. A screen style supports `backgroundColor` and `backgroundAsset`. Background assets are loaded from the selected mod at runtime. The launcher previews valid mod themes; preparation and combat switch between their semantic screen roles during play.
 
 ## Asset safety
 
