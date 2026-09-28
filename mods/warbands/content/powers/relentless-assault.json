@@ -1,0 +1,13 @@
+{
+  "id": "relentless-assault",
+  "name": "Relentless Assault",
+  "activation": { "cost": 3, "maxUsesPerTurn": 1, "maxUsesPerMatch": 1 },
+  "triggers": [
+    {
+      "event": "onActivate",
+      "effects": [
+        { "kind": "addBehavior", "target": { "scope": "selected" }, "behaviorId": "double-strike" }
+      ]
+    }
+  ]
+}

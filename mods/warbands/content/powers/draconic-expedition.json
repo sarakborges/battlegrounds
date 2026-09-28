@@ -1,0 +1,17 @@
+{
+  "id": "draconic-expedition",
+  "name": "Draconic Expedition",
+  "activation": { "cost": 2, "maxUsesPerTurn": 1 },
+  "triggers": [
+    {
+      "event": "onActivate",
+      "effects": [
+        {
+          "kind": "generateUnitChoice",
+          "generationQuery": { "minimumTier": 3, "maximumTier": 6, "tagId": "elite" },
+          "optionCount": 3
+        }
+      ]
+    }
+  ]
+}
