@@ -49,7 +49,7 @@ internal sealed partial class PresentationCardButton : Button
     {
         Text = string.Empty;
         ThemeTypeVariation = "CardButton";
-        ClipContents = true;
+        ClipContents = false;
         MouseEntered += HandleMouseEntered;
         MouseExited += HandleMouseExited;
 
@@ -389,7 +389,9 @@ internal sealed partial class PresentationCardButton : Button
         var badgeSize = main.ResolvePresentationMetric(ModThemeMetricKeys.Card.TokenBadgeSize, 16.0f, 128.0f);
         var inset = main.ResolvePresentationMetric(ModThemeMetricKeys.Card.TokenBadgeInset, 0.0f, 64.0f);
 
-        SetBadgeRect(_tierBadge, 0.0f, 0.0f, inset, inset, badgeSize);
+        // Battlegrounds visual grammar: Tavern Tier is a flag centered above the
+        // portrait, while attack and health live on the lower left/right corners.
+        SetBadgeRect(_tierBadge, 0.5f, 0.0f, -badgeSize * 0.5f, -badgeSize * 0.12f + inset, badgeSize);
         SetBadgeRect(_attackBadge, 0.0f, 1.0f, inset, -inset - badgeSize, badgeSize);
         SetBadgeRect(_healthBadge, 1.0f, 1.0f, -inset - badgeSize, -inset - badgeSize, badgeSize);
     }
