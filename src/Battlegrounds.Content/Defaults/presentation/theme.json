@@ -153,7 +153,21 @@
     "hud.opponent.statsGap": 0,
     "drag.preview.scale": 1.045,
     "drag.preview.rotationDegrees": -1.5,
-    "drag.dropTarget.shadowScale": 3
+    "drag.dropTarget.shadowScale": 3,
+    "motion.combatPlayback.stepSeconds": 0.9,
+    "motion.ui.select.durationSeconds": 0.18,
+    "motion.cue.pulse.scale": 1.05,
+    "motion.cue.pulse.durationSeconds": 0.24,
+    "motion.cue.shake.rotationDegrees": 1.4323945,
+    "motion.cue.shake.durationSeconds": 0.22,
+    "motion.cue.lunge.scale": 1.08,
+    "motion.cue.lunge.durationSeconds": 0.24,
+    "motion.cue.fade.scale": 0.9,
+    "motion.cue.fade.opacity": 0.25,
+    "motion.cue.fade.durationSeconds": 0.36,
+    "motion.cue.pop.scale": 0.88,
+    "motion.cue.pop.opacity": 0.35,
+    "motion.cue.pop.durationSeconds": 0.28
   },
   "components": {
     "button": {
