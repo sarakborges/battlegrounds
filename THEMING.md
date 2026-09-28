@@ -50,7 +50,9 @@ The JSON contract intentionally contains no Godot class names or property names.
     "row.offer.preferredCardWidth": 124,
     "row.offer.minimumCardWidth": 88,
     "row.offer.preferredCardHeight": 142,
-    "row.offer.padding": 4
+    "row.offer.padding": 4,
+    "drag.preview.scale": 1.045,
+    "drag.preview.rotationDegrees": -1.5
   },
   "components": {
     "button": {
@@ -164,6 +166,15 @@ For example:
   }
 }
 ```
+
+Preparation drag feedback also exposes two semantic metrics:
+
+```text
+drag.preview.scale
+drag.preview.rotationDegrees
+```
+
+They control only the lifted visual preview while dragging a card. The card's source opacity remains a component property on `components.drag.preview.opacity`.
 
 Missing metrics keep the adapter defaults, so existing mods do not need to declare layout values. The adapter clamps consumed metrics to safe presentation ranges; malformed or non-finite metric values reject the mod during validation.
 
