@@ -1,6 +1,6 @@
 # Mod-driven theming
 
-Visual theme data belongs to the selected mod. `Battlegrounds.Core` and `Battlegrounds.Application` do not interpret colors, fonts, button imagery, borders, screen backgrounds or presentation layout metrics.
+The effective visual theme is resolved from the engine presentation baseline plus the selected mod's overrides. `Battlegrounds.Core` and `Battlegrounds.Application` do not interpret colors, fonts, button imagery, borders, screen backgrounds or presentation layout metrics.
 
 A mod may provide an optional aggregate theme file at:
 
@@ -8,7 +8,7 @@ A mod may provide an optional aggregate theme file at:
 presentation/theme.json
 ```
 
-`Battlegrounds.Content` validates this file and all referenced assets. `Battlegrounds.Game` translates the validated, engine-neutral theme model into Godot `Theme`, font, texture, style and layout resources at runtime.
+`Battlegrounds.Content` validates this file and all referenced assets. It also owns the asset-free engine default theme used as the baseline for missing mod values. `Battlegrounds.Game` translates the resolved, engine-neutral theme model into Godot `Theme`, font, texture, style and layout resources at runtime.
 
 The JSON contract intentionally contains no Godot class names or property names.
 
@@ -61,7 +61,8 @@ The JSON contract intentionally contains no Godot class names or property names.
     "layout.combat.marginHorizontal": 32,
     "layout.combat.marginVertical": 24,
     "drag.preview.scale": 1.045,
-    "drag.preview.rotationDegrees": -1.5
+    "drag.preview.rotationDegrees": -1.5,
+    "drag.dropTarget.shadowScale": 3
   },
   "components": {
     "button": {
@@ -95,7 +96,7 @@ The JSON contract intentionally contains no Godot class names or property names.
 }
 ```
 
-Every section other than `version` is optional. Missing theme files and missing optional sections fall back to the presentation adapter's normal defaults.
+Every section other than `version` is optional. Missing theme files and missing optional values inherit from the embedded engine default theme before the Godot adapter sees the catalog.
 
 ## Design-token layers
 
@@ -109,6 +110,8 @@ raw value -> semantic token -> component/layout role
 ```
 
 UI code should consume semantic roles rather than fandom-specific colors, files or dimensions. Mods can therefore produce radically different visual identities without changing game mechanics or scene logic.
+
+The gameplay and launcher scene files own hierarchy, structural relationships, visibility and input wiring. Playable colors, typography sizes, spacing and visual dimensions are supplied by the resolved theme rather than duplicated as scene defaults.
 
 ## Colors
 
@@ -141,7 +144,7 @@ These remain presentation values; they do not alter game rules or authoritative 
 
 ## Layout metrics
 
-`metrics` is an optional map of finite numeric presentation values. It exists for semantic geometry that should be owned by the mod but is not naturally a reusable spacing token.
+`metrics` is an optional map of finite numeric presentation values. It exists for semantic geometry that should be owned by presentation data but is not naturally a reusable spacing token.
 
 Theme schema v1 recognizes a fixed metric vocabulary. Unknown metric names are rejected with `UNKNOWN_THEME_METRIC` instead of being silently ignored by the presentation adapter. Adding a new engine-consumed metric therefore requires extending the v1 metric registry (or introducing a future schema version) together with the runtime consumer.
 
@@ -155,7 +158,7 @@ launcher.modGap
 launcher.diagnosticsMinimumHeight
 ```
 
-They control the selected mod's launcher preview geometry only. Missing values use the neutral adapter defaults (`64`, `48`, `14`, `8`, `180` respectively).
+They control the selected mod's launcher preview geometry only. Values omitted by the mod inherit the engine baseline (`64`, `48`, `14`, `8`, `180` respectively in theme v1).
 
 The preparation adapter currently recognizes these row-role families:
 
@@ -232,20 +235,23 @@ layout.combat.unitGap
 layout.combat.controlsGap
 ```
 
-They control only the presentation-owned combat overlay: outer content margins, vertical content separation, spacing between the two combat boards, spacing between units, and spacing between playback controls. Missing values keep the adapter defaults (`32`, `24`, `12`, `24`, `6`, `8` respectively). Combat still consumes immutable resolved timeline data; these metrics cannot alter combat resolution, event ordering or authoritative state.
+They control only the presentation-owned combat overlay: outer content margins, vertical content separation, spacing between the two combat boards, spacing between units, and spacing between playback controls. Values omitted by the mod inherit the engine baseline (`32`, `24`, `12`, `24`, `6`, `8` respectively in theme v1). Combat still consumes immutable resolved timeline data; these metrics cannot alter combat resolution, event ordering or authoritative state.
 
-Preparation drag feedback also exposes two semantic metrics:
+Preparation drag feedback exposes these semantic metrics:
 
 ```text
 drag.preview.scale
 drag.preview.rotationDegrees
+drag.dropTarget.shadowScale
 ```
 
-They control only the lifted visual preview while dragging a card. The card's source opacity remains a component property on `components.drag.preview.opacity`.
+They control only visual drag feedback: lifted-preview transform and the drop-target shadow derived from the themed border width. Source opacity remains a component property on `components.drag.preview.opacity`. Drop-target background, border, radius and padding are owned by the semantic `dropTarget.*` component roles.
 
-Missing metrics keep the adapter defaults, so existing mods do not need to declare every layout value. Consumed metrics are clamped to safe presentation ranges; malformed, non-finite or unknown metric values reject the mod during validation.
+Pointer hit tolerances, insertion hitboxes and cursor semantics are interaction behavior rather than visual theme values and remain adapter-owned.
 
-The `card` component's existing `padding` tokens are also consumed by the card's actual content container, rather than only by its background style. This keeps component styling and content geometry under the same mod-owned contract.
+Missing mod metrics inherit from the engine default theme. A metric that is still absent after theme layering is a presentation-contract error rather than a silent code fallback. Consumed metrics are clamped to safe presentation ranges; malformed, non-finite or unknown metric values reject the mod during validation.
+
+The `card` component's existing `padding` tokens are also consumed by the card's actual content container, rather than only by its background style. This keeps component styling and content geometry under the same data-owned contract.
 
 ## Component roles
 
@@ -336,8 +342,8 @@ A theme with invalid token references, malformed values or invalid asset paths r
 ## Ownership boundary
 
 ```text
-mod files
-  -> Battlegrounds.Content validation + immutable theme catalog
+engine default theme + mod overrides
+  -> Battlegrounds.Content validation + immutable resolved theme catalog
   -> Battlegrounds.Game runtime translation
   -> Godot Theme / FontFile / Texture2D / StyleBox / semantic layout values
 ```
