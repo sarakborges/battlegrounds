@@ -68,6 +68,7 @@ public partial class Main
         _combatPlaybackAccumulator = 0;
         EnsureCombatPlaybackUi();
         _combatOverlay!.Visible = true;
+        ApplyScreenTheme(ModThemeScreenRoles.Combat);
         RenderCombatPlayback();
         AppendLog($"Playing resolved {Term("combat")} {Term("round")} {record.Round} from immutable session data.");
     }
@@ -127,11 +128,14 @@ public partial class Main
         _combatTitle = new Label
         {
             Text = Text("ui.combatPlayback", ("combat", Term("combat"))),
+            ThemeTypeVariation = "TitleLabel",
         };
-        _combatTitle.AddThemeFontSizeOverride("font_size", 26);
         root.AddChild(_combatTitle);
 
-        _combatProgress = new Label();
+        _combatProgress = new Label
+        {
+            ThemeTypeVariation = "CaptionLabel",
+        };
         root.AddChild(_combatProgress);
 
         var boards = new HBoxContainer
@@ -143,8 +147,10 @@ public partial class Main
         root.AddChild(boards);
 
         var left = new VBoxContainer { SizeFlagsHorizontal = Control.SizeFlags.ExpandFill };
-        _combatLeftHeader = new Label();
-        _combatLeftHeader.AddThemeFontSizeOverride("font_size", 18);
+        _combatLeftHeader = new Label
+        {
+            ThemeTypeVariation = "HeadingLabel",
+        };
         _combatLeftUnits = new VBoxContainer();
         _combatLeftUnits.AddThemeConstantOverride("separation", 6);
         left.AddChild(_combatLeftHeader);
@@ -152,8 +158,10 @@ public partial class Main
         boards.AddChild(left);
 
         var right = new VBoxContainer { SizeFlagsHorizontal = Control.SizeFlags.ExpandFill };
-        _combatRightHeader = new Label();
-        _combatRightHeader.AddThemeFontSizeOverride("font_size", 18);
+        _combatRightHeader = new Label
+        {
+            ThemeTypeVariation = "HeadingLabel",
+        };
         _combatRightUnits = new VBoxContainer();
         _combatRightUnits.AddThemeConstantOverride("separation", 6);
         right.AddChild(_combatRightHeader);
@@ -163,8 +171,8 @@ public partial class Main
         _combatEvent = new Label
         {
             AutowrapMode = TextServer.AutowrapMode.WordSmart,
+            ThemeTypeVariation = "BodyLabel",
         };
-        _combatEvent.AddThemeFontSizeOverride("font_size", 17);
         root.AddChild(_combatEvent);
 
         var controls = new HBoxContainer();
@@ -173,6 +181,7 @@ public partial class Main
         {
             Text = Text("ui.next"),
             SizeFlagsHorizontal = Control.SizeFlags.ExpandFill,
+            ThemeTypeVariation = "PrimaryButton",
         };
         _combatSkipButton = new Button { Text = Text("ui.skipSettlement") };
         _combatNextButton.Pressed += AdvanceCombatPlayback;
@@ -390,6 +399,7 @@ public partial class Main
         _combatUnitDefinitions.Clear();
         _combatPlaybackAccumulator = 0;
         if (_combatOverlay is not null) _combatOverlay.Visible = false;
+        ApplyScreenTheme(ModThemeScreenRoles.Preparation);
         Render();
     }
 }
