@@ -94,11 +94,11 @@ public partial class Main
         ApplyTextRole(_status, "HeadingLabel");
         ApplyTextRole(_leaderPrompt, "HeadingLabel");
         ApplyTextRole(_interactionPrompt, "BodyLabel");
-        ApplyTextRole("Margin/Shell/CenterStage/PreparationPanel/TavernControls/TierBadge/HudTierValue", "TierValueLabel");
-        ApplyTextRole("Margin/Shell/CenterStage/PreparationPanel/HeroDock/HealthBadge/HudHealthValue", "HealthValueLabel");
-        ApplyTextRole("Margin/Shell/CenterStage/PreparationPanel/HeroDock/HudArmorBadge/HudArmorValue", "ArmorValueLabel");
-        ApplyTextRole("Margin/Shell/CenterStage/PreparationPanel/HeroDock/HeroCore/HudHeroName", "HeroNameLabel");
-        ApplyTextRole("Margin/Shell/CenterStage/PreparationPanel/HeroDock/ResourceBadge/HudResourceValue", "ResourceValueLabel");
+        ApplyTextRole("%HudTierValue", "TierValueLabel");
+        ApplyTextRole("%HudHealthValue", "HealthValueLabel");
+        ApplyTextRole("%HudArmorValue", "ArmorValueLabel");
+        ApplyTextRole("%HudHeroName", "HeroNameLabel");
+        ApplyTextRole("%HudResourceValue", "ResourceValueLabel");
     }
 
     private void ApplyTextRole(string path, string variation)
