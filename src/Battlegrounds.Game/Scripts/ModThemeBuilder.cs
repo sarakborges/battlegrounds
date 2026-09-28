@@ -25,11 +25,19 @@ internal sealed class ModThemeBuilder
         ApplySemanticLabelVariations(theme);
 
         theme.SetTypeVariation("PrimaryButton", "Button");
+        theme.SetTypeVariation("TavernActionButton", "Button");
+        theme.SetTypeVariation("TavernUpgradeButton", "TavernActionButton");
+        theme.SetTypeVariation("TavernRefreshButton", "TavernActionButton");
+        theme.SetTypeVariation("TavernFreezeButton", "TavernActionButton");
         theme.SetTypeVariation("CardButton", "Button");
         theme.SetTypeVariation("BoardCardButton", "CardButton");
 
         ApplyComponent(theme, ModThemeComponentRoles.Button, "Button");
         ApplyComponent(theme, ModThemeComponentRoles.ButtonPrimary, "PrimaryButton", ModThemeComponentRoles.Button);
+        ApplyComponent(theme, ModThemeComponentRoles.ButtonTavernAction, "TavernActionButton", ModThemeComponentRoles.Button);
+        ApplyComponent(theme, ModThemeComponentRoles.ButtonTavernUpgrade, "TavernUpgradeButton", ModThemeComponentRoles.ButtonTavernAction);
+        ApplyComponent(theme, ModThemeComponentRoles.ButtonTavernRefresh, "TavernRefreshButton", ModThemeComponentRoles.ButtonTavernAction);
+        ApplyComponent(theme, ModThemeComponentRoles.ButtonTavernFreeze, "TavernFreezeButton", ModThemeComponentRoles.ButtonTavernAction);
         ApplyComponent(theme, ModThemeComponentRoles.Card, "CardButton", ModThemeComponentRoles.Button);
         ApplyComponent(theme, ModThemeComponentRoles.CardBoard, "BoardCardButton", ModThemeComponentRoles.Card);
         ApplyComponent(theme, ModThemeComponentRoles.Input, "LineEdit");
