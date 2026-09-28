@@ -1,8 +1,9 @@
 {
   "generatedFrom": "https://api.hearthstonejson.com/v1/latest/enUS/cards.json",
   "artApi": "https://art.hearthstonejson.com/",
-  "found": 36,
-  "missing": 16,
+  "hearthstone": 38,
+  "warcraftWiki": 13,
+  "missing": 1,
   "leaders": {
     "alleria-windrunner": {
       "displayName": "Alleria Windrunner",
@@ -19,8 +20,16 @@
     },
     "altruis-the-sufferer": {
       "displayName": "Altruis the Sufferer",
-      "status": "missing",
-      "source": "hearthstonejson"
+      "status": "hearthstone",
+      "source": "HearthstoneJSON",
+      "cardId": "BT_937",
+      "dbfId": 56652,
+      "matchedName": "Altruis the Outcast",
+      "exactName": false,
+      "cardType": "MINION",
+      "artist": "Jerry Mascho",
+      "artUrl": "https://art.hearthstonejson.com/v1/512x/BT_937.jpg",
+      "output": "mods/warbands/assets/cosmetics/leaders/altruis-the-sufferer/base.png"
     },
     "anduin-wrynn": {
       "displayName": "Anduin Wrynn",
@@ -50,8 +59,11 @@
     },
     "aysa-cloudsinger": {
       "displayName": "Aysa Cloudsinger",
-      "status": "missing",
-      "source": "hearthstonejson"
+      "status": "warcraft-wiki",
+      "source": "Warcraft Wiki",
+      "pageUrl": "https://warcraft.wiki.gg/wiki/Aysa_Cloudsinger",
+      "imageUrl": "https://warcraft.wiki.gg/images/Aysa_Cloudsinger.jpg?460262",
+      "output": "mods/warbands/assets/cosmetics/leaders/aysa-cloudsinger/base.png"
     },
     "calia-menethil": {
       "displayName": "Calia Menethil",
@@ -68,13 +80,24 @@
     },
     "celestine-of-the-harvest": {
       "displayName": "Celestine of the Harvest",
-      "status": "missing",
-      "source": "hearthstonejson"
+      "status": "warcraft-wiki",
+      "source": "Warcraft Wiki",
+      "pageUrl": "https://warcraft.wiki.gg/wiki/Celestine_of_the_Harvest",
+      "imageUrl": "https://warcraft.wiki.gg/images/Celestine.jpg?7ed622",
+      "output": "mods/warbands/assets/cosmetics/leaders/celestine-of-the-harvest/base.png"
     },
     "chen-stormstout": {
       "displayName": "Chen Stormstout",
-      "status": "missing",
-      "source": "hearthstonejson"
+      "status": "hearthstone",
+      "source": "HearthstoneJSON",
+      "cardId": "VAN_EX1_049",
+      "dbfId": 69829,
+      "matchedName": "Youthful Brewmaster",
+      "exactName": false,
+      "cardType": "MINION",
+      "artist": "Wei Wang",
+      "artUrl": "https://art.hearthstonejson.com/v1/512x/VAN_EX1_049.jpg",
+      "output": "mods/warbands/assets/cosmetics/leaders/chen-stormstout/base.png"
     },
     "chogall": {
       "displayName": "Cho'gall",
@@ -130,8 +153,11 @@
     },
     "first-arcanist-thalyssra": {
       "displayName": "First Arcanist Thalyssra",
-      "status": "missing",
-      "source": "hearthstonejson"
+      "status": "warcraft-wiki",
+      "source": "Warcraft Wiki",
+      "pageUrl": "https://warcraft.wiki.gg/wiki/Thalyssra",
+      "imageUrl": "https://warcraft.wiki.gg/images/Thalyssra_Night_elf.png?8a443d",
+      "output": "mods/warbands/assets/cosmetics/leaders/first-arcanist-thalyssra/base.png"
     },
     "garona-halforcen": {
       "displayName": "Garona Halforcen",
@@ -174,8 +200,11 @@
     },
     "geyarah": {
       "displayName": "Geyarah",
-      "status": "missing",
-      "source": "hearthstonejson"
+      "status": "warcraft-wiki",
+      "source": "Warcraft Wiki",
+      "pageUrl": "https://warcraft.wiki.gg/wiki/Geya%27rah",
+      "imageUrl": "https://warcraft.wiki.gg/images/Geya%27rah_Orgrimmar.jpg?feb402",
+      "output": "mods/warbands/assets/cosmetics/leaders/geyarah/base.png"
     },
     "grand-magister-rommath": {
       "displayName": "Grand Magister Rommath",
@@ -257,8 +286,11 @@
     },
     "ji-firepaw": {
       "displayName": "Ji Firepaw",
-      "status": "missing",
-      "source": "hearthstonejson"
+      "status": "warcraft-wiki",
+      "source": "Warcraft Wiki",
+      "pageUrl": "https://warcraft.wiki.gg/wiki/Ji_Firepaw",
+      "imageUrl": "https://warcraft.wiki.gg/images/Ji_Firepaw_by_Kan_Liu.jpg?21436c",
+      "output": "mods/warbands/assets/cosmetics/leaders/ji-firepaw/base.png"
     },
     "kayn-sunfury": {
       "displayName": "Kayn Sunfury",
@@ -288,8 +320,11 @@
     },
     "koltira-deathweaver": {
       "displayName": "Koltira Deathweaver",
-      "status": "missing",
-      "source": "hearthstonejson"
+      "status": "warcraft-wiki",
+      "source": "Warcraft Wiki",
+      "pageUrl": "https://warcraft.wiki.gg/wiki/Koltira_Deathweaver",
+      "imageUrl": "https://warcraft.wiki.gg/images/Koltira_Deathweaver_Legion.jpg?7bf232",
+      "output": "mods/warbands/assets/cosmetics/leaders/koltira-deathweaver/base.png"
     },
     "lady-liadrin": {
       "displayName": "Lady Liadrin",
@@ -306,8 +341,11 @@
     },
     "leona-darkstrider": {
       "displayName": "Leona Darkstrider",
-      "status": "missing",
-      "source": "hearthstonejson"
+      "status": "warcraft-wiki",
+      "source": "Warcraft Wiki",
+      "pageUrl": "https://warcraft.wiki.gg/wiki/Leona_Darkstrider",
+      "imageUrl": "https://warcraft.wiki.gg/images/Leona_Darkstrider_in_Silvermoon.png?a75fdf",
+      "output": "mods/warbands/assets/cosmetics/leaders/leona-darkstrider/base.png"
     },
     "lilian-voss": {
       "displayName": "Lilian Voss",
@@ -363,8 +401,11 @@
     },
     "nekros-skullcrusher": {
       "displayName": "Nekros Skullcrusher",
-      "status": "missing",
-      "source": "hearthstonejson"
+      "status": "warcraft-wiki",
+      "source": "Warcraft Wiki",
+      "pageUrl": "https://warcraft.wiki.gg/wiki/Nekros_Skullcrusher",
+      "imageUrl": "https://warcraft.wiki.gg/images/Nekros_Skullcrusher.jpg?52961a",
+      "output": "mods/warbands/assets/cosmetics/leaders/nekros-skullcrusher/base.png"
     },
     "prophet-velen": {
       "displayName": "Prophet Velen",
@@ -394,23 +435,35 @@
     },
     "scalecommander-azurathel": {
       "displayName": "Scalecommander Azurathel",
-      "status": "missing",
-      "source": "hearthstonejson"
+      "status": "warcraft-wiki",
+      "source": "Warcraft Wiki",
+      "pageUrl": "https://warcraft.wiki.gg/wiki/Scalecommander_Azurathel",
+      "imageUrl": "https://warcraft.wiki.gg/images/Scalecommander_Azurathel.png?74d73f",
+      "output": "mods/warbands/assets/cosmetics/leaders/scalecommander-azurathel/base.png"
     },
     "scalecommander-cindrethresh": {
       "displayName": "Scalecommander Cindrethresh",
-      "status": "missing",
-      "source": "hearthstonejson"
+      "status": "warcraft-wiki",
+      "source": "Warcraft Wiki",
+      "pageUrl": "https://warcraft.wiki.gg/wiki/Scalecommander_Cindrethresh",
+      "imageUrl": "https://warcraft.wiki.gg/images/Scalecommander_Cindrethresh.png?637262",
+      "output": "mods/warbands/assets/cosmetics/leaders/scalecommander-cindrethresh/base.png"
     },
     "scalecommander-emberthal": {
       "displayName": "Scalecommander Emberthal",
-      "status": "missing",
-      "source": "hearthstonejson"
+      "status": "warcraft-wiki",
+      "source": "Warcraft Wiki",
+      "pageUrl": "https://warcraft.wiki.gg/wiki/Scalecommander_Emberthal",
+      "imageUrl": "https://warcraft.wiki.gg/images/Emberthal_cinematic.jpg?401e0d",
+      "output": "mods/warbands/assets/cosmetics/leaders/scalecommander-emberthal/base.png"
     },
     "scalecommander-sarkareth": {
       "displayName": "Scalecommander Sarkareth",
-      "status": "missing",
-      "source": "hearthstonejson"
+      "status": "warcraft-wiki",
+      "source": "Warcraft Wiki",
+      "pageUrl": "https://warcraft.wiki.gg/wiki/Scalecommander_Sarkareth",
+      "imageUrl": "https://warcraft.wiki.gg/images/Scalecommander_Sarkareth.png?3a0e82",
+      "output": "mods/warbands/assets/cosmetics/leaders/scalecommander-sarkareth/base.png"
     },
     "shandris-feathermoon": {
       "displayName": "Shandris Feathermoon",
@@ -427,8 +480,11 @@
     },
     "sunwalker-dezco": {
       "displayName": "Sunwalker Dezco",
-      "status": "missing",
-      "source": "hearthstonejson"
+      "status": "warcraft-wiki",
+      "source": "Warcraft Wiki",
+      "pageUrl": "https://warcraft.wiki.gg/wiki/Sunwalker_Dezco",
+      "imageUrl": "https://warcraft.wiki.gg/images/Midsummer_Dezco.png?d9e8cc",
+      "output": "mods/warbands/assets/cosmetics/leaders/sunwalker-dezco/base.png"
     },
     "taran-zhu": {
       "displayName": "Taran Zhu",
@@ -549,8 +605,7 @@
     },
     "zentabra": {
       "displayName": "Zentabra",
-      "status": "missing",
-      "source": "hearthstonejson"
+      "status": "missing"
     }
   }
 }
