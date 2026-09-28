@@ -27,6 +27,12 @@ public enum EffectTargetSelection
     RightAdjacent,
 }
 
+public enum EffectTargetAnchor
+{
+    Source,
+    Selected,
+}
+
 public sealed record EffectUnitQuery
 {
     public EffectTargetScope Scope { get; }
@@ -55,6 +61,7 @@ public sealed record EffectTargetSelector
     public EffectUnitQuery Query { get; }
     public EffectTargetSelection Selection { get; }
     public int? Limit { get; }
+    public EffectTargetAnchor RelativeTo { get; }
 
     public EffectTargetScope Scope => Query.Scope;
     public bool ExcludeSource => Query.ExcludeSource;
@@ -67,15 +74,17 @@ public sealed record EffectTargetSelector
         bool excludeSource = false,
         int? limit = null,
         UnitTypeId? requiredTypeId = null,
-        TagId? requiredTagId = null)
-        : this(new EffectUnitQuery(scope, excludeSource, requiredTypeId, requiredTagId), selection, limit)
+        TagId? requiredTagId = null,
+        EffectTargetAnchor relativeTo = EffectTargetAnchor.Source)
+        : this(new EffectUnitQuery(scope, excludeSource, requiredTypeId, requiredTagId), selection, limit, relativeTo)
     {
     }
 
     public EffectTargetSelector(
         EffectUnitQuery query,
         EffectTargetSelection selection = EffectTargetSelection.All,
-        int? limit = null)
+        int? limit = null,
+        EffectTargetAnchor relativeTo = EffectTargetAnchor.Source)
     {
         Query = query ?? throw new ArgumentNullException(nameof(query));
         if (limit is not null && limit.Value <= 0)
@@ -85,14 +94,15 @@ public sealed record EffectTargetSelector
         {
             throw new ArgumentException("Self and selected targets cannot use selection or limit.");
         }
-        if (selection is EffectTargetSelection.Adjacent or EffectTargetSelection.LeftAdjacent or EffectTargetSelection.RightAdjacent &&
-            query.Scope != EffectTargetScope.Friendly)
-        {
-            throw new ArgumentException("Adjacent target selection is only valid for friendly targets.", nameof(selection));
-        }
+        var isAdjacentSelection = selection is EffectTargetSelection.Adjacent or EffectTargetSelection.LeftAdjacent or EffectTargetSelection.RightAdjacent;
+        if (relativeTo == EffectTargetAnchor.Selected && !isAdjacentSelection)
+            throw new ArgumentException("Selected-relative targeting is only valid for adjacent selections.", nameof(relativeTo));
+        if (isAdjacentSelection && relativeTo == EffectTargetAnchor.Source && query.Scope != EffectTargetScope.Friendly)
+            throw new ArgumentException("Source-relative adjacent target selection is only valid for friendly targets.", nameof(selection));
 
         Selection = selection;
         Limit = limit;
+        RelativeTo = relativeTo;
     }
 }
 

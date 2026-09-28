@@ -13,7 +13,11 @@
       "effects": [
         {
           "kind": "dealDamage",
-          "target": { "scope": "selected" },
+          "target": {
+            "scope": "enemy",
+            "selection": "adjacent",
+            "relativeTo": "selected"
+          },
           "amount": 2
         }
       ]

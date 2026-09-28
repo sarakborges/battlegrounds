@@ -16,6 +16,7 @@ internal sealed class AdvancedEffectModValidator
         "all", "random", "lowestAttack", "highestAttack", "lowestHealth", "highestHealth",
         "leftmost", "rightmost", "adjacent", "leftAdjacent", "rightAdjacent",
     ];
+    private static readonly HashSet<string> RelativeTargets = ["source", "selected"];
     private static readonly HashSet<string> Comparisons =
     [
         "equal", "notEqual", "lessThan", "lessThanOrEqual", "greaterThan", "greaterThanOrEqual",
@@ -34,8 +35,35 @@ internal sealed class AdvancedEffectModValidator
             ValidateTriggers(file, typeIds, tagIds, powerMode: false, issues);
         foreach (var file in ReadEntityDirectory(modDirectory, "content/powers"))
             ValidateTriggers(file, typeIds, tagIds, powerMode: true, issues);
+        foreach (var file in ReadEntityDirectory(modDirectory, "content/actions"))
+            ValidateActionTargets(file, typeIds, tagIds, issues);
 
         return issues;
+    }
+
+    private static void ValidateActionTargets(
+        EntityFile file,
+        IReadOnlySet<string> typeIds,
+        IReadOnlySet<string> tagIds,
+        List<ModValidationIssue> issues)
+    {
+        if (!file.Root.TryGetProperty("effects", out var effects) || effects.ValueKind != JsonValueKind.Array) return;
+        var effectIndex = 0;
+        foreach (var effect in effects.EnumerateArray())
+        {
+            if (effect.ValueKind == JsonValueKind.Object && effect.TryGetProperty("target", out var target))
+            {
+                ValidateTarget(
+                    file.Path,
+                    target,
+                    $"$.effects[{effectIndex}].target",
+                    allowSelected: true,
+                    typeIds,
+                    tagIds,
+                    issues);
+            }
+            effectIndex++;
+        }
     }
 
     private static void ValidateTriggers(
@@ -193,7 +221,7 @@ internal sealed class AdvancedEffectModValidator
             target,
             file,
             path,
-            ["scope", "selection", "excludeSource", "limit", "typeId", "tagId"],
+            ["scope", "selection", "excludeSource", "limit", "typeId", "tagId", "relativeTo"],
             ["scope"],
             issues);
 
@@ -205,6 +233,16 @@ internal sealed class AdvancedEffectModValidator
             selection = parsedSelection!;
             if (!Selections.Contains(selection))
                 issues.Add(new("INVALID_VALUE", file, path + ".selection", $"Unknown target selection '{selection}'."));
+        }
+
+        var hasRelativeTo = target.TryGetProperty("relativeTo", out _);
+        var relativeTo = "source";
+        if (hasRelativeTo &&
+            TryRequiredString(target, "relativeTo", file, path + ".relativeTo", issues, out var parsedRelativeTo))
+        {
+            relativeTo = parsedRelativeTo!;
+            if (!RelativeTargets.Contains(relativeTo))
+                issues.Add(new("INVALID_VALUE", file, path + ".relativeTo", $"Unknown target anchor '{relativeTo}'."));
         }
 
         var excludeSource = false;
@@ -220,7 +258,7 @@ internal sealed class AdvancedEffectModValidator
         if (hasLimit && TryRequiredInt(target, "limit", file, path + ".limit", issues, out var limit) && limit <= 0)
             issues.Add(new("INVALID_VALUE", file, path + ".limit", "limit must be positive."));
 
-        ValidateSelectorCombination(file, path, scope, selection, excludeSource, hasLimit, issues);
+        ValidateSelectorCombination(file, path, scope, selection, relativeTo, hasRelativeTo, allowSelected, excludeSource, hasLimit, issues);
         ValidateReferences(target, file, path, typeIds, tagIds, issues);
     }
 
@@ -274,6 +312,9 @@ internal sealed class AdvancedEffectModValidator
         string path,
         string? scope,
         string selection,
+        string relativeTo,
+        bool hasRelativeTo,
+        bool allowSelected,
         bool excludeSource,
         bool hasLimit,
         List<ModValidationIssue> issues)
@@ -289,8 +330,13 @@ internal sealed class AdvancedEffectModValidator
                 issues.Add(new("INVALID_PARAMETER", file, path + ".limit", "self/selected targets cannot use limit."));
         }
 
-        if (selection is "adjacent" or "leftAdjacent" or "rightAdjacent" && scope != "friendly")
-            issues.Add(new("INVALID_PARAMETER", file, path + ".selection", "Adjacent selection is only valid for friendly targets."));
+        var isAdjacentSelection = selection is "adjacent" or "leftAdjacent" or "rightAdjacent";
+        if (hasRelativeTo && !isAdjacentSelection)
+            issues.Add(new("INVALID_PARAMETER", file, path + ".relativeTo", "relativeTo is only valid for adjacent selections."));
+        if (relativeTo == "selected" && !allowSelected)
+            issues.Add(new("INVALID_VALUE", file, path + ".relativeTo", "selected relative targeting requires a context target."));
+        if (isAdjacentSelection && relativeTo == "source" && scope != "friendly")
+            issues.Add(new("INVALID_PARAMETER", file, path + ".selection", "Source-relative adjacent selection is only valid for friendly targets."));
     }
 
     private static void ValidateReferences(

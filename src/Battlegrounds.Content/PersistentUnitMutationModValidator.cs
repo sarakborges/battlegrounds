@@ -173,7 +173,7 @@ internal sealed class PersistentUnitMutationModValidator
             target,
             file,
             path,
-            ["scope", "excludeSource", "typeId", "tagId", "selection", "limit"],
+            ["scope", "excludeSource", "typeId", "tagId", "selection", "limit", "relativeTo"],
             ["scope"],
             issues);
 
@@ -194,8 +194,6 @@ internal sealed class PersistentUnitMutationModValidator
                 issues.Add(new("INVALID_VALUE", file, path + ".selection", $"Unsupported target selection '{selectionValue.GetString()}'."));
             else if (scope is "self" or "selected")
                 issues.Add(new("INVALID_VALUE", file, path + ".selection", "Self and selected targets cannot use selection."));
-            else if (selectionValue.GetString() is "adjacent" or "leftAdjacent" or "rightAdjacent" && scope != "friendly")
-                issues.Add(new("INVALID_VALUE", file, path + ".selection", "Adjacent selection requires friendly scope."));
         }
 
         if (target.TryGetProperty("limit", out var limit))
