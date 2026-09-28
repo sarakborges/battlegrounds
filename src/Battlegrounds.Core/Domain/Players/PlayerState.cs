@@ -199,10 +199,15 @@ public sealed partial class PlayerState
         var unit = _reserve[reserveSlot];
         _reserve.RemoveAt(reserveSlot);
         _field.Add(unit);
+        RecalculateFieldAuras();
         return unit;
     }
 
-    internal void AddToField(UnitInstance unit) => _field.Add(unit);
+    internal void AddToField(UnitInstance unit)
+    {
+        _field.Add(unit);
+        RecalculateFieldAuras();
+    }
 
     internal void InsertIntoField(int fieldSlot, UnitInstance unit)
     {
@@ -212,6 +217,7 @@ public sealed partial class PlayerState
         }
 
         _field.Insert(fieldSlot, unit);
+        RecalculateFieldAuras();
     }
 
     internal void ReorderField(IReadOnlyList<UnitInstanceId> orderedUnitIds)
@@ -227,6 +233,7 @@ public sealed partial class PlayerState
         _field.Clear();
         foreach (var id in orderedUnitIds)
             _field.Add(byId[id]);
+        RecalculateFieldAuras();
     }
 
     internal int IndexOfFieldUnit(UnitInstanceId instanceId) =>
@@ -236,6 +243,7 @@ public sealed partial class PlayerState
     {
         var unit = _field[fieldSlot];
         _field.RemoveAt(fieldSlot);
+        RecalculateFieldAuras();
         return unit;
     }
 
@@ -249,6 +257,7 @@ public sealed partial class PlayerState
 
         var unit = _field[index];
         _field.RemoveAt(index);
+        RecalculateFieldAuras();
         return unit;
     }
 
@@ -299,6 +308,58 @@ public sealed partial class PlayerState
     internal void ExpireUnitModifiers(UnitModifierDuration duration)
     {
         foreach (var unit in _reserve.Concat(_field)) unit.ExpireModifiers(duration);
+    }
+
+    internal void RecalculateFieldAuras()
+    {
+        foreach (var unit in _field) unit.SetAuraContribution(0, 0);
+        if (_field.Count == 0) return;
+
+        var totals = _field.ToDictionary(unit => unit.Id, _ => (Attack: 0L, Health: 0L));
+        for (var sourceIndex = 0; sourceIndex < _field.Count; sourceIndex++)
+        {
+  var source = _field[sourceIndex];
+  if (!source.IsAlive) continue;
+  foreach (var aura in source.Definition.Auras)
+  {
+      foreach (var target in ResolveAuraTargets(sourceIndex, aura))
+      {
+          var current = totals[target.Id];
+          totals[target.Id] = (current.Attack + aura.AttackDelta, current.Health + aura.HealthDelta);
+      }
+  }
+        }
+
+        foreach (var unit in _field)
+        {
+  var total = totals[unit.Id];
+  unit.SetAuraContribution(
+      (int)Math.Min(int.MaxValue, total.Attack),
+      (int)Math.Min(int.MaxValue, total.Health));
+        }
+    }
+
+    private IEnumerable<UnitInstance> ResolveAuraTargets(int sourceIndex, UnitAuraDefinition aura)
+    {
+        IEnumerable<UnitInstance> candidates = aura.Target.Selection switch
+        {
+  EffectTargetSelection.All => _field,
+  EffectTargetSelection.Adjacent => AdjacentUnits(sourceIndex),
+  EffectTargetSelection.LeftAdjacent => sourceIndex > 0 ? [_field[sourceIndex - 1]] : [],
+  EffectTargetSelection.RightAdjacent => sourceIndex + 1 < _field.Count ? [_field[sourceIndex + 1]] : [],
+  _ => [],
+        };
+        var source = _field[sourceIndex];
+        return candidates.Where(target =>
+  (!aura.Target.ExcludeSource || target.Id != source.Id) &&
+  (aura.Target.RequiredTypeId is null || target.Definition.Types.Any(type => type.Id == aura.Target.RequiredTypeId.Value)) &&
+  (aura.Target.RequiredTagId is null || target.Definition.Tags.Any(tag => tag.Id == aura.Target.RequiredTagId.Value)));
+    }
+
+    private IEnumerable<UnitInstance> AdjacentUnits(int sourceIndex)
+    {
+        if (sourceIndex > 0) yield return _field[sourceIndex - 1];
+        if (sourceIndex + 1 < _field.Count) yield return _field[sourceIndex + 1];
     }
 
     internal void MarkReadyForCombat()

@@ -783,6 +783,7 @@ public sealed class CombatEngine
             _units = participant.Units
                 .Select(snapshot => CombatRuntimeUnit.FromSnapshot(participant.PlayerId, snapshot))
                 .ToList();
+            RecalculateAuras();
         }
 
         public void SetPower(PowerId powerId) => CurrentPowerId = powerId;
@@ -847,6 +848,7 @@ public sealed class CombatEngine
             {
                 _nextAttackerIndex %= _units.Count;
             }
+            RecalculateAuras();
         }
 
         public CombatRuntimeUnit RemoveAt(int index)
@@ -865,7 +867,55 @@ public sealed class CombatEngine
                 }
                 _nextAttackerIndex %= _units.Count;
             }
+            RecalculateAuras();
             return unit;
+        }
+
+        private void RecalculateAuras()
+        {
+            foreach (var unit in _units) unit.SetAuraContribution(0, 0);
+            var totals = _units.ToDictionary(unit => unit.InstanceId, _ => (Attack: 0L, Health: 0L));
+            for (var sourceIndex = 0; sourceIndex < _units.Count; sourceIndex++)
+            {
+                var source = _units[sourceIndex];
+                if (!source.IsAlive) continue;
+                foreach (var aura in source.Definition.Auras)
+                {
+                    foreach (var target in ResolveAuraTargets(sourceIndex, aura))
+                    {
+                        var current = totals[target.InstanceId];
+                        totals[target.InstanceId] = (current.Attack + aura.AttackDelta, current.Health + aura.HealthDelta);
+                    }
+                }
+            }
+            foreach (var unit in _units)
+            {
+                var total = totals[unit.InstanceId];
+                unit.SetAuraContribution((int)Math.Min(int.MaxValue, total.Attack), (int)Math.Min(int.MaxValue, total.Health));
+            }
+        }
+
+        private IEnumerable<CombatRuntimeUnit> ResolveAuraTargets(int sourceIndex, UnitAuraDefinition aura)
+        {
+            IEnumerable<CombatRuntimeUnit> candidates = aura.Target.Selection switch
+            {
+                EffectTargetSelection.All => _units,
+                EffectTargetSelection.Adjacent => AdjacentUnits(sourceIndex),
+                EffectTargetSelection.LeftAdjacent => sourceIndex > 0 ? [_units[sourceIndex - 1]] : [],
+                EffectTargetSelection.RightAdjacent => sourceIndex + 1 < _units.Count ? [_units[sourceIndex + 1]] : [],
+                _ => [],
+            };
+            var source = _units[sourceIndex];
+            return candidates.Where(target =>
+                (!aura.Target.ExcludeSource || target.InstanceId != source.InstanceId) &&
+                (aura.Target.RequiredTypeId is null || target.Definition.Types.Any(type => type.Id == aura.Target.RequiredTypeId.Value)) &&
+                (aura.Target.RequiredTagId is null || target.Definition.Tags.Any(tag => tag.Id == aura.Target.RequiredTagId.Value)));
+        }
+
+        private IEnumerable<CombatRuntimeUnit> AdjacentUnits(int sourceIndex)
+        {
+            if (sourceIndex > 0) yield return _units[sourceIndex - 1];
+            if (sourceIndex + 1 < _units.Count) yield return _units[sourceIndex + 1];
         }
 
         public IReadOnlyList<CombatSurvivor> GetSurvivors() =>
@@ -877,133 +927,139 @@ public sealed class CombatEngine
         private readonly List<BehaviorDefinition> _initialBehaviors;
         private readonly List<BehaviorDefinition> _behaviors;
         private readonly int _initialAttack;
+        private int _intrinsicAttack;
+        private int _intrinsicHealth;
+        private int _auraAttack;
+        private int _auraHealth;
 
         public UnitInstanceId InstanceId { get; }
         public PlayerId OwnerPlayerId { get; }
         public UnitDefinition Definition { get; }
-        public int Attack { get; private set; }
-        public int Health { get; set; }
+        public int Attack => Math.Max(0, _intrinsicAttack + _auraAttack);
+        public int Health => _intrinsicHealth + _auraHealth;
         public bool IsAlive => Health > 0;
         public int DeathCount { get; set; }
         public int RebirthCount { get; set; }
 
         private CombatRuntimeUnit(
-            UnitInstanceId instanceId,
-            PlayerId ownerPlayerId,
-            UnitDefinition definition,
-            int attack,
-            int health,
-            IEnumerable<BehaviorDefinition> behaviors)
+  UnitInstanceId instanceId,
+  PlayerId ownerPlayerId,
+  UnitDefinition definition,
+  int attack,
+  int health,
+  IEnumerable<BehaviorDefinition> behaviors)
         {
-            InstanceId = instanceId;
-            OwnerPlayerId = ownerPlayerId;
-            Definition = definition;
-            Attack = attack;
-            Health = health;
-            _initialAttack = attack;
-            _initialBehaviors = behaviors.ToList();
-            _behaviors = _initialBehaviors.ToList();
+  InstanceId = instanceId;
+  OwnerPlayerId = ownerPlayerId;
+  Definition = definition;
+  _intrinsicAttack = attack;
+  _intrinsicHealth = health;
+  _initialAttack = attack;
+  _initialBehaviors = behaviors.ToList();
+  _behaviors = _initialBehaviors.ToList();
         }
 
         public static CombatRuntimeUnit FromSnapshot(PlayerId ownerPlayerId, CombatUnitSnapshot snapshot)
         {
-            var behaviors = snapshot.Behaviors
-                .Select(behavior =>
-                    snapshot.Definition?.Behaviors.FirstOrDefault(candidate => candidate.Id == behavior.Id)
-                    ?? new BehaviorDefinition(behavior.Id, behavior.Id.ToString(), behavior.Handler))
-                .ToArray();
-            var definition = snapshot.Definition
-                ?? new UnitDefinition(
-                    snapshot.UnitId,
-                    snapshot.UnitId.ToString(),
-                    snapshot.Tier,
-                    snapshot.Attack,
-                    snapshot.Health,
-                    behaviors);
+  var behaviors = snapshot.Behaviors
+      .Select(behavior =>
+          snapshot.Definition?.Behaviors.FirstOrDefault(candidate => candidate.Id == behavior.Id)
+          ?? new BehaviorDefinition(behavior.Id, behavior.Id.ToString(), behavior.Handler))
+      .ToArray();
+  var definition = snapshot.Definition
+      ?? new UnitDefinition(
+          snapshot.UnitId,
+          snapshot.UnitId.ToString(),
+          snapshot.Tier,
+          snapshot.Attack,
+          snapshot.Health,
+          behaviors);
 
-            return new CombatRuntimeUnit(
-                snapshot.InstanceId,
-                ownerPlayerId,
-                definition,
-                snapshot.Attack,
-                snapshot.Health,
-                behaviors);
+  return new CombatRuntimeUnit(
+      snapshot.InstanceId,
+      ownerPlayerId,
+      definition,
+      snapshot.Attack,
+      snapshot.Health,
+      behaviors);
         }
 
         public static CombatRuntimeUnit FromDefinition(
-            UnitInstanceId instanceId,
-            PlayerId ownerPlayerId,
-            UnitDefinition definition) =>
-            new(
-                instanceId,
-                ownerPlayerId,
-                definition,
-                definition.BaseAttack,
-                definition.BaseHealth,
-                definition.Behaviors);
+  UnitInstanceId instanceId,
+  PlayerId ownerPlayerId,
+  UnitDefinition definition) =>
+  new(
+      instanceId,
+      ownerPlayerId,
+      definition,
+      definition.BaseAttack,
+      definition.BaseHealth,
+      definition.Behaviors);
 
         public bool Has(NativeBehaviorKey handler) => _behaviors.Any(behavior => behavior.Handler == handler);
-
-        public BehaviorDefinition? FindBehavior(NativeBehaviorKey handler) =>
-            _behaviors.FirstOrDefault(behavior => behavior.Handler == handler);
-
-        public BehaviorDefinition? FindBehavior(BehaviorId behaviorId) =>
-            _behaviors.FirstOrDefault(behavior => behavior.Id == behaviorId);
+        public BehaviorDefinition? FindBehavior(NativeBehaviorKey handler) => _behaviors.FirstOrDefault(behavior => behavior.Handler == handler);
+        public BehaviorDefinition? FindBehavior(BehaviorId behaviorId) => _behaviors.FirstOrDefault(behavior => behavior.Id == behaviorId);
 
         public bool RemoveBehavior(NativeBehaviorKey handler)
         {
-            var index = _behaviors.FindIndex(behavior => behavior.Handler == handler);
-            if (index < 0) return false;
-            _behaviors.RemoveAt(index);
-            return true;
+  var index = _behaviors.FindIndex(behavior => behavior.Handler == handler);
+  if (index < 0) return false;
+  _behaviors.RemoveAt(index);
+  return true;
         }
 
         public bool RemoveBehavior(BehaviorId behaviorId)
         {
-            var index = _behaviors.FindIndex(behavior => behavior.Id == behaviorId);
-            if (index < 0) return false;
-            _behaviors.RemoveAt(index);
-            return true;
+  var index = _behaviors.FindIndex(behavior => behavior.Id == behaviorId);
+  if (index < 0) return false;
+  _behaviors.RemoveAt(index);
+  return true;
         }
 
         public bool AddBehavior(BehaviorDefinition behavior)
         {
-            if (_behaviors.Any(existing => existing.Id == behavior.Id || existing.Handler == behavior.Handler))
-            {
-                return false;
-            }
-            _behaviors.Add(behavior);
-            return true;
+  if (_behaviors.Any(existing => existing.Id == behavior.Id || existing.Handler == behavior.Handler)) return false;
+  _behaviors.Add(behavior);
+  return true;
+        }
+
+        public void SetAuraContribution(int attackDelta, int healthDelta)
+        {
+  _auraAttack = attackDelta;
+  _auraHealth = healthDelta;
         }
 
         public void ModifyStats(int attackDelta, int healthDelta)
         {
-            Attack = Math.Max(0, Attack + attackDelta);
-            Health += healthDelta;
+  _intrinsicAttack = Math.Max(0, _intrinsicAttack + attackDelta);
+  _intrinsicHealth += healthDelta;
         }
 
-        public void TakeDamage(int amount) => Health -= amount;
-
-        public void Destroy() => Health = Math.Min(Health, 0);
+        public void TakeDamage(int amount) => _intrinsicHealth -= amount;
+        public void Destroy()
+        {
+  if (Health > 0) _intrinsicHealth -= Health;
+        }
 
         public void ResetForReborn()
         {
-            Attack = _initialAttack;
-            Health = 1;
-            _behaviors.Clear();
-            _behaviors.AddRange(
-                _initialBehaviors.Where(behavior => behavior.Handler != NativeBehaviorKeys.ReviveOnce));
+  _intrinsicAttack = _initialAttack;
+  _intrinsicHealth = 1;
+  _auraAttack = 0;
+  _auraHealth = 0;
+  _behaviors.Clear();
+  _behaviors.AddRange(_initialBehaviors.Where(behavior => behavior.Handler != NativeBehaviorKeys.ReviveOnce));
         }
 
         public CombatUnitSnapshot Snapshot() =>
-            new(
-                InstanceId,
-                Definition.Id,
-                Definition.Tier,
-                Attack,
-                Health,
-                _behaviors.Select(behavior => new CombatBehaviorSnapshot(behavior.Id, behavior.Handler)),
-                Definition);
+  new(
+      InstanceId,
+      Definition.Id,
+      Definition.Tier,
+      Attack,
+      Health,
+      _behaviors.Select(behavior => new CombatBehaviorSnapshot(behavior.Id, behavior.Handler)),
+      Definition);
     }
 
     private sealed class CombatPowerRuntimeUnit : IEffectRuntimeUnit

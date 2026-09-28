@@ -254,10 +254,12 @@ internal sealed partial class PreparationEffectEngine
 
         public void TransformUnit(IEffectRuntimeUnit unit, UnitDefinition definition)
         {
-            var target = GetUnit(unit);
+            var wrapper = GetWrapper(unit);
+            var target = wrapper.Unit;
             if (target.PoolReturnDefinition is not null)
                 _unitPool.ReturnUnit(target.PoolReturnDefinition);
             target.Transform(definition);
+            GetPlayer(wrapper.OwnerPlayerId).RecalculateFieldAuras();
         }
 
         public int CopyUnitsToReserve(PlayerId ownerPlayerId, IReadOnlyList<IEffectRuntimeUnit> units)

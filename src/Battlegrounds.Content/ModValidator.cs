@@ -21,6 +21,7 @@ public sealed class ModValidator
             .Concat(advancedIssues)
             .Concat(dynamicIssues)
             .Concat(statefulIssues)
+            .Concat(new UnitAuraModValidator().Validate(modDirectory))
             .Concat(generationIssues)
             .Concat(actionIssues)
             .Concat(new PreparationEconomyEffectModValidator().Validate(modDirectory))
