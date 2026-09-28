@@ -22,9 +22,9 @@ public partial class Main
         if (controlsRow.GetNodeOrNull<PanelContainer>("ShopkeeperSlot") is { } shopkeeper)
             ApplyShopkeeperAspect(shopkeeper);
 
-        _offerButtons.SizeFlagsVertical = Control.SizeFlags.ShrinkCenter;
+        ApplyCompactCardRowHeight(_offerButtons, ModThemeMetricKeys.Row.Offer);
         if (_tavernActionOffers is not null)
-            _tavernActionOffers.SizeFlagsVertical = Control.SizeFlags.ShrinkCenter;
+            ApplyCompactCardRowHeight(_tavernActionOffers, ModThemeMetricKeys.Row.Offer);
 
         if (_hudBound)
             ApplyCompactResourceBadge();
@@ -33,6 +33,24 @@ public partial class Main
     private static void ShrinkVertically(Control control)
     {
         control.SizeFlagsVertical = Control.SizeFlags.ShrinkCenter;
+    }
+
+    private void ApplyCompactCardRowHeight(HorizontalCardRow row, string metricPrefix)
+    {
+        var preferredHeight = ResolvePresentationMetric(
+            ModThemeMetricKeys.Row.PreferredCardHeight(metricPrefix),
+            1.0f,
+            2048.0f);
+        var padding = ResolvePresentationMetric(
+            ModThemeMetricKeys.Row.Padding(metricPrefix),
+            0.0f,
+            512.0f);
+
+        row.CustomMinimumSize = new Vector2(
+            row.CustomMinimumSize.X,
+            preferredHeight + padding * 2.0f);
+        row.SizeFlagsVertical = Control.SizeFlags.ShrinkCenter;
+        row.QueueSort();
     }
 
     private void ApplyShopkeeperAspect(PanelContainer shopkeeper)
