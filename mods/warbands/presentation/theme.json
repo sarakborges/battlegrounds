@@ -62,7 +62,8 @@
   "shape": {
     "small": 3,
     "medium": 7,
-    "large": 12
+    "large": 12,
+    "round": 99
   },
   "metrics": {
     "launcher.marginHorizontal": 64,
@@ -149,17 +150,23 @@
     "row.reserve.preferredCardHeight": 64,
     "row.reserve.padding": 3,
     "card.contentGap": 2,
-    "card.inspect.width": 292,
-    "card.inspect.artHeight": 164,
+    "card.token.badgeSize": 30,
+    "card.token.badgeInset": 3,
+    "card.inspect.width": 300,
+    "card.inspect.minimumHeight": 430,
+    "card.inspect.artHeight": 188,
     "card.inspect.offset": 16,
+    "card.inspect.badgeSize": 44,
+    "card.inspect.badgeInset": 10,
+    "card.inspect.contentGap": 7,
     "card.default.minimumWidth": 88,
     "card.default.artHeight": 50,
     "card.leader.minimumWidth": 146,
     "card.leader.artHeight": 112,
     "card.shop.minimumWidth": 106,
-    "card.shop.artHeight": 96,
+    "card.shop.artHeight": 108,
     "card.board.minimumWidth": 118,
-    "card.board.artHeight": 132,
+    "card.board.artHeight": 146,
     "card.reserve.minimumWidth": 78,
     "card.reserve.artHeight": 30,
     "card.choice.minimumWidth": 116,
@@ -187,48 +194,23 @@
       "borderColor": "borderStrong",
       "borderWidth": 1,
       "radius": "medium",
-      "padding": {
-        "horizontal": "md",
-        "vertical": "sm"
-      },
+      "padding": { "horizontal": "md", "vertical": "sm" },
       "states": {
-        "hover": {
-          "backgroundColor": "surfaceHover",
-          "borderColor": "focus"
-        },
-        "pressed": {
-          "backgroundColor": "surfacePressed"
-        },
-        "disabled": {
-          "textColor": "textDisabled",
-          "opacity": 0.55
-        },
-        "focus": {
-          "borderColor": "focus",
-          "borderWidth": 2
-        }
+        "hover": { "backgroundColor": "surfaceHover", "borderColor": "focus" },
+        "pressed": { "backgroundColor": "surfacePressed" },
+        "disabled": { "textColor": "textDisabled", "opacity": 0.55 },
+        "focus": { "borderColor": "focus", "borderWidth": 2 }
       }
     },
     "button.primary": {
       "textColor": "primaryText",
       "backgroundColor": "primary",
       "backgroundAsset": "assets/ui/button-primary.svg",
-      "slice": {
-        "left": 14,
-        "top": 14,
-        "right": 14,
-        "bottom": 14
-      },
+      "slice": { "left": 14, "top": 14, "right": 14, "bottom": 14 },
       "states": {
-        "hover": {
-          "backgroundColor": "primaryHover"
-        },
-        "pressed": {
-          "backgroundColor": "primaryPressed"
-        },
-        "disabled": {
-          "opacity": 0.5
-        }
+        "hover": { "backgroundColor": "primaryHover" },
+        "pressed": { "backgroundColor": "primaryPressed" },
+        "disabled": { "opacity": 0.5 }
       }
     },
     "button.tavernAction": {
@@ -236,39 +218,19 @@
       "textColor": "primaryText",
       "backgroundColor": "tavernPurple",
       "backgroundAsset": "assets/ui/tavern-action.svg",
-      "padding": {
-        "horizontal": "xs",
-        "vertical": "xs"
-      },
+      "padding": { "horizontal": "xs", "vertical": "xs" },
       "states": {
-        "hover": {
-          "backgroundColor": "tavernPurpleHover"
-        },
-        "pressed": {
-          "backgroundColor": "tavernPurplePressed"
-        },
-        "disabled": {
-          "textColor": "textDisabled",
-          "opacity": 0.5
-        },
-        "focus": {
-          "backgroundColor": "tavernPurpleHover"
-        }
+        "hover": { "backgroundColor": "tavernPurpleHover" },
+        "pressed": { "backgroundColor": "tavernPurplePressed" },
+        "disabled": { "textColor": "textDisabled", "opacity": 0.5 },
+        "focus": { "backgroundColor": "tavernPurpleHover" }
       }
     },
-    "button.tavernUpgrade": {
-      "backgroundColor": "#7A3FA8"
-    },
-    "button.tavernRefresh": {
-      "backgroundColor": "#6636A1"
-    },
+    "button.tavernUpgrade": { "backgroundColor": "#7A3FA8" },
+    "button.tavernRefresh": { "backgroundColor": "#6636A1" },
     "button.tavernFreeze": {
       "backgroundColor": "tavernFreeze",
-      "states": {
-        "pressed": {
-          "backgroundColor": "tavernFreezePressed"
-        }
-      }
+      "states": { "pressed": { "backgroundColor": "tavernFreezePressed" } }
     },
     "card": {
       "fontSize": "body",
@@ -277,47 +239,23 @@
       "borderColor": "border",
       "borderWidth": 1,
       "radius": "large",
-      "padding": {
-        "horizontal": "cardInset",
-        "vertical": "cardInset"
-      },
+      "padding": { "horizontal": "cardInset", "vertical": "cardInset" },
       "states": {
-        "hover": {
-          "backgroundColor": "surfaceRaised",
-          "borderColor": "focus",
-          "borderWidth": 2
-        },
-        "pressed": {
-          "backgroundColor": "surfacePressed"
-        },
-        "focus": {
-          "borderColor": "focus",
-          "borderWidth": 2
-        }
+        "hover": { "backgroundColor": "surfaceRaised", "borderColor": "focus", "borderWidth": 2 },
+        "pressed": { "backgroundColor": "surfacePressed" },
+        "focus": { "borderColor": "focus", "borderWidth": 2 }
       }
     },
     "card.board": {
-      "backgroundColor": "surfaceDeep",
-      "borderColor": "borderStrong",
-      "borderWidth": 2,
-      "radius": "large",
-      "padding": {
-        "horizontal": "xs",
-        "vertical": "xs"
-      },
+      "backgroundColor": "#FFFFFFFF",
+      "backgroundAsset": "assets/ui/minion-token-frame.svg",
+      "borderColor": "#00000000",
+      "borderWidth": 0,
+      "padding": { "horizontal": "xs", "vertical": "xs" },
       "states": {
-        "hover": {
-          "backgroundColor": "surfaceRaised",
-          "borderColor": "focus",
-          "borderWidth": 3
-        },
-        "pressed": {
-          "backgroundColor": "surfacePressed"
-        },
-        "focus": {
-          "borderColor": "focus",
-          "borderWidth": 3
-        }
+        "hover": { "backgroundColor": "#FFF2D2", "borderColor": "#00000000", "borderWidth": 0 },
+        "pressed": { "backgroundColor": "#D5B07A" },
+        "focus": { "backgroundColor": "#FFF2D2", "borderColor": "#00000000", "borderWidth": 0 }
       }
     },
     "input": {
@@ -327,243 +265,143 @@
       "borderColor": "border",
       "borderWidth": 1,
       "radius": "medium",
-      "padding": {
-        "horizontal": "md",
-        "vertical": "sm"
-      },
-      "states": {
-        "focus": {
-          "borderColor": "focus",
-          "borderWidth": 2
-        }
-      }
+      "padding": { "horizontal": "md", "vertical": "sm" },
+      "states": { "focus": { "borderColor": "focus", "borderWidth": 2 } }
     },
     "panel": {
       "backgroundColor": "surface",
       "borderColor": "border",
       "borderWidth": 1,
       "radius": "large",
-      "padding": {
-        "horizontal": "sm",
-        "vertical": "sm"
-      }
+      "padding": { "horizontal": "sm", "vertical": "sm" }
     },
     "panel.opponentRail": {
       "backgroundColor": "surfaceDeep",
       "borderColor": "borderStrong",
-      "padding": {
-        "horizontal": "xs",
-        "vertical": "xs"
-      }
+      "padding": { "horizontal": "xs", "vertical": "xs" }
     },
     "panel.tavernControls": {
       "backgroundColor": "#00000000",
       "borderColor": "#00000000",
       "borderWidth": 0,
-      "padding": {
-        "horizontal": "xs",
-        "vertical": "xs"
-      }
+      "padding": { "horizontal": "xs", "vertical": "xs" }
     },
     "panel.tavern": {
       "backgroundColor": "surfaceWarm",
       "borderColor": "borderStrong",
       "borderWidth": 2,
-      "padding": {
-        "horizontal": "sm",
-        "vertical": "sm"
-      }
+      "padding": { "horizontal": "sm", "vertical": "sm" }
     },
     "panel.board": {
       "backgroundColor": "surfaceDeep",
       "borderColor": "border",
       "borderWidth": 1,
-      "padding": {
-        "horizontal": "sm",
-        "vertical": "xs"
-      }
+      "padding": { "horizontal": "sm", "vertical": "xs" }
     },
     "panel.reserve": {
       "backgroundColor": "#100C0A",
       "borderColor": "border",
       "radius": "medium",
-      "padding": {
-        "horizontal": "sm",
-        "vertical": "xs"
-      }
+      "padding": { "horizontal": "sm", "vertical": "xs" }
     },
     "panel.heroDock": {
       "backgroundColor": "#00000000",
       "borderColor": "#00000000",
       "borderWidth": 0,
-      "padding": {
-        "horizontal": "sm",
-        "vertical": "xs"
-      }
+      "padding": { "horizontal": "sm", "vertical": "xs" }
     },
     "panel.turnRail": {
       "backgroundColor": "surfaceDeep",
       "borderColor": "borderStrong",
-      "padding": {
-        "horizontal": "xs",
-        "vertical": "xs"
-      }
+      "padding": { "horizontal": "xs", "vertical": "xs" }
     },
     "panel.heroPortrait": {
       "backgroundColor": "surfaceWarm",
       "borderColor": "primary",
       "borderWidth": 3,
-      "padding": {
-        "horizontal": "xs",
-        "vertical": "xs"
-      }
+      "padding": { "horizontal": "xs", "vertical": "xs" }
     },
     "panel.opponent": {
       "backgroundColor": "surface",
       "borderColor": "border",
-      "padding": {
-        "horizontal": "xs",
-        "vertical": "xs"
-      }
+      "padding": { "horizontal": "xs", "vertical": "xs" }
     },
-    "panel.opponent.self": {
-      "backgroundColor": "surfaceRaised",
-      "borderColor": "primary",
-      "borderWidth": 2
-    },
-    "panel.opponent.eliminated": {
-      "backgroundColor": "eliminatedSurface",
-      "borderColor": "eliminatedBorder",
-      "opacity": 0.55
-    },
+    "panel.opponent.self": { "backgroundColor": "surfaceRaised", "borderColor": "primary", "borderWidth": 2 },
+    "panel.opponent.eliminated": { "backgroundColor": "eliminatedSurface", "borderColor": "eliminatedBorder", "opacity": 0.55 },
     "panel.opponentPortrait": {
       "backgroundColor": "surfaceDeep",
       "borderColor": "borderStrong",
-      "padding": {
-        "horizontal": "xs",
-        "vertical": "xs"
-      }
+      "padding": { "horizontal": "xs", "vertical": "xs" }
     },
     "panel.tierBadge": {
       "backgroundColor": "#4B2778",
       "borderColor": "focus",
       "borderWidth": 2,
-      "radius": "medium",
-      "padding": {
-        "horizontal": "xs",
-        "vertical": "xs"
-      }
+      "radius": "round",
+      "padding": { "horizontal": "xs", "vertical": "xs" }
     },
     "panel.attackBadge": {
       "backgroundColor": "attackSurface",
       "borderColor": "attackAccent",
       "borderWidth": 2,
-      "radius": "medium",
-      "padding": {
-        "horizontal": "xs",
-        "vertical": "xs"
-      }
+      "radius": "round",
+      "padding": { "horizontal": "xs", "vertical": "xs" }
     },
     "panel.healthBadge": {
       "backgroundColor": "healthSurface",
       "borderColor": "healthAccent",
       "borderWidth": 2,
-      "radius": "large",
-      "padding": {
-        "horizontal": "xs",
-        "vertical": "xs"
-      }
+      "radius": "round",
+      "padding": { "horizontal": "xs", "vertical": "xs" }
     },
     "panel.armorBadge": {
       "backgroundColor": "armorSurface",
       "borderColor": "armorAccent",
       "borderWidth": 2,
-      "radius": "large",
-      "padding": {
-        "horizontal": "xs",
-        "vertical": "xs"
-      }
+      "radius": "round",
+      "padding": { "horizontal": "xs", "vertical": "xs" }
     },
     "panel.resourceBadge": {
       "backgroundColor": "resourceSurface",
       "borderColor": "resourceAccent",
       "borderWidth": 2,
-      "radius": "large",
-      "padding": {
-        "horizontal": "sm",
-        "vertical": "xs"
-      }
+      "radius": "round",
+      "padding": { "horizontal": "sm", "vertical": "xs" }
     },
     "panel.cardInspect": {
-      "backgroundColor": "surfaceRaised",
-      "borderColor": "focus",
-      "borderWidth": 2,
-      "radius": "large",
-      "padding": {
-        "horizontal": "md",
-        "vertical": "md"
-      }
+      "backgroundColor": "#FFFFFFFF",
+      "backgroundAsset": "assets/ui/card-inspect-frame.svg",
+      "borderColor": "#00000000",
+      "borderWidth": 0,
+      "padding": { "horizontal": "md", "vertical": "md" }
     },
     "panel.interaction": {
       "backgroundColor": "surfaceDeep",
       "borderColor": "focus",
       "borderWidth": 2,
-      "padding": {
-        "horizontal": "md",
-        "vertical": "md"
-      }
+      "padding": { "horizontal": "md", "vertical": "md" }
     },
     "panel.shopkeeper": {
       "backgroundColor": "#FFFFFFFF",
       "backgroundAsset": "assets/ui/tavern-keeper-frame.svg",
       "borderColor": "#00000000",
       "borderWidth": 0,
-      "padding": {
-        "horizontal": "xs",
-        "vertical": "xs"
-      }
+      "padding": { "horizontal": "xs", "vertical": "xs" }
     },
-    "panel.combat": {
-      "backgroundColor": "surfaceDeep",
-      "borderColor": "borderStrong",
-      "borderWidth": 2
-    },
-    "label.heroName": {
-      "textColor": "textMuted",
-      "fontSize": "body"
-    },
-    "label.attack": {
-      "textColor": "attackAccent",
-      "fontSize": "heading"
-    },
-    "label.health": {
-      "textColor": "healthAccent",
-      "fontSize": "heading"
-    },
-    "label.armor": {
-      "textColor": "armorAccent",
-      "fontSize": "heading"
-    },
-    "label.tier": {
-      "textColor": "tierAccent",
-      "fontSize": "heading"
-    },
-    "label.resource": {
-      "textColor": "resourceAccent",
-      "fontSize": "heading"
-    },
-    "drag.preview": {
-      "opacity": 0.12
-    },
+    "panel.combat": { "backgroundColor": "surfaceDeep", "borderColor": "borderStrong", "borderWidth": 2 },
+    "label.heroName": { "textColor": "textMuted", "fontSize": "body" },
+    "label.attack": { "textColor": "attackAccent", "fontSize": "heading" },
+    "label.health": { "textColor": "healthAccent", "fontSize": "heading" },
+    "label.armor": { "textColor": "armorAccent", "fontSize": "heading" },
+    "label.tier": { "textColor": "tierAccent", "fontSize": "heading" },
+    "label.resource": { "textColor": "resourceAccent", "fontSize": "heading" },
+    "drag.preview": { "opacity": 0.12 },
     "dropTarget.valid": {
       "backgroundColor": "#00000000",
       "borderColor": "success",
       "borderWidth": 2,
       "radius": "large",
-      "padding": {
-        "horizontal": "sm",
-        "vertical": "sm"
-      }
+      "padding": { "horizontal": "sm", "vertical": "sm" }
     },
     "dropTarget.valid.active": {
       "backgroundColor": "#00000000",
@@ -576,10 +414,7 @@
       "borderColor": "danger",
       "borderWidth": 2,
       "radius": "large",
-      "padding": {
-        "horizontal": "sm",
-        "vertical": "sm"
-      }
+      "padding": { "horizontal": "sm", "vertical": "sm" }
     },
     "dropTarget.invalid.active": {
       "backgroundColor": "#00000000",
@@ -589,14 +424,8 @@
     }
   },
   "screens": {
-    "launcher": {
-      "backgroundColor": "background"
-    },
-    "preparation": {
-      "backgroundColor": "background"
-    },
-    "combat": {
-      "backgroundColor": "#0D0907"
-    }
+    "launcher": { "backgroundColor": "background" },
+    "preparation": { "backgroundColor": "background" },
+    "combat": { "backgroundColor": "#0D0907" }
   }
 }
