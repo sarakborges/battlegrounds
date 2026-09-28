@@ -14,6 +14,7 @@ public partial class Main
     private Label? _cardInspectStats;
     private Label? _cardInspectDescription;
     private Label? _cardInspectDetails;
+    private Control? _cardInspectFooterSpacer;
     private PanelContainer? _cardInspectTierBadge;
     private Label? _cardInspectTierValue;
     private PanelContainer? _cardInspectAttackBadge;
@@ -53,6 +54,9 @@ public partial class Main
         _cardInspectCanvas!.CustomMinimumSize = new Vector2(width, minimumHeight);
         _cardInspectArt.CustomMinimumSize = new Vector2(0, artHeight);
         _cardInspectContent!.AddThemeConstantOverride("separation", Mathf.RoundToInt(contentGap));
+        _cardInspectFooterSpacer!.CustomMinimumSize = hasTokenStats
+            ? new Vector2(0, badgeSize * 0.72f)
+            : Vector2.Zero;
         LayoutInspectBadge(_cardInspectTierBadge!, 0.0f, 0.0f, badgeInset, badgeInset, badgeSize);
         LayoutInspectBadge(_cardInspectAttackBadge!, 0.0f, 1.0f, badgeInset, -badgeInset - badgeSize, badgeSize);
         LayoutInspectBadge(_cardInspectHealthBadge!, 1.0f, 1.0f, -badgeInset - badgeSize, -badgeInset - badgeSize, badgeSize);
@@ -127,6 +131,12 @@ public partial class Main
         _cardInspectDetails = CreateInspectLabel("CaptionLabel", wrap: true);
         _cardInspectDetails.HorizontalAlignment = HorizontalAlignment.Center;
         _cardInspectContent.AddChild(_cardInspectDetails);
+
+        _cardInspectFooterSpacer = new Control
+        {
+            MouseFilter = Control.MouseFilterEnum.Ignore,
+        };
+        _cardInspectContent.AddChild(_cardInspectFooterSpacer);
 
         (_cardInspectTierBadge, _cardInspectTierValue) = CreateInspectBadge("TierBadge", "TierValueLabel");
         (_cardInspectAttackBadge, _cardInspectAttackValue) = CreateInspectBadge("AttackBadge", "AttackValueLabel");
