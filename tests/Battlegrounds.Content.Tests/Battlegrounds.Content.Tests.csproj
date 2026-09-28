@@ -18,6 +18,5 @@
 
   <ItemGroup>
     <Content Include="../../mods/example/**" Link="mods/example/%(RecursiveDir)%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
-    <Content Include="../../mods/warbands/**" Link="mods/warbands/%(RecursiveDir)%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 </Project>
