@@ -6,11 +6,14 @@ namespace Battlegrounds.Game;
 public partial class Main
 {
     private const string DragPreviewRole = "drag.preview";
-    private const string DropTargetRole = "dropTarget";
-    private const string DropTargetActiveRole = "dropTarget.active";
+    private const string DropTargetValidRole = "dropTarget.valid";
+    private const string DropTargetValidActiveRole = "dropTarget.valid.active";
+    private const string DropTargetInvalidRole = "dropTarget.invalid";
+    private const string DropTargetInvalidActiveRole = "dropTarget.invalid.active";
 
     internal CursorShape PreparationDragCursor => CursorShape.PointingHand;
     internal CursorShape PreparationValidDropCursor => CursorShape.CanDrop;
+    internal CursorShape PreparationInvalidDropCursor => CursorShape.Forbidden;
 
     internal float PreparationDragSourceOpacity
     {
@@ -29,15 +32,25 @@ public partial class Main
     {
         get
         {
+            if (TryResolveDropTargetPadding(DropTargetValidRole, out var padding) ||
+                TryResolveDropTargetPadding(DropTargetInvalidRole, out padding))
+                return padding;
             if (_modTheme?.Spacing.TryGetValue("sm", out var spacing) == true)
                 return spacing;
             return 8.0f;
         }
     }
 
-    internal StyleBoxFlat BuildPreparationDropTargetStyle(bool active)
+    internal StyleBoxFlat BuildPreparationDropTargetStyle(bool valid, bool active)
     {
-        var role = active ? DropTargetActiveRole : DropTargetRole;
+        var role = (valid, active) switch
+        {
+            (true, true) => DropTargetValidActiveRole,
+            (true, false) => DropTargetValidRole,
+            (false, true) => DropTargetInvalidActiveRole,
+            _ => DropTargetInvalidRole,
+        };
+
         ModThemeStyle? style = null;
         if (_modTheme is not null)
             _modTheme.Components.TryGetValue(role, out style);
@@ -45,9 +58,9 @@ public partial class Main
         var box = new StyleBoxFlat
         {
             BgColor = new Color(0, 0, 0, 0),
-            BorderColor = active
-                ? new Color(1.0f, 0.82f, 0.38f, 0.95f)
-                : new Color(0.45f, 0.80f, 0.42f, 0.75f),
+            BorderColor = valid
+                ? new Color(0.45f, 0.80f, 0.42f, active ? 0.95f : 0.72f)
+                : new Color(0.90f, 0.30f, 0.30f, active ? 0.95f : 0.72f),
             BorderWidthLeft = active ? 3 : 2,
             BorderWidthTop = active ? 3 : 2,
             BorderWidthRight = active ? 3 : 2,
@@ -82,10 +95,22 @@ public partial class Main
         }
 
         var glow = box.BorderColor;
-        box.ShadowColor = new Color(glow, active ? glow.A * 0.75f : glow.A * 0.5f);
+        box.ShadowColor = new Color(glow, active ? glow.A * 0.8f : glow.A * 0.5f);
         box.ShadowSize = Math.Max(active ? 8 : 5, box.BorderWidthLeft * 3);
         box.ShadowOffset = Vector2.Zero;
         return box;
+    }
+
+    private bool TryResolveDropTargetPadding(string role, out float padding)
+    {
+        padding = 0;
+        if (_modTheme?.Components.TryGetValue(role, out var style) != true ||
+            style.Padding?.Horizontal is not string token ||
+            !_modTheme.Spacing.TryGetValue(token, out var spacing))
+            return false;
+
+        padding = spacing;
+        return true;
     }
 
     private bool ResolveThemeColor(string? value, out Color color)
