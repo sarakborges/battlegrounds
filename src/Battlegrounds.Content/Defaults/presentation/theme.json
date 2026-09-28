@@ -1,0 +1,258 @@
+{
+  "version": 1,
+  "colors": {
+    "background": "#0E1015",
+    "surface": "#171C25",
+    "surfaceRaised": "#222A36",
+    "surfaceHover": "#2B3544",
+    "surfacePressed": "#121821",
+    "text": "#F4F7FB",
+    "textMuted": "#9BA8BA",
+    "textDisabled": "#667180",
+    "primary": "#E7A93D",
+    "primaryHover": "#F3B94F",
+    "primaryPressed": "#C88928",
+    "primaryText": "#17120A",
+    "border": "#394455",
+    "focus": "#FFD178",
+    "danger": "#D96363",
+    "dangerActive": "#FF8A8A",
+    "success": "#5ABB7C",
+    "successActive": "#86E4A7"
+  },
+  "typography": {
+    "fonts": {},
+    "sizes": {
+      "caption": 12,
+      "body": 15,
+      "button": 15,
+      "heading": 18,
+      "title": 32
+    }
+  },
+  "spacing": {
+    "xs": 4,
+    "cardInset": 6,
+    "sm": 8,
+    "md": 12,
+    "lg": 20,
+    "xl": 32
+  },
+  "shape": {
+    "small": 5,
+    "medium": 9,
+    "large": 12
+  },
+  "metrics": {
+    "launcher.marginHorizontal": 64,
+    "launcher.marginVertical": 48,
+    "launcher.gap": 14,
+    "launcher.modGap": 8,
+    "launcher.diagnosticsMinimumHeight": 180,
+    "layout.outerMargin": 8,
+    "layout.shell.gap": 6,
+    "layout.opponentRail.width": 184,
+    "layout.opponentRail.contentGap": 4,
+    "layout.opponentRail.entriesGap": 4,
+    "layout.centerStage.gap": 3,
+    "layout.status.minimumHeight": 22,
+    "layout.leaderPanel.minimumHeight": 520,
+    "layout.leaderPanel.gap": 12,
+    "layout.leaderPanel.cardsMinimumHeight": 320,
+    "layout.preparation.gap": 3,
+    "layout.tavern.controls.minimumHeight": 38,
+    "layout.tavern.controls.gap": 6,
+    "layout.tavern.tierBadge.width": 42,
+    "layout.tavern.tierBadge.height": 34,
+    "layout.tavern.upgradeButton.width": 108,
+    "layout.tavern.controlHeight": 34,
+    "layout.tavern.controlSpacerWidth": 30,
+    "layout.tavern.refreshButton.width": 96,
+    "layout.tavern.freezeButton.width": 96,
+    "layout.tavern.shelf.minimumHeight": 142,
+    "layout.tavern.shelf.gap": 8,
+    "layout.tavern.shopkeeperWidth": 92,
+    "layout.tavern.shopkeeperContentGap": 2,
+    "layout.tavern.balanceSpacerWidth": 92,
+    "layout.board.minimumHeight": 250,
+    "layout.reserve.minimumHeight": 72,
+    "layout.heroDock.gap": 6,
+    "layout.heroDock.healthBadge.width": 52,
+    "layout.heroDock.healthBadge.height": 52,
+    "layout.heroDock.armorBadge.width": 46,
+    "layout.heroDock.armorBadge.height": 46,
+    "layout.heroDock.heroCoreWidth": 224,
+    "layout.heroDock.heroCoreGap": 2,
+    "layout.heroDock.powerButton.width": 136,
+    "layout.heroDock.powerButton.height": 38,
+    "layout.heroDock.combineButton.width": 94,
+    "layout.heroDock.combineButton.height": 40,
+    "layout.heroDock.resourceBadge.width": 58,
+    "layout.heroDock.resourceBadge.height": 52,
+    "layout.turnRail.width": 92,
+    "layout.turnRail.gap": 6,
+    "layout.turnRail.endButtonHeight": 64,
+    "layout.interaction.anchorLeft": 0.24,
+    "layout.interaction.anchorTop": 0.20,
+    "layout.interaction.anchorRight": 0.76,
+    "layout.interaction.anchorBottom": 0.80,
+    "layout.interaction.marginHorizontal": 12,
+    "layout.interaction.marginVertical": 10,
+    "layout.interaction.contentGap": 6,
+    "layout.interaction.choiceGap": 4,
+    "layout.interaction.actionGap": 8,
+    "layout.combat.marginHorizontal": 32,
+    "layout.combat.marginVertical": 24,
+    "layout.combat.contentGap": 12,
+    "layout.combat.boardsGap": 24,
+    "layout.combat.unitGap": 6,
+    "layout.combat.controlsGap": 8,
+    "row.leader.gap": 18,
+    "row.leader.preferredCardWidth": 164,
+    "row.leader.minimumCardWidth": 116,
+    "row.leader.preferredCardHeight": 200,
+    "row.leader.padding": 8,
+    "row.offer.gap": 10,
+    "row.offer.preferredCardWidth": 124,
+    "row.offer.minimumCardWidth": 88,
+    "row.offer.preferredCardHeight": 142,
+    "row.offer.padding": 4,
+    "row.field.gap": 16,
+    "row.field.preferredCardWidth": 148,
+    "row.field.minimumCardWidth": 98,
+    "row.field.preferredCardHeight": 204,
+    "row.field.padding": 10,
+    "row.reserve.gap": 4,
+    "row.reserve.preferredCardWidth": 96,
+    "row.reserve.minimumCardWidth": 70,
+    "row.reserve.preferredCardHeight": 70,
+    "row.reserve.padding": 2,
+    "card.contentGap": 2,
+    "card.default.minimumWidth": 92,
+    "card.default.artHeight": 52,
+    "card.leader.minimumWidth": 156,
+    "card.leader.artHeight": 118,
+    "card.shop.minimumWidth": 118,
+    "card.shop.artHeight": 76,
+    "card.board.minimumWidth": 138,
+    "card.board.artHeight": 112,
+    "card.reserve.minimumWidth": 90,
+    "card.reserve.artHeight": 34,
+    "card.choice.minimumWidth": 124,
+    "card.choice.artHeight": 82,
+    "hud.heroDock.minimumHeight": 108,
+    "hud.heroPortrait.size": 88,
+    "hud.opponent.entryHeight": 58,
+    "hud.opponent.marginHorizontal": 5,
+    "hud.opponent.marginVertical": 4,
+    "hud.opponent.gap": 5,
+    "hud.opponent.rankWidth": 18,
+    "hud.opponent.portraitSize": 44,
+    "hud.opponent.statsWidth": 34,
+    "hud.opponent.identityGap": 0,
+    "hud.opponent.statsGap": 0,
+    "drag.preview.scale": 1.045,
+    "drag.preview.rotationDegrees": -1.5
+  },
+  "components": {
+    "button": {
+      "fontSize": "button",
+      "textColor": "text",
+      "backgroundColor": "surfaceRaised",
+      "borderColor": "border",
+      "borderWidth": 1,
+      "radius": "medium",
+      "padding": {
+        "horizontal": "md",
+        "vertical": "sm"
+      },
+      "states": {
+        "hover": { "backgroundColor": "surfaceHover" },
+        "pressed": { "backgroundColor": "surfacePressed" },
+        "disabled": { "textColor": "textDisabled", "opacity": 0.55 },
+        "focus": { "borderColor": "focus", "borderWidth": 2 }
+      }
+    },
+    "button.primary": {
+      "textColor": "primaryText",
+      "backgroundColor": "primary",
+      "states": {
+        "hover": { "backgroundColor": "primaryHover" },
+        "pressed": { "backgroundColor": "primaryPressed" },
+        "disabled": { "opacity": 0.5 }
+      }
+    },
+    "card": {
+      "fontSize": "body",
+      "textColor": "text",
+      "backgroundColor": "surface",
+      "borderColor": "border",
+      "borderWidth": 1,
+      "radius": "large",
+      "padding": {
+        "horizontal": "cardInset",
+        "vertical": "cardInset"
+      },
+      "states": {
+        "hover": { "backgroundColor": "surfaceRaised", "borderColor": "primary" },
+        "pressed": { "backgroundColor": "surfacePressed" },
+        "focus": { "borderColor": "focus", "borderWidth": 2 }
+      }
+    },
+    "input": {
+      "fontSize": "body",
+      "textColor": "text",
+      "backgroundColor": "surface",
+      "borderColor": "border",
+      "borderWidth": 1,
+      "radius": "medium",
+      "padding": {
+        "horizontal": "md",
+        "vertical": "sm"
+      },
+      "states": {
+        "focus": { "borderColor": "focus", "borderWidth": 2 }
+      }
+    },
+    "panel": {
+      "backgroundColor": "surface",
+      "borderColor": "border",
+      "borderWidth": 1,
+      "radius": "large",
+      "padding": {
+        "horizontal": "lg",
+        "vertical": "lg"
+      }
+    },
+    "drag.preview": {
+      "opacity": 0.12
+    },
+    "dropTarget.valid": {
+      "borderColor": "success",
+      "borderWidth": 2,
+      "radius": "large",
+      "padding": { "horizontal": "sm", "vertical": "sm" }
+    },
+    "dropTarget.valid.active": {
+      "borderColor": "successActive",
+      "borderWidth": 3,
+      "radius": "large"
+    },
+    "dropTarget.invalid": {
+      "borderColor": "danger",
+      "borderWidth": 2,
+      "radius": "large",
+      "padding": { "horizontal": "sm", "vertical": "sm" }
+    },
+    "dropTarget.invalid.active": {
+      "borderColor": "dangerActive",
+      "borderWidth": 3,
+      "radius": "large"
+    }
+  },
+  "screens": {
+    "launcher": { "backgroundColor": "background" },
+    "preparation": { "backgroundColor": "background" },
+    "combat": { "backgroundColor": "background" }
+  }
+}
