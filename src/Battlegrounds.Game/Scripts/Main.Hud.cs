@@ -55,23 +55,29 @@ public partial class Main
     private TextureRect EnsureHeroPortraitSlot()
     {
         var heroDock = GetNode<HBoxContainer>("Margin/Shell/CenterStage/PreparationPanel/HeroDock");
-        heroDock.CustomMinimumSize = new Vector2(0, 108);
+        var dockHeight = ResolvePresentationMetric("hud.heroDock.minimumHeight", 108.0f, 1.0f, 2048.0f);
+        var portraitSize = ResolvePresentationMetric("hud.heroPortrait.size", 88.0f, 1.0f, 2048.0f);
+        heroDock.CustomMinimumSize = new Vector2(0, dockHeight);
 
         var existing = heroDock.GetNodeOrNull<PanelContainer>("HeroPortraitFrame");
         if (existing is not null && existing.GetNodeOrNull<TextureRect>("Portrait") is TextureRect existingPortrait)
+        {
+            existing.CustomMinimumSize = new Vector2(portraitSize, portraitSize);
+            existingPortrait.CustomMinimumSize = new Vector2(portraitSize, portraitSize);
             return existingPortrait;
+        }
 
         var frame = new PanelContainer
         {
             Name = "HeroPortraitFrame",
-            CustomMinimumSize = new Vector2(88, 88),
+            CustomMinimumSize = new Vector2(portraitSize, portraitSize),
             ThemeTypeVariation = "HeroPortraitFrame",
             MouseFilter = Control.MouseFilterEnum.Ignore,
         };
         var portrait = new TextureRect
         {
             Name = "Portrait",
-            CustomMinimumSize = new Vector2(88, 88),
+            CustomMinimumSize = new Vector2(portraitSize, portraitSize),
             ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize,
             StretchMode = TextureRect.StretchModeEnum.KeepAspectCovered,
             MouseFilter = Control.MouseFilterEnum.Ignore,
@@ -123,6 +129,16 @@ public partial class Main
             child.QueueFree();
         }
 
+        var entryHeight = ResolvePresentationMetric("hud.opponent.entryHeight", 58.0f, 1.0f, 2048.0f);
+        var marginHorizontal = Mathf.RoundToInt(ResolvePresentationMetric("hud.opponent.marginHorizontal", 5.0f, 0.0f, 512.0f));
+        var marginVertical = Mathf.RoundToInt(ResolvePresentationMetric("hud.opponent.marginVertical", 4.0f, 0.0f, 512.0f));
+        var rowGap = Mathf.RoundToInt(ResolvePresentationMetric("hud.opponent.gap", 5.0f, 0.0f, 512.0f));
+        var rankWidth = ResolvePresentationMetric("hud.opponent.rankWidth", 18.0f, 1.0f, 512.0f);
+        var portraitSize = ResolvePresentationMetric("hud.opponent.portraitSize", 44.0f, 1.0f, 1024.0f);
+        var statsWidth = ResolvePresentationMetric("hud.opponent.statsWidth", 34.0f, 1.0f, 1024.0f);
+        var identityGap = Mathf.RoundToInt(ResolvePresentationMetric("hud.opponent.identityGap", 0.0f, 0.0f, 256.0f));
+        var statsGap = Mathf.RoundToInt(ResolvePresentationMetric("hud.opponent.statsGap", 0.0f, 0.0f, 256.0f));
+
         var ordered = match.Players
             .OrderBy(player => player.IsEliminated)
             .ThenByDescending(player => player.Health)
@@ -145,7 +161,7 @@ public partial class Main
 
             var entry = new PanelContainer
             {
-                CustomMinimumSize = new Vector2(0, 58),
+                CustomMinimumSize = new Vector2(0, entryHeight),
                 ThemeTypeVariation = player.IsEliminated
                     ? "OpponentEntryEliminated"
                     : isHuman ? "OpponentEntrySelf" : "OpponentEntry",
@@ -153,10 +169,10 @@ public partial class Main
             };
 
             var margin = new MarginContainer { MouseFilter = Control.MouseFilterEnum.Ignore };
-            margin.AddThemeConstantOverride("margin_left", 5);
-            margin.AddThemeConstantOverride("margin_top", 4);
-            margin.AddThemeConstantOverride("margin_right", 5);
-            margin.AddThemeConstantOverride("margin_bottom", 4);
+            margin.AddThemeConstantOverride("margin_left", marginHorizontal);
+            margin.AddThemeConstantOverride("margin_top", marginVertical);
+            margin.AddThemeConstantOverride("margin_right", marginHorizontal);
+            margin.AddThemeConstantOverride("margin_bottom", marginVertical);
             entry.AddChild(margin);
 
             var row = new HBoxContainer
@@ -164,13 +180,13 @@ public partial class Main
                 MouseFilter = Control.MouseFilterEnum.Ignore,
                 SizeFlagsHorizontal = Control.SizeFlags.ExpandFill,
             };
-            row.AddThemeConstantOverride("separation", 5);
+            row.AddThemeConstantOverride("separation", rowGap);
             margin.AddChild(row);
 
             row.AddChild(new Label
             {
                 Text = (rank + 1).ToString(),
-                CustomMinimumSize = new Vector2(18, 0),
+                CustomMinimumSize = new Vector2(rankWidth, 0),
                 HorizontalAlignment = HorizontalAlignment.Center,
                 VerticalAlignment = VerticalAlignment.Center,
                 ThemeTypeVariation = "CaptionLabel",
@@ -179,14 +195,14 @@ public partial class Main
 
             var portraitFrame = new PanelContainer
             {
-                CustomMinimumSize = new Vector2(44, 44),
+                CustomMinimumSize = new Vector2(portraitSize, portraitSize),
                 ThemeTypeVariation = "OpponentPortraitFrame",
                 MouseFilter = Control.MouseFilterEnum.Ignore,
             };
             var portrait = new TextureRect
             {
                 Texture = ResolveLeaderPortrait(player),
-                CustomMinimumSize = new Vector2(44, 44),
+                CustomMinimumSize = new Vector2(portraitSize, portraitSize),
                 ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize,
                 StretchMode = TextureRect.StretchModeEnum.KeepAspectCovered,
                 MouseFilter = Control.MouseFilterEnum.Ignore,
@@ -200,7 +216,7 @@ public partial class Main
                 SizeFlagsHorizontal = Control.SizeFlags.ExpandFill,
                 MouseFilter = Control.MouseFilterEnum.Ignore,
             };
-            identity.AddThemeConstantOverride("separation", 0);
+            identity.AddThemeConstantOverride("separation", identityGap);
             row.AddChild(identity);
 
             identity.AddChild(new Label
@@ -222,10 +238,10 @@ public partial class Main
 
             var stats = new VBoxContainer
             {
-                CustomMinimumSize = new Vector2(34, 0),
+                CustomMinimumSize = new Vector2(statsWidth, 0),
                 MouseFilter = Control.MouseFilterEnum.Ignore,
             };
-            stats.AddThemeConstantOverride("separation", 0);
+            stats.AddThemeConstantOverride("separation", statsGap);
             row.AddChild(stats);
 
             stats.AddChild(new Label
