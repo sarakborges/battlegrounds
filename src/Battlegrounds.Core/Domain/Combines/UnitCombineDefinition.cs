@@ -10,13 +10,15 @@ public sealed class UnitCombineDefinition
     public UnitId SourceUnitId { get; }
     public int RequiredCopies { get; }
     public UnitId ResultUnitId { get; }
+    public bool InheritPersistentModifiers { get; }
 
     public UnitCombineDefinition(
         UnitCombineId id,
         string name,
         UnitId sourceUnitId,
         int requiredCopies,
-        UnitId resultUnitId)
+        UnitId resultUnitId,
+        bool inheritPersistentModifiers = false)
     {
         if (string.IsNullOrWhiteSpace(name)) throw new ArgumentException("Unit combine name cannot be empty.", nameof(name));
         if (requiredCopies < 2) throw new ArgumentOutOfRangeException(nameof(requiredCopies), "A unit combine requires at least two copies.");
@@ -25,6 +27,7 @@ public sealed class UnitCombineDefinition
         SourceUnitId = sourceUnitId;
         RequiredCopies = requiredCopies;
         ResultUnitId = resultUnitId;
+        InheritPersistentModifiers = inheritPersistentModifiers;
     }
 }
 

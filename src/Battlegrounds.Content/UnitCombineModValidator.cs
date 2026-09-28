@@ -12,7 +12,7 @@ internal sealed class UnitCombineModValidator
 
     private static readonly HashSet<string> AllowedKeys =
     [
-        "id", "name", "sourceUnitId", "requiredCopies", "resultUnitId",
+        "id", "name", "sourceUnitId", "requiredCopies", "resultUnitId", "inheritPersistentModifiers",
     ];
 
     public IReadOnlyList<ModValidationIssue> Validate(string modDirectory)
@@ -77,6 +77,10 @@ internal sealed class UnitCombineModValidator
                     issues.Add(new("MISSING_REQUIRED_PARAMETER", file, "$.requiredCopies", "requiredCopies is required."));
                 else if (requiredCopies.ValueKind != JsonValueKind.Number || !requiredCopies.TryGetInt32(out var count) || count < 2)
                     issues.Add(new("INVALID_VALUE", file, "$.requiredCopies", "requiredCopies must be an integer of at least 2."));
+
+                if (root.TryGetProperty("inheritPersistentModifiers", out var inherit) &&
+                    inherit.ValueKind is not (JsonValueKind.True or JsonValueKind.False))
+                    issues.Add(new("INVALID_TYPE", file, "$.inheritPersistentModifiers", "inheritPersistentModifiers must be a boolean."));
 
                 if (sourceUnitId is not null && !unitIds.Contains(sourceUnitId))
                     issues.Add(new("UNKNOWN_REFERENCE", file, "$.sourceUnitId", $"Unknown unit '{sourceUnitId}'."));

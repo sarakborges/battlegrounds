@@ -101,7 +101,8 @@ public sealed class ModLoader
                 data.Name,
                 new UnitId(data.SourceUnitId),
                 data.RequiredCopies,
-                new UnitId(data.ResultUnitId))));
+                new UnitId(data.ResultUnitId),
+                data.InheritPersistentModifiers ?? false)));
         var catalog = new UnitCatalog(definitions, combineCatalog);
         var poolEntries = poolData.Select(entry => new UnitPoolEntry(new UnitId(entry.UnitId), entry.Copies)).ToArray();
         _ = new UnitPool(catalog, poolEntries);
@@ -308,7 +309,7 @@ public sealed class ModLoader
     private sealed record LeaderData(string Id, string Name, int HealthModifier, int Armor, string InitialPowerId);
     private sealed record NamedIdData(string Id, string Name);
     private sealed record UnitData(string Id, string Name, int Tier, int Attack, int Health, string[]? Behaviors, string[]? Types, string[]? Tags, TriggerData[]? Triggers);
-    private sealed record UnitCombineData(string Id, string Name, string SourceUnitId, int RequiredCopies, string ResultUnitId);
+    private sealed record UnitCombineData(string Id, string Name, string SourceUnitId, int RequiredCopies, string ResultUnitId, bool? InheritPersistentModifiers);
     private sealed record TriggerData(string Event, EffectData[] Effects, int? Count, ConditionData[]? Conditions, TriggerActivationLimitData? ActivationLimit, HistoryQueryData? Counter);
     private sealed record TriggerActivationLimitData(EffectHistoryScope Scope, int Count);
     private sealed record HistoryQueryData(string Event, EffectHistoryScope Scope, string? TypeId, string? TagId);

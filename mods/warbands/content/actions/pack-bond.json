@@ -1,0 +1,18 @@
+{
+  "id": "pack-bond",
+  "name": "Pack Bond",
+  "tier": 2,
+  "cost": 2,
+  "effects": [
+    {
+      "kind": "applyUnitModifier",
+      "target": {
+        "scope": "selected",
+        "typeId": "beast"
+      },
+      "modifierKey": "pack-bond",
+      "attack": 2,
+      "health": 2
+    }
+  ]
+}

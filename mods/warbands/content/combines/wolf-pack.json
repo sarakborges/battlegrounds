@@ -3,5 +3,6 @@
   "name": "Wolf Pack",
   "sourceUnitId": "wolf-cub",
   "requiredCopies": 3,
-  "resultUnitId": "dire-packlord"
+  "resultUnitId": "dire-packlord",
+  "inheritPersistentModifiers": true
 }
