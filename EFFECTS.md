@@ -95,7 +95,7 @@ A power is authored with the same trigger/effect vocabulary used elsewhere:
 
 `activation` is optional. A passive-only power omits it and cannot be invoked with `UsePowerCommand`. When `activation` exists, exactly one `onActivate` trigger is required. The supported power lifecycle events are `onMatchStart`, `onTurnStart`, `onTurnEnd`, `onCombatStart`, and `onCombatEnd`, in addition to `onActivate` for active use.
 
-`selected` targets are only valid inside `onActivate`, because lifecycle events do not involve a UI/AI target selection step.
+For Powers, `selected` targets are only valid inside `onActivate`, because lifecycle events do not involve a UI/AI target selection step.
 
 Preparation lifecycle effects mutate authoritative preparation state through its effect-world adapter. Combat lifecycle effects execute against the isolated combat snapshot. Persistent consequences such as `setPower`, resource deltas, and persistent effect-history deltas are returned explicitly in `CombatResult` and settled by `MatchEngine`; Combat never mutates `PlayerState` directly.
 
@@ -128,7 +128,40 @@ For example:
 }
 ```
 
+`selected` is context-owned rather than synonymous with UI selection. During an activatable Power's `onActivate`, the selected target is supplied by the command issued by UI or AI. During a Unit's `onAttack`, Combat supplies the already-locked attack target. Triggers that do not have an explicit context target cannot use `selected`.
+
 `self` and `selected` are already singular, so they cannot add another selection mode or a limit. Adjacent selections are only meaningful for friendly units because adjacency is resolved from the source unit's current field position. Random selection samples without replacement and uses the injected deterministic RNG.
+
+## Attack target context
+
+`onAttack` is the neutral trigger for effects that occur when a Unit attacks. Combat chooses and locks the ordinary attack target before resolving this trigger, then exposes that target through `scope: "selected"`.
+
+Example:
+
+```json
+{
+  "event": "onAttack",
+  "effects": [
+    {
+      "kind": "dealDamage",
+      "target": { "scope": "selected" },
+      "amount": 2
+    }
+  ]
+}
+```
+
+One attack attempt resolves in this order:
+
+1. choose and lock a valid attack target using the normal target-priority and deterministic RNG rules;
+2. emit the presentation attack-start observation for that attacker/target pair;
+3. record the mechanical `unitAttacked` history event and resolve any consequences it creates;
+4. if the attacker and locked target still exist, resolve the attacker's `onAttack` triggers with the locked target as `selected`;
+5. if both still exist after those effects, resolve the ordinary simultaneous strike damage.
+
+If the attacker disappears before the strike, the attack ends. If the locked target disappears before the strike, the attack attempt does not silently choose a replacement target. A later extra-attack attempt, when applicable, performs its own fresh target selection. Because target locking happens first, its RNG draw also occurs before any random draws performed by that attempt's `onAttack` effects.
+
+This context is an engine mechanic, not a presentation keyword. A mod may label `onAttack` effects with any terminology it wants or expose no keyword at all.
 
 ## Trigger conditions
 
