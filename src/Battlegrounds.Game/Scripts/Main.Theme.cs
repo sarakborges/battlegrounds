@@ -65,11 +65,11 @@ public partial class Main
         ApplyTextRole(_status, "HeadingLabel");
         ApplyTextRole(_leaderPrompt, "HeadingLabel");
         ApplyTextRole(_interactionPrompt, "BodyLabel");
-        ApplyTextRole("Margin/Shell/CenterStage/PreparationPanel/TavernControls/TierBadge/HudTierValue", "HeadingLabel");
-        ApplyTextRole("Margin/Shell/CenterStage/PreparationPanel/HeroDock/HealthBadge/HudHealthValue", "HeadingLabel");
-        ApplyTextRole("Margin/Shell/CenterStage/PreparationPanel/HeroDock/HudArmorBadge/HudArmorValue", "HeadingLabel");
-        ApplyTextRole("Margin/Shell/CenterStage/PreparationPanel/HeroDock/HeroCore/HudHeroName", "HeadingLabel");
-        ApplyTextRole("Margin/Shell/CenterStage/PreparationPanel/HeroDock/ResourceBadge/HudResourceValue", "HeadingLabel");
+        ApplyTextRole("Margin/Shell/CenterStage/PreparationPanel/TavernControls/TierBadge/HudTierValue", "TierValueLabel");
+        ApplyTextRole("Margin/Shell/CenterStage/PreparationPanel/HeroDock/HealthBadge/HudHealthValue", "HealthValueLabel");
+        ApplyTextRole("Margin/Shell/CenterStage/PreparationPanel/HeroDock/HudArmorBadge/HudArmorValue", "ArmorValueLabel");
+        ApplyTextRole("Margin/Shell/CenterStage/PreparationPanel/HeroDock/HeroCore/HudHeroName", "HeroNameLabel");
+        ApplyTextRole("Margin/Shell/CenterStage/PreparationPanel/HeroDock/ResourceBadge/HudResourceValue", "ResourceValueLabel");
     }
 
     private void ApplyTextRole(string path, string variation)
