@@ -101,8 +101,8 @@ public sealed class CombatParticipant
                 unit.Id,
                 unit.Definition.Id,
                 unit.Definition.Tier,
-                unit.Attack,
-                unit.Health,
+                unit.IntrinsicAttack,
+                unit.IntrinsicHealth,
                 unit.Behaviors.Select(behavior =>
                     new CombatBehaviorSnapshot(behavior.Id, behavior.Handler)),
                 unit.Definition)),

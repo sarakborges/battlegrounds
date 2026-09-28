@@ -43,6 +43,7 @@ public sealed partial class PlayerState
         {
             var fieldUnit = _field[fieldIndex];
             _field.RemoveAt(fieldIndex);
+            RecalculateFieldAuras();
             return fieldUnit;
         }
 

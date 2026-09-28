@@ -12,6 +12,7 @@ public sealed record UnitDefinition
     private readonly ReadOnlyCollection<UnitTypeDefinition> _types;
     private readonly ReadOnlyCollection<TagDefinition> _tags;
     private readonly ReadOnlyCollection<TriggerDefinition> _triggers;
+    private readonly ReadOnlyCollection<UnitAuraDefinition> _auras;
 
     public UnitId Id { get; }
     public string Name { get; }
@@ -22,6 +23,7 @@ public sealed record UnitDefinition
     public IReadOnlyList<UnitTypeDefinition> Types => _types;
     public IReadOnlyList<TagDefinition> Tags => _tags;
     public IReadOnlyList<TriggerDefinition> Triggers => _triggers;
+    public IReadOnlyList<UnitAuraDefinition> Auras => _auras;
 
     public UnitDefinition(
         UnitId id,
@@ -32,7 +34,8 @@ public sealed record UnitDefinition
         IEnumerable<BehaviorDefinition>? behaviors = null,
         IEnumerable<UnitTypeDefinition>? types = null,
         IEnumerable<TagDefinition>? tags = null,
-        IEnumerable<TriggerDefinition>? triggers = null)
+        IEnumerable<TriggerDefinition>? triggers = null,
+        IEnumerable<UnitAuraDefinition>? auras = null)
     {
         if (string.IsNullOrWhiteSpace(name)) throw new ArgumentException("Unit name cannot be empty.", nameof(name));
         if (tier <= 0) throw new ArgumentOutOfRangeException(nameof(tier));
@@ -61,6 +64,9 @@ public sealed record UnitDefinition
         var triggerArray = triggers?.ToArray() ?? [];
         if (triggerArray.Any(trigger => trigger is null))
             throw new ArgumentException("Unit triggers cannot contain null definitions.", nameof(triggers));
+        var auraArray = auras?.ToArray() ?? [];
+        if (auraArray.Any(aura => aura is null))
+            throw new ArgumentException("Unit auras cannot contain null definitions.", nameof(auras));
 
         Id = id;
         Name = name;
@@ -71,6 +77,7 @@ public sealed record UnitDefinition
         _types = Array.AsReadOnly(typeArray);
         _tags = Array.AsReadOnly(tagArray);
         _triggers = Array.AsReadOnly(triggerArray);
+        _auras = Array.AsReadOnly(auraArray);
     }
 
     private static T[] MaterializeUnique<T, TKey>(

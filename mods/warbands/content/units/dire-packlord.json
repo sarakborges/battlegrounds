@@ -7,17 +7,18 @@
   "behaviors": [],
   "types": ["beast"],
   "tags": ["elite"],
+  "auras": [
+    {
+      "target": { "scope": "friendly", "selection": "all", "typeId": "beast" },
+      "attack": 1,
+      "health": 1
+    }
+  ],
   "triggers": [
     {
       "event": "onCombine",
       "effects": [
         { "kind": "addResource", "amount": 1 }
-      ]
-    },
-    {
-      "event": "onCombatStart",
-      "effects": [
-        { "kind": "modifyStats", "target": { "scope": "friendly", "selection": "all", "typeId": "beast" }, "attack": 1, "health": 1 }
       ]
     }
   ]

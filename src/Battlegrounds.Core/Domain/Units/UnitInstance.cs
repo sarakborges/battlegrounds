@@ -16,12 +16,18 @@ public sealed class UnitInstance
     private readonly ReadOnlyCollection<BehaviorDefinition> _behaviorsView;
     private readonly List<UnitModifierState> _modifiers = [];
     private readonly ReadOnlyCollection<UnitModifierState> _modifiersView;
+    private int _intrinsicAttack;
+    private int _intrinsicHealth;
+    private int _auraAttack;
+    private int _auraHealth;
 
     public UnitInstanceId Id { get; }
     public UnitDefinition Definition { get; private set; }
     public UnitInstanceOrigin Origin { get; private set; }
-    public int Attack { get; private set; }
-    public int Health { get; private set; }
+    public int Attack => Math.Max(0, _intrinsicAttack + _auraAttack);
+    public int Health => _intrinsicHealth + _auraHealth;
+    internal int IntrinsicAttack => _intrinsicAttack;
+    internal int IntrinsicHealth => _intrinsicHealth;
     public IReadOnlyList<BehaviorDefinition> Behaviors => _behaviorsView;
     public IReadOnlyList<UnitModifierState> Modifiers => _modifiersView;
     public bool IsAlive => Health > 0;
@@ -36,8 +42,8 @@ public sealed class UnitInstance
         Definition = definition ?? throw new ArgumentNullException(nameof(definition));
         Origin = origin;
         PoolReturnDefinition = origin == UnitInstanceOrigin.Pooled ? definition : null;
-        Attack = definition.BaseAttack;
-        Health = definition.BaseHealth;
+        _intrinsicAttack = definition.BaseAttack;
+        _intrinsicHealth = definition.BaseHealth;
         _behaviors = definition.Behaviors.ToList();
         _behaviorsView = _behaviors.AsReadOnly();
         _modifiersView = _modifiers.AsReadOnly();
@@ -52,8 +58,16 @@ public sealed class UnitInstance
 
     internal void ModifyStats(int attackDelta, int healthDelta)
     {
-        Attack = Math.Max(0, Attack + attackDelta);
-        Health += healthDelta;
+        _intrinsicAttack = Math.Max(0, _intrinsicAttack + attackDelta);
+        _intrinsicHealth += healthDelta;
+    }
+
+    internal void SetAuraContribution(int attackDelta, int healthDelta)
+    {
+        if (attackDelta < 0 || healthDelta < 0)
+  throw new ArgumentOutOfRangeException(nameof(attackDelta));
+        _auraAttack = attackDelta;
+        _auraHealth = healthDelta;
     }
 
     internal void ApplyModifier(
@@ -85,9 +99,9 @@ public sealed class UnitInstance
     internal void ExpireModifiers(UnitModifierDuration duration)
     {
         var keys = _modifiers
-            .Where(modifier => modifier.Duration == duration)
-            .Select(modifier => modifier.Key)
-            .ToArray();
+  .Where(modifier => modifier.Duration == duration)
+  .Select(modifier => modifier.Key)
+  .ToArray();
         foreach (var key in keys) RemoveModifier(key);
     }
 
@@ -96,8 +110,10 @@ public sealed class UnitInstance
         Definition = definition ?? throw new ArgumentNullException(nameof(definition));
         Origin = UnitInstanceOrigin.Generated;
         PoolReturnDefinition = null;
-        Attack = definition.BaseAttack;
-        Health = definition.BaseHealth;
+        _intrinsicAttack = definition.BaseAttack;
+        _intrinsicHealth = definition.BaseHealth;
+        _auraAttack = 0;
+        _auraHealth = 0;
         _behaviors.Clear();
         _behaviors.AddRange(definition.Behaviors);
         _modifiers.Clear();
@@ -109,30 +125,37 @@ public sealed class UnitInstance
         Definition = source.Definition;
         Origin = UnitInstanceOrigin.Generated;
         PoolReturnDefinition = null;
-        Attack = source.Attack;
-        Health = source.Health;
+        _intrinsicAttack = source._intrinsicAttack;
+        _intrinsicHealth = source._intrinsicHealth;
+        _auraAttack = 0;
+        _auraHealth = 0;
         _behaviors.Clear();
         _behaviors.AddRange(source.Behaviors);
         _modifiers.Clear();
         _modifiers.AddRange(source.Modifiers.Select(modifier =>
-            new UnitModifierState(modifier.Key, modifier.AttackDelta, modifier.HealthDelta, modifier.Duration)));
+  new UnitModifierState(modifier.Key, modifier.AttackDelta, modifier.HealthDelta, modifier.Duration)));
     }
 
     internal void TakeDamage(int amount)
     {
         if (amount <= 0) throw new ArgumentOutOfRangeException(nameof(amount));
-        Health -= amount;
+        _intrinsicHealth -= amount;
     }
 
-    internal void Destroy() => Health = Math.Min(Health, 0);
+    internal void Destroy()
+    {
+        if (Health > 0) _intrinsicHealth -= Health;
+    }
 
     internal void ResetForReborn()
     {
-        Attack = Definition.BaseAttack;
-        Health = 1;
+        _intrinsicAttack = Definition.BaseAttack;
+        _intrinsicHealth = 1;
+        _auraAttack = 0;
+        _auraHealth = 0;
         _behaviors.Clear();
         _behaviors.AddRange(
-            Definition.Behaviors.Where(behavior => behavior.Handler != NativeBehaviorKeys.ReviveOnce));
+  Definition.Behaviors.Where(behavior => behavior.Handler != NativeBehaviorKeys.ReviveOnce));
         _modifiers.Clear();
     }
 
