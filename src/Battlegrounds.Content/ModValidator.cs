@@ -4,11 +4,8 @@ public sealed class ModValidator
 {
     public ModValidationReport Validate(string modDirectory)
     {
-        var baseIssues = new DirectoryModValidator().Validate(modDirectory).Issues
-            .Where(issue => !IsSupersededBaseIssue(issue));
-
-        var powerIssues = new PowerLifecycleModValidator().Validate(modDirectory)
-            .Where(issue => !IsSupersededEffectSchemaIssue(issue));
+        var baseIssues = new DirectoryModValidator().Validate(modDirectory).Issues;
+        var powerIssues = new PowerLifecycleModValidator().Validate(modDirectory);
 
         var advancedIssues = new AdvancedEffectModValidator().Validate(modDirectory);
         var dynamicIssues = new DynamicEffectValueModValidator().Validate(modDirectory);
@@ -38,22 +35,4 @@ public sealed class ModValidator
         return new ModValidationReport(issues.Concat(new LeaderSelectionModValidator().Validate(modDirectory, preliminaryReport)));
     }
 
-    private static bool IsSupersededBaseIssue(ModValidationIssue issue) =>
-        IsSupersededEffectSchemaIssue(issue);
-
-    private static bool IsSupersededEffectSchemaIssue(ModValidationIssue issue)
-    {
-        if (issue.Code == "UNKNOWN_KEY" &&
-            (issue.Path.EndsWith(".conditions", StringComparison.Ordinal) ||
-             issue.Path.EndsWith(".activationLimit", StringComparison.Ordinal) ||
-             issue.Path.EndsWith(".counter", StringComparison.Ordinal) ||
-             issue.Path.EndsWith(".count", StringComparison.Ordinal) ||
-             issue.Path.EndsWith(".target.selection", StringComparison.Ordinal) ||
-             issue.Path.EndsWith(".target.excludeSource", StringComparison.Ordinal) ||
-             issue.Path.EndsWith(".target.limit", StringComparison.Ordinal)))
-            return true;
-        if (issue.Code == "INVALID_PARAMETER" && issue.Path.EndsWith(".count", StringComparison.Ordinal)) return true;
-        if (issue.Code == "UNSUPPORTED_TRIGGER" && issue.Message.Contains("afterEventCount", StringComparison.Ordinal)) return true;
-        return issue.Code == "INVALID_VALUE" && issue.Path.EndsWith(".target.scope", StringComparison.Ordinal);
-    }
 }
