@@ -71,7 +71,7 @@ size_flags_vertical = 3
 [node name="Status" type="Label" parent="Margin/Shell/CenterStage"]
 unique_name_in_owner = true
 layout_mode = 2
-text = "Loading..."
+text = ""
 horizontal_alignment = 1
 vertical_alignment = 1
 autowrap_mode = 2
@@ -152,7 +152,7 @@ mouse_filter = 2
 
 [node name="Name" type="Label" parent="Margin/Shell/CenterStage/PreparationPanel/TavernShelf/ShelfRow/ShopkeeperSlot/Content"]
 layout_mode = 2
-text = "SHOPKEEPER"
+text = ""
 horizontal_alignment = 1
 vertical_alignment = 1
 theme_type_variation = &"CaptionLabel"
@@ -160,7 +160,7 @@ mouse_filter = 2
 
 [node name="SellHint" type="Label" parent="Margin/Shell/CenterStage/PreparationPanel/TavernShelf/ShelfRow/ShopkeeperSlot/Content"]
 layout_mode = 2
-text = "SELL"
+text = ""
 horizontal_alignment = 1
 vertical_alignment = 1
 theme_type_variation = &"HeadingLabel"

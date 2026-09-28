@@ -52,8 +52,8 @@ public partial class Main
     {
         MatchPhase.Preparation => Term("preparation"),
         MatchPhase.Combat => Term("combat"),
-        MatchPhase.Setup => "Setup",
-        MatchPhase.Finished => "Finished",
+        MatchPhase.Setup => Text("ui.phaseSetup"),
+        MatchPhase.Finished => Text("ui.phaseFinished"),
         _ => phase.ToString(),
     };
 
@@ -75,10 +75,13 @@ public partial class Main
     {
         if (_presentationText is null) return;
 
-        SetStaticLabel("Margin/Shell/CenterStage/PreparationPanel/TavernArea/ShopRow/Title", Term("offer"));
-        SetStaticLabel("Margin/Shell/CenterStage/PreparationPanel/BottomStrip/ReserveArea/ReserveContent/Title", Term("reserve"));
-        SetStaticLabel("Margin/Shell/CenterStage/PreparationPanel/BoardArea/BoardRow/Title", Term("field"));
-        SetStaticLabel("Margin/Shell/TurnRail/Content/Title", Term("round"));
+        _status.Text = Text("ui.loading");
+        SetStaticLabel(
+            "Margin/Shell/CenterStage/PreparationPanel/TavernShelf/ShelfRow/ShopkeeperSlot/Content/Name",
+            Text("ui.releaseTargetTitle"));
+        SetStaticLabel(
+            "Margin/Shell/CenterStage/PreparationPanel/TavernShelf/ShelfRow/ShopkeeperSlot/Content/SellHint",
+            Text("ui.releaseTargetHint"));
 
         _confirmInteractionButton.Text = Text("ui.confirm");
         _cancelInteractionButton.Text = Text("ui.cancel");
