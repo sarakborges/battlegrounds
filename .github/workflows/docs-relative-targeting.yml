@@ -1,0 +1,59 @@
+name: Apply relative targeting docs
+
+on:
+  push:
+    branches:
+      - relative-context-targeting
+
+permissions:
+  contents: write
+
+jobs:
+  docs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+      - name: Update docs
+        shell: bash
+        run: |
+          python3 <<'PY'
+          from pathlib import Path
+
+          def replace_once(path, old, new):
+              p = Path(path)
+              text = p.read_text()
+              if text.count(old) != 1:
+                  raise SystemExit(f"expected one match in {path}")
+              p.write_text(text.replace(old, new))
+
+          replace_once(
+              "EFFECTS.md",
+              """- `selection`: `all`, `random`, `lowestAttack`, `highestAttack`, `lowestHealth`, `highestHealth`, `leftmost`, `rightmost`, `adjacent`, `leftAdjacent`, or `rightAdjacent`;\n- `excludeSource`: valid for `friendly` selectors;\n""",
+              """- `selection`: `all`, `random`, `lowestAttack`, `highestAttack`, `lowestHealth`, `highestHealth`, `leftmost`, `rightmost`, `adjacent`, `leftAdjacent`, or `rightAdjacent`;\n- `relativeTo`: optional spatial anchor for adjacent selections, either `source` (default) or `selected`;\n- `excludeSource`: valid for `friendly` selectors;\n""")
+
+          replace_once(
+              "EFFECTS.md",
+              """`self` and `selected` are already singular, so they cannot add another selection mode or a limit. Adjacent selections are only meaningful for friendly units because adjacency is resolved from the source unit's current field position. Random selection samples without replacement and uses the injected deterministic RNG.\n""",
+              """`self` and `selected` are already singular, so they cannot add another selection mode or a limit. Adjacent selections default to `relativeTo: \"source\"`, preserving the original friendly-only behavior around the source Unit's current field position. `relativeTo: \"selected\"` instead anchors `adjacent`, `leftAdjacent`, or `rightAdjacent` around the contextual selected Unit; it is valid only where such a context target exists and may use `scope: \"enemy\"` to select neighbors of an attack target. The anchor itself is not part of an adjacent result. Random selection samples without replacement and uses the injected deterministic RNG.\n""")
+
+          replace_once(
+              "README.md",
+              """- whole-mod validation before loading, with specialized validator ownership being tightened incrementally instead of relying on broad compatibility suppressions;\n""",
+              """- whole-mod validation before loading, with specialized validators owning their current schemas directly and no broad compatibility/supersession filters in `ModValidator`;\n""")
+
+          replace_once(
+              "README.md",
+              """The immediate priority is now **validator ownership cleanup**. Remove broad compatibility/supersession filters one family at a time by teaching the owning validator the real current schema, preserving focused regression coverage and avoiding behavior changes outside validation. The `onCombine`, generation-family, persistent Unit mutation, dynamic effect-value and specialized-schema compatibility bridges have been removed; the next candidate is the remaining broad effect-schema suppression around conditions, activation limits, counted triggers and advanced target selection.\n\nAfter validator ownership is coherent, continue with structural engine gaps demonstrated by real gameplay needs. Content expansion and balance work should not drive speculative Core abstractions, and manual testing should primarily validate feel, readability and input behavior rather than gate these headless structural cleanups.\n""",
+              """Validator ownership cleanup is complete: broad compatibility/supersession filtering has been removed, and the base plus specialized validators now accept and validate the current authored schemas directly.\n\nThe immediate priority is **structural engine gaps demonstrated by real gameplay needs**. The first slices in this phase made the locked attack target available to neutral `onAttack` effects and added source-or-context-relative spatial targeting for adjacent selectors, with Warbands using those primitives as real consumers. Continue choosing the smallest neutral Core/Content capability that a playable mechanic already needs; content expansion and balance work should not drive speculative abstractions. Manual testing should primarily validate feel, readability and input behavior rather than gate headless structural work.\n""")
+          PY
+      - name: Commit docs directly to main
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add EFFECTS.md README.md
+          git commit -m "Document relative targeting and structural focus"
+          git push origin HEAD:main
