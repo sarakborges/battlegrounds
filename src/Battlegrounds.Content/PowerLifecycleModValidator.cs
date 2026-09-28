@@ -223,19 +223,13 @@ internal sealed class PowerLifecycleModValidator
             case "modifyStats":
                 ValidateKeys(effect, file, path, ["kind", "target", "attack", "health"], ["kind", "target"], issues);
                 ValidateTarget(file, effect, path, triggerEvent, typeIds, tagIds, issues);
-                var hasAttack = TryOptionalInt(effect, "attack", file, path + ".attack", issues, out var attack);
-                var hasHealth = TryOptionalInt(effect, "health", file, path + ".health", issues, out var health);
                 if (!effect.TryGetProperty("attack", out _) && !effect.TryGetProperty("health", out _))
                     issues.Add(new("MISSING_REQUIRED_PARAMETER", file, path, "modifyStats requires attack and/or health."));
-                else if ((!hasAttack || attack == 0) && (!hasHealth || health == 0))
-                    issues.Add(new("INVALID_VALUE", file, path, "modifyStats requires a non-zero attack or health delta."));
                 break;
 
             case "dealDamage":
                 ValidateKeys(effect, file, path, ["kind", "target", "amount"], ["kind", "target", "amount"], issues);
                 ValidateTarget(file, effect, path, triggerEvent, typeIds, tagIds, issues);
-                if (TryRequiredInt(effect, "amount", file, path + ".amount", issues, out var damage) && damage <= 0)
-                    issues.Add(new("INVALID_VALUE", file, path + ".amount", "amount must be positive."));
                 break;
 
             case "destroyUnit":
@@ -257,11 +251,6 @@ internal sealed class PowerLifecycleModValidator
                 ValidateKeys(effect, file, path, ["kind", "unitId", "count"], ["kind", "unitId"], issues);
                 if (TryRequiredString(effect, "unitId", file, path + ".unitId", issues, out var unitId) && !unitIds.Contains(unitId!))
                     issues.Add(new("UNKNOWN_REFERENCE", file, path + ".unitId", $"Unknown unit '{unitId}'."));
-                if (effect.TryGetProperty("count", out _) &&
-                    TryRequiredInt(effect, "count", file, path + ".count", issues, out var count) && count <= 0)
-                {
-                    issues.Add(new("INVALID_VALUE", file, path + ".count", "count must be positive."));
-                }
                 break;
 
             case "addBehavior":
@@ -277,8 +266,6 @@ internal sealed class PowerLifecycleModValidator
 
             case "addResource":
                 ValidateKeys(effect, file, path, ["kind", "amount"], ["kind", "amount"], issues);
-                if (TryRequiredInt(effect, "amount", file, path + ".amount", issues, out var amount) && amount == 0)
-                    issues.Add(new("INVALID_VALUE", file, path + ".amount", "amount cannot be zero."));
                 break;
 
             case "setPower":

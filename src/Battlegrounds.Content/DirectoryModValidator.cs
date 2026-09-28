@@ -655,18 +655,15 @@ internal sealed class DirectoryModValidator
             {
                 ValidateKeys(effect, file, path, ["kind", "target", "attack", "health"], ["kind"], issues);
                 ValidateRequiredTarget(file, effect, path, typeIds, tagIds, issues);
-                var hasAttack = TryOptionalInt(effect, "attack", file, path + ".attack", issues, out var attack);
-                var hasHealth = TryOptionalInt(effect, "health", file, path + ".health", issues, out var health);
                 if (!effect.TryGetProperty("attack", out _) && !effect.TryGetProperty("health", out _))
                     issues.Add(new("MISSING_REQUIRED_PARAMETER", file, path, "modifyStats requires 'attack' and/or 'health'."));
-                else if ((!hasAttack || attack == 0) && (!hasHealth || health == 0))
-                    issues.Add(new("INVALID_VALUE", file, path, "modifyStats requires a non-zero attack or health delta."));
                 break;
             }
             case "dealDamage":
                 ValidateKeys(effect, file, path, ["kind", "target", "amount"], ["kind"], issues);
                 ValidateRequiredTarget(file, effect, path, typeIds, tagIds, issues);
-                ValidateRequiredPositiveInt(file, effect, "amount", path, issues);
+                if (!effect.TryGetProperty("amount", out _))
+                    issues.Add(new("MISSING_REQUIRED_PARAMETER", file, path + ".amount", "Effect requires 'amount'."));
                 break;
             case "destroyUnit":
                 ValidateKeys(effect, file, path, ["kind", "target"], ["kind"], issues);
@@ -685,8 +682,6 @@ internal sealed class DirectoryModValidator
                 ValidateKeys(effect, file, path, ["kind", "unitId", "count"], ["kind"], issues);
                 if (RequireParameterString(file, effect, "unitId", path, issues, out var unitId) && !unitIds.Contains(unitId!))
                     issues.Add(new("UNKNOWN_REFERENCE", file, path + ".unitId", $"Unknown unit '{unitId}'."));
-                if (TryOptionalInt(effect, "count", file, path + ".count", issues, out var summonCount) && summonCount <= 0)
-                    issues.Add(new("INVALID_VALUE", file, path + ".count", "count must be positive."));
                 break;
             case "addBehavior":
             case "removeBehavior":
@@ -697,8 +692,8 @@ internal sealed class DirectoryModValidator
                 break;
             case "addResource":
                 ValidateKeys(effect, file, path, ["kind", "amount"], ["kind"], issues);
-                if (RequireParameterInt(file, effect, "amount", path, issues, out var amount) && amount == 0)
-                    issues.Add(new("INVALID_VALUE", file, path + ".amount", "amount cannot be zero."));
+                if (!effect.TryGetProperty("amount", out _))
+                    issues.Add(new("MISSING_REQUIRED_PARAMETER", file, path + ".amount", "Effect requires 'amount'."));
                 break;
             case "transformUnit":
             case "copyUnitToReserve":

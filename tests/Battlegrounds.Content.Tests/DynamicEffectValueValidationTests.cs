@@ -62,6 +62,104 @@ public sealed class DynamicEffectValueValidationTests
     }
 
     [Fact]
+    public void Validate_AcceptsDynamicEffectValuesWithoutCompatibilitySuppression()
+    {
+        var path = CreateTempMod();
+        try
+        {
+            File.WriteAllText(
+                Path.Combine(path, "content", "units", "scout.json"),
+                """
+                {
+                  "id": "scout",
+                  "name": "Scout",
+                  "tier": 1,
+                  "attack": 1,
+                  "health": 2,
+                  "types": ["construct"],
+                  "tags": ["starter"],
+                  "triggers": [
+                    {
+                      "event": "onPlay",
+                      "effects": [
+                        {
+                          "kind": "modifyStats",
+                          "target": { "scope": "self" },
+                          "attack": { "kind": "sourceStat", "stat": "attack" }
+                        },
+                        {
+                          "kind": "dealDamage",
+                          "target": { "scope": "self" },
+                          "amount": { "kind": "sourceStat", "stat": "attack" }
+                        },
+                        {
+                          "kind": "summonUnit",
+                          "unitId": "guard",
+                          "count": { "kind": "sourceStat", "stat": "attack" }
+                        },
+                        {
+                          "kind": "addResource",
+                          "amount": { "kind": "sourceStat", "stat": "attack" }
+                        }
+                      ]
+                    }
+                  ]
+                }
+                """);
+
+            File.WriteAllText(
+                Path.Combine(path, "content", "powers", "vital-shift.json"),
+                """
+                {
+                  "id": "vital-shift",
+                  "name": "Vital Shift",
+                  "activation": {
+                    "cost": 0,
+                    "maxUsesPerTurn": 1,
+                    "maxUsesPerMatch": 1
+                  },
+                  "triggers": [
+                    {
+                      "event": "onActivate",
+                      "effects": [
+                        {
+                          "kind": "modifyStats",
+                          "target": { "scope": "selected" },
+                          "health": { "kind": "sourceStat", "stat": "health" }
+                        },
+                        {
+                          "kind": "dealDamage",
+                          "target": { "scope": "selected" },
+                          "amount": { "kind": "sourceStat", "stat": "attack" }
+                        },
+                        {
+                          "kind": "summonUnit",
+                          "unitId": "guard",
+                          "count": { "kind": "sourceStat", "stat": "attack" }
+                        },
+                        {
+                          "kind": "addResource",
+                          "amount": { "kind": "sourceStat", "stat": "attack" }
+                        }
+                      ]
+                    }
+                  ]
+                }
+                """);
+
+            var report = new ModValidator().Validate(path);
+
+            Assert.True(
+                report.IsValid,
+                string.Join(Environment.NewLine, report.Issues.Select(issue => $"{issue.Code} {issue.File} {issue.Path}: {issue.Message}")));
+        }
+        finally
+        {
+            Directory.Delete(path, recursive: true);
+        }
+    }
+
+    [Fact]
     public void Validate_ReportsInvalidExpressionContextAndNestedReference()
     {
         var path = CreateTempMod();
