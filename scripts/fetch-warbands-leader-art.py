@@ -90,6 +90,10 @@ ALIASES = {
     "zentabra": ["Zen'tabra"],
 }
 
+WARCRAFT_TITLES = {
+    "zentabra": "Zen'tabra",
+}
+
 TYPE_PRIORITY = {"HERO": 5, "MINION": 4, "SPELL": 2, "WEAPON": 1}
 
 
@@ -207,7 +211,8 @@ def import_hearthstone(cards: list[dict], slug: str, display_name: str, target: 
 
 
 def import_warcraft(display_name: str, slug: str, target: pathlib.Path) -> dict | None:
-    page_image = warcraft_page_image(display_name)
+    page_title = WARCRAFT_TITLES.get(slug, display_name)
+    page_image = warcraft_page_image(page_title)
     if page_image is None:
         return None
     image_url, page_url = page_image
