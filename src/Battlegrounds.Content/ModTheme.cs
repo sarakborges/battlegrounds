@@ -9,6 +9,7 @@ public static class ModThemeComponentRoles
     public const string Button = "button";
     public const string ButtonPrimary = "button.primary";
     public const string Card = "card";
+    public const string CardBoard = "card.board";
     public const string Input = "input";
     public const string Panel = "panel";
 }
@@ -93,27 +94,18 @@ public sealed partial class ModThemeCatalog
     public IReadOnlyDictionary<string, double> Metrics => _metrics;
     public IReadOnlyDictionary<string, ModThemeStyle> Components => _components;
     public IReadOnlyDictionary<string, ModThemeScreenStyle> Screens => _screens;
+    public bool IsEmpty => _colors.Count == 0 && _fonts.Count == 0 && _fontSizes.Count == 0 && _spacing.Count == 0 && _radii.Count == 0 && _metrics.Count == 0 && _components.Count == 0 && _screens.Count == 0;
 
-    public bool IsEmpty =>
-        _colors.Count == 0 &&
-        _fonts.Count == 0 &&
-        _fontSizes.Count == 0 &&
-        _spacing.Count == 0 &&
-        _radii.Count == 0 &&
-        _metrics.Count == 0 &&
-        _components.Count == 0 &&
-        _screens.Count == 0;
-
-    internal ModThemeCatalog(
+    public ModThemeCatalog(
         int version,
-        IReadOnlyDictionary<string, string> colors,
-        IReadOnlyDictionary<string, ModThemeFont> fonts,
-        IReadOnlyDictionary<string, int> fontSizes,
-        IReadOnlyDictionary<string, int> spacing,
-        IReadOnlyDictionary<string, int> radii,
-        IReadOnlyDictionary<string, double> metrics,
-        IReadOnlyDictionary<string, ModThemeStyle> components,
-        IReadOnlyDictionary<string, ModThemeScreenStyle> screens)
+        IReadOnlyDictionary<string, string>? colors = null,
+        IReadOnlyDictionary<string, ModThemeFont>? fonts = null,
+        IReadOnlyDictionary<string, int>? fontSizes = null,
+        IReadOnlyDictionary<string, int>? spacing = null,
+        IReadOnlyDictionary<string, int>? radii = null,
+        IReadOnlyDictionary<string, double>? metrics = null,
+        IReadOnlyDictionary<string, ModThemeStyle>? components = null,
+        IReadOnlyDictionary<string, ModThemeScreenStyle>? screens = null)
     {
         Version = version;
         _colors = Copy(colors);
@@ -126,167 +118,210 @@ public sealed partial class ModThemeCatalog
         _screens = Copy(screens);
     }
 
-    internal static ModThemeCatalog Empty { get; } = new(
-        1,
-        new Dictionary<string, string>(),
-        new Dictionary<string, ModThemeFont>(),
-        new Dictionary<string, int>(),
-        new Dictionary<string, int>(),
-        new Dictionary<string, int>(),
-        new Dictionary<string, double>(),
-        new Dictionary<string, ModThemeStyle>(),
-        new Dictionary<string, ModThemeScreenStyle>());
-
-    public bool TryResolveColor(string? value, out string color)
+    public bool TryResolveColor(string? tokenOrLiteral, out string value)
     {
-        color = string.Empty;
-        if (string.IsNullOrWhiteSpace(value)) return false;
-        if (value.StartsWith('#'))
+        value = string.Empty;
+        if (string.IsNullOrWhiteSpace(tokenOrLiteral)) return false;
+        if (tokenOrLiteral.StartsWith('#'))
         {
-            color = value;
+            value = tokenOrLiteral;
             return true;
         }
-        return _colors.TryGetValue(value, out color!);
+
+        return _colors.TryGetValue(tokenOrLiteral, out value!);
     }
 
-    private static ReadOnlyDictionary<string, T> Copy<T>(IReadOnlyDictionary<string, T> source) =>
-        new(new Dictionary<string, T>(source, StringComparer.Ordinal));
-}
-
-public sealed partial class ModThemeLoader
-{
-    private static readonly JsonSerializerOptions JsonOptions = new()
+    public static ModThemeCatalog Layer(ModThemeCatalog baseline, ModThemeCatalog overrides)
     {
-        PropertyNameCaseInsensitive = false,
-        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-        ReadCommentHandling = JsonCommentHandling.Skip,
-        AllowTrailingCommas = true,
-        UnmappedMemberHandling = JsonUnmappedMemberHandling.Disallow,
-    };
-
-    public ModThemeCatalog Load(string modDirectory)
-    {
-        ArgumentException.ThrowIfNullOrWhiteSpace(modDirectory);
-        var issues = new ModThemeValidator().Validate(modDirectory)
-            .Concat(new ModThemeMetricsValidator().Validate(modDirectory))
-            .Concat(new ModThemeRoleValidator().Validate(modDirectory))
-            .ToArray();
-        if (issues.Length > 0) throw new ModValidationException(new ModValidationReport(issues));
-        return LoadValidated(modDirectory);
-    }
-
-    internal static ModThemeCatalog LoadValidated(string modDirectory)
-    {
-        var path = Path.Combine(modDirectory, "presentation", "theme.json");
-        if (!File.Exists(path)) return ModThemeCatalog.Empty;
-        return DeserializeCatalog(File.ReadAllText(path));
-    }
-
-    private static ModThemeCatalog DeserializeCatalog(string json)
-    {
-        var data = JsonSerializer.Deserialize<ThemeData>(json, JsonOptions)
-            ?? throw new InvalidDataException("Theme contained no data.");
-
-        var fonts = (data.Typography?.Fonts ?? new Dictionary<string, ThemeFontData>())
-            .ToDictionary(pair => pair.Key, pair => new ModThemeFont(pair.Value.Asset), StringComparer.Ordinal);
-        var components = (data.Components ?? new Dictionary<string, ThemeStyleData>())
-            .ToDictionary(pair => pair.Key, pair => BuildStyle(pair.Value, includeStates: true), StringComparer.Ordinal);
-        var screens = (data.Screens ?? new Dictionary<string, ThemeScreenData>())
-            .ToDictionary(
-                pair => pair.Key,
-                pair => new ModThemeScreenStyle(pair.Value.BackgroundColor, pair.Value.BackgroundAsset),
-                StringComparer.Ordinal);
+        ArgumentNullException.ThrowIfNull(baseline);
+        ArgumentNullException.ThrowIfNull(overrides);
 
         return new ModThemeCatalog(
-            data.Version,
-            data.Colors ?? new Dictionary<string, string>(),
-            fonts,
-            data.Typography?.Sizes ?? new Dictionary<string, int>(),
-            data.Spacing ?? new Dictionary<string, int>(),
-            data.Shape ?? new Dictionary<string, int>(),
-            data.Metrics ?? new Dictionary<string, double>(),
-            components,
-            screens);
+            Math.Max(baseline.Version, overrides.Version),
+            Merge(baseline.Colors, overrides.Colors),
+            Merge(baseline.Fonts, overrides.Fonts),
+            Merge(baseline.FontSizes, overrides.FontSizes),
+            Merge(baseline.Spacing, overrides.Spacing),
+            Merge(baseline.Radii, overrides.Radii),
+            Merge(baseline.Metrics, overrides.Metrics),
+            MergeStyles(baseline.Components, overrides.Components),
+            MergeScreens(baseline.Screens, overrides.Screens));
     }
 
-    private static ModThemeStyle BuildStyle(ThemeStyleData data, bool includeStates)
+    private static ReadOnlyDictionary<string, T> Copy<T>(IReadOnlyDictionary<string, T>? source) =>
+        new(new Dictionary<string, T>(source ?? new Dictionary<string, T>(), StringComparer.Ordinal));
+
+    private static IReadOnlyDictionary<string, T> Merge<T>(IReadOnlyDictionary<string, T> baseline, IReadOnlyDictionary<string, T> overrides)
     {
-        var states = includeStates
-            ? (data.States ?? new Dictionary<string, ThemeStyleData>())
-                .ToDictionary(pair => pair.Key, pair => BuildStyle(pair.Value, includeStates: false), StringComparer.Ordinal)
-            : new Dictionary<string, ModThemeStyle>();
+        var merged = new Dictionary<string, T>(baseline, StringComparer.Ordinal);
+        foreach (var (key, value) in overrides) merged[key] = value;
+        return merged;
+    }
+
+    private static IReadOnlyDictionary<string, ModThemeStyle> MergeStyles(
+        IReadOnlyDictionary<string, ModThemeStyle> baseline,
+        IReadOnlyDictionary<string, ModThemeStyle> overrides)
+    {
+        var merged = new Dictionary<string, ModThemeStyle>(baseline, StringComparer.Ordinal);
+        foreach (var (key, value) in overrides)
+        {
+            merged[key] = merged.TryGetValue(key, out var inherited)
+                ? MergeStyle(inherited, value)
+                : value;
+        }
+        return merged;
+    }
+
+    private static IReadOnlyDictionary<string, ModThemeScreenStyle> MergeScreens(
+        IReadOnlyDictionary<string, ModThemeScreenStyle> baseline,
+        IReadOnlyDictionary<string, ModThemeScreenStyle> overrides)
+    {
+        var merged = new Dictionary<string, ModThemeScreenStyle>(baseline, StringComparer.Ordinal);
+        foreach (var (key, value) in overrides)
+        {
+            merged[key] = merged.TryGetValue(key, out var inherited)
+                ? new ModThemeScreenStyle(value.BackgroundColor ?? inherited.BackgroundColor, value.BackgroundAsset ?? inherited.BackgroundAsset)
+                : value;
+        }
+        return merged;
+    }
+
+    private static ModThemeStyle MergeStyle(ModThemeStyle baseline, ModThemeStyle overrides)
+    {
+        var states = new Dictionary<string, ModThemeStyle>(baseline.States, StringComparer.Ordinal);
+        foreach (var (state, style) in overrides.States)
+        {
+            states[state] = states.TryGetValue(state, out var inherited)
+                ? MergeStyle(inherited, style)
+                : style;
+        }
 
         return new ModThemeStyle(
-            data.Font,
-            data.FontSize,
-            data.TextColor,
-            data.BackgroundColor,
-            data.BorderColor,
-            data.BorderWidth,
-            data.Radius,
-            data.Padding is null ? null : new ModThemePadding(data.Padding.Horizontal, data.Padding.Vertical),
-            data.BackgroundAsset,
-            data.Slice is null ? null : new ModThemeSlice(data.Slice.Left, data.Slice.Top, data.Slice.Right, data.Slice.Bottom),
-            data.Opacity,
+            overrides.Font ?? baseline.Font,
+            overrides.FontSize ?? baseline.FontSize,
+            overrides.TextColor ?? baseline.TextColor,
+            overrides.BackgroundColor ?? baseline.BackgroundColor,
+            overrides.BorderColor ?? baseline.BorderColor,
+            overrides.BorderWidth ?? baseline.BorderWidth,
+            overrides.Radius ?? baseline.Radius,
+            overrides.Padding ?? baseline.Padding,
+            overrides.BackgroundAsset ?? baseline.BackgroundAsset,
+            overrides.Slice ?? baseline.Slice,
+            overrides.Opacity ?? baseline.Opacity,
             states);
     }
+}
 
-    private sealed class ThemeData
-    {
-        public int Version { get; set; }
-        public Dictionary<string, string>? Colors { get; set; }
-        public ThemeTypographyData? Typography { get; set; }
-        public Dictionary<string, int>? Spacing { get; set; }
-        public Dictionary<string, int>? Shape { get; set; }
-        public Dictionary<string, double>? Metrics { get; set; }
-        public Dictionary<string, ThemeStyleData>? Components { get; set; }
-        public Dictionary<string, ThemeScreenData>? Screens { get; set; }
-    }
+internal sealed class ModThemeFileModel
+{
+    [JsonPropertyName("version")]
+    public int Version { get; set; } = 1;
 
-    private sealed class ThemeTypographyData
-    {
-        public Dictionary<string, ThemeFontData>? Fonts { get; set; }
-        public Dictionary<string, int>? Sizes { get; set; }
-    }
+    [JsonPropertyName("colors")]
+    public Dictionary<string, string>? Colors { get; set; }
 
-    private sealed class ThemeFontData
-    {
-        public string Asset { get; set; } = string.Empty;
-    }
+    [JsonPropertyName("typography")]
+    public ModThemeTypographyModel? Typography { get; set; }
 
-    private sealed class ThemePaddingData
-    {
-        public string Horizontal { get; set; } = string.Empty;
-        public string Vertical { get; set; } = string.Empty;
-    }
+    [JsonPropertyName("spacing")]
+    public Dictionary<string, int>? Spacing { get; set; }
 
-    private sealed class ThemeSliceData
-    {
-        public int Left { get; set; }
-        public int Top { get; set; }
-        public int Right { get; set; }
-        public int Bottom { get; set; }
-    }
+    [JsonPropertyName("shape")]
+    public Dictionary<string, int>? Shape { get; set; }
 
-    private sealed class ThemeStyleData
-    {
-        public string? Font { get; set; }
-        public string? FontSize { get; set; }
-        public string? TextColor { get; set; }
-        public string? BackgroundColor { get; set; }
-        public string? BorderColor { get; set; }
-        public int? BorderWidth { get; set; }
-        public string? Radius { get; set; }
-        public ThemePaddingData? Padding { get; set; }
-        public string? BackgroundAsset { get; set; }
-        public ThemeSliceData? Slice { get; set; }
-        public double? Opacity { get; set; }
-        public Dictionary<string, ThemeStyleData>? States { get; set; }
-    }
+    [JsonPropertyName("metrics")]
+    public Dictionary<string, double>? Metrics { get; set; }
 
-    private sealed class ThemeScreenData
-    {
-        public string? BackgroundColor { get; set; }
-        public string? BackgroundAsset { get; set; }
-    }
+    [JsonPropertyName("components")]
+    public Dictionary<string, ModThemeStyleModel>? Components { get; set; }
+
+    [JsonPropertyName("screens")]
+    public Dictionary<string, ModThemeScreenStyleModel>? Screens { get; set; }
+}
+
+internal sealed class ModThemeTypographyModel
+{
+    [JsonPropertyName("fonts")]
+    public Dictionary<string, ModThemeFontModel>? Fonts { get; set; }
+
+    [JsonPropertyName("sizes")]
+    public Dictionary<string, int>? Sizes { get; set; }
+}
+
+internal sealed class ModThemeFontModel
+{
+    [JsonPropertyName("asset")]
+    public string? Asset { get; set; }
+}
+
+internal sealed class ModThemeStyleModel
+{
+    [JsonPropertyName("font")]
+    public string? Font { get; set; }
+
+    [JsonPropertyName("fontSize")]
+    public string? FontSize { get; set; }
+
+    [JsonPropertyName("textColor")]
+    public string? TextColor { get; set; }
+
+    [JsonPropertyName("backgroundColor")]
+    public string? BackgroundColor { get; set; }
+
+    [JsonPropertyName("borderColor")]
+    public string? BorderColor { get; set; }
+
+    [JsonPropertyName("borderWidth")]
+    public int? BorderWidth { get; set; }
+
+    [JsonPropertyName("radius")]
+    public string? Radius { get; set; }
+
+    [JsonPropertyName("padding")]
+    public ModThemePaddingModel? Padding { get; set; }
+
+    [JsonPropertyName("backgroundAsset")]
+    public string? BackgroundAsset { get; set; }
+
+    [JsonPropertyName("slice")]
+    public ModThemeSliceModel? Slice { get; set; }
+
+    [JsonPropertyName("opacity")]
+    public double? Opacity { get; set; }
+
+    [JsonPropertyName("states")]
+    public Dictionary<string, ModThemeStyleModel>? States { get; set; }
+}
+
+internal sealed class ModThemePaddingModel
+{
+    [JsonPropertyName("horizontal")]
+    public string? Horizontal { get; set; }
+
+    [JsonPropertyName("vertical")]
+    public string? Vertical { get; set; }
+}
+
+internal sealed class ModThemeSliceModel
+{
+    [JsonPropertyName("left")]
+    public int Left { get; set; }
+
+    [JsonPropertyName("top")]
+    public int Top { get; set; }
+
+    [JsonPropertyName("right")]
+    public int Right { get; set; }
+
+    [JsonPropertyName("bottom")]
+    public int Bottom { get; set; }
+}
+
+internal sealed class ModThemeScreenStyleModel
+{
+    [JsonPropertyName("backgroundColor")]
+    public string? BackgroundColor { get; set; }
+
+    [JsonPropertyName("backgroundAsset")]
+    public string? BackgroundAsset { get; set; }
 }
