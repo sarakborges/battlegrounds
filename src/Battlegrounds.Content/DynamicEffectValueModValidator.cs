@@ -62,7 +62,7 @@ internal sealed class DynamicEffectValueModValidator
                 : null;
             var allowSelected =
                 (powerMode && eventName == "onActivate") ||
-                (!powerMode && eventName == "onAttack");
+                (!powerMode && (eventName == "onAttack" || eventName == "onDamage"));
 
             if (trigger.TryGetProperty("conditions", out var conditions) && conditions.ValueKind == JsonValueKind.Array)
             {
@@ -314,7 +314,7 @@ internal sealed class DynamicEffectValueModValidator
             if (!Scopes.Contains(scope!))
                 issues.Add(new("INVALID_VALUE", file, path + ".scope", $"Unknown target scope '{scope}'."));
             else if (scope == "selected" && !allowSelected)
-                issues.Add(new("INVALID_VALUE", file, path + ".scope", "selected requires a trigger context target, currently unit onAttack or activatable power onActivate."));
+                issues.Add(new("INVALID_VALUE", file, path + ".scope", "selected requires a trigger context target, currently unit onAttack, unit onDamage, or activatable power onActivate."));
         }
 
         if (query.TryGetProperty("excludeSource", out var exclude))

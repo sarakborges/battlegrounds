@@ -90,7 +90,7 @@ internal sealed class AdvancedEffectModValidator
                 : null;
             var allowSelected =
                 (powerMode && eventName == "onActivate") ||
-                (!powerMode && eventName == "onAttack");
+                (!powerMode && (eventName == "onAttack" || eventName == "onDamage"));
 
             if (trigger.TryGetProperty("conditions", out var conditions))
                 ValidateConditions(file.Path, conditions, triggerPath + ".conditions", allowSelected, typeIds, tagIds, issues);
@@ -303,7 +303,7 @@ internal sealed class AdvancedEffectModValidator
         if (!Scopes.Contains(scope!))
             issues.Add(new("INVALID_VALUE", file, path + ".scope", $"Unknown target scope '{scope}'."));
         else if (scope == "selected" && !allowSelected)
-            issues.Add(new("INVALID_VALUE", file, path + ".scope", "selected requires a trigger context target, currently unit onAttack or activatable power onActivate."));
+            issues.Add(new("INVALID_VALUE", file, path + ".scope", "selected requires a trigger context target, currently unit onAttack, unit onDamage, or activatable power onActivate."));
         return scope;
     }
 

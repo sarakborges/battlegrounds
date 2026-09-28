@@ -7,5 +7,16 @@
   "behaviors": ["guarded", "warded"],
   "types": ["beast"],
   "tags": [],
-  "triggers": []
+  "triggers": [
+    {
+      "event": "onDamage",
+      "effects": [
+        {
+          "kind": "dealDamage",
+          "target": { "scope": "selected" },
+          "amount": 2
+        }
+      ]
+    }
+  ]
 }

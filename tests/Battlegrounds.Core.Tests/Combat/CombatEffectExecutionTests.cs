@@ -113,6 +113,135 @@ public sealed class CombatEffectExecutionTests
     }
 
     [Fact]
+    public void OnDamageSelectedTarget_UsesLivingAttackDamageSource()
+    {
+        var attacker = new UnitDefinition(new UnitId("attacker"), "Attacker", 1, 3, 10);
+        var retaliator = new UnitDefinition(
+            new UnitId("retaliator"),
+            "Retaliator",
+            1,
+            0,
+            3,
+            triggers:
+            [
+                new TriggerDefinition(
+                    NativeTriggerKeys.OnDamage,
+                    [
+                        new DealDamageEffectDefinition(
+                            new EffectTargetSelector(EffectTargetScope.Selected),
+                            2),
+                    ]),
+            ]);
+        var catalog = new UnitCatalog([attacker, retaliator]);
+        var input = new CombatInput(
+            Participant(0, Snapshot(1, attacker)),
+            Participant(1, Snapshot(2, retaliator)));
+
+        var result = new CombatEngine(7, catalog, new BehaviorCatalog([]))
+            .Resolve(input, new CombatRules(StartingSidePolicy.Random), new MinimumRandomSource());
+
+        Assert.Equal(new PlayerId(0), result.WinnerPlayerId);
+        var survivor = Assert.Single(result.LeftSurvivors);
+        Assert.Equal(8, survivor.Health);
+    }
+
+    [Fact]
+    public void OnDamageSelectedTarget_UsesLivingEffectDamageSource()
+    {
+        var source = new UnitDefinition(
+            new UnitId("source"),
+            "Source",
+            1,
+            5,
+            10,
+            triggers:
+            [
+                new TriggerDefinition(
+                    NativeTriggerKeys.OnCombatStart,
+                    [
+                        new DealDamageEffectDefinition(
+                            new EffectTargetSelector(EffectTargetScope.Enemy),
+                            1),
+                    ]),
+            ]);
+        var retaliator = new UnitDefinition(
+            new UnitId("retaliator"),
+            "Retaliator",
+            1,
+            0,
+            1,
+            triggers:
+            [
+                new TriggerDefinition(
+                    NativeTriggerKeys.OnDamage,
+                    [
+                        new DealDamageEffectDefinition(
+                            new EffectTargetSelector(EffectTargetScope.Selected),
+                            2),
+                    ]),
+            ]);
+        var catalog = new UnitCatalog([source, retaliator]);
+        var input = new CombatInput(
+            Participant(0, Snapshot(1, source)),
+            Participant(1, Snapshot(2, retaliator)));
+
+        var result = new CombatEngine(7, catalog, new BehaviorCatalog([]))
+            .Resolve(input, new CombatRules(StartingSidePolicy.Random), new MinimumRandomSource());
+
+        Assert.Equal(new PlayerId(0), result.WinnerPlayerId);
+        var survivor = Assert.Single(result.LeftSurvivors);
+        Assert.Equal(8, survivor.Health);
+        Assert.Empty(result.Attacks);
+    }
+
+    [Fact]
+    public void OnDamageSelectedTarget_IsAbsentWhenDamageSourceIsNotTargetable()
+    {
+        var doomed = new UnitDefinition(
+            new UnitId("doomed"),
+            "Doomed",
+            1,
+            0,
+            1,
+            triggers:
+            [
+                new TriggerDefinition(
+                    NativeTriggerKeys.OnDeath,
+                    [
+                        new DealDamageEffectDefinition(
+                            new EffectTargetSelector(EffectTargetScope.Enemy),
+                            1),
+                    ]),
+            ]);
+        var reactive = new UnitDefinition(
+            new UnitId("reactive"),
+            "Reactive",
+            1,
+            2,
+            5,
+            triggers:
+            [
+                new TriggerDefinition(
+                    NativeTriggerKeys.OnDamage,
+                    [
+                        new DestroyUnitEffectDefinition(
+                            new EffectTargetSelector(EffectTargetScope.Selected)),
+                    ]),
+            ]);
+        var catalog = new UnitCatalog([doomed, reactive]);
+        var input = new CombatInput(
+            Participant(0, Snapshot(1, doomed)),
+            Participant(1, Snapshot(2, reactive)));
+
+        var result = new CombatEngine(7, catalog, new BehaviorCatalog([]))
+            .Resolve(input, new CombatRules(StartingSidePolicy.Random), new MinimumRandomSource());
+
+        Assert.Equal(new PlayerId(1), result.WinnerPlayerId);
+        var survivor = Assert.Single(result.RightSurvivors);
+        Assert.Equal(4, survivor.Health);
+    }
+
+    [Fact]
     public void CombatEffectsDoNotMutatePersistentDefinitionsOrInput()
     {
         var buffed = new UnitDefinition(
