@@ -38,6 +38,8 @@ internal sealed partial class PresentationCardButton : Button
     private int? _tokenTier;
     private int _tokenAttack;
     private int _tokenHealth;
+    private ModPresentationEntityKind? _entityKind;
+    private string? _entityId;
     private PresentationCardInspectData? _inspectData;
 
     public PresentationCardButton()
@@ -98,6 +100,8 @@ internal sealed partial class PresentationCardButton : Button
     public override void _Ready()
     {
         ApplyFootprintForParent();
+        if (_entityKind is ModPresentationEntityKind entityKind && !string.IsNullOrWhiteSpace(_entityId))
+            FindMain()?.ConfigureCompactTokenForParent(this, entityKind, _entityId);
         ApplyTokenVisualMode();
     }
 
@@ -178,6 +182,13 @@ internal sealed partial class PresentationCardButton : Button
             description,
             null,
             texture);
+    }
+
+    public void ConfigureIdentity(ModPresentationEntityKind entityKind, string entityId)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(entityId);
+        _entityKind = entityKind;
+        _entityId = entityId;
     }
 
     public void ConfigureInspectDetails(string? details)
