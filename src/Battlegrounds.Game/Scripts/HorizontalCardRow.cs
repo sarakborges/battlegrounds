@@ -151,7 +151,7 @@ public partial class HorizontalCardRow : Container
             var slot = index;
             cards[index].ConfigureReserveUnitDrag(
                 slot,
-                main.CanDeployReserveFromDrag(slot) && !cards[index].Disabled,
+                main.CanDragReserveUnitFromDrag(slot) && !cards[index].Disabled,
                 () => CompleteReserveDrag(slot));
         }
     }
