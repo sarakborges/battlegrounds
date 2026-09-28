@@ -7,9 +7,10 @@ namespace Battlegrounds.Game;
 /// surrounding scene owns the row height. The row reports no content-driven minimum
 /// height so cards never inflate the vertical HUD.
 ///
-/// Tavern offers and field pieces are drag sources. While a field piece is lifted,
-/// the row computes the intended insertion directly from pointer position and reflows
-/// neighboring minions around that gap. Drop zones remain stable for the whole gesture.
+/// Preparation cards use spatial dragging: the lifted card follows the pointer, the
+/// board reflows around the intended insertion point, and the gesture is resolved from
+/// the pointer's final screen position. Godot drop targets remain a fast path, while the
+/// spatial fallback keeps selling, deployment, and reordering reliable across nested UI.
 /// </summary>
 public partial class HorizontalCardRow : Container
 {
@@ -21,13 +22,15 @@ public partial class HorizontalCardRow : Container
 
     private bool IsOfferRow => Name == "OfferButtons";
     private bool IsFieldRow => Name == "FieldButtons";
+    private bool IsReserveRow => Name == "ReserveButtons";
     private int _fieldDragSourceIndex = -1;
     private int _fieldPreviewInsertionIndex = -1;
+    private int _reservePreviewInsertionIndex = -1;
 
     public override void _Ready()
     {
         ApplySemanticGeometry();
-        SetProcess(IsOfferRow || IsFieldRow);
+        SetProcess(IsOfferRow || IsFieldRow || IsReserveRow);
         QueueSort();
     }
 
@@ -38,11 +41,15 @@ public partial class HorizontalCardRow : Container
         if (IsOfferRow)
             ConfigureOfferDrag();
 
+        if (IsReserveRow)
+            ConfigureReserveDrag();
+
         if (!IsFieldRow)
             return;
 
         ConfigureFieldDragAndDrop();
         UpdateFieldPreviewFromPointer();
+        UpdateReservePreviewFromPointer();
     }
 
     public override void _Notification(int what)
@@ -57,15 +64,27 @@ public partial class HorizontalCardRow : Container
         if (_fieldDragSourceIndex >= cards.Length)
             EndFieldDrag();
 
-        var geometry = ResolveGeometry(cards.Length);
-
         if (IsFieldRow && IsFieldDragActive(cards.Length))
+        {
+            var geometry = ResolveGeometry(cards.Length);
             LayoutDraggedField(cards, geometry);
-        else
-            LayoutCardsNormally(cards, geometry);
+            LayoutInsertionZones(cards.Length, geometry);
+            return;
+        }
+
+        if (IsFieldRow && _reservePreviewInsertionIndex >= 0)
+        {
+            var geometry = ResolveGeometry(cards.Length + 1);
+            LayoutCardsAroundExternalInsertion(cards, geometry, _reservePreviewInsertionIndex);
+            LayoutInsertionZones(cards.Length, ResolveGeometry(cards.Length));
+            return;
+        }
+
+        var normalGeometry = ResolveGeometry(cards.Length);
+        LayoutCardsNormally(cards, normalGeometry);
 
         if (IsFieldRow)
-            LayoutInsertionZones(cards.Length, geometry);
+            LayoutInsertionZones(cards.Length, normalGeometry);
     }
 
     private void ApplySemanticGeometry()
@@ -111,7 +130,30 @@ public partial class HorizontalCardRow : Container
 
         var cards = CurrentCards();
         for (var index = 0; index < cards.Length; index++)
-            cards[index].ConfigureOfferDrag(index, main.CanUsePreparationDrag && !cards[index].Disabled);
+        {
+            var slot = index;
+            cards[index].ConfigureOfferDrag(
+                slot,
+                main.CanUsePreparationDrag && !cards[index].Disabled,
+                () => CompleteOfferDrag(slot));
+        }
+    }
+
+    private void ConfigureReserveDrag()
+    {
+        var main = FindMain();
+        if (main is null)
+            return;
+
+        var cards = CurrentCards();
+        for (var index = 0; index < cards.Length; index++)
+        {
+            var slot = index;
+            cards[index].ConfigureReserveUnitDrag(
+                slot,
+                main.CanDeployReserveFromDrag(slot) && !cards[index].Disabled,
+                () => CompleteReserveDrag(slot));
+        }
     }
 
     private void ConfigureFieldDragAndDrop()
@@ -126,14 +168,47 @@ public partial class HorizontalCardRow : Container
 
         for (var index = 0; index < cards.Length; index++)
         {
+            var sourceIndex = index;
             cards[index].ConfigureFieldDrag(
-                index,
+                sourceIndex,
                 canDrag && !cards[index].Disabled,
                 BeginFieldDrag,
-                EndFieldDrag);
+                () => CompleteFieldDrag(sourceIndex));
         }
 
         SyncInsertionZones(cards.Length, reorderEnabled, main.ReorderHumanFieldAtInsertion);
+    }
+
+    private void CompleteOfferDrag(int offerSlot)
+    {
+        if (GetViewport().GuiIsDragSuccessful())
+            return;
+
+        FindMain()?.CompleteOfferDragFromPointer(offerSlot, GetViewport().GetMousePosition());
+    }
+
+    private void CompleteReserveDrag(int reserveSlot)
+    {
+        if (GetViewport().GuiIsDragSuccessful())
+            return;
+
+        var pointer = GetViewport().GetMousePosition();
+        var insertion = ResolveFieldInsertionAtPointerFromSibling(pointer);
+        FindMain()?.CompleteReserveDragFromPointer(reserveSlot, pointer, insertion);
+    }
+
+    private void CompleteFieldDrag(int sourceIndex)
+    {
+        var successful = GetViewport().GuiIsDragSuccessful();
+        var pointer = GetViewport().GetMousePosition();
+        var insertion = ResolveFieldInsertionAtPointer(pointer);
+
+        EndFieldDrag();
+
+        if (successful)
+            return;
+
+        FindMain()?.CompleteFieldDragFromPointer(sourceIndex, pointer, insertion);
     }
 
     private void BeginFieldDrag(int sourceIndex)
@@ -144,6 +219,7 @@ public partial class HorizontalCardRow : Container
 
         _fieldDragSourceIndex = sourceIndex;
         _fieldPreviewInsertionIndex = sourceIndex;
+        _reservePreviewInsertionIndex = -1;
         QueueSort();
     }
 
@@ -160,16 +236,77 @@ public partial class HorizontalCardRow : Container
     private void UpdateFieldPreviewFromPointer()
     {
         var cards = CurrentCards();
-        if (!IsFieldDragActive(cards.Length))
+        if (_fieldDragSourceIndex < 0 || _fieldDragSourceIndex >= cards.Length)
             return;
 
-        var geometry = ResolveGeometry(cards.Length);
-        var insertion = ResolveInsertionFromPointer(GetLocalMousePosition().X, cards.Length, geometry);
-        if (insertion == _fieldPreviewInsertionIndex)
+        var insertion = ResolveFieldInsertionAtPointer(GetViewport().GetMousePosition());
+        var resolved = insertion ?? -1;
+        if (resolved == _fieldPreviewInsertionIndex)
             return;
 
-        _fieldPreviewInsertionIndex = insertion;
+        _fieldPreviewInsertionIndex = resolved;
         QueueSort();
+    }
+
+    private void UpdateReservePreviewFromPointer()
+    {
+        if (_fieldDragSourceIndex >= 0)
+        {
+            SetReservePreviewInsertion(-1);
+            return;
+        }
+
+        var viewport = GetViewport();
+        if (!viewport.GuiIsDragging() ||
+            !PreparationDragPayload.TryReadReserveUnit(viewport.GuiGetDragData(), out var reserveSlot))
+        {
+            SetReservePreviewInsertion(-1);
+            return;
+        }
+
+        var main = FindMain();
+        if (main is null || !main.CanDeployReserveFromDrag(reserveSlot))
+        {
+            SetReservePreviewInsertion(-1);
+            return;
+        }
+
+        var insertion = ResolveFieldInsertionAtPointer(viewport.GetMousePosition()) ?? -1;
+        SetReservePreviewInsertion(insertion);
+    }
+
+    private void SetReservePreviewInsertion(int insertion)
+    {
+        if (_reservePreviewInsertionIndex == insertion)
+            return;
+
+        _reservePreviewInsertionIndex = insertion;
+        QueueSort();
+    }
+
+    private int? ResolveFieldInsertionAtPointer(Vector2 pointer)
+    {
+        if (!IsFieldRow || !ExpandedGlobalRect(22.0f).HasPoint(pointer))
+            return null;
+
+        var cards = CurrentCards();
+        var geometry = ResolveGeometry(cards.Length);
+        var localX = pointer.X - GetGlobalRect().Position.X;
+        return ResolveInsertionFromPointer(localX, cards.Length, geometry);
+    }
+
+    private int? ResolveFieldInsertionAtPointerFromSibling(Vector2 pointer)
+    {
+        var main = FindMain();
+        var fieldRow = main?.GetNodeOrNull<HorizontalCardRow>("%FieldButtons");
+        return fieldRow?.ResolveFieldInsertionAtPointer(pointer);
+    }
+
+    private Rect2 ExpandedGlobalRect(float amount)
+    {
+        var rect = GetGlobalRect();
+        var expansion = new Vector2(amount, amount);
+        return new Rect2(rect.Position - expansion, rect.Size + expansion * 2.0f);
     }
 
     private bool IsFieldDragActive(int cardCount) =>
@@ -204,6 +341,25 @@ public partial class HorizontalCardRow : Container
                 cards[index],
                 new Rect2(
                     geometry.X + index * geometry.Pitch,
+                    geometry.Y,
+                    geometry.CardWidth,
+                    geometry.CardHeight));
+        }
+    }
+
+    private void LayoutCardsAroundExternalInsertion(
+        PresentationCardButton[] cards,
+        RowGeometry geometry,
+        int insertionIndex)
+    {
+        insertionIndex = Math.Clamp(insertionIndex, 0, cards.Length);
+        for (var index = 0; index < cards.Length; index++)
+        {
+            var slot = index >= insertionIndex ? index + 1 : index;
+            FitChildInRect(
+                cards[index],
+                new Rect2(
+                    geometry.X + slot * geometry.Pitch,
                     geometry.Y,
                     geometry.CardWidth,
                     geometry.CardHeight));
