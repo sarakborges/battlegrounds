@@ -1,0 +1,7 @@
+{
+  "id": "wilfred-fizzlebang",
+  "name": "Wilfred Fizzlebang",
+  "healthModifier": 0,
+  "armor": 4,
+  "initialPowerId": "fel-infusion"
+}
