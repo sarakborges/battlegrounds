@@ -172,7 +172,9 @@ internal sealed partial class PresentationCardButton : Button
         _dragEnabled = enabled;
         _dragStarted = dragStarted;
         _dragEnded = dragEnded;
-        MouseDefaultCursorShape = enabled ? CursorShape.PointingHand : CursorShape.Arrow;
+        MouseDefaultCursorShape = enabled
+            ? FindMain()?.PreparationDragCursor ?? CursorShape.PointingHand
+            : CursorShape.Arrow;
         ButtonMask = enabled ? (MouseButtonMask)0 : MouseButtonMask.Left;
         FocusMode = enabled ? FocusModeEnum.None : FocusModeEnum.All;
 
@@ -186,12 +188,17 @@ internal sealed partial class PresentationCardButton : Button
     private void BeginDrag()
     {
         _dragActive = true;
-        SelfModulate = new Color(1, 1, 1, 0.10f);
+        var opacity = FindMain()?.PreparationDragSourceOpacity ?? 0.12f;
+        SelfModulate = new Color(1, 1, 1, opacity);
         _dragStarted?.Invoke();
     }
 
     private Control CreateDragPreview(Vector2 grabOffset)
     {
+        var main = FindMain();
+        var scale = main?.PreparationDragPreviewScale ?? 1.045f;
+        var rotationDegrees = main?.PreparationDragPreviewRotationDegrees ?? -1.5f;
+
         var root = new Control
         {
             MouseFilter = MouseFilterEnum.Ignore,
@@ -206,8 +213,8 @@ internal sealed partial class PresentationCardButton : Button
             FocusMode = FocusModeEnum.None,
             ButtonMask = (MouseButtonMask)0,
             PivotOffset = grabOffset,
-            Scale = new Vector2(1.045f, 1.045f),
-            Rotation = Mathf.DegToRad(-1.5f),
+            Scale = new Vector2(scale, scale),
+            Rotation = Mathf.DegToRad(rotationDegrees),
             TooltipText = string.Empty,
         };
         preview.Configure(
@@ -254,6 +261,19 @@ internal sealed partial class PresentationCardButton : Button
         _art.CustomMinimumSize = new Vector2(0, artHeight);
         _subtitle.Visible = showSubtitle && !string.IsNullOrWhiteSpace(_subtitle.Text);
         SetMeta("presentation_footprint", role);
+    }
+
+    private Main? FindMain()
+    {
+        Node? node = GetParent();
+        while (node is not null)
+        {
+            if (node is Main main)
+                return main;
+            node = node.GetParent();
+        }
+
+        return null;
     }
 
     private static Label CreateLabel(string variation, bool wrap = false)
