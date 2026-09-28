@@ -32,8 +32,6 @@ public partial class Main
             _preparationReserveShelf.Visible = human.PlayableReserveCount > 0;
         }
 
-        RefreshShopkeeperArtAperture();
-
         if (!_hudBound)
             return;
 
@@ -46,13 +44,15 @@ public partial class Main
         // The leader name is already available via the portrait tooltip and the
         // opponent rail. Keeping another nameplate inside the compact hero
         // portrait caused the fallback monogram, name, health, and armor to
-        // overlap. The bottom HUD now reads as power -> portrait -> resource.
+        // overlap.
         _hudHeroName.Visible = false;
         if (_hudHeroPortrait.GetParent() is PanelContainer portraitFrame &&
             portraitFrame.GetNodeOrNull<Label>("PortraitNameplate") is { } nameplate)
         {
             nameplate.Visible = false;
         }
+
+        ApplyBattlegroundsHeroComposition();
     }
 
     private void BindPreparationPresentationPolish()
@@ -85,9 +85,9 @@ public partial class Main
             preparation.MoveChild(tableSpace, heroDock.GetIndex());
         }
 
-        // Hearthstone-like bottom grammar: the hero portrait is the visual anchor,
-        // with the power on one side and the resource on the other. Health/armor
-        // remain attached to the portrait cluster itself.
+        // Battlegrounds bottom grammar: portrait is the visual anchor; Hero Power
+        // sits immediately to its right and the resource readout follows as a
+        // compact secondary element. Health/armor remain attached to the portrait.
         var heroRow = heroDock.GetNode<HBoxContainer>("HeroDockRow");
         var leftSpacer = heroRow.GetNode<Control>("LeftSpacer");
         var heroCore = heroRow.GetNode<VBoxContainer>("HeroCore");
@@ -96,18 +96,20 @@ public partial class Main
         if (portraitCluster is not null)
         {
             var first = leftSpacer.GetIndex() + 1;
-            heroRow.MoveChild(heroCore, first);
-            heroRow.MoveChild(portraitCluster, first + 1);
+            heroRow.MoveChild(portraitCluster, first);
+            heroRow.MoveChild(heroCore, first + 1);
             heroRow.MoveChild(resourceBadge, first + 2);
             heroRow.Alignment = BoxContainer.AlignmentMode.Center;
 
             heroCore.SizeFlagsHorizontal = Control.SizeFlags.ShrinkCenter;
-            heroCore.SizeFlagsVertical = Control.SizeFlags.ShrinkCenter;
+            heroCore.SizeFlagsVertical = Control.SizeFlags.ShrinkEnd;
+            heroCore.Alignment = BoxContainer.AlignmentMode.End;
             portraitCluster.SizeFlagsHorizontal = Control.SizeFlags.ShrinkCenter;
-            portraitCluster.SizeFlagsVertical = Control.SizeFlags.ShrinkCenter;
+            portraitCluster.SizeFlagsVertical = Control.SizeFlags.ShrinkEnd;
             resourceBadge.SizeFlagsHorizontal = Control.SizeFlags.ShrinkCenter;
-            resourceBadge.SizeFlagsVertical = Control.SizeFlags.ShrinkCenter;
-            _powerButton.SizeFlagsVertical = Control.SizeFlags.ShrinkCenter;
+            resourceBadge.SizeFlagsVertical = Control.SizeFlags.ShrinkEnd;
+            _powerButton.SizeFlagsHorizontal = Control.SizeFlags.ShrinkCenter;
+            _powerButton.SizeFlagsVertical = Control.SizeFlags.ShrinkEnd;
         }
 
         var turnRail = GetNode<PanelContainer>("Margin/Shell/TurnRail");
@@ -115,26 +117,138 @@ public partial class Main
         _endPreparationButton.SizeFlagsHorizontal = Control.SizeFlags.ShrinkCenter;
     }
 
-    private void RefreshShopkeeperArtAperture()
+    private void ApplyBattlegroundsHeroComposition()
     {
-        const string artPath = "Margin/Shell/CenterStage/PreparationPanel/TavernControls/ControlsRow/ShopkeeperSlot/CosmeticLayer/CosmeticArt";
-        var art = GetNodeOrNull<TextureRect>(artPath);
-        if (art is null)
+        const string heroRowPath = "Margin/Shell/CenterStage/PreparationPanel/HeroDock/HeroDockRow";
+        var heroRow = GetNodeOrNull<HBoxContainer>(heroRowPath);
+        var portraitCluster = heroRow?.GetNodeOrNull<Control>("HeroPortraitCluster");
+        var frame = portraitCluster?.GetNodeOrNull<PanelContainer>("HeroPortraitFrame");
+        if (heroRow is null || portraitCluster is null || frame is null)
             return;
 
-        // Keep the cosmetic inside the visual opening of the foreground frame.
-        // The inset follows existing mod theme spacing, so different themes scale
-        // this crop together with their Tavern composition instead of baking a
-        // Warbands pixel value into the engine.
-        var horizontalInset = ResolvePresentationMetric(ModThemeMetricKeys.Layout.TavernShelfGap, 0.0f, 64.0f);
-        var verticalInset = ResolvePresentationMetric(ModThemeMetricKeys.Layout.TavernControlsGap, 0.0f, 64.0f);
-        art.AnchorLeft = 0.0f;
-        art.AnchorTop = 0.0f;
-        art.AnchorRight = 1.0f;
-        art.AnchorBottom = 1.0f;
-        art.OffsetLeft = horizontalInset;
-        art.OffsetTop = verticalInset;
-        art.OffsetRight = -horizontalInset;
-        art.OffsetBottom = -verticalInset;
+        var portraitSize = ResolvePresentationMetric(
+            ModThemeMetricKeys.Hud.HeroPortraitSize,
+            1.0f,
+            2048.0f);
+        var dockHeight = ResolvePresentationMetric(
+            ModThemeMetricKeys.Hud.HeroDockMinimumHeight,
+            1.0f,
+            2048.0f);
+        var healthWidth = ResolvePresentationMetric(
+            ModThemeMetricKeys.Layout.HeroDockHealthBadgeWidth,
+            1.0f,
+            512.0f);
+        var armorWidth = ResolvePresentationMetric(
+            ModThemeMetricKeys.Layout.HeroDockArmorBadgeWidth,
+            1.0f,
+            512.0f);
+
+        // Use the dock's own semantic height to give the portrait a vertical hero
+        // silhouette instead of the square dashboard thumbnail we had before.
+        var portraitWidth = portraitSize;
+        var portraitHeight = Mathf.Max(portraitSize, dockHeight - 8.0f);
+        var badgeAllowance = Mathf.Max(healthWidth, armorWidth) * 0.42f;
+        portraitCluster.CustomMinimumSize = new Vector2(
+            portraitWidth + badgeAllowance,
+            portraitHeight + badgeAllowance * 0.35f);
+
+        frame.AnchorLeft = 0.5f;
+        frame.AnchorTop = 0.5f;
+        frame.AnchorRight = 0.5f;
+        frame.AnchorBottom = 0.5f;
+        frame.OffsetLeft = -portraitWidth * 0.5f;
+        frame.OffsetTop = -portraitHeight * 0.5f;
+        frame.OffsetRight = portraitWidth * 0.5f;
+        frame.OffsetBottom = portraitHeight * 0.5f;
+        frame.ClipContents = true;
+        _hudHeroPortrait.CustomMinimumSize = new Vector2(portraitWidth, portraitHeight);
+        _hudHeroPortrait.StretchMode = TextureRect.StretchModeEnum.KeepAspectCovered;
+
+        ApplyHeroPortraitFrameStyle(frame, portraitWidth);
+        ApplyHeroPowerStyle(portraitWidth, portraitHeight);
+
+        _hudResourceBadge.SizeFlagsHorizontal = Control.SizeFlags.ShrinkCenter;
+        _hudResourceBadge.SizeFlagsVertical = Control.SizeFlags.ShrinkEnd;
+    }
+
+    private void ApplyHeroPortraitFrameStyle(PanelContainer frame, float portraitWidth)
+    {
+        if (!ResolveThemeColor("surfaceDeep", out var background))
+            background = new Color(0.08f, 0.05f, 0.04f, 1.0f);
+        if (!ResolveThemeColor("focus", out var border))
+            border = new Color(0.9f, 0.68f, 0.38f, 1.0f);
+
+        var topRadius = Mathf.RoundToInt(portraitWidth * 0.28f);
+        var bottomRadius = Mathf.RoundToInt(portraitWidth * 0.08f);
+        var box = new StyleBoxFlat
+        {
+            BgColor = background,
+            BorderColor = border,
+            BorderWidthLeft = 4,
+            BorderWidthTop = 4,
+            BorderWidthRight = 4,
+            BorderWidthBottom = 4,
+            CornerRadiusTopLeft = topRadius,
+            CornerRadiusTopRight = topRadius,
+            CornerRadiusBottomLeft = bottomRadius,
+            CornerRadiusBottomRight = bottomRadius,
+            ContentMarginLeft = 4,
+            ContentMarginTop = 4,
+            ContentMarginRight = 4,
+            ContentMarginBottom = 4,
+        };
+        frame.AddThemeStyleboxOverride("panel", box);
+    }
+
+    private void ApplyHeroPowerStyle(float portraitWidth, float portraitHeight)
+    {
+        var powerSize = Mathf.Clamp(
+            Mathf.Min(portraitWidth, portraitHeight) * 0.72f,
+            54.0f,
+            96.0f);
+        _powerButton.CustomMinimumSize = new Vector2(powerSize, powerSize);
+        _powerButton.Text = "✦";
+        _powerButton.AddThemeFontSizeOverride("font_size", Mathf.RoundToInt(powerSize * 0.34f));
+
+        ResolveThemeColor("surfaceCool", out var normalColor);
+        ResolveThemeColor("surfaceHover", out var hoverColor);
+        ResolveThemeColor("surfacePressed", out var pressedColor);
+        ResolveThemeColor("focus", out var borderColor);
+        ResolveThemeColor("text", out var textColor);
+        _powerButton.AddThemeColorOverride("font_color", textColor);
+        _powerButton.AddThemeColorOverride("font_hover_color", textColor);
+        _powerButton.AddThemeColorOverride("font_pressed_color", textColor);
+
+        var radius = Mathf.RoundToInt(powerSize * 0.5f);
+        _powerButton.AddThemeStyleboxOverride("normal", CreateRoundPowerBox(normalColor, borderColor, radius, 3));
+        _powerButton.AddThemeStyleboxOverride("hover", CreateRoundPowerBox(hoverColor, borderColor, radius, 4));
+        _powerButton.AddThemeStyleboxOverride("pressed", CreateRoundPowerBox(pressedColor, borderColor, radius, 3));
+        _powerButton.AddThemeStyleboxOverride("focus", CreateRoundPowerBox(hoverColor, borderColor, radius, 4));
+        _powerButton.AddThemeStyleboxOverride("disabled", CreateRoundPowerBox(normalColor.Darkened(0.25f), borderColor.Darkened(0.25f), radius, 2));
+    }
+
+    private static StyleBoxFlat CreateRoundPowerBox(
+        Color background,
+        Color border,
+        int radius,
+        int borderWidth)
+    {
+        return new StyleBoxFlat
+        {
+            BgColor = background,
+            BorderColor = border,
+            BorderWidthLeft = borderWidth,
+            BorderWidthTop = borderWidth,
+            BorderWidthRight = borderWidth,
+            BorderWidthBottom = borderWidth,
+            CornerRadiusTopLeft = radius,
+            CornerRadiusTopRight = radius,
+            CornerRadiusBottomLeft = radius,
+            CornerRadiusBottomRight = radius,
+            ContentMarginLeft = 4,
+            ContentMarginTop = 4,
+            ContentMarginRight = 4,
+            ContentMarginBottom = 4,
+        };
     }
 }
