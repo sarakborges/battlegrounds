@@ -568,28 +568,14 @@ internal sealed class DirectoryModValidator
                     continue;
                 }
 
-                ValidateKeys(trigger, file.RelativePath, path, ["event", "effects", "count"], ["event"], issues);
+                ValidateKeys(trigger, file.RelativePath, path, ["event", "effects", "count", "counter", "conditions", "activationLimit"], ["event"], issues);
                 var hasEvent = RequireNonEmptyString(trigger, "event", file.RelativePath, path + ".event", issues, out var eventName);
                 var eventKey = hasEvent ? new NativeTriggerKey(eventName!) : default;
                 if (hasEvent && !NativeTriggerKeys.IsSupported(eventKey))
                     issues.Add(new("UNSUPPORTED_TRIGGER", file.RelativePath, path + ".event", $"Trigger event '{eventName}' is not supported."));
 
-                if (hasEvent && eventKey == NativeTriggerKeys.AfterFriendlyDeaths)
-                {
-                    if (!trigger.TryGetProperty("count", out _))
-                    {
-                        issues.Add(new("MISSING_REQUIRED_PARAMETER", file.RelativePath, path + ".count", "afterFriendlyDeaths requires 'count'."));
-                    }
-                    else if (TryInt(trigger, "count", file.RelativePath, path + ".count", issues, out var count) && count <= 0)
-                    {
-                        issues.Add(new("INVALID_VALUE", file.RelativePath, path + ".count", "count must be positive."));
-                    }
-                }
-                else if (trigger.TryGetProperty("count", out _) &&
-                         TryInt(trigger, "count", file.RelativePath, path + ".count", issues, out _))
-                {
-                    issues.Add(new("INVALID_PARAMETER", file.RelativePath, path + ".count", "count is only valid for afterFriendlyDeaths."));
-                }
+                // Counted-trigger, condition and activation-limit schemas are owned by
+                // StatefulEffectModValidator and AdvancedEffectModValidator.
 
                 if (!trigger.TryGetProperty("effects", out var effects))
                 {
@@ -736,12 +722,14 @@ internal sealed class DirectoryModValidator
         }
 
         var targetPath = path + ".target";
-        ValidateKeys(target, file, targetPath, ["scope", "typeId", "tagId"], ["scope"], issues);
-        if (RequireNonEmptyString(target, "scope", file, targetPath + ".scope", issues, out var scope) &&
-            scope is not ("self" or "randomFriendly" or "randomEnemy" or "allFriendly" or "allEnemy"))
-        {
-            issues.Add(new("INVALID_VALUE", file, targetPath + ".scope", $"Unknown target scope '{scope}'."));
-        }
+        ValidateKeys(
+            target,
+            file,
+            targetPath,
+            ["scope", "selection", "excludeSource", "limit", "typeId", "tagId"],
+            ["scope"],
+            issues);
+        RequireNonEmptyString(target, "scope", file, targetPath + ".scope", issues, out _);
 
         if (target.TryGetProperty("typeId", out _) &&
             RequireNonEmptyString(target, "typeId", file, targetPath + ".typeId", issues, out var typeId) &&

@@ -19,6 +19,7 @@ internal sealed class PowerLifecycleModValidator
         "onTurnEnd",
         "onCombatStart",
         "onCombatEnd",
+        "afterEventCount",
     ];
 
     public IReadOnlyList<ModValidationIssue> Validate(string modDirectory)
@@ -163,7 +164,7 @@ internal sealed class PowerLifecycleModValidator
             return null;
         }
 
-        ValidateKeys(trigger, file, path, ["event", "effects"], ["event", "effects"], issues);
+        ValidateKeys(trigger, file, path, ["event", "effects", "count", "counter", "conditions", "activationLimit"], ["event", "effects"], issues);
         if (!TryRequiredString(trigger, "event", file, path + ".event", issues, out var eventName)) return null;
         if (!PowerEvents.Contains(eventName!))
             issues.Add(new("UNSUPPORTED_TRIGGER", file, path + ".event", $"Power trigger '{eventName}' is not supported."));
@@ -312,22 +313,14 @@ internal sealed class PowerLifecycleModValidator
         }
 
         var targetPath = path + ".target";
-        ValidateKeys(target, file, targetPath, ["scope", "typeId", "tagId"], ["scope"], issues);
-        if (TryRequiredString(target, "scope", file, targetPath + ".scope", issues, out var scope))
-        {
-            if (scope is not ("selected" or "randomFriendly" or "randomEnemy" or "allFriendly" or "allEnemy"))
-            {
-                issues.Add(new("INVALID_VALUE", file, targetPath + ".scope", $"Power target scope '{scope}' is not supported."));
-            }
-            else if (scope == "selected" && triggerEvent != "onActivate")
-            {
-                issues.Add(new(
-                    "INVALID_VALUE",
-                    file,
-                    targetPath + ".scope",
-                    "selected target is only valid for onActivate power triggers."));
-            }
-        }
+        ValidateKeys(
+            target,
+            file,
+            targetPath,
+            ["scope", "selection", "excludeSource", "limit", "typeId", "tagId"],
+            ["scope"],
+            issues);
+        TryRequiredString(target, "scope", file, targetPath + ".scope", issues, out _);
 
         if (target.TryGetProperty("typeId", out _) &&
             TryRequiredString(target, "typeId", file, targetPath + ".typeId", issues, out var typeId) &&
