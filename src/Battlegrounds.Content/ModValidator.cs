@@ -39,19 +39,7 @@ public sealed class ModValidator
     }
 
     private static bool IsSupersededBaseIssue(ModValidationIssue issue) =>
-        IsSupersededEffectSchemaIssue(issue) ||
-        IsSpecializedValidatorOwnedSchemaIssue(issue);
-
-    private static bool IsSpecializedValidatorOwnedSchemaIssue(ModValidationIssue issue)
-    {
-        if (issue.Code != "UNKNOWN_KEY") return false;
-
-        if (issue.File == "rules/preparation.json" && issue.Path == "$.actionOfferSizesByTier")
-            return true;
-
-        return issue.File.StartsWith("content/leaders/", StringComparison.Ordinal) &&
-               issue.Path == "$.initialPowerId";
-    }
+        IsSupersededEffectSchemaIssue(issue);
 
     private static bool IsSupersededEffectSchemaIssue(ModValidationIssue issue)
     {
