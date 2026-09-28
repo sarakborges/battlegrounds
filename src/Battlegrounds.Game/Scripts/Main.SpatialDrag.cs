@@ -43,7 +43,7 @@ public partial class Main
         var cost = entry.Unit is not null
             ? rules.AcquireCost
             : entry.Action?.Cost ?? int.MaxValue;
-        return human.CanAfford(cost);
+        return human.Resource >= cost;
     }
 
     internal bool CanSellFieldUnitFromDrag(int fieldIndex)
