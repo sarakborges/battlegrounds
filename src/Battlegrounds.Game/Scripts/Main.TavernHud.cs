@@ -78,6 +78,8 @@ public partial class Main
         balanceSpacer.Visible = false;
         shopkeeper.SizeFlagsVertical = Control.SizeFlags.ExpandFill;
         shopkeeper.MouseFilter = Control.MouseFilterEnum.Stop;
+        shopkeeper.ClipContents = true;
+        BindShopkeeperCosmetic(shopkeeper);
 
         controlsRow.MoveChild(_upgradeButton, 0);
         controlsRow.MoveChild(tierBadge, 1);
@@ -111,6 +113,29 @@ public partial class Main
         _freezeButton.FocusMode = Control.FocusModeEnum.All;
 
         shelfRow.Alignment = BoxContainer.AlignmentMode.Center;
+    }
+
+    private void BindShopkeeperCosmetic(PanelContainer shopkeeper)
+    {
+        var art = shopkeeper.GetNodeOrNull<TextureRect>("CosmeticArt");
+        if (art is null)
+        {
+            art = new TextureRect
+            {
+                Name = "CosmeticArt",
+                ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize,
+                StretchMode = TextureRect.StretchModeEnum.KeepAspectCovered,
+                MouseFilter = Control.MouseFilterEnum.Ignore,
+                ZIndex = 0,
+            };
+            shopkeeper.AddChild(art);
+            shopkeeper.MoveChild(art, 0);
+            art.SetAnchorsAndOffsetsPreset(Control.LayoutPreset.FullRect);
+        }
+
+        var hasImage = PresentationTextures.TryGetShopkeeperImage(out var texture);
+        art.Texture = texture;
+        art.Visible = hasImage && texture is not null;
     }
 
     private Label EnsureTavernCostBadge(Button button, string name)
