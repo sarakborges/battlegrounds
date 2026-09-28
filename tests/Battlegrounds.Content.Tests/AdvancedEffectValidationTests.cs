@@ -146,7 +146,10 @@ public sealed class AdvancedEffectValidationTests
                         {
                           "kind": "dealDamage",
                           "target": { "scope": "selected" },
-                          "amount": 1
+                          "amount": {
+                            "kind": "unitCount",
+                            "query": { "scope": "selected" }
+                          }
                         }
                       ]
                     }
@@ -162,6 +165,8 @@ public sealed class AdvancedEffectValidationTests
             var invalidReport = new ModValidator().Validate(path);
             Assert.Contains(invalidReport.Issues, issue =>
                 issue.Code == "INVALID_VALUE" && issue.Path.EndsWith(".target.scope"));
+            Assert.Contains(invalidReport.Issues, issue =>
+                issue.Code == "INVALID_VALUE" && issue.Path.EndsWith(".amount.query.scope"));
         }
         finally
         {
