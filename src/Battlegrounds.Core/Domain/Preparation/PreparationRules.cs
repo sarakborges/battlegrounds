@@ -1,5 +1,11 @@
 namespace Battlegrounds.Core.Domain.Preparation;
 
+public enum CombineMode
+{
+    Manual,
+    Automatic,
+}
+
 public sealed class PreparationRules
 {
     private readonly int[] _offerSizesByTier;
@@ -15,6 +21,7 @@ public sealed class PreparationRules
     public int FieldCapacity { get; }
     public int ReserveCapacity { get; }
     public int MaximumTier { get; }
+    public CombineMode CombineMode { get; }
 
     public PreparationRules(
         int startingResource,
@@ -28,7 +35,8 @@ public sealed class PreparationRules
         int maximumTier,
         IReadOnlyList<int> offerSizesByTier,
         IReadOnlyList<int> initialUpgradeCostsByTier,
-        IReadOnlyList<int>? actionOfferSizesByTier = null)
+        IReadOnlyList<int>? actionOfferSizesByTier = null,
+        CombineMode combineMode = CombineMode.Manual)
     {
         if (startingResource < 0) throw new ArgumentOutOfRangeException(nameof(startingResource));
         if (resourcePerRound < 0) throw new ArgumentOutOfRangeException(nameof(resourcePerRound));
@@ -74,6 +82,7 @@ public sealed class PreparationRules
         FieldCapacity = fieldCapacity;
         ReserveCapacity = reserveCapacity;
         MaximumTier = maximumTier;
+        CombineMode = combineMode;
         _offerSizesByTier = offerSizesByTier.ToArray();
         _actionOfferSizesByTier = actionSizes;
         _initialUpgradeCostsByTier = initialUpgradeCostsByTier.ToArray();
