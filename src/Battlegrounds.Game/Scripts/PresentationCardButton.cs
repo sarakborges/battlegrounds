@@ -1,3 +1,4 @@
+using Battlegrounds.Content;
 using Godot;
 
 namespace Battlegrounds.Game;
@@ -237,28 +238,28 @@ internal sealed partial class PresentationCardButton : Button
         var parentName = GetParent()?.Name.ToString();
         var (minimumWidth, artHeight, role, disablePointerInteraction) = parentName switch
         {
-            "LeaderButtons" => (156.0f, 118.0f, "leader", false),
-            "OfferButtons" => (118.0f, 76.0f, "shop", false),
-            "FieldButtons" => (138.0f, 112.0f, "board", true),
-            "ReserveButtons" => (90.0f, 34.0f, "reserve", false),
-            "InteractionButtons" => (124.0f, 82.0f, "choice", false),
-            _ => (92.0f, 52.0f, "default", false),
+            "LeaderButtons" => (156.0f, 118.0f, ModThemeMetricKeys.Card.LeaderRole, false),
+            "OfferButtons" => (118.0f, 76.0f, ModThemeMetricKeys.Card.ShopRole, false),
+            "FieldButtons" => (138.0f, 112.0f, ModThemeMetricKeys.Card.BoardRole, true),
+            "ReserveButtons" => (90.0f, 34.0f, ModThemeMetricKeys.Card.ReserveRole, false),
+            "InteractionButtons" => (124.0f, 82.0f, ModThemeMetricKeys.Card.ChoiceRole, false),
+            _ => (92.0f, 52.0f, ModThemeMetricKeys.Card.DefaultRole, false),
         };
 
         var main = FindMain();
         if (main is not null)
         {
             minimumWidth = main.ResolvePresentationMetric(
-                $"card.{role}.minimumWidth",
+                ModThemeMetricKeys.Card.MinimumWidth(role),
                 minimumWidth,
                 1.0f,
                 2048.0f);
             artHeight = main.ResolvePresentationMetric(
-                $"card.{role}.artHeight",
+                ModThemeMetricKeys.Card.ArtHeight(role),
                 artHeight,
                 0.0f,
                 2048.0f);
-            var contentGap = main.ResolvePresentationMetric("card.contentGap", 2.0f, 0.0f, 256.0f);
+            var contentGap = main.ResolvePresentationMetric(ModThemeMetricKeys.Card.ContentGap, 2.0f, 0.0f, 256.0f);
             _column.AddThemeConstantOverride("separation", Mathf.RoundToInt(contentGap));
         }
 
