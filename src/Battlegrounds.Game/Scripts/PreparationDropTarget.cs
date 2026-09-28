@@ -44,7 +44,10 @@ public partial class PreparationDropTarget : Control
         {
             case PreparationDropTargetRole.AcquireOffer
                 when PreparationDragPayload.TryReadOffer(data, out var slot):
-                main.AcquireOfferFromDrag(slot);
+                // Offer drags are caught globally so the cursor never turns into the
+                // forbidden/disabled icon. The actual purchase decision is spatial:
+                // only releasing over the player's HeroCore buys the offer.
+                main.CompleteOfferDragFromPointer(slot, main.GetViewport().GetMousePosition());
                 break;
             case PreparationDropTargetRole.SellFieldUnit
                 when PreparationDragPayload.TryReadField(data, out var fieldIndex):
