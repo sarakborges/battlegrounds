@@ -38,7 +38,9 @@ public partial class Main
     internal StyleBoxFlat BuildPreparationDropTargetStyle(bool active)
     {
         var role = active ? DropTargetActiveRole : DropTargetRole;
-        _modTheme?.Components.TryGetValue(role, out var style);
+        ModThemeStyle? style = null;
+        if (_modTheme is not null)
+            _modTheme.Components.TryGetValue(role, out style);
 
         var box = new StyleBoxFlat
         {
