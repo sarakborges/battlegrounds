@@ -76,6 +76,43 @@ public sealed class CombatEffectExecutionTests
     }
 
     [Fact]
+    public void OnAttackSelectedTarget_UsesLockedAttackTargetBeforeStrike()
+    {
+        var attacker = new UnitDefinition(
+            new UnitId("attacker"),
+            "Attacker",
+            1,
+            1,
+            10,
+            triggers:
+            [
+                new TriggerDefinition(
+                    NativeTriggerKeys.OnAttack,
+                    [
+                        new DealDamageEffectDefinition(
+                            new EffectTargetSelector(EffectTargetScope.Selected),
+                            2),
+                    ]),
+            ]);
+        var enemy = new UnitDefinition(new UnitId("enemy"), "Enemy", 1, 0, 5);
+        var catalog = new UnitCatalog([attacker, enemy]);
+        var input = new CombatInput(
+            Participant(0, Snapshot(1, attacker)),
+            Participant(1, Snapshot(2, enemy)));
+
+        var result = new CombatEngine(
+            7,
+            catalog,
+            new BehaviorCatalog(Array.Empty<BehaviorDefinition>()))
+            .Resolve(input, new CombatRules(StartingSidePolicy.Random), new MinimumRandomSource());
+
+        var attack = Assert.Single(result.Attacks);
+        Assert.Equal(new UnitInstanceId(2), attack.TargetInstanceId);
+        Assert.Equal(2, attack.TargetHealthAfter);
+        Assert.Equal(new PlayerId(0), result.WinnerPlayerId);
+    }
+
+    [Fact]
     public void CombatEffectsDoNotMutatePersistentDefinitionsOrInput()
     {
         var buffed = new UnitDefinition(

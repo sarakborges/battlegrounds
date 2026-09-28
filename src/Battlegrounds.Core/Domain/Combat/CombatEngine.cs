@@ -71,12 +71,42 @@ public sealed class CombatEngine
 
             for (var strike = 0; strike < strikeCount; strike++)
             {
+                var targets = targetSide.GetValidTargets();
+                if (targets.Count == 0)
+                {
+                    return Complete(world, runtime, CombatEndReason.Elimination, attackerSide.PlayerId, attacks);
+                }
+
+                var target = targets[randomSource.NextInt(0, targets.Count)];
+                world.RecordAttackStarted(attacker, target);
+
                 var deathsBeforeAttackEvent = attacker.DeathCount;
+                var targetDeathsBeforeAttackEvent = target.DeathCount;
                 runtime.RecordGameEvent(
                     attacker.OwnerPlayerId,
                     NativeGameEventKeys.UnitAttacked,
                     attacker.Definition);
-                runtime.Process(new GameEffectEvent(NativeTriggerKeys.OnAttack, attacker));
+
+                if (attacker.DeathCount > deathsBeforeAttackEvent ||
+                    !attackerSide.Contains(attacker.InstanceId) ||
+                    !attacker.IsAlive)
+                {
+                    break;
+                }
+
+                if (TryGetTerminal(world, out var afterHistoryReason, out var afterHistoryWinner))
+                {
+                    return Complete(world, runtime, afterHistoryReason, afterHistoryWinner, attacks);
+                }
+
+                if (target.DeathCount > targetDeathsBeforeAttackEvent ||
+                    !targetSide.Contains(target.InstanceId) ||
+                    !target.IsAlive)
+                {
+                    continue;
+                }
+
+                runtime.Process(new GameEffectEvent(NativeTriggerKeys.OnAttack, attacker, target.InstanceId));
 
                 if (attacker.DeathCount > deathsBeforeAttackEvent ||
                     !attackerSide.Contains(attacker.InstanceId) ||
@@ -90,19 +120,18 @@ public sealed class CombatEngine
                     return Complete(world, runtime, beforeStrikeReason, beforeStrikeWinner, attacks);
                 }
 
-                var targets = targetSide.GetValidTargets();
-                if (targets.Count == 0)
+                if (target.DeathCount > targetDeathsBeforeAttackEvent ||
+                    !targetSide.Contains(target.InstanceId) ||
+                    !target.IsAlive)
                 {
-                    return Complete(world, runtime, CombatEndReason.Elimination, attackerSide.PlayerId, attacks);
+                    continue;
                 }
 
-                var target = targets[randomSource.NextInt(0, targets.Count)];
                 var attackerDeathsBefore = attacker.DeathCount;
                 var targetDeathsBefore = target.DeathCount;
                 var attackerRebirthsBefore = attacker.RebirthCount;
                 var targetRebirthsBefore = target.RebirthCount;
 
-                world.RecordAttackStarted(attacker, target);
                 var damageToTarget = ApplyAttackDamage(world, attacker, target);
                 var damageToAttacker = ApplyAttackDamage(world, target, attacker);
 
@@ -827,7 +856,7 @@ public sealed class CombatEngine
         }
 
         public IReadOnlyList<CombatSurvivor> GetSurvivors() =>
-            _units.Select(unit => new CombatSurvivor(unit.InstanceId, unit.Health)).ToArray();
+            _units.Select(unit => new CombatSurvivor(unit.InstanceId, unit.Health, unit.Definition.Tier)).ToArray();
     }
 
     private sealed class CombatRuntimeUnit : IEffectRuntimeUnit
