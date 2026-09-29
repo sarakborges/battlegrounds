@@ -1,0 +1,29 @@
+.badge {
+  padding: 4px 7px;
+  border-radius: 999px;
+  background: var(--surface-0);
+  border: 1px solid var(--line);
+  font-size: 11px;
+  line-height: 1;
+}
+.badge[data-variant="accent"] { color: var(--accent); }
+.badge[data-variant="danger"] { color: var(--danger); }
+.badge[data-variant="tier"],
+.badge[data-variant="attack"],
+.badge[data-variant="health"],
+.badge[data-variant="armor"] {
+  width: 30px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border-radius: 50%;
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 800;
+  box-shadow: 0 4px 10px rgba(0,0,0,.28);
+}
+.badge[data-variant="tier"] { border-color: var(--theme-color-focus, var(--accent)); background: var(--theme-color-surface-deep, var(--surface-0)); }
+.badge[data-variant="attack"] { border-color: #d9a441; background: var(--theme-color-surface-deep, var(--surface-0)); }
+.badge[data-variant="health"] { border-color: #c94a4a; background: var(--theme-color-surface-deep, var(--surface-0)); }
+.badge[data-variant="armor"] { border-color: #6ca8d8; background: var(--theme-color-surface-deep, var(--surface-0)); }
