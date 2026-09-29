@@ -10,11 +10,7 @@
   overflow: visible;
   border: 0 !important;
   border-radius: 0 !important;
-  background: linear-gradient(
-    180deg,
-    rgba(0, 0, 0, 0.34),
-    rgba(0, 0, 0, 0.02)
-  ) !important;
+  background: transparent !important;
 }
 
 .tavern-controls__left,
