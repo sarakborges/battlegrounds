@@ -66,6 +66,7 @@ async function createOverlay(state) {
       id: candidate.id,
       name: candidate.name,
       description: candidate.description,
+      tier: candidate.tier,
       attack: candidate.attack,
       health: candidate.health,
       action: 'select-target',
@@ -100,7 +101,9 @@ export async function createPreparationScreen(state) {
   for (const player of state.players ?? []) {
     playerViews.push({
       id: player.id,
+      leaderId: player.leaderId,
       leader: player.leader ?? '—',
+      leaderDescription: player.leaderDescription ?? '',
       health: player.health,
       portrait: await leaderArtUrl(cosmetics, player.leaderId),
       human: player.human,
@@ -152,7 +155,9 @@ export async function createPreparationScreen(state) {
       labels,
       human,
       power: human.powerInfo,
+      heroId: humanPlayer?.leaderId ?? '',
       heroName: humanPlayer?.leader ?? '—',
+      heroDescription: humanPlayer?.leaderDescription ?? '',
       heroArt: await leaderArtUrl(cosmetics, humanPlayer?.leaderId),
       blocked
     })
