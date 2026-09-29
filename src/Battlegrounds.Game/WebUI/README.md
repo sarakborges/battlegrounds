@@ -1,12 +1,12 @@
 # Battlegrounds Web UI
 
-This directory is the incremental HTML/CSS/JavaScript replacement for the gameplay presentation layer.
+This directory is the HTML/CSS/JavaScript gameplay presentation layer.
 
-The authoritative game remains in the existing C# projects. `Main.WebUi.cs` serializes presentation state from the current `SinglePlayerSession` and maps browser messages back to the same preparation commands already used by the Godot UI.
+The authoritative game remains in the existing C# projects. `Main.WebUi.cs` serializes presentation state from `SinglePlayerSession` and maps browser messages back to the same preparation commands used by the application boundary.
 
 ## Runtime
 
-The web surface uses Godot CEF. The addon is intentionally not committed because its release archive is very large.
+Gameplay presentation uses Godot CEF. The addon is intentionally not committed because its release archive is very large.
 
 On Windows, install the pinned version from the repository root:
 
@@ -14,9 +14,11 @@ On Windows, install the pinned version from the repository root:
 ./tools/install-godot-cef.ps1
 ```
 
-The installer currently pins Godot CEF `v1.16.2` and verifies the published SHA-256 before copying the addon into `src/Battlegrounds.Game/addons/godot_cef`.
+The installer pins Godot CEF `v1.16.2` and verifies the published SHA-256 before copying the addon into `src/Battlegrounds.Game/addons/godot_cef`.
 
-If `CefTexture` is unavailable, `WebUiHost.gd` emits `web_unavailable` and the existing Godot UI remains active.
+CEF is required for gameplay. There is no Godot Control fallback for the gameplay UI. If `CefTexture` cannot be created or the Web UI cannot load, the game fails fast instead of silently falling back to a second presentation implementation.
+
+The Godot launcher remains active for mod discovery/selection until its own dedicated web migration slice.
 
 ## Source layout
 
