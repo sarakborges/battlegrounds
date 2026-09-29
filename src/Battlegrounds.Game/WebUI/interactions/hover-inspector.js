@@ -1,5 +1,6 @@
 import { useStyle } from '../core/template.js';
 import { createCardPreview } from '../components/card-preview/card-preview.js';
+import { applyComponentStyles } from '../theme/theme.js';
 
 useStyle(new URL('./hover-inspector.css', import.meta.url));
 
@@ -41,7 +42,7 @@ function logicalRect(element, overlay) {
 
 export function bindHoverInspector(root = document) {
   const overlay = document.querySelector('.ui-overlay-shell');
-  if (!overlay) return;
+  if (!overlay) return null;
 
   const mount = document.createElement('div');
   mount.className = 'hover-inspector';
@@ -52,6 +53,7 @@ export function bindHoverInspector(root = document) {
   let showTimer = null;
   let hideTimer = null;
   let renderVersion = 0;
+  let theme = null;
 
   const clearTimers = () => {
     clearTimeout(showTimer);
@@ -80,6 +82,7 @@ export function bindHoverInspector(root = document) {
 
     showTimer = setTimeout(async () => {
       const preview = await createCardPreview(inspection);
+      await applyComponentStyles(theme, preview);
       if (version !== renderVersion || activeTarget !== target) return;
 
       mount.replaceChildren(preview);
@@ -130,4 +133,10 @@ export function bindHoverInspector(root = document) {
     if (event.relatedTarget && activeTarget.contains(event.relatedTarget)) return;
     hide();
   });
+
+  return {
+    setTheme(nextTheme) {
+      theme = nextTheme ?? null;
+    }
+  };
 }
