@@ -11,7 +11,7 @@
   border-width: var(--theme-component-border-width, 2px);
   border-color: var(--theme-component-border-color, var(--theme-color-border-strong, var(--line)));
   border-radius: var(--theme-component-radius, 24px);
-  background-color: var(--theme-component-background-color, var(--surface-1));
+  background-color: var(--theme-color-surface, var(--surface-1));
   background-image: var(--theme-component-background-image, none);
   background-position: center;
   background-repeat: no-repeat;
@@ -139,7 +139,7 @@
   padding: 16px;
   overflow: visible;
   border-radius: var(--theme-component-radius, 18px);
-  background-size: cover;
+  background-image: none;
 }
 
 .card-preview[data-variant="power"] .card-preview__art-wrap {
