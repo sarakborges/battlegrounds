@@ -19,7 +19,9 @@ export async function createHeroCockpit({
   labels = {},
   human = {},
   power = null,
+  heroId = '',
   heroName = '—',
+  heroDescription = '',
   heroArt = null,
   blocked = false
 } = {}) {
@@ -29,6 +31,14 @@ export async function createHeroCockpit({
   element.querySelector('[data-field="resource-label"]').textContent = labels.resource ?? 'Resource';
   element.querySelector('[data-field="resource"]').textContent = human.resource ?? '';
 
+  const portraitAttributes = {};
+  if (heroId) {
+    portraitAttributes['data-inspect-kind'] = 'leader';
+    portraitAttributes['data-inspect-id'] = heroId;
+    portraitAttributes['data-inspect-name'] = heroName;
+    if (heroDescription) portraitAttributes['data-inspect-description'] = heroDescription;
+  }
+
   const portrait = await createCharacterPortrait({
     name: heroName,
     art: heroArt,
@@ -36,7 +46,8 @@ export async function createHeroCockpit({
     hint: 'Drop a tavern token to buy',
     themeRole: 'panel.heroPortrait',
     dropKind: 'player-hero',
-    className: 'hero-cockpit__portrait'
+    className: 'hero-cockpit__portrait',
+    attributes: portraitAttributes
   });
 
   const powerButton = await createButton({
