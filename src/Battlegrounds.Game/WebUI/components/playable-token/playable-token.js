@@ -40,6 +40,9 @@ export async function createPlayableToken({
   health = null,
   cost = null,
   frozen = false,
+  marker = '',
+  status = '',
+  highlight = '',
   action = null,
   location = 'field',
   disabled = false,
@@ -58,6 +61,8 @@ export async function createPlayableToken({
   setOptionalText(element.querySelector('[data-field="cost"]'), cost);
   setOptionalText(element.querySelector('[data-field="attack"]'), attack);
   setOptionalText(element.querySelector('[data-field="health"]'), health);
+  setOptionalText(element.querySelector('[data-field="marker"]'), marker);
+  setOptionalText(element.querySelector('[data-field="status"]'), status);
   element.querySelector('[data-field="frozen"]').hidden = !frozen;
 
   const image = element.querySelector('[data-field="art"]');
@@ -70,6 +75,7 @@ export async function createPlayableToken({
 
   if (action) element.dataset.action = action;
   element.classList.toggle('is-selected', selected);
+  addClasses(element, highlight);
   addClasses(element, className);
   applyAttributes(element, inspectAttributes({ kind, id, name, description, tier, attack, health, cost, frozen }));
   applyAttributes(element, attributes);
