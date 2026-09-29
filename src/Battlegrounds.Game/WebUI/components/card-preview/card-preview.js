@@ -31,7 +31,9 @@ export async function createCardPreview({
   element.querySelector('[data-field="name"]').textContent = name;
 
   const fallback = element.querySelector('[data-field="fallback"]');
-  fallback.textContent = name.trim().slice(0, 1).toUpperCase() || '•';
+  fallback.textContent = kind === 'power'
+    ? '✦'
+    : (name.trim().slice(0, 1).toUpperCase() || '•');
 
   setOptionalText(element.querySelector('[data-field="description"]'), description);
   setOptionalText(element.querySelector('[data-field="tier"]'), tier == null ? null : `T${tier}`);
