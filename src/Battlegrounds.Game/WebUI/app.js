@@ -18,12 +18,9 @@ function showError(message) {
 }
 
 function themeScreenRole(status) {
-  switch (status) {
-    case 'mod-selection': return 'launcher';
-    case 'combat': return 'combat';
-    case 'leader-selection': return 'leaderSelection';
-    default: return 'preparation';
-  }
+  if (status === 'mod-selection') return 'launcher';
+  if (status === 'combat') return 'combat';
+  return 'preparation';
 }
 
 const bridge = createGameBridge({
