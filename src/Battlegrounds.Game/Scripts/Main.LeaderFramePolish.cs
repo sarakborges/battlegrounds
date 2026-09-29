@@ -5,7 +5,7 @@ namespace Battlegrounds.Game;
 
 public partial class Main
 {
-    private Texture2D? _leaderFrameTexture;
+    private Texture2D? _sharedCosmeticFrameTexture;
 
     private void RefreshLeaderFramePolish()
     {
@@ -13,6 +13,7 @@ public partial class Main
         if (frameTexture is null)
             return;
 
+        ApplyShopkeeperSharedFrame(frameTexture);
         ApplyLocalLeaderFrame(frameTexture);
         ApplyOpponentLeaderFrames(frameTexture);
         ApplyLeaderSelectionFrames(frameTexture);
@@ -20,8 +21,8 @@ public partial class Main
 
     private Texture2D? ResolveSharedPortraitFrameTexture()
     {
-        if (_leaderFrameTexture is not null)
-            return _leaderFrameTexture;
+        if (_sharedCosmeticFrameTexture is not null)
+            return _sharedCosmeticFrameTexture;
 
         if (_modTheme is null ||
             _themeBuilder is null ||
@@ -32,8 +33,25 @@ public partial class Main
             return null;
         }
 
-        _leaderFrameTexture = _themeBuilder.LoadImage(style.BackgroundAsset);
-        return _leaderFrameTexture;
+        _sharedCosmeticFrameTexture = _themeBuilder.LoadImage(style.BackgroundAsset);
+        return _sharedCosmeticFrameTexture;
+    }
+
+    private void ApplyShopkeeperSharedFrame(Texture2D texture)
+    {
+        const string layerPath = "Margin/Shell/CenterStage/PreparationPanel/TavernControls/ControlsRow/ShopkeeperSlot/CosmeticLayer";
+        var layer = GetNodeOrNull<Control>(layerPath);
+        if (layer is null)
+            return;
+
+        if (layer.GetNodeOrNull<TextureRect>("CosmeticArt") is { } art)
+            FramedCosmeticPortrait.ConfigureArt(art, TextureRect.StretchModeEnum.KeepAspectCentered);
+
+        FramedCosmeticPortrait.ApplyFrame(
+            layer,
+            texture,
+            FramedCosmeticPortrait.DefaultFrameNodeName,
+            zIndex: 10);
     }
 
     private void ApplyLocalLeaderFrame(Texture2D texture)
@@ -43,7 +61,10 @@ public partial class Main
         if (frame is null)
             return;
 
-        EnsureFrameOverlay(frame, texture, "LeaderFrameOverlay");
+        if (frame.GetNodeOrNull<TextureRect>("Portrait") is { } art)
+            FramedCosmeticPortrait.ConfigureArt(art, TextureRect.StretchModeEnum.KeepAspectCovered);
+
+        FramedCosmeticPortrait.ApplyFrame(frame, texture, "LeaderFrameOverlay");
     }
 
     private void ApplyOpponentLeaderFrames(Texture2D texture)
@@ -63,7 +84,12 @@ public partial class Main
                     continue;
                 }
 
-                EnsureFrameOverlay(panel, texture, "LeaderFrameOverlay");
+                var art = panel.GetChildren().OfType<TextureRect>()
+                    .FirstOrDefault(candidate => candidate.Name != "LeaderFrameOverlay");
+                if (art is not null)
+                    FramedCosmeticPortrait.ConfigureArt(art, TextureRect.StretchModeEnum.KeepAspectCovered);
+
+                FramedCosmeticPortrait.ApplyFrame(panel, texture, "LeaderFrameOverlay");
             }
         }
     }
@@ -80,35 +106,15 @@ public partial class Main
 
         foreach (var card in _leaderButtons.GetChildren().OfType<PresentationCardButton>())
         {
-            var art = Descendants<TextureRect>(card).FirstOrDefault();
+            var art = Descendants<TextureRect>(card)
+                .FirstOrDefault(candidate => candidate.Name != "LeaderFrameOverlay");
             if (art is null)
                 continue;
 
-            art.CustomMinimumSize = new Vector2(portraitSize, portraitSize);
-            art.StretchMode = TextureRect.StretchModeEnum.KeepAspectCovered;
-            art.ClipContents = true;
-            EnsureFrameOverlay(art, texture, "LeaderFrameOverlay");
+            FramedCosmeticPortrait.ConfigureSquare(art, portraitSize);
+            FramedCosmeticPortrait.ConfigureArt(art, TextureRect.StretchModeEnum.KeepAspectCovered);
+            FramedCosmeticPortrait.ApplyFrame(art, texture, "LeaderFrameOverlay");
         }
-    }
-
-    private static void EnsureFrameOverlay(Control host, Texture2D texture, string name)
-    {
-        var overlay = host.GetNodeOrNull<TextureRect>(name);
-        if (overlay is null)
-        {
-            overlay = new TextureRect
-            {
-                Name = name,
-                MouseFilter = Control.MouseFilterEnum.Ignore,
-                ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize,
-                StretchMode = TextureRect.StretchModeEnum.KeepAspectCentered,
-                ZIndex = 10,
-            };
-            host.AddChild(overlay);
-            overlay.SetAnchorsAndOffsetsPreset(Control.LayoutPreset.FullRect);
-        }
-
-        overlay.Texture = texture;
     }
 
     private static IEnumerable<T> Descendants<T>(Node root)
