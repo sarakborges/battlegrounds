@@ -13,8 +13,8 @@
   line-height: 1.1;
 }
 
-.preparation-screen[data-drag-kind="offer"] [data-drop-kind="hero"] .drag-hint,
-.preparation-screen[data-drag-kind="field"] [data-drop-kind="shopkeeper"] .drag-hint {
+.preparation-screen[data-drag-kind="tavern-offer-card"] [data-drop-kind="player-hero"] .drag-hint,
+.preparation-screen[data-drag-kind="player-field-unit"] [data-drop-kind="tavern-shopkeeper"] .drag-hint {
   display: block;
 }
 
