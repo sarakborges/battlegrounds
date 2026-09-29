@@ -1,6 +1,7 @@
 import { bindActions } from './bridge/actions.js';
 import { createGameBridge } from './bridge/game-bridge.js';
 import { reloadStyles } from './core/template.js';
+import { initializeViewportScale } from './core/viewport-scale.js';
 import { createScreen } from './screens/index.js';
 import { configureAssetBridge, receiveAsset } from './theme/cosmetics.js';
 import { applyComponentStyles, applyTheme } from './theme/theme.js';
@@ -9,6 +10,8 @@ const app = document.getElementById('app');
 const toast = document.getElementById('toast');
 let toastTimer = null;
 let renderVersion = 0;
+
+initializeViewportScale();
 
 function showError(message) {
   toast.textContent = message;
