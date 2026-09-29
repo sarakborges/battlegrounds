@@ -2,6 +2,7 @@ import { bindActions } from './bridge/actions.js';
 import { createGameBridge } from './bridge/game-bridge.js';
 import { reloadStyles } from './core/template.js';
 import { initializeViewportScale } from './core/viewport-scale.js';
+import { bindHoverInspector } from './interactions/hover-inspector.js';
 import { createScreen } from './screens/index.js';
 import { configureAssetBridge, receiveAsset } from './theme/cosmetics.js';
 import { applyComponentStyles, applyTheme } from './theme/theme.js';
@@ -12,6 +13,7 @@ let toastTimer = null;
 let renderVersion = 0;
 
 initializeViewportScale();
+bindHoverInspector(document);
 
 function showError(message) {
   toast.textContent = message;
