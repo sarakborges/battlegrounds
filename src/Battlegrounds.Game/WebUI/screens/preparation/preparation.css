@@ -1,86 +1,285 @@
+.app-shell:has(> .preparation-screen) {
+  padding: calc(var(--theme-metric-layout-outer-margin, 4) * 1px);
+  gap: 0;
+}
+
 .preparation-screen {
+  width: 100%;
   height: 100%;
+  min-width: 0;
   min-height: 0;
   display: grid;
-  grid-template-rows: auto minmax(0, 1fr) auto;
-  gap: var(--gap);
+  grid-template-columns:
+    calc(var(--theme-metric-layout-opponent-rail-width, 180) * 1px)
+    minmax(0, 1fr)
+    calc(var(--theme-metric-layout-turn-rail-width, 88) * 1px);
+  gap: calc(var(--theme-metric-layout-shell-gap, 4) * 1px);
 }
 
-.topbar {
-  min-height: 72px;
+.opponent-rail,
+.turn-rail,
+.table-stage { min-height: 0; }
+
+.opponent-rail {
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--theme-metric-layout-opponent-rail-content-gap, 6) * 1px);
+  overflow: hidden;
+}
+.match-mark { padding: 4px 3px 8px; display: grid; gap: 2px; }
+.match-mark strong { font-size: 13px; }
+.opponent-list {
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--theme-metric-layout-opponent-rail-entries-gap, 5) * 1px);
+  min-height: 0;
+  overflow-y: auto;
+}
+.opponent-list > * { width: 100%; flex: 0 0 auto; }
+
+.table-stage {
   display: grid;
-  grid-template-columns: minmax(220px, 1fr) auto minmax(220px, 1fr);
+  grid-template-rows:
+    calc(var(--theme-metric-layout-tavern-controls-minimum-height, 118) * 1px)
+    calc(var(--theme-metric-layout-tavern-shelf-minimum-height, 170) * 1px)
+    minmax(calc(var(--theme-metric-layout-board-minimum-height, 190) * 1px), 1fr)
+    calc(var(--theme-metric-hud-hero-dock-minimum-height, 124) * 1px)
+    minmax(calc(var(--theme-metric-layout-reserve-minimum-height, 72) * 1px), auto);
+  gap: 0;
+  min-width: 0;
+}
+
+.tavern-controls {
+  display: flex;
   align-items: center;
-  gap: 14px;
-  padding: 12px 16px;
+  justify-content: center;
+  gap: calc(var(--theme-metric-layout-tavern-controls-gap, 8) * 1px);
+  overflow: visible;
 }
-.brand { display: grid; gap: 2px; }
-.brand strong { font-size: 20px; }
-.round-pill { justify-self: center; padding: 9px 16px; border-radius: 999px; background: var(--surface-3); border: 1px solid var(--line); font-weight: 700; }
-.stats { justify-self: end; display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
-
-.game-stage {
-  min-height: 0;
-  display: grid;
-  grid-template-rows: auto auto minmax(190px, 1fr) auto;
-  gap: 10px;
+.tavern-control { display: grid; place-items: center; }
+.tavern-control .button {
+  width: calc(var(--theme-metric-layout-tavern-refresh-button-width, 74) * 1px);
+  height: calc(var(--theme-metric-layout-tavern-control-height, 92) * 1px);
+  font-size: 24px;
 }
-.player-strip { display: flex; gap: 6px; justify-content: center; overflow-x: auto; }
-
-.tavern-stage {
+.tavern-control:first-child .button {
+  width: calc(var(--theme-metric-layout-tavern-upgrade-button-width, 74) * 1px);
+  font-size: 18px;
+}
+.tier-badge {
+  width: calc(var(--theme-metric-layout-tavern-tier-badge-width, 50) * 1px);
+  height: calc(var(--theme-metric-layout-tavern-tier-badge-height, 64) * 1px);
   display: grid;
-  grid-template-columns: minmax(110px, 150px) minmax(0, 1fr);
-  gap: 12px;
-  align-items: stretch;
+  place-content: center;
+  text-align: center;
+  padding: 4px !important;
+}
+.tier-badge strong { font-size: 22px; }
+
+.shopkeeper-drop {
+  width: calc(var(--theme-metric-layout-tavern-shopkeeper-width, 168) * 1px);
+  height: calc(var(--theme-metric-layout-tavern-control-height, 92) * 1px);
+  display: grid;
+  place-content: center;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+.shopkeeper-drop::before {
+  content: '♜';
+  display: block;
+  font-size: 34px;
+  line-height: 1;
+  color: var(--theme-color-focus, var(--accent));
+  opacity: .75;
+}
+.shopkeeper-drop strong { font-size: 12px; margin-top: 4px; }
+
+.tavern-shelf {
+  min-width: 0;
+  display: grid;
+  align-items: center;
+  overflow: hidden;
+}
+.tavern-shelf .component-row {
+  justify-content: center;
+  align-items: center;
+  gap: calc(var(--theme-metric-row-offer-gap, 14) * 1px);
+  overflow-x: auto;
+  padding: calc(var(--theme-metric-row-offer-padding, 6) * 1px);
+}
+.tavern-shelf .card {
+  flex-basis: calc(var(--theme-metric-row-offer-preferred-card-width, 126) * 1px);
+  min-width: calc(var(--theme-metric-row-offer-minimum-card-width, 96) * 1px);
+  min-height: calc(var(--theme-metric-row-offer-preferred-card-height, 152) * 1px);
 }
 
 .board-stage {
-  min-height: 190px;
+  min-width: 0;
+  min-height: 0;
+  position: relative;
   display: grid;
-  grid-template-rows: auto 1fr;
   align-items: center;
-  padding: 8px 12px 12px;
-  border: 1px solid color-mix(in srgb, var(--line) 72%, transparent);
-  border-radius: var(--radius);
-  background: color-mix(in srgb, var(--surface-2) 74%, transparent);
-  transition: border-color 100ms ease, box-shadow 100ms ease, background 100ms ease;
+  overflow: hidden;
+  transition: box-shadow 100ms ease, background 100ms ease;
 }
-.stage-caption { min-height: 20px; color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: .09em; }
-.board-stage .zone { border: 0; background: transparent; box-shadow: none; }
-.board-stage .zone-head { display: none; }
-.board-stage .component-row { min-height: 154px; align-items: center; overflow: visible; }
-
-.bottom-stage {
-  display: grid;
-  grid-template-columns: minmax(100px, 138px) minmax(0, 1fr);
-  gap: 12px;
-  align-items: stretch;
+.board-caption {
+  position: absolute;
+  top: 6px;
+  left: 10px;
+  z-index: 2;
+  display: flex;
+  gap: 7px;
+  align-items: baseline;
+  color: var(--muted);
+  font-size: 10px;
+  pointer-events: none;
+}
+.board-row { min-width: 0; }
+.board-stage .component-row {
+  min-height: calc(var(--theme-metric-row-field-preferred-card-height, 172) * 1px);
+  align-items: center;
+  justify-content: center;
+  gap: calc(var(--theme-metric-row-field-gap, 12) * 1px);
+  overflow: visible;
+  padding: calc(var(--theme-metric-row-field-padding, 10) * 1px);
+}
+.board-stage .card {
+  flex-basis: calc(var(--theme-metric-row-field-preferred-card-width, 130) * 1px);
+  min-width: calc(var(--theme-metric-row-field-minimum-card-width, 86) * 1px);
+  min-height: calc(var(--theme-metric-row-field-preferred-card-height, 172) * 1px);
 }
 
-.drag-target {
+.hero-dock {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: calc(var(--theme-metric-layout-hero-dock-gap, 10) * 1px);
+  position: relative;
+  overflow: visible;
+}
+.hero-drop {
+  width: calc(var(--theme-metric-hud-hero-portrait-size, 100) * 1px);
+  height: calc(var(--theme-metric-hud-hero-portrait-size, 100) * 1px);
   display: grid;
   place-content: center;
-  gap: 4px;
-  min-height: 112px;
-  padding: 12px;
   text-align: center;
-  border: 1px dashed color-mix(in srgb, var(--line) 78%, transparent);
-  border-radius: var(--radius);
-  background: color-mix(in srgb, var(--surface-3) 72%, transparent);
-  transition: border-color 100ms ease, box-shadow 100ms ease, background 100ms ease, transform 100ms ease;
+  border-radius: 50% !important;
+  position: relative;
 }
-.drag-target small { color: var(--muted); font-size: 10px; line-height: 1.25; }
+.hero-drop strong {
+  max-width: 88px;
+  font-size: 12px;
+  line-height: 1.05;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.hero-stat {
+  display: grid;
+  place-items: center;
+  border-radius: 50% !important;
+  padding: 0 !important;
+  font-size: 18px;
+  font-weight: 800;
+  z-index: 2;
+}
+.health-badge {
+  width: calc(var(--theme-metric-layout-hero-dock-health-badge-width, 46) * 1px);
+  height: calc(var(--theme-metric-layout-hero-dock-health-badge-height, 46) * 1px);
+  margin-right: -22px;
+  margin-top: 54px;
+}
+.armor-badge {
+  width: calc(var(--theme-metric-layout-hero-dock-armor-badge-width, 42) * 1px);
+  height: calc(var(--theme-metric-layout-hero-dock-armor-badge-height, 42) * 1px);
+  margin-right: -26px;
+  margin-top: -52px;
+}
+.hero-actions {
+  width: calc(var(--theme-metric-layout-hero-dock-hero-core-width, 132) * 1px);
+  display: grid;
+  gap: calc(var(--theme-metric-layout-hero-dock-hero-core-gap, 2) * 1px);
+}
+.hero-actions .button { width: 100%; }
+.hero-actions [data-slot="power"] .button {
+  height: calc(var(--theme-metric-layout-hero-dock-power-button-height, 48) * 1px);
+  font-size: 22px;
+}
+
+.reserve-shelf {
+  min-width: 0;
+  display: grid;
+  grid-template-columns:
+    calc(var(--theme-metric-layout-hero-dock-resource-badge-width, 176) * 1px)
+    minmax(0, 1fr)
+    calc(var(--theme-metric-layout-hero-dock-resource-badge-width, 176) * 1px);
+  align-items: end;
+  gap: 6px;
+  overflow: visible;
+}
+.resource-badge {
+  width: calc(var(--theme-metric-layout-hero-dock-resource-badge-width, 176) * 1px);
+  min-height: calc(var(--theme-metric-layout-hero-dock-resource-badge-height, 42) * 1px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+.resource-badge strong { font-size: 20px; }
+.hand-row { min-width: 0; }
+.reserve-shelf .component-row {
+  justify-content: center;
+  align-items: end;
+  gap: calc(var(--theme-metric-row-reserve-gap, 6) * 1px);
+  overflow-x: auto;
+  padding: calc(var(--theme-metric-row-reserve-padding, 3) * 1px);
+}
+.reserve-shelf .card {
+  flex-basis: calc(var(--theme-metric-row-reserve-preferred-card-width, 88) * 1px);
+  min-width: calc(var(--theme-metric-row-reserve-minimum-card-width, 66) * 1px);
+  min-height: calc(var(--theme-metric-row-reserve-preferred-card-height, 66) * 1px);
+  grid-template-rows: 1fr auto;
+  gap: 2px;
+  padding: 5px 6px;
+}
+.reserve-shelf .card .kind { display: none; }
+.reserve-shelf .card .name { font-size: 12px; }
+.reserve-shelf .card .meta { gap: 2px; }
+
+.turn-rail {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: calc(var(--theme-metric-layout-turn-rail-gap, 6) * 1px);
+  overflow: visible;
+}
+.turn-spacer { flex: 1 1 auto; }
+.turn-rail [data-slot="ready"] .button {
+  width: 100%;
+  min-height: calc(var(--theme-metric-layout-turn-rail-end-button-height, 58) * 1px);
+}
+.waiting-banner {
+  min-height: 24px;
+  display: grid;
+  place-items: center;
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.drag-target { transition: border-color 100ms ease, box-shadow 100ms ease, background 100ms ease, transform 100ms ease; }
+.drag-hint { display: none; color: var(--muted); font-size: 9px; line-height: 1.1; }
+.preparation-screen[data-drag-kind="offer"] .hero-drop .drag-hint,
+.preparation-screen[data-drag-kind="field"] .shopkeeper-drop .drag-hint { display: block; }
 
 .is-drop-hover {
-  border-color: var(--accent) !important;
-  background: color-mix(in srgb, var(--accent) 14%, var(--surface-2)) !important;
-  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 40%, transparent), 0 0 28px color-mix(in srgb, var(--accent) 20%, transparent);
+  border-color: var(--theme-color-focus, var(--accent)) !important;
+  background: color-mix(in srgb, var(--theme-color-focus, var(--accent)) 14%, var(--surface-2)) !important;
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--theme-color-focus, var(--accent)) 40%, transparent), 0 0 28px color-mix(in srgb, var(--theme-color-focus, var(--accent)) 20%, transparent);
 }
 .is-drop-invalid {
   border-color: color-mix(in srgb, #ff5b5b 70%, var(--line)) !important;
   background: color-mix(in srgb, #ff5b5b 8%, var(--surface-2)) !important;
 }
-
 .preparation-screen[data-drag-kind] [data-drag-kind] { cursor: grabbing; }
 .is-dragging { opacity: .32 !important; transform: scale(.97) !important; }
 .drag-ghost {
@@ -93,12 +292,14 @@
   box-shadow: 0 20px 54px rgba(0,0,0,.45) !important;
 }
 
-.actions { display: flex; justify-content: center; gap: 8px; padding: 10px; overflow-x: auto; }
-.waiting-banner { text-align: center; color: var(--muted); font-size: 12px; padding: 5px; }
-
-@media (max-width: 900px) {
-  .topbar { grid-template-columns: 1fr auto; }
-  .round-pill { display: none; }
-  .tavern-stage, .bottom-stage { grid-template-columns: 1fr; }
-  .drag-target { min-height: 72px; }
+@media (max-width: 960px) {
+  .preparation-screen {
+    grid-template-columns: 132px minmax(0, 1fr) 70px;
+  }
+  .reserve-shelf {
+    grid-template-columns: 110px minmax(0, 1fr) 110px;
+  }
+  .resource-badge { width: 110px; }
+  .shopkeeper-drop { width: 120px; }
+  .tavern-control .button, .tavern-control:first-child .button { width: 58px; }
 }
