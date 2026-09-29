@@ -58,6 +58,7 @@ public partial class Main
         if (_session is null || entityKind != ModPresentationEntityKind.Unit)
             return;
 
+        var tokenFrame = ResolveComponentBackgroundTexture(ModThemeComponentRoles.CardBoard);
         var parent = card.GetParent();
         var parentName = parent?.Name.ToString();
         if (parentName == "OfferButtons")
@@ -68,6 +69,7 @@ public partial class Main
                 definition.BaseAttack,
                 definition.BaseHealth,
                 BuildUnitInspectDetails(definition));
+            card.ConfigureTokenFrame(tokenFrame);
             return;
         }
 
@@ -97,6 +99,7 @@ public partial class Main
             unit.Health,
             BuildUnitInspectDetails(unit.Definition, unit),
             inspectTier: unit.Definition.Tier);
+        card.ConfigureTokenFrame(tokenFrame);
     }
 
     private void PlayPresentationCue(
