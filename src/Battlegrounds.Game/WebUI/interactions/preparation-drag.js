@@ -54,9 +54,6 @@ function clearFeedback(root) {
   for (const target of root.querySelectorAll('.is-drop-hover, .is-drop-invalid')) {
     target.classList.remove('is-drop-hover', 'is-drop-invalid');
   }
-  for (const slot of root.querySelectorAll('.drop-slot.is-drop-preview')) {
-    slot.classList.remove('is-drop-preview');
-  }
 }
 
 function dispatch(root, action, payload) {
@@ -159,13 +156,7 @@ export function bindPreparationDrag(root) {
     const hit = document.elementFromPoint(event.clientX, event.clientY);
     const target = hit?.closest?.('[data-drop-kind]');
     if (!target || !compatible(target, drag)) return;
-
-    const isValid = valid(target, drag);
-    target.classList.add(isValid ? 'is-drop-hover' : 'is-drop-invalid');
-    if (target.dataset.dropKind === 'field-surface') {
-      const index = insertionIndex(target, event.clientX);
-      target.querySelector(`.drop-slot[data-insertion-index="${index}"]`)?.classList.add('is-drop-preview');
-    }
+    target.classList.add(valid(target, drag) ? 'is-drop-hover' : 'is-drop-invalid');
   });
 
   root.addEventListener('pointerup', finish);
