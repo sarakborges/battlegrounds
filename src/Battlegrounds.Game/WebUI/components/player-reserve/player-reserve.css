@@ -16,7 +16,7 @@
   min-width: 0;
 }
 
-.player-reserve__cards {
+.player-reserve__tokens {
   justify-content: center;
   align-items: end;
   transform: translateY(8px);
@@ -24,6 +24,6 @@
   overflow: visible;
 }
 
-.player-reserve__cards > * + * {
-  margin-left: -24px;
+.player-reserve__tokens > * + * {
+  margin-left: -18px;
 }
