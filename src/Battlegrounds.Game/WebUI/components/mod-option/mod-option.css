@@ -1,0 +1,47 @@
+.mod-option {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 12px 18px;
+  align-items: center;
+  padding: 16px;
+}
+
+.mod-option__summary,
+.mod-option__identity {
+  min-width: 0;
+  display: grid;
+  gap: 4px;
+}
+
+.mod-option__identity strong {
+  font-size: 18px;
+}
+
+.mod-option__identity span,
+.mod-option__schema {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.mod-option__schema {
+  grid-column: 1;
+}
+
+.mod-option__action {
+  grid-column: 2;
+  grid-row: 1 / span 2;
+}
+
+.mod-option__diagnostics {
+  grid-column: 1 / -1;
+  margin: 0;
+  padding: 10px;
+  overflow: auto;
+  white-space: pre-wrap;
+  border: 1px solid color-mix(in srgb, var(--danger) 55%, var(--line));
+  border-radius: 8px;
+  color: var(--danger);
+  background: var(--surface-0);
+  font: 12px/1.45 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
