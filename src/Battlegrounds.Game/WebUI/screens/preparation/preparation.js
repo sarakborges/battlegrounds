@@ -1,4 +1,5 @@
 import { appendChildren, cloneTemplate, useStyle } from '../../core/template.js';
+import { createBadge } from '../../components/badge/badge.js';
 import { createButton } from '../../components/button/button.js';
 import { createCard } from '../../components/card/card.js';
 import { createDialog } from '../../components/dialog/dialog.js';
@@ -6,9 +7,6 @@ import { createDropSlot } from '../../components/drop-slot/drop-slot.js';
 import { createEmpty } from '../../components/empty/empty.js';
 import { createPlayerChip } from '../../components/player-chip/player-chip.js';
 import { createRow } from '../../components/row/row.js';
-import { createStat } from '../../components/stat/stat.js';
-import { createZone } from '../../components/zone/zone.js';
-import { createBadge } from '../../components/badge/badge.js';
 import { bindPreparationDrag } from '../../interactions/preparation-drag.js';
 import { createCardMeta } from '../shared/card-meta.js';
 
@@ -23,7 +21,6 @@ async function createOfferCard(entry, blocked, canAcquire) {
     kind: entry.kind,
     name: entry.name,
     meta: await createCardMeta(entry),
-    action: 'acquire',
     disabled: blocked,
     variant: 'offer',
     attributes: {
@@ -38,9 +35,9 @@ async function createOfferCard(entry, blocked, canAcquire) {
 
 async function createReserveCard(state, entry, blocked, canDeploy) {
   const combining = state.interaction?.kind === 'combine-components' && entry.kind === 'unit';
-  const action = combining ? 'toggle-combine-unit' : entry.kind === 'unit' ? 'deploy' : 'play-action';
+  const isUnit = entry.kind === 'unit';
   const attributes = { 'data-slot': entry.slot, 'data-unit-instance-id': entry.unitInstanceId ?? '' };
-  if (entry.kind === 'unit' && !combining) {
+  if (isUnit && !combining) {
     attributes['data-drag-kind'] = 'reserve-unit';
     attributes['data-drag-slot'] = entry.slot;
     attributes['data-drag-enabled'] = boolText(!blocked);
@@ -51,7 +48,7 @@ async function createReserveCard(state, entry, blocked, canDeploy) {
     kind: entry.kind,
     name: entry.name,
     meta: await createCardMeta(entry),
-    action,
+    action: combining ? 'toggle-combine-unit' : isUnit ? null : 'play-action',
     disabled: combining ? !state.canAct : blocked,
     selected: entry.selectedForCombine,
     variant: 'reserve',
@@ -73,7 +70,7 @@ async function createFieldCard(state, unit, blocked) {
     kind: 'field',
     name: unit.name,
     meta: await createCardMeta(unit),
-    action: combining ? 'toggle-combine-unit' : 'release',
+    action: combining ? 'toggle-combine-unit' : null,
     disabled: combining ? !state.canAct : blocked,
     selected: unit.selectedForCombine,
     variant: 'board',
@@ -147,20 +144,18 @@ export async function createPreparationScreen(state) {
   const canDeploy = !blocked && fieldCount < (limits.fieldCapacity ?? Number.POSITIVE_INFINITY);
 
   element.querySelector('[data-field="mod-name"]').textContent = state.mod?.name ?? '';
-  element.querySelector('[data-field="phase"]').textContent = state.phase ?? '';
   element.querySelector('[data-field="round-label"]').textContent = labels.round ?? 'Round';
   element.querySelector('[data-field="round"]').textContent = state.round ?? '';
+  element.querySelector('[data-field="tier-label"]').textContent = labels.tier ?? 'Tier';
+  element.querySelector('[data-field="tier"]').textContent = human.tier ?? '';
   element.querySelector('[data-field="field-label"]').textContent = labels.field ?? 'Field';
+  element.querySelector('[data-field="field-count"]').textContent = `${fieldCount}/${limits.fieldCapacity ?? '—'}`;
   element.querySelector('[data-field="leader-label"]').textContent = labels.leader ?? 'Leader';
   element.querySelector('[data-field="hero-name"]').textContent = (state.players ?? []).find(player => player.human)?.leader ?? '—';
-
-  const stats = [
-    await createStat({ label: labels.health ?? 'Health', value: human.health }),
-    await createStat({ label: labels.armor ?? 'Armor', value: human.armor }),
-    await createStat({ label: labels.resource ?? 'Resource', value: human.resource }),
-    await createStat({ label: labels.tier ?? 'Tier', value: human.tier })
-  ];
-  appendChildren(element.querySelector('[data-slot="stats"]'), stats);
+  element.querySelector('[data-field="health"]').textContent = human.health ?? '';
+  element.querySelector('[data-field="armor"]').textContent = human.armor ?? '';
+  element.querySelector('[data-field="resource-label"]').textContent = labels.resource ?? 'Resource';
+  element.querySelector('[data-field="resource"]').textContent = human.resource ?? '';
 
   const players = [];
   for (const player of state.players ?? []) {
@@ -173,7 +168,8 @@ export async function createPreparationScreen(state) {
     field.push(await createFieldCard(state, unit, blocked));
     field.push(await createDropSlot({ insertionIndex: unit.slot + 1 }));
   }
-  if (!(state.field ?? []).length) field.push(await createEmpty({ label: labels.field ?? 'Field' }));
+  if (!fieldCount) field.push(await createEmpty({ label: labels.field ?? 'Field' }));
+  appendChildren(element.querySelector('[data-slot="field"]'), [await createRow({ children: field, variant: 'field' })]);
 
   const offer = [];
   for (const entry of state.offer ?? []) {
@@ -183,30 +179,58 @@ export async function createPreparationScreen(state) {
     offer.push(await createOfferCard(entry, blocked, canAcquire));
   }
   if (!offer.length) offer.push(await createEmpty({ label: labels.offer ?? 'Offer' }));
+  appendChildren(element.querySelector('[data-slot="offer"]'), [await createRow({ children: offer, variant: 'offer' })]);
 
   const reserve = [];
   for (const entry of state.reserve ?? []) reserve.push(await createReserveCard(state, entry, blocked, canDeploy));
   if (!reserve.length) reserve.push(await createEmpty({ label: labels.reserve ?? 'Reserve' }));
+  appendChildren(element.querySelector('[data-slot="reserve"]'), [await createRow({ children: reserve, variant: 'reserve' })]);
 
-  const fieldZone = await createZone({ title: labels.field ?? 'Field', count: fieldCount, children: field, variant: 'field' });
-  fieldZone.dataset.dropKind = 'field-surface';
-  appendChildren(element.querySelector('[data-slot="field"]'), [fieldZone]);
-  appendChildren(element.querySelector('[data-slot="offer"]'), [await createZone({ title: labels.offer ?? 'Offer', count: (state.offer ?? []).length, children: offer, variant: 'offer' })]);
-  appendChildren(element.querySelector('[data-slot="reserve"]'), [await createZone({ title: labels.reserve ?? 'Reserve', count: reserveCount, children: reserve, variant: 'reserve' })]);
-
-  const actions = [
-    await createButton({ label: labels.refresh ?? 'Refresh', action: 'refresh', disabled: blocked, themeRole: 'button.tavernRefresh' }),
-    await createButton({ label: `${labels.upgrade ?? 'Upgrade'}${human.upgradeCost == null ? '' : ` · ${human.upgradeCost}`}`, action: 'upgrade', disabled: blocked || human.upgradeCost == null, themeRole: 'button.tavernUpgrade' }),
-    await createButton({ label: human.offerFrozen ? (labels.unfreeze ?? 'Unfreeze') : (labels.freeze ?? 'Freeze'), action: 'toggle-freeze', disabled: blocked, themeRole: 'button.tavernFreeze' }),
-    await createButton({ label: labels.usePower ?? 'Use power', action: 'use-power', disabled: blocked || !human.power, themeRole: 'button.tavernAction' }),
-    await createButton({ label: labels.combine ?? 'Combine', action: 'begin-combine', disabled: blocked, themeRole: 'button.tavernAction' }),
-    await createButton({ label: labels.endPreparation ?? 'End preparation', action: 'end-preparation', disabled: blocked, variant: 'primary', themeRole: 'button.primary' })
-  ];
-  appendChildren(element.querySelector('[data-slot="actions"]'), actions);
+  appendChildren(element.querySelector('[data-slot="upgrade"]'), [await createButton({
+    label: `★ ${human.upgradeCost ?? '—'}`,
+    action: 'upgrade',
+    disabled: blocked || human.upgradeCost == null,
+    themeRole: 'button.tavernUpgrade',
+    attributes: { title: labels.upgrade ?? 'Upgrade' }
+  })]);
+  appendChildren(element.querySelector('[data-slot="refresh"]'), [await createButton({
+    label: '↻',
+    action: 'refresh',
+    disabled: blocked,
+    themeRole: 'button.tavernRefresh',
+    attributes: { title: labels.refresh ?? 'Refresh' }
+  })]);
+  appendChildren(element.querySelector('[data-slot="freeze"]'), [await createButton({
+    label: '❄',
+    action: 'toggle-freeze',
+    disabled: blocked,
+    themeRole: 'button.tavernFreeze',
+    attributes: { title: human.offerFrozen ? (labels.unfreeze ?? 'Unfreeze') : (labels.freeze ?? 'Freeze') }
+  })]);
+  appendChildren(element.querySelector('[data-slot="power"]'), [await createButton({
+    label: '✦',
+    action: 'use-power',
+    disabled: blocked || !human.power,
+    themeRole: 'button.tavernAction',
+    attributes: { title: labels.usePower ?? 'Use power' }
+  })]);
+  appendChildren(element.querySelector('[data-slot="combine"]'), [await createButton({
+    label: labels.combine ?? 'Combine',
+    action: 'begin-combine',
+    disabled: blocked,
+    themeRole: 'button.tavernAction'
+  })]);
+  appendChildren(element.querySelector('[data-slot="ready"]'), [await createButton({
+    label: labels.endPreparation ?? 'Ready',
+    action: 'end-preparation',
+    disabled: blocked,
+    variant: 'primary',
+    themeRole: 'button.primary'
+  })]);
 
   const waiting = element.querySelector('[data-field="waiting"]');
   waiting.hidden = state.canAct;
-  if (!state.canAct) waiting.textContent = `Waiting for preparation initiative${state.currentPreparationPlayerId != null ? ` · P${state.currentPreparationPlayerId}` : ''}`;
+  if (!state.canAct) waiting.textContent = state.currentPreparationPlayerId != null ? `P${state.currentPreparationPlayerId}` : '…';
 
   const overlay = await createOverlay(state);
   if (overlay) appendChildren(element.querySelector('[data-slot="overlay"]'), [overlay]);
