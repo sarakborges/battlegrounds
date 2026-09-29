@@ -26,7 +26,7 @@ Gameplay then uses `Main.WebUi.cs` to serialize presentation state from `SingleP
 
 The browser UI uses the same `1280x720` logical viewport declared by `project.godot`. `core/viewport-scale.js` computes one uniform scale from the actual CEF viewport using `min(actualWidth / 1280, actualHeight / 720)` and applies it to the application shell. The scaler recomputes on both window and visual-viewport resize events.
 
-All screens and reusable modules lay themselves out in logical pixels. Window resizing must not introduce independent viewport breakpoints, `vw`/`vh` geometry, or per-screen scaling rules. If the physical window has a different aspect ratio, the logical viewport remains centered and the unused area is letterboxed. This keeps component geometry, drag/drop hit targets, and screen composition stable at every window size.
+All screens and reusable modules lay themselves out in logical pixels. Window resizing must not introduce independent viewport breakpoints, `vw`/`vh` geometry, or per-screen scaling rules. If the physical window has a different aspect ratio, the logical viewport remains centered and the unused area is letterboxed. This keeps component geometry, drag/drop hit targets, hover previews and screen composition stable at every window size.
 
 ## Source layout
 
@@ -38,7 +38,8 @@ WebUI/
   index.html              # browser entry point
   bridge/                 # Godot CEF IPC and action dispatch
   core/                   # template/style loading and viewport infrastructure
-  theme/                  # resolved ModThemeCatalog -> CSS/component styles
+  interactions/           # shared pointer/hover/drag interaction behavior
+  theme/                  # asset bridge + resolved ModThemeCatalog -> CSS variables
   styles/                 # global baseline only
   design-system/          # generic reusable UI primitives
     badge/
@@ -48,12 +49,14 @@ WebUI/
     modal-dialog/
     panel/
   components/             # gameplay/application-aware reusable composition
-    card/
+    card/                  # full card surface used where the card itself is the persistent object
+    card-preview/          # inspection-only card shown by hover inspector
     character-portrait/
     combat-card/
     hero-cockpit/
     mod-option/
     opponent-rail/
+    playable-token/        # persistent tavern/field/reserve/choice/target representation
     player-chip/
     player-field/
     player-reserve/
@@ -63,21 +66,9 @@ WebUI/
     turn-rail/
   screens/
     mod-selection/
-      mod-selection.html
-      mod-selection.css
-      mod-selection.js
     leader-selection/
-      leader-selection.html
-      leader-selection.css
-      leader-selection.js
     preparation/
-      preparation.html    # screen composition slots only
-      preparation.css     # screen-level grid/stage only
-      preparation.js      # state -> component orchestration
     combat/
-      combat.html
-      combat.css
-      combat.js
 ```
 
 HTML structure must live in `.html` templates. Design-system, component and screen JavaScript clones those templates, fills text/state, assigns semantic `data-*` properties and connects behavior. It must not build markup with template strings or `innerHTML`.
@@ -86,15 +77,27 @@ Every reusable UI module under `design-system/` or `components/` owns a director
 
 Design-system modules are generic presentation primitives and must not know gameplay or application concepts. Components may compose design-system primitives and other components, but they do not own authoritative rules. Screens compose those components from presentation state.
 
-Component names describe their responsibility. Prefer `tavern-offer`, `player-field`, `player-reserve`, and `mod-option` over generic containers whose behavior is selected by magic variants such as `area`, `zone`, or `section`.
+Component names describe their responsibility. Prefer `tavern-offer`, `player-field`, `player-reserve`, `playable-token`, `card-preview`, and `mod-option` over generic containers whose behavior is selected by magic variants such as `area`, `zone`, or `section`.
 
-A reusable module owns its own geometry and visual state. Screen CSS may position component roots as part of screen composition, but it must not reach into reusable component internals. For example, preparation card width/height belongs to `components/card/card.css`; the preparation screen is not allowed to size `.card`, `.action-button`, `.horizontal-stack`, `.player-chip`, or `.character-portrait` directly.
+A reusable module owns its own geometry and visual state. Screen CSS may position component roots as part of screen composition, but it must not reach into reusable component internals.
+
+## Tokens and inspection
+
+Preparation gameplay uses `playable-token` as the persistent representation of a unit or action in the tavern offer, player field, reserve, choice and target surfaces. A full rectangular card is not used as the board piece.
+
+Full card presentation belongs to `card-preview` and is created on demand by `interactions/hover-inspector.js`. Any inspectable surface opts in with semantic `data-inspect-*` metadata. The same inspector is used for playable tokens, leaders and hero powers so hover behavior stays consistent rather than being reimplemented per screen.
+
+Descriptions are presentation content owned by the mod. C# resolves `entity.<kind>.<id>.description` through `ModPresentationText` and sends the resolved description in the Web UI snapshot. The browser must not invent gameplay descriptions.
+
+An element may remain inspectable while it is not actionable. `playable-token` therefore uses `aria-disabled` / `data-disabled` instead of the native `disabled` attribute; the action and drag dispatchers enforce that semantic disabled state while pointer/focus inspection remains available.
 
 ## CSS cascade and theme ownership
 
 Theme resolution must not write presentation properties such as padding, background, border, radius, font size, or opacity directly as inline styles. `theme/theme.js` exposes resolved values as element-scoped `--theme-component-*` custom properties; the owning primitive or component decides how those tokens are consumed and which geometry remains fixed by the component contract.
 
-The cascade is intentional: primitive defaults are the baseline, composed components use selectors that describe their composition (for example `.player-field.panel` or `.action-button.tavern-controls__button`), and interaction-state selectors describe temporary state. `!important` is forbidden by CI. If a rule cannot win without it, fix ownership, selector intent, or stylesheet structure instead of increasing force.
+Theme asset fields use the same rule. `theme/assets.js` requests mod-local assets through the C# bridge, and `backgroundAsset` resolves to `--theme-component-background-image`. Components decide how to place that image. PNG, JPEG, WebP and SVG image assets are supported by the Web UI bridge.
+
+The cascade is intentional: primitive defaults are the baseline, composed components use selectors that describe their composition, and interaction-state selectors describe temporary state. `!important` is forbidden by CI. If a rule cannot win without it, fix ownership, selector intent, or stylesheet structure instead of increasing force.
 
 `app.js` does not know component markup. It maps the application status to a screen and applies the supported theme screen role. Authoritative state and commands remain in C#.
 
@@ -113,4 +116,4 @@ For mod selection, the browser can request a refresh or submit the `directoryNam
 
 For gameplay, the browser sends user intent; C# translates that intent to the existing domain/application commands and then pushes a fresh presentation snapshot.
 
-The resolved `ModThemeCatalog` is included in state snapshots. `theme/theme.js` maps colors, spacing, radii, font sizes, metrics, component roles and supported screen roles into CSS/custom properties.
+The resolved `ModThemeCatalog` is included in state snapshots. `theme/theme.js` maps colors, spacing, radii, font sizes, metrics, component roles and supported screen roles into CSS custom properties. Asset-backed theme fields are resolved through `theme/assets.js`.
