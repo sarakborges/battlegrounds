@@ -8,17 +8,23 @@ internal sealed partial class PresentationCardButton
 
     internal void ConfigureTokenFrame(Texture2D? texture)
     {
-        if (texture is null)
-        {
-            if (_semanticTokenFrame is not null)
-                _semanticTokenFrame.Visible = false;
-            return;
-        }
+        // BoardCardButton already renders the mod-driven token frame as the button
+        // background. Drawing the same SVG again above the portrait hid the art
+        // whenever the frame asset had an opaque center. Keep the content slightly
+        // inset instead, so the background frame remains visible around real art.
+        if (_semanticTokenFrame is not null)
+            _semanticTokenFrame.Visible = false;
 
-        _semanticTokenFrame ??= CreateSemanticTokenFrame();
-        _semanticTokenFrame.Texture = texture;
-        _semanticTokenFrame.Visible = true;
-        _semanticTokenFrame.SetAnchorsAndOffsetsPreset(LayoutPreset.FullRect);
+        var margin = GetChildren().OfType<MarginContainer>().FirstOrDefault();
+        if (margin is null)
+            return;
+
+        const int inset = 7;
+        margin.AddThemeConstantOverride("margin_left", inset);
+        margin.AddThemeConstantOverride("margin_top", inset);
+        margin.AddThemeConstantOverride("margin_right", inset);
+        margin.AddThemeConstantOverride("margin_bottom", inset);
+        margin.ZIndex = 1;
     }
 
     private TextureRect CreateSemanticTokenFrame()
@@ -29,7 +35,8 @@ internal sealed partial class PresentationCardButton
             MouseFilter = MouseFilterEnum.Ignore,
             ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize,
             StretchMode = TextureRect.StretchModeEnum.Scale,
-            ZIndex = 3,
+            ZIndex = 0,
+            Visible = false,
         };
         AddChild(frame);
         frame.SetAnchorsAndOffsetsPreset(LayoutPreset.FullRect);
