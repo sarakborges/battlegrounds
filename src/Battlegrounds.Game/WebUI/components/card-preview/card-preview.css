@@ -14,8 +14,27 @@
   box-shadow: 0 22px 54px rgba(0, 0, 0, .48);
 }
 
-.card-preview__art-wrap {
+.card-preview::after {
+  content: "";
+  position: absolute;
+  z-index: 20;
+  inset: 0;
+  background-image: var(--theme-component-background-image, none);
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: 100% 100%;
+  pointer-events: none;
+}
+
+.card-preview__art-wrap,
+.card-preview__copy,
+.card-preview__stats,
+.card-preview__status {
   position: relative;
+  z-index: 2;
+}
+
+.card-preview__art-wrap {
   overflow: hidden;
   border-radius: 16px 16px 8px 8px;
   background: radial-gradient(circle at 50% 30%, var(--surface-3), var(--surface-2));
