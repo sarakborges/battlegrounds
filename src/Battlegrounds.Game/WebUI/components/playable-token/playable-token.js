@@ -50,6 +50,8 @@ export async function createPlayableToken({
   const element = await cloneTemplate(templateUrl);
   element.dataset.variant = kind;
   element.dataset.location = location;
+  element.dataset.disabled = disabled ? 'true' : 'false';
+  element.setAttribute('aria-disabled', disabled ? 'true' : 'false');
   element.querySelector('[data-field="name"]').textContent = name;
   element.querySelector('[data-field="fallback"]').textContent = name.trim().slice(0, 1).toUpperCase() || '•';
   setOptionalText(element.querySelector('[data-field="tier"]'), tier == null ? null : `T${tier}`);
@@ -67,7 +69,6 @@ export async function createPlayableToken({
   }
 
   if (action) element.dataset.action = action;
-  element.disabled = disabled;
   element.classList.toggle('is-selected', selected);
   addClasses(element, className);
   applyAttributes(element, inspectAttributes({ kind, id, name, description, tier, attack, health, cost, frozen }));
