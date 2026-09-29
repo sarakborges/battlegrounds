@@ -40,7 +40,7 @@ public partial class Main
             var scene = GD.Load<PackedScene>("res://WebUI/WebUiHost.tscn");
             if (scene is null)
             {
-                AppendLog("Web UI host scene was not found; keeping the Godot UI.");
+                AppendLog("Web UI host scene was not found.");
                 return;
             }
 
@@ -53,7 +53,7 @@ public partial class Main
         }
         catch (Exception exception)
         {
-            AppendLog($"Web UI initialization failed: {exception.Message}. Keeping the Godot UI.");
+            AppendLog($"Web UI initialization failed: {exception.Message}.");
         }
     }
 
@@ -68,7 +68,7 @@ public partial class Main
     private void OnWebUiUnavailable(string reason)
     {
         _webUiReady = false;
-        AppendLog($"Web UI unavailable: {reason}. Keeping the Godot UI.");
+        AppendLog($"Web UI unavailable: {reason}.");
     }
 
     private void OnWebUiMessage(string message)
@@ -95,12 +95,20 @@ public partial class Main
                     TryDeployUnit(RequiredInt(root, "slot"));
                     Render();
                     break;
+                case "deploy-at":
+                    DeployReserveAtInsertion(RequiredInt(root, "slot"), RequiredInt(root, "insertionIndex"));
+                    Render();
+                    break;
                 case "play-action":
                     TryPlayAction(RequiredInt(root, "slot"));
                     Render();
                     break;
                 case "release":
                     ExecuteHuman(player => new ReleaseUnitCommand(player.Id, RequiredInt(root, "slot")));
+                    break;
+                case "reorder-field":
+                    ReorderHumanFieldAtInsertion(RequiredInt(root, "fromIndex"), RequiredInt(root, "insertionIndex"));
+                    Render();
                     break;
                 case "refresh":
                     ExecuteHuman(player => new RefreshOfferCommand(player.Id));
@@ -304,6 +312,11 @@ public partial class Main
             round = match.Round,
             canAct,
             currentPreparationPlayerId = _session.CurrentPreparationPlayerId?.Value,
+            limits = new
+            {
+                reserveCapacity = _session.Mod.PreparationRules.ReserveCapacity,
+                fieldCapacity = _session.Mod.PreparationRules.FieldCapacity,
+            },
             labels = BuildWebLabels(),
             human = new
             {
