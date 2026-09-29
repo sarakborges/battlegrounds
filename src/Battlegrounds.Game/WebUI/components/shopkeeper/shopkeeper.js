@@ -12,7 +12,7 @@ export async function createShopkeeper({ name = 'Shopkeeper', art = null } = {})
     artAlt: name,
     hint: 'Drop a board unit to sell',
     themeRole: 'panel.shopkeeper',
-    dropKind: 'shopkeeper',
+    dropKind: 'tavern-shopkeeper',
     className: 'shopkeeper__portrait'
   });
   appendChildren(element.querySelector('[data-slot="portrait"]'), [portrait]);
