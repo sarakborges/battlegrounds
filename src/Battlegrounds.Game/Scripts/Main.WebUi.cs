@@ -209,6 +209,7 @@ public partial class Main
                     {
                         id = id.Value,
                         name = LeaderName(id),
+                        description = LeaderDescription(id),
                         armor = definition.StartingArmor,
                     };
                 })
@@ -246,6 +247,7 @@ public partial class Main
                 kind = entry.Kind.ToString().ToLowerInvariant(),
                 id = entry.Id,
                 name = PlayableName(entry.Kind, entry.Id),
+                description = PlayableDescription(entry.Kind, entry.Id),
                 tier = entry.Tier,
                 attack = unit?.BaseAttack,
                 health = unit?.BaseHealth,
@@ -260,6 +262,7 @@ public partial class Main
             kind = entry.Kind.ToString().ToLowerInvariant(),
             id = entry.DefinitionId,
             name = PlayableName(entry.Kind, entry.DefinitionId),
+            description = PlayableDescription(entry.Kind, entry.DefinitionId),
             unitInstanceId = entry.Unit?.Id.Value,
             tier = entry.Unit?.Definition.Tier,
             attack = entry.Unit?.Attack,
@@ -272,6 +275,7 @@ public partial class Main
             id = unit.Definition.Id.Value,
             unitInstanceId = unit.Id.Value,
             name = UnitName(unit.Definition.Id),
+            description = UnitDescription(unit.Definition.Id),
             tier = unit.Definition.Tier,
             attack = unit.Attack,
             health = unit.Health,
@@ -288,7 +292,13 @@ public partial class Main
             ready = player.IsReadyForCombat,
             leaderId = player.Leader?.Definition.Id.Value,
             leader = player.Leader is null ? null : LeaderName(player.Leader.Definition.Id),
+            leaderDescription = player.Leader is null ? null : LeaderDescription(player.Leader.Definition.Id),
         }).ToArray();
+
+        var currentPowerId = human.Leader?.CurrentPowerId;
+        var currentPower = currentPowerId is PowerId resolvedPowerId
+            ? _session.Mod.Powers.GetRequired(resolvedPowerId)
+            : null;
 
         return new
         {
@@ -316,7 +326,15 @@ public partial class Main
                 offerFrozen = human.IsOfferFrozen,
                 ready = human.IsReadyForCombat,
                 eliminated = human.IsEliminated,
-                power = human.Leader?.CurrentPowerId?.Value,
+                power = currentPowerId?.Value,
+                powerInfo = currentPower is null ? null : new
+                {
+                    id = currentPower.Id.Value,
+                    name = PowerName(currentPower.Id),
+                    description = PowerDescription(currentPower.Id),
+                    cost = currentPower.Cost,
+                    activatable = currentPower.IsActivatable,
+                },
             },
             players,
             offer,
@@ -344,6 +362,7 @@ public partial class Main
                     index,
                     id = option.Id.Value,
                     name = UnitName(option.Id),
+                    description = UnitDescription(option.Id),
                     tier = option.Tier,
                     attack = option.BaseAttack,
                     health = option.BaseHealth,
@@ -357,6 +376,7 @@ public partial class Main
                     index,
                     id = option.Id.Value,
                     name = ActionName(option.Id),
+                    description = ActionDescription(option.Id),
                     tier = option.Tier,
                     cost = option.Cost,
                 }).ToArray(),
@@ -409,6 +429,8 @@ public partial class Main
             unitInstanceId = candidate.Unit.Id.Value,
             id = candidate.Unit.Definition.Id.Value,
             name = UnitName(candidate.Unit.Definition.Id),
+            description = UnitDescription(candidate.Unit.Definition.Id),
+            tier = candidate.Unit.Definition.Tier,
             attack = candidate.Unit.Attack,
             health = candidate.Unit.Health,
         }).ToArray();
