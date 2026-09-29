@@ -12,10 +12,8 @@
     </linearGradient>
   </defs>
 
-  <!-- Opaque surround masks the cosmetic outside the square portrait opening. -->
-  <path d="M0 0H160V160H0Z M24 24H136V136H24Z" fill="#0d0907" fill-rule="evenodd"/>
-
-  <!-- A tall 1:1 keeper opening: the visible cosmetic area is 112x112. -->
+  <!-- Transparent outside the frame: the board scenery remains visible around
+       both shopkeeper and leader cosmetics. -->
   <rect x="14" y="14" width="132" height="136" rx="30" fill="none" stroke="#321d13" stroke-width="10"/>
   <rect x="18" y="18" width="124" height="128" rx="26" fill="none" stroke="url(#wood)" stroke-width="6"/>
   <rect x="24" y="24" width="112" height="112" rx="18" fill="none" stroke="url(#gold)" stroke-width="3"/>
