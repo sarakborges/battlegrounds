@@ -9,36 +9,45 @@ public partial class Main
         if (!_hudBound)
             return;
 
-        var portraitSize = ResolvePresentationMetric(
+        var configuredPortraitSize = ResolvePresentationMetric(
             Battlegrounds.Content.ModThemeMetricKeys.Hud.OpponentPortraitSize,
             1.0f,
             512.0f);
-        var rankWidth = ResolvePresentationMetric(
+        var portraitSize = Mathf.Min(configuredPortraitSize, 42.0f);
+        var configuredRankWidth = ResolvePresentationMetric(
             Battlegrounds.Content.ModThemeMetricKeys.Hud.OpponentRankWidth,
             1.0f,
             256.0f);
-        var marginHorizontal = ResolvePresentationMetric(
+        var rankWidth = Mathf.Min(configuredRankWidth, 18.0f);
+        var configuredMarginHorizontal = ResolvePresentationMetric(
             Battlegrounds.Content.ModThemeMetricKeys.Hud.OpponentMarginHorizontal,
             0.0f,
             256.0f);
-        var identityWidth = Mathf.Max(58.0f, portraitSize * 1.28f);
+        var marginHorizontal = Mathf.Min(configuredMarginHorizontal, 4.0f);
+        var identityWidth = Mathf.Clamp(portraitSize * 1.42f, 54.0f, 64.0f);
 
-        var rail = GetNodeOrNull<PanelContainer>("Margin/Shell/OpponentRail");
-        if (rail is not null)
+        var rail = GetNodeOrNull<PanelContainer>("Margin/Shell/OpponentRail") ??
+                   GetNodeOrNull<PanelContainer>("ReferenceBoardOverlay/OpponentRail");
+        if (rail is not null && rail.GetParent()?.Name.ToString() != "ReferenceBoardOverlay")
         {
             rail.CustomMinimumSize = new Vector2(
-                rankWidth + portraitSize + identityWidth + marginHorizontal * 2.0f + 14.0f,
+                rankWidth + portraitSize + identityWidth + marginHorizontal * 2.0f + 10.0f,
                 0.0f);
             rail.SizeFlagsHorizontal = Control.SizeFlags.ShrinkBegin;
         }
 
         foreach (var entry in _opponentEntries.GetChildren().OfType<PanelContainer>())
         {
+            entry.CustomMinimumSize = new Vector2(0, portraitSize + 12.0f);
             var row = Descendants<HBoxContainer>(entry).FirstOrDefault();
             if (row is null)
                 continue;
 
-            row.AddThemeConstantOverride("separation", 3);
+            row.AddThemeConstantOverride("separation", 2);
+
+            var rankLabel = row.GetChildren().OfType<Label>().FirstOrDefault();
+            if (rankLabel is not null)
+                rankLabel.CustomMinimumSize = new Vector2(rankWidth, 0);
 
             var portraitFrame = Descendants<PanelContainer>(entry)
                 .FirstOrDefault(panel => string.Equals(
@@ -95,7 +104,7 @@ public partial class Main
             overlay.SetAnchorsAndOffsetsPreset(Control.LayoutPreset.FullRect);
         }
 
-        var badgeSize = Mathf.Clamp(portraitSize * 0.42f, 20.0f, 30.0f);
+        var badgeSize = Mathf.Clamp(portraitSize * 0.40f, 17.0f, 23.0f);
         var health = EnsureOpponentBadge(overlay, "Health", "HealthBadge", right: true, bottom: true, badgeSize);
         var tier = EnsureOpponentBadge(overlay, "Tier", "TierBadge", right: false, bottom: false, badgeSize);
 
