@@ -148,8 +148,6 @@ export async function createPreparationScreen(state) {
   element.querySelector('[data-field="round"]').textContent = state.round ?? '';
   element.querySelector('[data-field="tier-label"]').textContent = labels.tier ?? 'Tier';
   element.querySelector('[data-field="tier"]').textContent = human.tier ?? '';
-  element.querySelector('[data-field="field-label"]').textContent = labels.field ?? 'Field';
-  element.querySelector('[data-field="field-count"]').textContent = `${fieldCount}/${limits.fieldCapacity ?? '—'}`;
   element.querySelector('[data-field="leader-label"]').textContent = labels.leader ?? 'Leader';
   element.querySelector('[data-field="hero-name"]').textContent = (state.players ?? []).find(player => player.human)?.leader ?? '—';
   element.querySelector('[data-field="health"]').textContent = human.health ?? '';
@@ -168,7 +166,6 @@ export async function createPreparationScreen(state) {
     field.push(await createFieldCard(state, unit, blocked));
     field.push(await createDropSlot({ insertionIndex: unit.slot + 1 }));
   }
-  if (!fieldCount) field.push(await createEmpty({ label: labels.field ?? 'Field' }));
   appendChildren(element.querySelector('[data-slot="field"]'), [await createRow({ children: field, variant: 'field' })]);
 
   const offer = [];
@@ -178,12 +175,10 @@ export async function createPreparationScreen(state) {
       (human.resource ?? 0) >= (entry.cost ?? Number.POSITIVE_INFINITY);
     offer.push(await createOfferCard(entry, blocked, canAcquire));
   }
-  if (!offer.length) offer.push(await createEmpty({ label: labels.offer ?? 'Offer' }));
   appendChildren(element.querySelector('[data-slot="offer"]'), [await createRow({ children: offer, variant: 'offer' })]);
 
   const reserve = [];
   for (const entry of state.reserve ?? []) reserve.push(await createReserveCard(state, entry, blocked, canDeploy));
-  if (!reserve.length) reserve.push(await createEmpty({ label: labels.reserve ?? 'Reserve' }));
   appendChildren(element.querySelector('[data-slot="reserve"]'), [await createRow({ children: reserve, variant: 'reserve' })]);
 
   appendChildren(element.querySelector('[data-slot="upgrade"]'), [await createButton({
