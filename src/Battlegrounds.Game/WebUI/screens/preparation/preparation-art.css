@@ -25,8 +25,6 @@
 }
 .match-mark { padding-bottom: 5px; }
 
-/* Bob is the visual anchor at the top center. Controls orbit him rather than
-   participating in one long flex row. */
 .tavern-controls {
   position: relative;
   display: grid;
@@ -130,7 +128,7 @@
   grid-column: 2;
   align-self: end;
   margin: 0;
-  transform: translateY(28px);
+  transform: translateY(40px);
   z-index: 12;
 }
 .shopkeeper-drop .drag-hint {
@@ -145,7 +143,7 @@
 
 .tavern-shelf {
   align-items: start;
-  padding-top: 38px !important;
+  padding-top: 42px !important;
   background: linear-gradient(180deg, rgba(0,0,0,.02), rgba(0,0,0,.10) 92%) !important;
 }
 .tavern-shelf::before {
@@ -153,7 +151,7 @@
   position: absolute;
   left: 14%;
   right: 14%;
-  top: 20px;
+  top: 22px;
   bottom: 7px;
   border-radius: 50% 50% 12% 12% / 18% 18% 10% 10%;
   border-top: 1px solid color-mix(in srgb, var(--theme-color-border-strong, var(--line)) 40%, transparent);
@@ -184,9 +182,6 @@
   min-height: 184px;
 }
 
-/* The hero cockpit is pinned to the lower board socket. Hearthstone keeps
-   Health and Armor attached to the portrait and Hero Power immediately to
-   its right, while Gold stays close to the lower-right side of the cockpit. */
 .hero-dock {
   position: static !important;
   min-height: 0;
@@ -198,7 +193,7 @@
   position: absolute;
   z-index: 22;
   left: 50%;
-  bottom: 140px;
+  bottom: 136px;
   width: 132px;
   height: 150px;
   transform: translateX(-50%);
@@ -252,8 +247,8 @@
 .resource-badge {
   position: absolute;
   z-index: 24;
-  left: calc(50% + 196px);
-  bottom: 74px;
+  right: 14%;
+  bottom: 66px;
   min-width: 116px;
   min-height: 42px;
   display: flex;
@@ -261,7 +256,6 @@
   justify-content: center;
   gap: 8px;
   margin: 0;
-  transform: translateX(-50%);
   border-radius: 999px !important;
   box-shadow: 0 8px 18px rgba(0,0,0,.30);
 }
@@ -323,20 +317,20 @@
   .character-portrait,
   .hero-drop { width: 116px; height: 132px; }
   .character-nameplate { width: 106px; }
-  .shopkeeper-drop { transform: translateY(23px); }
+  .shopkeeper-drop { transform: translateY(34px); }
   .tavern-left-controls { padding-right: 10px; }
   .tavern-right-controls { padding-left: 10px; }
   .tavern-control .button { width: 52px; height: 52px; }
   .tavern-upgrade .button { width: 58px; height: 58px; }
   .tier-badge { width: 46px; height: 56px; }
-  .tavern-shelf { padding-top: 32px !important; }
+  .tavern-shelf { padding-top: 36px !important; }
   .tavern-shelf .card { flex-basis: 124px; min-width: 104px; }
-  .hero-cluster { width: 116px; height: 132px; bottom: 122px; }
+  .hero-cluster { width: 116px; height: 132px; bottom: 120px; }
   .health-badge { width: 42px; height: 42px; right: -16px; bottom: -13px; }
   .armor-badge { width: 36px; height: 36px; right: -19px; bottom: 25px; }
   .hero-power { left: calc(100% + 12px); top: 45%; }
   .hero-power .button { width: 54px; height: 54px; min-width: 54px; }
-  .resource-badge { left: calc(50% + 168px); bottom: 60px; min-width: 104px; }
+  .resource-badge { right: 11%; bottom: 56px; min-width: 104px; }
   .turn-rail { right: 138px; top: 44%; }
   .turn-rail [data-slot="ready"] .button,
   .waiting-banner { width: 132px; }
