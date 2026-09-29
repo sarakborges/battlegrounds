@@ -32,7 +32,6 @@ public partial class Main
     private string LeaderName(LeaderId id) => EntityName(ModPresentationEntityKind.Leader, id.Value);
     private string UnitName(UnitId id) => EntityName(ModPresentationEntityKind.Unit, id.Value);
     private string ActionName(ActionId id) => EntityName(ModPresentationEntityKind.Action, id.Value);
-    private string CombineName(UnitCombineId id) => EntityName(ModPresentationEntityKind.Combine, id.Value);
 
     private string PlayableName(PlayableKind kind, string id) => kind switch
     {
