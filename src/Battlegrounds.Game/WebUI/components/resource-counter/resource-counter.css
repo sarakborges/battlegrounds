@@ -1,13 +1,13 @@
 .resource-counter.panel {
-  min-width: 104px;
-  height: 38px;
+  min-width: 116px;
+  height: 42px;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 9px;
-  padding: 3px 14px;
-  border-radius: 999px;
-  box-shadow: 0 8px 18px rgba(0, 0, 0, .34);
+  gap: 8px;
+  padding: 3px 14px 3px 38px;
+  border-radius: 0;
+  box-shadow: none;
 }
 
 .resource-counter__coin {
@@ -23,7 +23,15 @@
   box-shadow: inset 0 0 0 3px rgba(255, 216, 109, .12);
 }
 
+.resource-counter[data-theme-background-asset="true"] .resource-counter__coin {
+  display: none;
+}
+
 .resource-counter strong {
+  min-width: 34px;
+  color: #fff1ba;
   font-size: 20px;
   line-height: 1;
+  text-align: center;
+  text-shadow: 0 2px 3px rgba(0, 0, 0, .75);
 }
