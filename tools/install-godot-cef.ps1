@@ -12,6 +12,8 @@ $Destination = Join-Path $AddonsRoot "godot_cef"
 $TempRoot = Join-Path ([System.IO.Path]::GetTempPath()) "battlegrounds-godot-cef-$Version"
 $ArchivePath = Join-Path $TempRoot $AssetName
 $ExtractRoot = Join-Path $TempRoot "extract"
+$InstalledExtension = Join-Path $Destination "godot_cef.gdextension"
+$InstalledWindowsDll = Join-Path $Destination "bin/x86_64-pc-windows-msvc/gdcef.dll"
 
 try {
     if (Test-Path $TempRoot) {
@@ -43,9 +45,24 @@ try {
     if (Test-Path $Destination) {
         Remove-Item $Destination -Recurse -Force
     }
+    New-Item $Destination -ItemType Directory -Force | Out-Null
 
-    Copy-Item -Path $SourceAddon -Destination $Destination -Recurse
-    Write-Host "Godot CEF $Version installed at $Destination"
+    # Copy the addon contents, not the addon directory itself. This avoids creating
+    # addons/godot_cef/godot_cef/... on PowerShell installations where Copy-Item
+    # preserves the source directory name when the destination is absent.
+    Copy-Item -Path (Join-Path $SourceAddon "*") -Destination $Destination -Recurse -Force
+
+    if (-not (Test-Path $InstalledExtension -PathType Leaf)) {
+        throw "Godot CEF install failed: expected extension file was not created at $InstalledExtension."
+    }
+
+    if (-not (Test-Path $InstalledWindowsDll -PathType Leaf)) {
+        throw "Godot CEF install failed: expected Windows x64 library was not created at $InstalledWindowsDll."
+    }
+
+    Write-Host "Godot CEF $Version installed successfully."
+    Write-Host "  Extension: $InstalledExtension"
+    Write-Host "  Windows DLL: $InstalledWindowsDll"
 }
 finally {
     if (Test-Path $TempRoot) {
