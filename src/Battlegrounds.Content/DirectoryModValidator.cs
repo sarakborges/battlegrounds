@@ -705,6 +705,7 @@ internal sealed class DirectoryModValidator
             }
             case "transformUnit":
             case "copyUnitToReserve":
+            case "returnUnitToReserve":
             case "applyUnitModifier":
             case "removeUnitModifier":
                 // Persistent mutation schemas are owned by PersistentUnitMutationModValidator.

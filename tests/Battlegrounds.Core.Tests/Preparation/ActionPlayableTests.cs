@@ -206,6 +206,56 @@ public sealed class ActionPlayableTests
         Assert.Equal(beforeReplace.Length, player.Offer.Count);
     }
 
+    [Fact]
+    public void ReturnUnitToReserve_PreservesUnitAndAllowsOnPlayAgainWithoutRelease()
+    {
+        var unit = new UnitDefinition(
+            new UnitId("recall-target"),
+            "Recall Target",
+            1,
+            2,
+            2,
+            triggers:
+            [
+                new TriggerDefinition(NativeTriggerKeys.OnPlay, [new AddResourceEffectDefinition(1)]),
+                new TriggerDefinition(NativeTriggerKeys.OnRelease, [new AddResourceEffectDefinition(5)]),
+            ]);
+        var retreat = new ActionDefinition(
+            new ActionId("retreat"),
+            "Retreat",
+            1,
+            0,
+            [new ReturnUnitToReserveEffectDefinition(new EffectTargetSelector(EffectTargetScope.Selected))]);
+        var units = new UnitCatalog([unit]);
+        var actions = new ActionCatalog([retreat]);
+        var rules = new PreparationRules(0, 0, 10, 0, 1, 0, 7, 10, 2, [1, 1], [5], [1, 1]);
+        var pool = new UnitPool(units, [new UnitPoolEntry(unit.Id, 10)]);
+        var engine = new PreparationEngine(rules, pool, new MinimumRandomSource(), units, null, null, actions);
+        var match = MatchState.Create([new PlayerId(0), new PlayerId(1)], new MatchRules(2, 2));
+        engine.BeginPreparation(match);
+        var player = match.Players[0];
+
+        Assert.True(engine.Execute(match, new AcquirePlayableCommand(player.Id, 0)).Succeeded);
+        var pooled = Assert.Single(player.Reserve);
+        Assert.True(engine.Execute(match, new DeployUnitCommand(player.Id, 0)).Succeeded);
+        Assert.Equal(1, player.Resource);
+        var poolCopiesBeforeReturn = pool.GetAvailableCopies(unit.Id);
+
+        var actionEntry = player.PlayableOffer.Single(entry => entry.Kind == PlayableKind.Action);
+        Assert.True(engine.Execute(match, new AcquirePlayableCommand(player.Id, actionEntry.Slot)).Succeeded);
+        var actionReserveSlot = player.PlayableReserve.Single(entry => entry.Kind == PlayableKind.Action).Slot;
+        Assert.True(engine.Execute(match, new PlayActionCommand(player.Id, actionReserveSlot, pooled.Id)).Succeeded);
+
+        Assert.Empty(player.Field);
+        Assert.Same(pooled, Assert.Single(player.Reserve));
+        Assert.Equal(poolCopiesBeforeReturn, pool.GetAvailableCopies(unit.Id));
+        Assert.Equal(1, player.Resource);
+
+        Assert.True(engine.Execute(match, new DeployUnitCommand(player.Id, 0)).Succeeded);
+        Assert.Same(pooled, Assert.Single(player.Field));
+        Assert.Equal(2, player.Resource);
+    }
+
     private static void PlayOfferedAction(PreparationEngine engine, MatchState match, PlayerState player, ActionId actionId)
     {
         var entry = player.PlayableOffer.Single(value => value.Kind == PlayableKind.Action && value.Action!.Id == actionId);

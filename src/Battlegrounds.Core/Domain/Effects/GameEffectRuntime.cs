@@ -293,6 +293,12 @@ internal sealed class GameEffectRuntime
                 if (targets.Length > 0) GetPersistentMutationWorld(copy.Kind).CopyUnitsToReserve(source.OwnerPlayerId, targets);
                 break;
             }
+            case ReturnUnitToReserveEffectDefinition returnToReserve:
+            {
+                var targets = GetCurrentTargets(resolved.TargetInstanceIds).ToArray();
+                if (targets.Length > 0) GetPersistentMutationWorld(returnToReserve.Kind).ReturnUnitsToReserve(targets);
+                break;
+            }
             case ApplyUnitModifierEffectDefinition modifier:
             {
                 var mutationWorld = GetPersistentMutationWorld(modifier.Kind);

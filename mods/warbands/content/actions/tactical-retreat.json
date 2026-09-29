@@ -1,0 +1,14 @@
+{
+  "id": "tactical-retreat",
+  "name": "Tactical Retreat",
+  "tier": 1,
+  "cost": 1,
+  "effects": [
+    {
+      "kind": "returnUnitToReserve",
+      "target": {
+        "scope": "selected"
+      }
+    }
+  ]
+}

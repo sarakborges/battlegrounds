@@ -75,6 +75,7 @@ public static class NativeEffectKeys
     public static NativeEffectKey GenerateActionChoice { get; } = new("generateActionChoice");
     public static NativeEffectKey TransformUnit { get; } = new("transformUnit");
     public static NativeEffectKey CopyUnitToReserve { get; } = new("copyUnitToReserve");
+    public static NativeEffectKey ReturnUnitToReserve { get; } = new("returnUnitToReserve");
     public static NativeEffectKey ApplyUnitModifier { get; } = new("applyUnitModifier");
     public static NativeEffectKey RemoveUnitModifier { get; } = new("removeUnitModifier");
 
@@ -99,6 +100,7 @@ public static class NativeEffectKeys
         GenerateActionChoice,
         TransformUnit,
         CopyUnitToReserve,
+        ReturnUnitToReserve,
         ApplyUnitModifier,
         RemoveUnitModifier,
     ];

@@ -14,7 +14,7 @@ internal sealed class ActionModValidator
     [
         "modifyStats", "dealDamage", "destroyUnit", "triggerEvent", "summonUnit",
         "generateUnitToReserve", "generateUnitChoice", "generateActionToReserve", "generateActionChoice",
-        "transformUnit", "copyUnitToReserve", "applyUnitModifier", "removeUnitModifier",
+        "transformUnit", "copyUnitToReserve", "returnUnitToReserve", "applyUnitModifier", "removeUnitModifier",
         "addBehavior", "removeBehavior", "addResource", "adjustUpgradeCost", "addAcquireDiscount", "refreshOffer", "mutateOffer", "setPower",
     ];
 
@@ -198,7 +198,7 @@ internal sealed class ActionModValidator
                     break;
             }
 
-            if (kind is "modifyStats" or "dealDamage" or "destroyUnit" or "triggerEvent" or "addBehavior" or "removeBehavior")
+            if (kind is "modifyStats" or "dealDamage" or "destroyUnit" or "triggerEvent" or "addBehavior" or "removeBehavior" or "returnUnitToReserve")
             {
                 if (!effect.TryGetProperty("target", out var target) || target.ValueKind != JsonValueKind.Object)
                     issues.Add(new("MISSING_REQUIRED_PARAMETER", file, effectPath + ".target", "Effect requires a target object."));

@@ -497,6 +497,7 @@ public sealed class PreparationEngine
             RemoveBehaviorEffectDefinition value => value.Target,
             TransformUnitEffectDefinition value => value.Target,
             CopyUnitToReserveEffectDefinition value => value.Target,
+            ReturnUnitToReserveEffectDefinition value => value.Target,
             ApplyUnitModifierEffectDefinition value => value.Target,
             RemoveUnitModifierEffectDefinition value => value.Target,
             _ => null,
