@@ -1,7 +1,5 @@
 using Battlegrounds.Content;
-using Battlegrounds.Core.Domain.Choices;
 using Battlegrounds.Core.Domain.Ids;
-using Battlegrounds.Core.Domain.Match;
 using Battlegrounds.Core.Domain.Playables;
 using Godot;
 
@@ -19,15 +17,11 @@ public partial class Main
         var requestedLocale = string.IsNullOrWhiteSpace(Locale) ? TranslationServer.GetLocale() : Locale;
         _presentationText = mod.Presentation.Resolve(requestedLocale);
         InitializeTheme();
-        ApplyStaticPresentationText();
-        AppendLog($"Presentation locale: {_presentationText.Locale}.");
     }
 
-    private string Text(string key) =>
-        _presentationText?.Get(key) ?? key;
+    private string Text(string key) => _presentationText?.Get(key) ?? key;
 
-    private string Term(string key) =>
-        _presentationText?.Term(key) ?? key;
+    private string Term(string key) => _presentationText?.Term(key) ?? key;
 
     private string Text(string key, params (string Name, object? Value)[] values) =>
         _presentationText?.Format(key, values) ?? key;
@@ -36,7 +30,6 @@ public partial class Main
         _presentationText?.EntityName(kind, id) ?? id;
 
     private string LeaderName(LeaderId id) => EntityName(ModPresentationEntityKind.Leader, id.Value);
-    private string PowerName(PowerId id) => EntityName(ModPresentationEntityKind.Power, id.Value);
     private string UnitName(UnitId id) => EntityName(ModPresentationEntityKind.Unit, id.Value);
     private string ActionName(ActionId id) => EntityName(ModPresentationEntityKind.Action, id.Value);
     private string CombineName(UnitCombineId id) => EntityName(ModPresentationEntityKind.Combine, id.Value);
@@ -47,60 +40,4 @@ public partial class Main
         PlayableKind.Action => EntityName(ModPresentationEntityKind.Action, id),
         _ => id,
     };
-
-    private string PhaseText(MatchPhase phase) => phase switch
-    {
-        MatchPhase.Preparation => Term("preparation"),
-        MatchPhase.Combat => Term("combat"),
-        MatchPhase.Setup => Text("ui.phaseSetup"),
-        MatchPhase.Finished => Text("ui.phaseFinished"),
-        _ => phase.ToString(),
-    };
-
-    private string PlayableKindText(PlayableKind kind) => kind switch
-    {
-        PlayableKind.Unit => Term("unit"),
-        PlayableKind.Action => Term("action"),
-        _ => kind.ToString(),
-    };
-
-    private string ChoiceKindText(PendingChoiceKind kind) => kind switch
-    {
-        PendingChoiceKind.Unit => Term("unit"),
-        PendingChoiceKind.Action => Term("action"),
-        _ => kind.ToString(),
-    };
-
-    private void ApplyStaticPresentationText()
-    {
-        if (_presentationText is null) return;
-
-        _status.Text = Text("ui.loading");
-        SetStaticLabel(
-            "Margin/Shell/CenterStage/PreparationPanel/TavernShelf/ShelfRow/ShopkeeperSlot/Content/Name",
-            Text("ui.releaseTargetTitle"));
-        SetStaticLabel(
-            "Margin/Shell/CenterStage/PreparationPanel/TavernShelf/ShelfRow/ShopkeeperSlot/Content/SellHint",
-            Text("ui.releaseTargetHint"));
-
-        _confirmInteractionButton.Text = Text("ui.confirm");
-        _cancelInteractionButton.Text = Text("ui.cancel");
-        _refreshButton.Text = Text("ui.refresh");
-        _upgradeButton.Text = Text("ui.upgradeTier", ("tier", Term("tier")));
-        _powerButton.Text = Text("ui.usePower", ("power", Term("power")));
-        _combineButton.Text = Text("ui.combineUnits", ("units", Term("units")));
-        _endPreparationButton.Text = Text("ui.endPreparation", ("preparation", Term("preparation")));
-    }
-
-    private void SetStaticLabel(string path, string value)
-    {
-        var label = GetNodeOrNull<Label>(path);
-        if (label is null)
-        {
-            GD.PushWarning($"Presentation text target '{path}' was not found; skipping it.");
-            return;
-        }
-
-        label.Text = value;
-    }
 }
