@@ -1,4 +1,19 @@
 .leader-screen { height: 100%; display: grid; place-content: center; gap: 20px; padding: 28px; }
 .leader-copy { text-align: center; display: grid; gap: 7px; }
-.leader-grid { display: flex; justify-content: center; flex-wrap: wrap; gap: 12px; }
-.leader-grid .card { min-height: 210px; width: 190px; }
+.leader-grid { display: flex; justify-content: center; flex-wrap: wrap; gap: 16px; }
+.leader-grid .card {
+  min-height: 286px;
+  width: 206px;
+  padding: 10px;
+  grid-template-rows: 164px auto 1fr auto;
+  border-radius: 22px;
+}
+.leader-grid .card .art {
+  width: calc(100% + 20px);
+  height: 174px;
+  margin: -10px -10px 3px;
+  object-position: center top;
+}
+.leader-grid .card .kind { text-align: center; }
+.leader-grid .card .name { text-align: center; font-size: 18px; }
+.leader-grid .card .meta { justify-content: center; }
