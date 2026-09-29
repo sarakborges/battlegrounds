@@ -1,0 +1,14 @@
+.hover-inspector {
+  position: absolute;
+  z-index: 4000;
+  pointer-events: none;
+  opacity: 0;
+  transform: translateY(6px) scale(.98);
+  transform-origin: top left;
+  transition: opacity 90ms ease, transform 90ms ease;
+}
+
+.hover-inspector.is-visible {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
