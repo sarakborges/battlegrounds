@@ -1,9 +1,9 @@
 import { appendChildren, cloneTemplate, useStyle } from '../../core/template.js';
+import { createEmptyState } from '../../design-system/empty-state/empty-state.js';
 import { createCombatCard } from '../../components/combat-card/combat-card.js';
-import { createEmpty } from '../../components/empty/empty.js';
 
 const templateUrl = new URL('./combat.html', import.meta.url);
-useStyle(new URL('../../components/panel/panel.css', import.meta.url));
+useStyle(new URL('../../design-system/panel/panel.css', import.meta.url));
 useStyle(new URL('./combat.css', import.meta.url));
 
 let lastStepKey = '';
@@ -33,7 +33,7 @@ async function populateSide(element, side, sideName) {
   for (const unit of side?.units ?? []) {
     units.push(await createCombatCard({ name: unit.name, attack: unit.attack, health: unit.health, tier: unit.tier, status: unit.status, marker: unit.highlight, highlight: highlightClass(unit.highlight), instanceId: unit.instanceId }));
   }
-  if (!units.length) units.push(await createEmpty({ label: 'Empty field' }));
+  if (!units.length) units.push(await createEmptyState({ label: 'Empty field' }));
   appendChildren(sideElement.querySelector(`[data-slot="${sideName}-board"]`), units);
 }
 

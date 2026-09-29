@@ -1,0 +1,29 @@
+.player-reserve {
+  position: relative;
+  z-index: 7;
+  min-width: 0;
+  display: grid;
+  align-items: end;
+  overflow: visible;
+  margin-top: -20px;
+  padding: 0 20px 4px !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+}
+
+.player-reserve__content {
+  min-width: 0;
+}
+
+.player-reserve__cards {
+  justify-content: center;
+  align-items: end;
+  transform: translateY(8px);
+  padding: 0;
+  overflow: visible;
+}
+
+.player-reserve__cards > * + * {
+  margin-left: -24px;
+}

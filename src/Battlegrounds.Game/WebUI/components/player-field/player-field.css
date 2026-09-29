@@ -1,0 +1,27 @@
+.player-field {
+  position: relative;
+  z-index: 2;
+  min-width: 0;
+  min-height: 0;
+  display: grid;
+  align-items: center;
+  margin-inline: 4.5%;
+  overflow: visible;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  transition: box-shadow 100ms ease;
+}
+
+.player-field__content {
+  min-width: 0;
+}
+
+.player-field__cards {
+  min-height: 190px;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 18px 28px 30px;
+  overflow: visible;
+}

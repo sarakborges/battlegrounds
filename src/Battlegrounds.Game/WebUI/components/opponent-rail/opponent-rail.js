@@ -2,7 +2,7 @@ import { appendChildren, cloneTemplate, useStyle } from '../../core/template.js'
 import { createPlayerChip } from '../player-chip/player-chip.js';
 
 const templateUrl = new URL('./opponent-rail.html', import.meta.url);
-useStyle(new URL('../panel/panel.css', import.meta.url));
+useStyle(new URL('../../design-system/panel/panel.css', import.meta.url));
 useStyle(new URL('./opponent-rail.css', import.meta.url));
 
 export async function createOpponentRail({

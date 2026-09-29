@@ -1,7 +1,0 @@
-.panel {
-  border: 1px solid var(--line);
-  background: color-mix(in srgb, var(--surface-1) 94%, transparent);
-  border-radius: var(--radius);
-  box-shadow: 0 18px 50px rgba(0,0,0,.22);
-}
-.panel > [data-slot="content"] { display: contents; }

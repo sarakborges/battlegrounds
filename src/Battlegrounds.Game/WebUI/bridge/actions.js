@@ -1,5 +1,6 @@
 function payloadFor(element, action) {
   switch (action) {
+    case 'select-mod': return { directoryName: element.dataset.modDirectory };
     case 'select-leader': return { leaderId: element.dataset.leaderId };
     case 'acquire':
     case 'deploy':

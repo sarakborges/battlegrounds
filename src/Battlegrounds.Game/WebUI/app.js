@@ -17,13 +17,19 @@ function showError(message) {
   toastTimer = setTimeout(() => toast.classList.remove('visible'), 4200);
 }
 
+function themeScreenRole(status) {
+  if (status === 'mod-selection') return 'launcher';
+  if (status === 'combat') return 'combat';
+  return 'preparation';
+}
+
 const bridge = createGameBridge({
   onError: showError,
   onAsset: receiveAsset,
   onDevCssReload: reloadStyles,
   onState: async state => {
     const version = ++renderVersion;
-    applyTheme(state?.theme, state?.status === 'combat' ? 'combat' : 'preparation');
+    applyTheme(state?.theme, themeScreenRole(state?.status));
     bridge.setPolling(state?.status === 'combat');
 
     try {

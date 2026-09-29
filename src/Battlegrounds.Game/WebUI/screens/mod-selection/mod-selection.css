@@ -1,0 +1,41 @@
+.app-shell:has(> .mod-selection-screen) {
+  overflow: auto;
+}
+
+.mod-selection-screen {
+  width: min(920px, 100%);
+  min-height: 0;
+  margin: auto;
+  display: grid;
+  align-content: start;
+  gap: 16px;
+}
+
+.mod-selection-screen__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: end;
+  gap: 18px;
+}
+
+.mod-selection-screen__header > div:first-child {
+  display: grid;
+  gap: 6px;
+}
+
+.mod-selection-screen__header p {
+  color: var(--muted);
+}
+
+.mod-selection-screen__mods {
+  display: grid;
+  gap: 10px;
+}
+
+.mod-selection-screen__error {
+  padding: 12px 14px;
+  border: 1px solid color-mix(in srgb, var(--danger) 60%, var(--line));
+  border-radius: var(--radius);
+  color: var(--danger);
+  background: var(--surface-1);
+}

@@ -1,6 +1,6 @@
-import { createBadge } from '../../components/badge/badge.js';
+import { createBadge } from '../../design-system/badge/badge.js';
 
-export async function createCardMeta(entry = {}) {
+export async function createCardStatBadges(entry = {}) {
   const badges = [];
   if (entry.tier != null) badges.push(await createBadge({ text: `T${entry.tier}`, variant: 'tier' }));
   if (entry.attack != null) badges.push(await createBadge({ text: entry.attack, variant: 'attack' }));
