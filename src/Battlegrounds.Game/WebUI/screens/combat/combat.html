@@ -1,0 +1,28 @@
+<template>
+  <section class="combat-ui" data-screen="combat">
+    <div class="combat-shell">
+      <section class="panel combat-topbar" data-component="panel" data-theme-role="panel">
+        <div>
+          <span class="eyebrow" data-field="mod-name"></span>
+          <strong data-field="combat-label"></strong>
+        </div>
+        <div class="combat-round"><span data-field="round-label"></span> <span data-field="round"></span></div>
+        <div class="combat-progress" data-field="progress"></div>
+      </section>
+      <main class="combat-stage">
+        <section class="combat-side combat-side-top" data-side="right">
+          <header class="combat-side-header"><span data-field="right-label"></span><small data-field="right-archived" hidden>archived</small></header>
+          <div class="combat-board" data-slot="right-board"></div>
+        </section>
+        <section class="combat-event" data-field="event-container">
+          <span class="combat-event-kind" data-field="event-kind"></span>
+          <strong data-field="event-text"></strong>
+        </section>
+        <section class="combat-side combat-side-bottom" data-side="left">
+          <header class="combat-side-header"><span data-field="left-label"></span><small data-field="left-archived" hidden>archived</small></header>
+          <div class="combat-board" data-slot="left-board"></div>
+        </section>
+      </main>
+    </div>
+  </section>
+</template>

@@ -1,0 +1,42 @@
+.opponent-rail {
+  position: relative;
+  z-index: 20;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px 8px !important;
+  overflow: hidden;
+  border-width: 0 1px 0 0 !important;
+  border-radius: 0 !important;
+  background: color-mix(
+    in srgb,
+    var(--theme-color-surface-deep, var(--surface-0)) 86%,
+    transparent
+  ) !important;
+  box-shadow: 12px 0 28px rgba(0, 0, 0, 0.18);
+  backdrop-filter: blur(5px);
+}
+
+.opponent-rail__match-mark {
+  padding: 2px 4px 5px;
+  display: grid;
+  gap: 2px;
+}
+
+.opponent-rail__match-mark strong {
+  font-size: 13px;
+}
+
+.opponent-rail__players {
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--theme-metric-layout-opponent-rail-entries-gap, 5) * 1px);
+  overflow-y: auto;
+}
+
+.opponent-rail__players > * {
+  width: 100%;
+  flex: 0 0 auto;
+}

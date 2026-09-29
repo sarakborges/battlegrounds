@@ -1,0 +1,32 @@
+.shopkeeper {
+  position: relative;
+  z-index: 12;
+  width: 132px;
+  height: 150px;
+  margin: 0;
+  transform: translateY(116px);
+  --character-portrait-width: 132px;
+  --character-portrait-height: 150px;
+  --character-nameplate-width: 120px;
+}
+
+.shopkeeper .drag-hint {
+  position: absolute;
+  z-index: 8;
+  left: 50%;
+  top: calc(100% + 24px);
+  width: 150px;
+  transform: translateX(-50%);
+  text-align: center;
+}
+
+@media (max-width: 1200px) {
+  .shopkeeper {
+    width: 116px;
+    height: 132px;
+    transform: translateY(40px);
+    --character-portrait-width: 116px;
+    --character-portrait-height: 132px;
+    --character-nameplate-width: 106px;
+  }
+}

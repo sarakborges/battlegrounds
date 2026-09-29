@@ -1,0 +1,41 @@
+.badge {
+  padding: 4px 7px;
+  border-radius: 999px;
+  background: rgba(0,0,0,.24);
+  border: 1px solid var(--line);
+  font-size: 11px;
+  line-height: 1;
+}
+.badge[data-variant="accent"] { color: var(--accent); }
+.badge[data-variant="danger"] { color: var(--danger); }
+.badge[data-variant="tier"],
+.badge[data-variant="attack"],
+.badge[data-variant="health"],
+.badge[data-variant="armor"] {
+  width: 30px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border-radius: 50%;
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 800;
+  box-shadow: 0 4px 10px rgba(0,0,0,.28), inset 0 1px 0 rgba(255,255,255,.06);
+}
+.badge[data-variant="tier"] {
+  border-color: color-mix(in srgb, var(--theme-color-focus, var(--accent)) 72%, var(--line));
+  background: color-mix(in srgb, var(--theme-color-focus, var(--accent)) 24%, var(--theme-color-surface-deep, var(--surface-0)));
+}
+.badge[data-variant="attack"] {
+  border-color: color-mix(in srgb, #d9a441 72%, var(--line));
+  background: color-mix(in srgb, #d9a441 20%, var(--theme-color-surface-deep, var(--surface-0)));
+}
+.badge[data-variant="health"] {
+  border-color: color-mix(in srgb, #c94a4a 78%, var(--line));
+  background: color-mix(in srgb, #c94a4a 22%, var(--theme-color-surface-deep, var(--surface-0)));
+}
+.badge[data-variant="armor"] {
+  border-color: color-mix(in srgb, #6ca8d8 76%, var(--line));
+  background: color-mix(in srgb, #6ca8d8 20%, var(--theme-color-surface-deep, var(--surface-0)));
+}

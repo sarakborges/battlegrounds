@@ -17,32 +17,9 @@ public partial class Main
     private ModInteractionSettings InteractionSettings =>
         _interactionSettings ??= new ModInteractionSettingsLoader().Load(ProjectSettings.GlobalizePath(ModPath));
 
-    private bool UsesAutomaticCombines =>
-        InteractionSettings.CombineMode == CombineInteractionMode.Automatic;
+    private bool UsesAutomaticCombines => InteractionSettings.CombineMode == CombineInteractionMode.Automatic;
 
-    private void UpdateAutomaticCombines()
-    {
-        UpdateCombineButtonVisibility();
-        TrySubmitAutomaticCombine();
-    }
-
-    private void UpdateCombineButtonVisibility()
-    {
-        if (_combineButton is null)
-            return;
-
-        if (UsesAutomaticCombines || _session?.Match is not MatchState match || match.Phase != MatchPhase.Preparation)
-        {
-            _combineButton.Visible = false;
-            return;
-        }
-
-        _combineButton.Visible = match.TryGetPlayer(_session.HumanPlayerId, out var human) &&
-                                 !human.IsEliminated &&
-                                 !human.IsReadyForCombat &&
-                                 human.PendingChoice is null &&
-                                 GetAvailableCombines(human).Count > 0;
-    }
+    private void UpdateAutomaticCombines() => TrySubmitAutomaticCombine();
 
     private void TrySubmitAutomaticCombine()
     {
@@ -71,19 +48,9 @@ public partial class Main
         {
             var command = new CombineUnitsCommand(human.Id, plan.Value.Definition.Id, plan.Value.InstanceIds);
             var result = SubmitHumanCommand(command, logFailure: false);
+            _automaticCombineFailureKey = result.HasValue && result.Value.Succeeded ? null : failureKey;
             if (result.HasValue && result.Value.Succeeded)
-            {
-                _automaticCombineFailureKey = null;
-                AppendLog(
-                    $"Auto-combined {plan.Value.Definition.RequiredCopies}x {UnitName(plan.Value.Definition.SourceUnitId)} " +
-                    $"into {UnitName(plan.Value.Definition.ResultUnitId)}.");
                 Render();
-                return;
-            }
-
-            _automaticCombineFailureKey = failureKey;
-            if (result.HasValue)
-                AppendLog($"Automatic combine rejected: {result.Value.FailureCode}.");
         }
         finally
         {
@@ -110,12 +77,7 @@ public partial class Main
             if (reserveCandidates.Length + fieldCandidates.Length < definition.RequiredCopies)
                 continue;
 
-            // Prefer Reserve copies so the resulting generated unit has room whenever possible.
-            // Within each zone, stable instance-id ordering keeps replay/debug behavior deterministic.
-            var selected = reserveCandidates
-                .Concat(fieldCandidates)
-                .Take(definition.RequiredCopies)
-                .ToArray();
+            var selected = reserveCandidates.Concat(fieldCandidates).Take(definition.RequiredCopies).ToArray();
             var selectedReserveCount = Math.Min(reserveCandidates.Length, definition.RequiredCopies);
             var postCombineReserveCount = human.PlayableReserveCount - selectedReserveCount + 1;
             if (postCombineReserveCount > _session.Mod.PreparationRules.ReserveCapacity)

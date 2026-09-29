@@ -1,0 +1,65 @@
+.drag-target {
+  transition:
+    border-color 100ms ease,
+    box-shadow 100ms ease,
+    background 100ms ease,
+    transform 100ms ease;
+}
+
+.drag-hint {
+  display: none;
+  color: var(--muted);
+  font-size: 9px;
+  line-height: 1.1;
+}
+
+.preparation-screen[data-drag-kind="offer"] [data-drop-kind="hero"] .drag-hint,
+.preparation-screen[data-drag-kind="field"] [data-drop-kind="shopkeeper"] .drag-hint {
+  display: block;
+}
+
+.is-drop-hover {
+  border-color: var(--theme-color-focus, var(--accent)) !important;
+  background-color: color-mix(
+    in srgb,
+    var(--theme-color-focus, var(--accent)) 14%,
+    var(--surface-2)
+  ) !important;
+  box-shadow:
+    0 0 0 3px
+      color-mix(
+        in srgb,
+        var(--theme-color-focus, var(--accent)) 42%,
+        transparent
+      ),
+    0 0 34px
+      color-mix(
+        in srgb,
+        var(--theme-color-focus, var(--accent)) 24%,
+        transparent
+      ) !important;
+}
+
+.is-drop-invalid {
+  border-color: color-mix(in srgb, #ff5b5b 70%, var(--line)) !important;
+  background-color: color-mix(in srgb, #ff5b5b 8%, var(--surface-2)) !important;
+}
+
+.preparation-screen[data-drag-kind] [data-drag-kind] {
+  cursor: grabbing;
+}
+
+.is-dragging {
+  opacity: 0.32 !important;
+  transform: scale(0.97) !important;
+}
+
+.drag-ghost {
+  position: fixed !important;
+  z-index: 9999 !important;
+  width: var(--card-width) !important;
+  transform: translate(-50%, -58%) rotate(2deg) scale(1.04) !important;
+  pointer-events: none !important;
+  opacity: 0.92 !important;
+  box-shadow: 0 20px 54px rgba(0, 0, 0, 0.45) !important;
+}

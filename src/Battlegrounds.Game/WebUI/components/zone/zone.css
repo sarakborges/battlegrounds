@@ -1,0 +1,4 @@
+.zone { min-height: 0; padding: 12px; }
+.zone-head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 9px; }
+.zone-head h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .09em; }
+.zone-head span { color: var(--muted); font-size: 12px; }

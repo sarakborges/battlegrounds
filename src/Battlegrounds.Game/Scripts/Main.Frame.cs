@@ -4,7 +4,8 @@ public partial class Main
 {
     public override void _PhysicsProcess(double delta)
     {
+        EnsureWebUiInitialized();
         UpdateAutomaticCombines();
-        RefreshCombatThemeState();
+        AdvanceWebCombatPlayback(delta);
     }
 }
