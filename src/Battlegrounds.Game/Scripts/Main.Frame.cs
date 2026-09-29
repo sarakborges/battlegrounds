@@ -6,6 +6,6 @@ public partial class Main
     {
         EnsureWebUiInitialized();
         UpdateAutomaticCombines();
-        RefreshCombatThemeState();
+        AdvanceWebCombatPlayback(delta);
     }
 }
