@@ -4,11 +4,11 @@ useStyle(new URL('./preparation-drag.css', import.meta.url));
 
 const DRAG_THRESHOLD = 5;
 
-function sourceFrom(element) {
+function readDragSource(element) {
   const kind = element.dataset.dragKind;
   if (!kind) return null;
 
-  if (kind === 'field') {
+  if (kind === 'player-field-unit') {
     return {
       kind,
       index: Number(element.dataset.dragIndex),
@@ -25,64 +25,68 @@ function sourceFrom(element) {
   };
 }
 
-function dragEnabled(element) {
+function isDragEnabled(element) {
   return element.hasAttribute('data-drag-enabled') && element.dataset.dragEnabled !== 'false';
 }
 
-function compatible(target, drag) {
-  const kind = target?.dataset.dropKind;
-  if (!kind || !drag) return false;
-  if (kind === 'hero') return drag.kind === 'offer';
-  if (kind === 'shopkeeper') return drag.kind === 'field';
-  if (kind === 'field-surface') return drag.kind === 'field' || drag.kind === 'reserve-unit';
+function isCompatibleDropTarget(target, dragSource) {
+  const dropKind = target?.dataset.dropKind;
+  if (!dropKind || !dragSource) return false;
+  if (dropKind === 'player-hero') return dragSource.kind === 'tavern-offer-card';
+  if (dropKind === 'tavern-shopkeeper') return dragSource.kind === 'player-field-unit';
+  if (dropKind === 'player-field') {
+    return dragSource.kind === 'player-field-unit' || dragSource.kind === 'player-reserve-unit';
+  }
   return false;
 }
 
-function valid(target, drag) {
-  if (!compatible(target, drag)) return false;
-  if (target.dataset.dropKind === 'hero') return drag.valid;
-  if (target.dataset.dropKind === 'field-surface' && drag.kind === 'reserve-unit') return drag.valid;
+function isValidDrop(target, dragSource) {
+  if (!isCompatibleDropTarget(target, dragSource)) return false;
+  if (target.dataset.dropKind === 'player-hero') return dragSource.valid;
+  if (target.dataset.dropKind === 'player-field' && dragSource.kind === 'player-reserve-unit') {
+    return dragSource.valid;
+  }
   return true;
 }
 
-function insertionIndex(fieldSurface, clientX) {
-  const cards = [...fieldSurface.querySelectorAll('[data-drag-kind="field"]')];
-  for (let index = 0; index < cards.length; index += 1) {
-    const rect = cards[index].getBoundingClientRect();
+function findPlayerFieldInsertionIndex(playerField, clientX) {
+  const unitCards = [...playerField.querySelectorAll('[data-drag-kind="player-field-unit"]')];
+  for (let index = 0; index < unitCards.length; index += 1) {
+    const rect = unitCards[index].getBoundingClientRect();
     if (clientX < rect.left + rect.width / 2) return index;
   }
-  return cards.length;
+  return unitCards.length;
 }
 
-function clearFeedback(root) {
+function clearDropFeedback(root) {
   for (const target of root.querySelectorAll('.is-drop-hover, .is-drop-invalid')) {
     target.classList.remove('is-drop-hover', 'is-drop-invalid');
   }
 }
 
-function dispatch(root, action, payload) {
+function dispatchPreparationAction(root, action, payload) {
   root.dispatchEvent(new CustomEvent('battlegrounds-action', {
     bubbles: true,
     detail: { action, payload }
   }));
 }
 
-function makeGhost(source) {
-  const ghost = source.cloneNode(true);
+function createDragGhost(sourceElement) {
+  const ghost = sourceElement.cloneNode(true);
   ghost.classList.add('drag-ghost');
   ghost.removeAttribute('data-action');
   document.body.appendChild(ghost);
   return ghost;
 }
 
-function moveGhost(ghost, event) {
+function positionDragGhost(ghost, event) {
   ghost.style.left = `${event.clientX}px`;
   ghost.style.top = `${event.clientY}px`;
 }
 
 export function bindPreparationDrag(root) {
-  let pending = null;
-  let drag = null;
+  let pendingDrag = null;
+  let activeDrag = null;
   let capturedPointer = null;
 
   const releasePointer = () => {
@@ -92,82 +96,103 @@ export function bindPreparationDrag(root) {
     capturedPointer = null;
   };
 
-  const finish = event => {
-    if (!drag) {
-      pending = null;
+  const finishDrag = event => {
+    if (!activeDrag) {
+      pendingDrag = null;
       releasePointer();
       return;
     }
 
-    const hit = document.elementFromPoint(event.clientX, event.clientY);
-    const target = hit?.closest?.('[data-drop-kind]');
-    if (target && valid(target, drag)) {
-      switch (target.dataset.dropKind) {
-        case 'hero':
-          dispatch(root, 'acquire', { slot: drag.slot });
+    const hitElement = document.elementFromPoint(event.clientX, event.clientY);
+    const dropTarget = hitElement?.closest?.('[data-drop-kind]');
+    if (dropTarget && isValidDrop(dropTarget, activeDrag)) {
+      switch (dropTarget.dataset.dropKind) {
+        case 'player-hero':
+          dispatchPreparationAction(root, 'acquire', { slot: activeDrag.slot });
           break;
-        case 'shopkeeper':
-          dispatch(root, 'release', { slot: drag.index });
+        case 'tavern-shopkeeper':
+          dispatchPreparationAction(root, 'release', { slot: activeDrag.index });
           break;
-        case 'field-surface': {
-          const index = insertionIndex(target, event.clientX);
-          if (drag.kind === 'field') dispatch(root, 'reorder-field', { fromIndex: drag.index, insertionIndex: index });
-          else if (drag.kind === 'reserve-unit') dispatch(root, 'deploy-at', { slot: drag.slot, insertionIndex: index });
+        case 'player-field': {
+          const insertionIndex = findPlayerFieldInsertionIndex(dropTarget, event.clientX);
+          if (activeDrag.kind === 'player-field-unit') {
+            dispatchPreparationAction(root, 'reorder-field', {
+              fromIndex: activeDrag.index,
+              insertionIndex
+            });
+          } else if (activeDrag.kind === 'player-reserve-unit') {
+            dispatchPreparationAction(root, 'deploy-at', {
+              slot: activeDrag.slot,
+              insertionIndex
+            });
+          }
           break;
         }
       }
     }
 
-    drag.element.classList.remove('is-dragging');
-    drag.ghost.remove();
+    activeDrag.element.classList.remove('is-dragging');
+    activeDrag.ghost.remove();
     root.removeAttribute('data-drag-kind');
-    clearFeedback(root);
-    drag = null;
-    pending = null;
+    clearDropFeedback(root);
+    activeDrag = null;
+    pendingDrag = null;
     releasePointer();
   };
 
   root.addEventListener('pointerdown', event => {
     if (event.button !== 0) return;
-    const element = event.target.closest('[data-drag-kind]');
-    if (!element || element.disabled || !dragEnabled(element)) return;
+    const sourceElement = event.target.closest('[data-drag-kind]');
+    if (!sourceElement || sourceElement.disabled || !isDragEnabled(sourceElement)) return;
 
     event.preventDefault();
-    const source = sourceFrom(element);
-    if (!source) return;
-    pending = { ...source, startX: event.clientX, startY: event.clientY };
+    const dragSource = readDragSource(sourceElement);
+    if (!dragSource) return;
+    pendingDrag = {
+      ...dragSource,
+      startX: event.clientX,
+      startY: event.clientY
+    };
 
-    if (element.setPointerCapture) {
-      element.setPointerCapture(event.pointerId);
-      capturedPointer = { element, pointerId: event.pointerId };
+    if (sourceElement.setPointerCapture) {
+      sourceElement.setPointerCapture(event.pointerId);
+      capturedPointer = { element: sourceElement, pointerId: event.pointerId };
     }
   });
 
   root.addEventListener('pointermove', event => {
-    if (pending && !drag) {
-      if (Math.hypot(event.clientX - pending.startX, event.clientY - pending.startY) < DRAG_THRESHOLD) return;
-      drag = { ...pending, ghost: makeGhost(pending.element) };
-      pending = null;
-      drag.element.classList.add('is-dragging');
-      root.dataset.dragKind = drag.kind;
+    if (pendingDrag && !activeDrag) {
+      const distance = Math.hypot(
+        event.clientX - pendingDrag.startX,
+        event.clientY - pendingDrag.startY
+      );
+      if (distance < DRAG_THRESHOLD) return;
+
+      activeDrag = {
+        ...pendingDrag,
+        ghost: createDragGhost(pendingDrag.element)
+      };
+      pendingDrag = null;
+      activeDrag.element.classList.add('is-dragging');
+      root.dataset.dragKind = activeDrag.kind;
     }
 
-    if (!drag) return;
+    if (!activeDrag) return;
     event.preventDefault();
-    moveGhost(drag.ghost, event);
-    clearFeedback(root);
+    positionDragGhost(activeDrag.ghost, event);
+    clearDropFeedback(root);
 
-    const hit = document.elementFromPoint(event.clientX, event.clientY);
-    const target = hit?.closest?.('[data-drop-kind]');
-    if (!target || !compatible(target, drag)) return;
-    target.classList.add(valid(target, drag) ? 'is-drop-hover' : 'is-drop-invalid');
+    const hitElement = document.elementFromPoint(event.clientX, event.clientY);
+    const dropTarget = hitElement?.closest?.('[data-drop-kind]');
+    if (!dropTarget || !isCompatibleDropTarget(dropTarget, activeDrag)) return;
+    dropTarget.classList.add(isValidDrop(dropTarget, activeDrag) ? 'is-drop-hover' : 'is-drop-invalid');
   });
 
-  root.addEventListener('pointerup', finish);
-  root.addEventListener('pointercancel', finish);
+  root.addEventListener('pointerup', finishDrag);
+  root.addEventListener('pointercancel', finishDrag);
   root.addEventListener('click', event => {
-    const element = event.target.closest('[data-drag-kind]');
-    if (!element || !dragEnabled(element)) return;
+    const sourceElement = event.target.closest('[data-drag-kind]');
+    if (!sourceElement || !isDragEnabled(sourceElement)) return;
     event.preventDefault();
     event.stopImmediatePropagation();
   }, true);
