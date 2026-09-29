@@ -12,6 +12,7 @@ public static class ModThemeComponentRoles
     public const string ButtonTavernUpgrade = "button.tavernUpgrade";
     public const string ButtonTavernRefresh = "button.tavernRefresh";
     public const string ButtonTavernFreeze = "button.tavernFreeze";
+    public const string ButtonHeroPower = "button.heroPower";
     public const string Card = "card";
     public const string CardBoard = "card.board";
     public const string Input = "input";
