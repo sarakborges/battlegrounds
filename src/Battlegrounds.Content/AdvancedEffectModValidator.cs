@@ -22,6 +22,7 @@ internal sealed class AdvancedEffectModValidator
         "equal", "notEqual", "lessThan", "lessThanOrEqual", "greaterThan", "greaterThanOrEqual",
     ];
     private static readonly HashSet<string> Stats = ["attack", "health"];
+    private static readonly HashSet<string> CombatOutcomes = ["win", "loss", "draw"];
 
     public IReadOnlyList<ModValidationIssue> Validate(string modDirectory)
     {
@@ -158,6 +159,12 @@ internal sealed class AdvancedEffectModValidator
 
             switch (kind)
             {
+                case "combatOutcome":
+                    ValidateKeys(condition, file, conditionPath, ["kind", "outcome"], ["kind", "outcome"], issues);
+                    if (TryRequiredString(condition, "outcome", file, conditionPath + ".outcome", issues, out var outcome) && !CombatOutcomes.Contains(outcome!))
+                        issues.Add(new("INVALID_VALUE", file, conditionPath + ".outcome", $"Unknown combat outcome '{outcome}'."));
+                    break;
+
                 case "unitCount":
                     ValidateKeys(condition, file, conditionPath, ["kind", "query", "comparison", "value"], ["kind", "query", "comparison", "value"], issues);
                     if (condition.TryGetProperty("query", out var query))

@@ -207,6 +207,7 @@ public sealed class CombatEngine
         PlayerId? winner,
         IEnumerable<CombatAttack> attacks)
     {
+        world.SetCombatOutcome(winner);
         ProcessPhaseEvent(world, runtime, NativeTriggerKeys.OnCombatEnd);
         return new CombatResult(
             winner,
@@ -365,6 +366,8 @@ public sealed class CombatEngine
         private long _nextInstanceId;
         private long _nextSyntheticInstanceId = long.MaxValue;
         private int _nextTimelineSequence;
+        private bool _hasCombatOutcome;
+        private PlayerId? _winnerPlayerId;
 
         public SideState Left { get; }
         public SideState Right { get; }
@@ -373,6 +376,21 @@ public sealed class CombatEngine
         public IReadOnlyList<CombatTimelineEvent> Timeline => _timeline;
         public IReadOnlyDictionary<PlayerId, EffectHistoryDelta> HistoryDeltas =>
             _histories.ToDictionary(pair => pair.Key, pair => pair.Value.CreateDelta());
+
+        public void SetCombatOutcome(PlayerId? winnerPlayerId)
+        {
+            _winnerPlayerId = winnerPlayerId;
+            _hasCombatOutcome = true;
+        }
+
+        public CombatOutcome? GetCombatOutcome(PlayerId playerId)
+        {
+            if (!_hasCombatOutcome) return null;
+            if (playerId != Left.PlayerId && playerId != Right.PlayerId)
+                throw new ArgumentException($"Player '{playerId}' is not part of this combat.", nameof(playerId));
+            if (_winnerPlayerId is null) return CombatOutcome.Draw;
+            return _winnerPlayerId.Value == playerId ? CombatOutcome.Win : CombatOutcome.Loss;
+        }
 
         public IReadOnlyList<IEffectRuntimeUnit> Units =>
             Left.Units.Cast<IEffectRuntimeUnit>()

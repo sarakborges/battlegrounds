@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using Battlegrounds.Core.Domain.Combat;
 using Battlegrounds.Core.Domain.Ids;
 using Battlegrounds.Core.Domain.Units;
 using Battlegrounds.Core.Randomness;
@@ -50,17 +51,19 @@ public sealed class EffectResolutionContext
     public UnitInstanceId SourceInstanceId { get; }
     public PlayerId SourcePlayerId { get; }
     public UnitInstanceId? SelectedTargetInstanceId { get; }
+    public CombatOutcome? CombatOutcome { get; }
     public IReadOnlyList<EffectUnitSnapshot> Units => _units;
 
     public EffectResolutionContext(UnitInstanceId sourceInstanceId, PlayerId sourcePlayerId, IEnumerable<EffectUnitSnapshot> units, UnitInstanceId? selectedTargetInstanceId = null)
-        : this(sourceInstanceId, sourcePlayerId, units, selectedTargetInstanceId, EffectHistorySnapshot.Empty) { }
+        : this(sourceInstanceId, sourcePlayerId, units, selectedTargetInstanceId, EffectHistorySnapshot.Empty, null) { }
 
     internal EffectResolutionContext(
         UnitInstanceId sourceInstanceId,
         PlayerId sourcePlayerId,
         IEnumerable<EffectUnitSnapshot> units,
         UnitInstanceId? selectedTargetInstanceId,
-        EffectHistorySnapshot history)
+        EffectHistorySnapshot history,
+        CombatOutcome? combatOutcome = null)
     {
         ArgumentNullException.ThrowIfNull(units);
         var materialized = units.ToArray();
@@ -73,6 +76,7 @@ public sealed class EffectResolutionContext
         SourceInstanceId = sourceInstanceId;
         SourcePlayerId = sourcePlayerId;
         SelectedTargetInstanceId = selectedTargetInstanceId;
+        CombatOutcome = combatOutcome;
         _units = Array.AsReadOnly(materialized);
         _history = history ?? throw new ArgumentNullException(nameof(history));
     }
@@ -156,6 +160,7 @@ public sealed class EffectPipeline
         {
             var matched = condition switch
             {
+                CombatOutcomeConditionDefinition outcome => context.CombatOutcome == outcome.Outcome,
                 UnitCountConditionDefinition count => Compare(QueryUnits(count.Query, context).Count, count.Comparison, count.Value),
                 SourceStatConditionDefinition sourceStat => Compare(GetSourceStat(context, sourceStat.Stat), sourceStat.Comparison, sourceStat.Value),
                 ValueConditionDefinition value => Compare(EvaluateValue(value.Left, context), value.Comparison, EvaluateValue(value.Right, context)),

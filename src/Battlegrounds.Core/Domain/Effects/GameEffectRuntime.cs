@@ -1,5 +1,6 @@
 using Battlegrounds.Core.Domain.Actions;
 using Battlegrounds.Core.Domain.Behaviors;
+using Battlegrounds.Core.Domain.Combat;
 using Battlegrounds.Core.Domain.Ids;
 using Battlegrounds.Core.Domain.Units;
 using Battlegrounds.Core.Randomness;
@@ -40,6 +41,7 @@ internal interface IEffectRuntimeWorld
     void SetPower(PlayerId playerId, PowerId powerId) =>
         throw new InvalidOperationException("This effect world does not support persistent power changes.");
     EffectHistorySnapshot GetHistory(PlayerId playerId);
+    CombatOutcome? GetCombatOutcome(PlayerId playerId) => null;
     void RecordEvent(PlayerId playerId, NativeGameEventKey @event, UnitDefinition? unit = null);
     int GetTriggerActivationCount(PlayerId playerId, EffectSourceKey source, int triggerIndex, EffectHistoryScope scope);
     void RecordTriggerActivation(PlayerId playerId, EffectSourceKey source, int triggerIndex, EffectHistoryScope scope);
@@ -484,7 +486,13 @@ internal sealed class GameEffectRuntime
             snapshots.Add(CreateSnapshot(unit, true, position));
         }
         if (snapshots.All(snapshot => snapshot.InstanceId != source.InstanceId)) snapshots.Add(CreateSnapshot(source, false, -1));
-        return new EffectResolutionContext(source.InstanceId, source.OwnerPlayerId, snapshots, selectedTargetInstanceId, _world.GetHistory(source.OwnerPlayerId));
+        return new EffectResolutionContext(
+            source.InstanceId,
+            source.OwnerPlayerId,
+            snapshots,
+            selectedTargetInstanceId,
+            _world.GetHistory(source.OwnerPlayerId),
+            _world.GetCombatOutcome(source.OwnerPlayerId));
     }
 
     private static EffectUnitSnapshot CreateSnapshot(IEffectRuntimeUnit unit, bool isSelectable, int position) =>

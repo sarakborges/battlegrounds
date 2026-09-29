@@ -11,9 +11,26 @@
       "effects": [
         {
           "kind": "modifyStats",
-          "target": { "scope": "selected" },
+          "target": {
+            "scope": "selected"
+          },
           "attack": 1,
           "health": 1
+        }
+      ]
+    },
+    {
+      "event": "onCombatEnd",
+      "conditions": [
+        {
+          "kind": "combatOutcome",
+          "outcome": "win"
+        }
+      ],
+      "effects": [
+        {
+          "kind": "addResource",
+          "amount": 1
         }
       ]
     }

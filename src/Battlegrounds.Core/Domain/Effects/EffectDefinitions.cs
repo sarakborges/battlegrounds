@@ -1,5 +1,6 @@
 using System.Collections.ObjectModel;
 using Battlegrounds.Core.Domain.Behaviors;
+using Battlegrounds.Core.Domain.Combat;
 using Battlegrounds.Core.Domain.Ids;
 
 namespace Battlegrounds.Core.Domain.Effects;
@@ -123,6 +124,8 @@ public enum EffectStat
 }
 
 public abstract record EffectConditionDefinition;
+
+public sealed record CombatOutcomeConditionDefinition(CombatOutcome Outcome) : EffectConditionDefinition;
 
 public sealed record UnitCountConditionDefinition : EffectConditionDefinition
 {

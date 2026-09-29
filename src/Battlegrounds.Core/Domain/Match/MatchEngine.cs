@@ -156,7 +156,10 @@ public sealed class MatchEngine
         foreach (var pairing in materializedPairings)
         {
             if (pairing.IsBye)
+            {
+                GetActivePlayer(match, pairing.LeftPlayerId).ClearLastCombatOutcome();
                 continue;
+            }
 
             if (pairing.UsesEliminatedOpponent)
             {
@@ -167,6 +170,7 @@ public sealed class MatchEngine
                     CombatParticipant.FromField(player.Id, player.Field, player.Leader?.CurrentPowerId, player.EffectHistory.Snapshot()),
                     snapshot.Participant);
                 var combatResult = _combatEngine.Resolve(input, _combatRules, _randomSource);
+                player.RecordCombatOutcome(GetCombatOutcome(combatResult, player.Id));
                 AccumulateResourceDeltas(combatResult, resourceAdjustments, [player.Id]);
                 AccumulatePowerChanges(combatResult, powerChanges, [player.Id]);
                 ApplyHistoryDeltas(match, combatResult, [player.Id]);
@@ -184,6 +188,8 @@ public sealed class MatchEngine
                 CombatParticipant.FromField(left.Id, left.Field, left.Leader?.CurrentPowerId, left.EffectHistory.Snapshot()),
                 CombatParticipant.FromField(right.Id, right.Field, right.Leader?.CurrentPowerId, right.EffectHistory.Snapshot()));
             var liveResult = _combatEngine.Resolve(liveInput, _combatRules, _randomSource);
+            left.RecordCombatOutcome(GetCombatOutcome(liveResult, left.Id));
+            right.RecordCombatOutcome(GetCombatOutcome(liveResult, right.Id));
             AccumulateResourceDeltas(liveResult, resourceAdjustments, [left.Id, right.Id]);
             AccumulatePowerChanges(liveResult, powerChanges, [left.Id, right.Id]);
             ApplyHistoryDeltas(match, liveResult, [left.Id, right.Id]);
@@ -239,6 +245,13 @@ public sealed class MatchEngine
         var applied = player.TakeDamage(damage);
         return new CombatSettlement(player.Id, null, opponent.SourcePlayerId, result, null, true, player.Id, damage, applied.ArmorAbsorbed, applied.ArmorAfter, applied.HealthAfter);
     }
+
+    private static CombatOutcome GetCombatOutcome(CombatResult result, PlayerId playerId) =>
+        result.IsDraw
+            ? CombatOutcome.Draw
+            : result.WinnerPlayerId == playerId
+                ? CombatOutcome.Win
+                : CombatOutcome.Loss;
 
     private static CombatSettlement NoDamageSettlement(
         PlayerId leftPlayerId,

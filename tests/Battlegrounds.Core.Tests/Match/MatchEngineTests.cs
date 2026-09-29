@@ -39,6 +39,8 @@ public sealed class MatchEngineTests
         Assert.Equal(1, match.Players[1].Health);
         Assert.Equal(6, match.Players[0].Resource);
         Assert.Equal(4, match.Players[1].Resource);
+        Assert.Equal(CombatOutcome.Win, match.Players[0].LastCombatOutcome);
+        Assert.Equal(CombatOutcome.Loss, match.Players[1].LastCombatOutcome);
     }
 
     [Fact]
@@ -180,6 +182,8 @@ public sealed class MatchEngineTests
         Assert.Null(settlement.DamagedPlayerId);
         Assert.Equal(10, match.Players[0].Health);
         Assert.Equal(10, match.Players[1].Health);
+        Assert.Equal(CombatOutcome.Draw, match.Players[0].LastCombatOutcome);
+        Assert.Equal(CombatOutcome.Draw, match.Players[1].LastCombatOutcome);
         Assert.Equal(MatchPhase.Preparation, match.Phase);
     }
 
@@ -190,6 +194,7 @@ public sealed class MatchEngineTests
         var players = new[] { new PlayerId(0), new PlayerId(1), new PlayerId(2) };
         var match = engine.CreateMatch(players);
         engine.BeginMatch(match);
+        match.Players.Single(player => player.Id == players[2]).RecordCombatOutcome(CombatOutcome.Win);
         ReadyActive(engine, match);
 
         var round = engine.ResolveCombatRound(
@@ -204,6 +209,7 @@ public sealed class MatchEngineTests
         Assert.Equal(MatchPhase.Preparation, match.Phase);
         Assert.Equal(2, match.Round);
         Assert.Equal(10, match.Players.Single(player => player.Id == players[2]).Health);
+        Assert.Null(match.Players.Single(player => player.Id == players[2]).LastCombatOutcome);
         var byeHistory = Assert.Single(match.CombatPairingHistory, entry => entry.IsBye);
         Assert.Equal(players[2], byeHistory.LeftPlayerId);
         Assert.Null(byeHistory.RightPlayerId);

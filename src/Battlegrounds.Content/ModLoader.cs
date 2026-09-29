@@ -139,6 +139,7 @@ public sealed class ModLoader
     private static EffectConditionDefinition BuildCondition(ConditionData data) =>
         data.Kind switch
         {
+            "combatOutcome" => new CombatOutcomeConditionDefinition(data.Outcome ?? throw new InvalidDataException("Validated combatOutcome condition is missing outcome.")),
             "unitCount" => new UnitCountConditionDefinition(BuildQuery(data.Query), data.Comparison ?? throw new InvalidDataException("Validated unitCount condition is missing comparison."), data.Value ?? throw new InvalidDataException("Validated unitCount condition is missing value.")),
             "sourceStat" => new SourceStatConditionDefinition(data.Stat ?? throw new InvalidDataException("Validated sourceStat condition is missing stat."), data.Comparison ?? throw new InvalidDataException("Validated sourceStat condition is missing comparison."), data.Value ?? throw new InvalidDataException("Validated sourceStat condition is missing value.")),
             "value" => new ValueConditionDefinition(BuildRequiredValue(data.Left, "condition.left"), data.Comparison ?? throw new InvalidDataException("Validated value condition is missing comparison."), BuildRequiredValue(data.Right, "condition.right")),
@@ -319,7 +320,7 @@ public sealed class ModLoader
     private sealed record TriggerData(string Event, EffectData[] Effects, int? Count, ConditionData[]? Conditions, TriggerActivationLimitData? ActivationLimit, HistoryQueryData? Counter);
     private sealed record TriggerActivationLimitData(EffectHistoryScope Scope, int Count);
     private sealed record HistoryQueryData(string Event, EffectHistoryScope Scope, string? TypeId, string? TagId);
-    private sealed record ConditionData(string Kind, QueryData? Query, EffectComparison? Comparison, int? Value, EffectStat? Stat, JsonElement? Left, JsonElement? Right);
+    private sealed record ConditionData(string Kind, QueryData? Query, EffectComparison? Comparison, int? Value, EffectStat? Stat, JsonElement? Left, JsonElement? Right, CombatOutcome? Outcome);
     private sealed record EffectData(
         string Kind,
         TargetData? Target,
