@@ -1,0 +1,43 @@
+name: Enemy attack aura preflight
+
+on:
+  push:
+    branches: [enemy-attack-auras]
+
+permissions:
+  contents: write
+
+jobs:
+  apply-test-commit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Apply patch
+        run: python3 .github/scripts/apply-enemy-attack-auras.py
+      - name: Test core
+        run: dotnet test tests/Battlegrounds.Core.Tests/Battlegrounds.Core.Tests.csproj --no-restore
+      - name: Test content
+        run: dotnet test tests/Battlegrounds.Content.Tests/Battlegrounds.Content.Tests.csproj --no-restore
+      - name: Test AI
+        run: dotnet test tests/Battlegrounds.AI.Tests/Battlegrounds.AI.Tests.csproj --no-restore
+      - name: Test application
+        run: dotnet test tests/Battlegrounds.Application.Tests/Battlegrounds.Application.Tests.csproj --no-restore
+      - name: Smoke example
+        run: dotnet run --project src/Battlegrounds.Simulator/Battlegrounds.Simulator.csproj -- --mod mods/example --turns 4
+      - name: Smoke Warbands
+        run: dotnet run --project src/Battlegrounds.Simulator/Battlegrounds.Simulator.csproj -- --mod mods/warbands --turns 4
+      - name: Build Godot
+        run: dotnet build src/Battlegrounds.Game/Battlegrounds.Game.csproj --no-restore
+      - name: Commit functional tree
+        run: |
+          rm .github/scripts/apply-enemy-attack-auras.py .github/workflows/enemy-attack-auras-preflight.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git commit -m 'Add enemy attack auras'
+          git push origin HEAD:enemy-attack-auras
