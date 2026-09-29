@@ -19,17 +19,24 @@ jobs:
       - name: Check web UI component structure
         run: |
           set -euo pipefail
-          for dir in src/Battlegrounds.Game/WebUI/components/*; do
-            name="$(basename "$dir")"
-            test -f "$dir/$name.html"
-            test -f "$dir/$name.css"
-            test -f "$dir/$name.js"
+          for root in \
+            src/Battlegrounds.Game/WebUI/design-system \
+            src/Battlegrounds.Game/WebUI/components; do
+            for dir in "$root"/*; do
+              name="$(basename "$dir")"
+              test -f "$dir/$name.html"
+              test -f "$dir/$name.css"
+              test -f "$dir/$name.js"
+            done
           done
-          if grep -R --include='*.js' -nE 'innerHTML|insertAdjacentHTML|`[[:space:]]*<' src/Battlegrounds.Game/WebUI/components src/Battlegrounds.Game/WebUI/screens; then
+          if grep -R --include='*.js' -nE 'innerHTML|insertAdjacentHTML|`[[:space:]]*<' \
+            src/Battlegrounds.Game/WebUI/design-system \
+            src/Battlegrounds.Game/WebUI/components \
+            src/Battlegrounds.Game/WebUI/screens; then
             echo 'HTML markup must live in .html templates, not JavaScript.' >&2
             exit 1
           fi
-          if grep -R --include='*.css' -nE '\.(card|button|component-row|player-chip|character-portrait)([^a-zA-Z0-9_-]|$)' src/Battlegrounds.Game/WebUI/screens/preparation; then
+          if grep -R --include='*.css' -nE '\.(card|action-button|horizontal-stack|player-chip|character-portrait)([^a-zA-Z0-9_-]|$)' src/Battlegrounds.Game/WebUI/screens/preparation; then
             echo 'Preparation screen CSS must not style reusable component internals.' >&2
             exit 1
           fi
