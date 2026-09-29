@@ -15,7 +15,7 @@ internal sealed class ActionModValidator
         "modifyStats", "dealDamage", "destroyUnit", "triggerEvent", "summonUnit",
         "generateUnitToReserve", "generateUnitChoice", "generateActionToReserve", "generateActionChoice",
         "transformUnit", "copyUnitToReserve", "applyUnitModifier", "removeUnitModifier",
-        "addBehavior", "removeBehavior", "addResource", "adjustUpgradeCost", "addAcquireDiscount", "refreshOffer", "setPower",
+        "addBehavior", "removeBehavior", "addResource", "adjustUpgradeCost", "addAcquireDiscount", "refreshOffer", "mutateOffer", "setPower",
     ];
 
     private static readonly HashSet<string> PreparationOnlyGameEvents =
@@ -192,6 +192,9 @@ internal sealed class ActionModValidator
                     break;
                 case "setPower":
                     ValidateReference(effect, "powerId", file, effectPath, powerIds, "power", issues);
+                    break;
+                case "mutateOffer":
+                    ValidateKeys(effect, file, effectPath, ["kind", "operation", "playableKind", "selection"], ["kind", "operation", "playableKind"], issues);
                     break;
             }
 

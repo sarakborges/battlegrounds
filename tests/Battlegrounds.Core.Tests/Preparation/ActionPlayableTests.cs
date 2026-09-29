@@ -3,6 +3,7 @@ using Battlegrounds.Core.Domain.Actions;
 using Battlegrounds.Core.Domain.Effects;
 using Battlegrounds.Core.Domain.Ids;
 using Battlegrounds.Core.Domain.Match;
+using Battlegrounds.Core.Domain.Players;
 using Battlegrounds.Core.Domain.Preparation;
 using Battlegrounds.Core.Domain.Units;
 using Battlegrounds.Core.Randomness;
@@ -139,6 +140,53 @@ public sealed class ActionPlayableTests
         Assert.True(engine.Execute(match, new AcquirePlayableCommand(player.Id, actionEntry.Slot)).Succeeded);
         Assert.Equal(9, player.Resource);
         Assert.Equal(0, player.NextAcquireDiscount);
+    }
+
+    [Fact]
+    public void MutateOffer_ActionCanAddRemoveAndReplaceUnitSlotsAndClearsFreeze()
+    {
+        var a = new UnitDefinition(new UnitId("a"), "A", 1, 1, 1);
+        var b = new UnitDefinition(new UnitId("b"), "B", 1, 1, 1);
+        var units = new UnitCatalog([a, b]);
+        var add = new ActionDefinition(new ActionId("add"), "Add", 1, 0,
+            [new MutateOfferEffectDefinition(OfferMutationOperation.Add, PlayableKind.Unit)]);
+        var remove = new ActionDefinition(new ActionId("remove"), "Remove", 1, 0,
+            [new MutateOfferEffectDefinition(OfferMutationOperation.Remove, PlayableKind.Unit, OfferSlotSelection.Leftmost)]);
+        var replace = new ActionDefinition(new ActionId("replace"), "Replace", 1, 0,
+            [new MutateOfferEffectDefinition(OfferMutationOperation.Replace, PlayableKind.Unit, OfferSlotSelection.Rightmost)]);
+        var actions = new ActionCatalog([add, remove, replace]);
+        var rules = new PreparationRules(10, 0, 10, 0, 1, 0, 7, 10, 2, [4, 4], [5], [1, 1]);
+        var pool = new UnitPool(units, [new UnitPoolEntry(a.Id, 20), new UnitPoolEntry(b.Id, 20)]);
+        var engine = new PreparationEngine(rules, pool, new MinimumRandomSource(), units, null, null, actions);
+        var match = MatchState.Create([new PlayerId(0), new PlayerId(1)], new MatchRules(2, 2));
+        engine.BeginPreparation(match);
+        var player = match.Players[0];
+        Assert.True(engine.Execute(match, new FreezeOfferCommand(player.Id)).Succeeded);
+        var initialCount = player.Offer.Count;
+
+        PlayOfferedAction(engine, match, player, add.Id);
+        Assert.Equal(initialCount + 1, player.Offer.Count);
+        Assert.False(player.IsOfferFrozen);
+
+        player.ReplaceActionOffer([remove]);
+        PlayOfferedAction(engine, match, player, remove.Id);
+        Assert.Equal(initialCount, player.Offer.Count);
+        Assert.False(player.IsOfferFrozen);
+
+        var beforeReplace = player.Offer.Select(unit => unit.Id).ToArray();
+        player.ReplaceActionOffer([replace]);
+        PlayOfferedAction(engine, match, player, replace.Id);
+        Assert.Equal(initialCount, player.Offer.Count);
+        Assert.False(player.IsOfferFrozen);
+        Assert.Equal(beforeReplace.Length, player.Offer.Count);
+    }
+
+    private static void PlayOfferedAction(PreparationEngine engine, MatchState match, PlayerState player, ActionId actionId)
+    {
+        var entry = player.PlayableOffer.Single(value => value.Kind == PlayableKind.Action && value.Action!.Id == actionId);
+        Assert.True(engine.Execute(match, new AcquirePlayableCommand(player.Id, entry.Slot)).Succeeded);
+        var reserveSlot = player.PlayableReserve.Single(value => value.Kind == PlayableKind.Action && value.Action!.Definition.Id == actionId).Slot;
+        Assert.True(engine.Execute(match, new PlayActionCommand(player.Id, reserveSlot)).Succeeded);
     }
 
     private sealed class MinimumRandomSource : IRandomSource

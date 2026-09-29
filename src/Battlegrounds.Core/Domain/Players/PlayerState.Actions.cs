@@ -54,6 +54,12 @@ public sealed partial class PlayerState
         return action;
     }
 
+    internal void AddOfferedAction(ActionDefinition definition) =>
+        _actionOffer.Add(definition ?? throw new ArgumentNullException(nameof(definition)));
+
+    internal void ReplaceOfferedAction(int slot, ActionDefinition definition) =>
+        _actionOffer[slot] = definition ?? throw new ArgumentNullException(nameof(definition));
+
     internal void AddActionToReserve(ActionInstance action) =>
         _actionReserve.Add(action ?? throw new ArgumentNullException(nameof(action)));
 

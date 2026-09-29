@@ -188,6 +188,12 @@ public sealed partial class PlayerState
         return unit;
     }
 
+    internal void AddOfferedUnit(UnitDefinition definition) =>
+        _offer.Add(definition ?? throw new ArgumentNullException(nameof(definition)));
+
+    internal void ReplaceOfferedUnit(int slot, UnitDefinition definition) =>
+        _offer[slot] = definition ?? throw new ArgumentNullException(nameof(definition));
+
     internal void ReplaceOffer(IEnumerable<UnitDefinition> units)
     {
         _offer.Clear();

@@ -67,6 +67,7 @@ public static class NativeEffectKeys
     public static NativeEffectKey AdjustUpgradeCost { get; } = new("adjustUpgradeCost");
     public static NativeEffectKey AddAcquireDiscount { get; } = new("addAcquireDiscount");
     public static NativeEffectKey RefreshOffer { get; } = new("refreshOffer");
+    public static NativeEffectKey MutateOffer { get; } = new("mutateOffer");
     public static NativeEffectKey SetPower { get; } = new("setPower");
     public static NativeEffectKey GenerateUnitToReserve { get; } = new("generateUnitToReserve");
     public static NativeEffectKey GenerateUnitChoice { get; } = new("generateUnitChoice");
@@ -90,6 +91,7 @@ public static class NativeEffectKeys
         AdjustUpgradeCost,
         AddAcquireDiscount,
         RefreshOffer,
+        MutateOffer,
         SetPower,
         GenerateUnitToReserve,
         GenerateUnitChoice,

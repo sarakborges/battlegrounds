@@ -2,6 +2,7 @@ using Battlegrounds.Core.Domain.Actions;
 using Battlegrounds.Core.Domain.Behaviors;
 using Battlegrounds.Core.Domain.Combat;
 using Battlegrounds.Core.Domain.Ids;
+using Battlegrounds.Core.Domain.Playables;
 using Battlegrounds.Core.Domain.Units;
 using Battlegrounds.Core.Randomness;
 
@@ -23,6 +24,7 @@ internal interface IPreparationEconomyEffectWorld
     void AdjustUpgradeCost(PlayerId playerId, int amount);
     void AddAcquireDiscount(PlayerId playerId, int amount);
     void RefreshOffer(PlayerId playerId);
+    void MutateOffer(PlayerId playerId, OfferMutationOperation operation, PlayableKind playableKind, OfferSlotSelection selection);
 }
 
 internal interface IEffectRuntimeWorld
@@ -344,6 +346,10 @@ internal sealed class GameEffectRuntime
                 RecordGameEventCore(source.OwnerPlayerId, NativeGameEventKeys.OfferRefreshed, null, queue);
                 break;
             }
+            case MutateOfferEffectDefinition mutateOffer:
+                GetPreparationEconomyWorld(mutateOffer.Kind).MutateOffer(
+                    source.OwnerPlayerId, mutateOffer.Operation, mutateOffer.PlayableKind, mutateOffer.Selection);
+                break;
             case SetPowerEffectDefinition setPower:
                 _world.SetPower(source.OwnerPlayerId, setPower.PowerId);
                 break;

@@ -687,6 +687,22 @@ internal sealed class DirectoryModValidator
             case "refreshOffer":
                 ValidateKeys(effect, file, path, ["kind"], ["kind"], issues);
                 break;
+            case "mutateOffer":
+            {
+                ValidateKeys(effect, file, path, ["kind", "operation", "playableKind", "selection"], ["kind", "operation", "playableKind"], issues);
+                var hasOperation = RequireParameterString(file, effect, "operation", path, issues, out var operation);
+                if (hasOperation && operation is not ("add" or "remove" or "replace"))
+                    issues.Add(new("INVALID_VALUE", file, path + ".operation", $"Unknown offer mutation operation '{operation}'."));
+                if (RequireParameterString(file, effect, "playableKind", path, issues, out var playableKind) && playableKind is not ("unit" or "action"))
+                    issues.Add(new("INVALID_VALUE", file, path + ".playableKind", $"Unknown playable kind '{playableKind}'."));
+                if (effect.TryGetProperty("selection", out _) &&
+                    RequireParameterString(file, effect, "selection", path, issues, out var selection) &&
+                    selection is not ("random" or "leftmost" or "rightmost"))
+                    issues.Add(new("INVALID_VALUE", file, path + ".selection", $"Unknown offer slot selection '{selection}'."));
+                if (hasOperation && operation == "add" && effect.TryGetProperty("selection", out _))
+                    issues.Add(new("INVALID_PARAMETER", file, path + ".selection", "selection is not valid when adding an offer slot."));
+                break;
+            }
             case "transformUnit":
             case "copyUnitToReserve":
             case "applyUnitModifier":
