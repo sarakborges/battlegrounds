@@ -5,13 +5,24 @@
   "attack": 7,
   "health": 9,
   "behaviors": [],
-  "types": ["beast"],
-  "tags": ["elite"],
+  "types": [
+    "beast"
+  ],
+  "tags": [
+    "elite"
+  ],
   "triggers": [
     {
       "event": "onPlay",
       "effects": [
-        { "kind": "modifyStats", "target": { "scope": "selected" }, "attack": 2, "health": 2 }
+        {
+          "kind": "modifyStats",
+          "target": {
+            "scope": "selected"
+          },
+          "attack": 2,
+          "health": 2
+        }
       ]
     },
     {
@@ -19,11 +30,16 @@
       "effects": [
         {
           "kind": "modifyStats",
-          "target": { "scope": "friendly", "selection": "all", "typeId": "beast" },
+          "target": {
+            "scope": "friendly",
+            "selection": "all",
+            "typeId": "beast"
+          },
           "attack": 1,
           "health": 1
         }
       ]
     }
-  ]
+  ],
+  "art": "assets/units/ancient-stag.webp"
 }

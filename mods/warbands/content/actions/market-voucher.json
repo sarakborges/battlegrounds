@@ -8,5 +8,6 @@
       "kind": "addAcquireDiscount",
       "amount": 2
     }
-  ]
+  ],
+  "art": "assets/actions/market-voucher.webp"
 }

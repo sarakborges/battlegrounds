@@ -6,9 +6,12 @@
   "effects": [
     {
       "kind": "modifyStats",
-      "target": { "scope": "selected" },
+      "target": {
+        "scope": "selected"
+      },
       "attack": 1,
       "health": 1
     }
-  ]
+  ],
+  "art": "assets/actions/battle-training.webp"
 }

@@ -4,8 +4,13 @@
   "tier": 4,
   "attack": 6,
   "health": 4,
-  "behaviors": ["double-strike"],
-  "types": ["beast"],
+  "behaviors": [
+    "double-strike"
+  ],
+  "types": [
+    "beast"
+  ],
   "tags": [],
-  "triggers": []
+  "triggers": [],
+  "art": "assets/units/bloodmane-raptor.webp"
 }

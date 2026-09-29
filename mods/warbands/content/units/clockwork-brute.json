@@ -4,8 +4,13 @@
   "tier": 4,
   "attack": 7,
   "health": 7,
-  "behaviors": ["guarded"],
-  "types": ["machine"],
+  "behaviors": [
+    "guarded"
+  ],
+  "types": [
+    "machine"
+  ],
   "tags": [],
-  "triggers": []
+  "triggers": [],
+  "art": "assets/units/clockwork-brute.webp"
 }

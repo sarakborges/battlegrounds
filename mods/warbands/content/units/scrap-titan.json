@@ -4,21 +4,38 @@
   "tier": 1,
   "attack": 5,
   "health": 5,
-  "behaviors": ["warded"],
-  "types": ["machine"],
-  "tags": ["elite"],
+  "behaviors": [
+    "warded"
+  ],
+  "types": [
+    "machine"
+  ],
+  "tags": [
+    "elite"
+  ],
   "triggers": [
     {
       "event": "onCombine",
       "effects": [
-        { "kind": "addResource", "amount": 1 }
+        {
+          "kind": "addResource",
+          "amount": 1
+        }
       ]
     },
     {
       "event": "onCombatStart",
       "effects": [
-        { "kind": "modifyStats", "target": { "scope": "self" }, "attack": 1, "health": 1 }
+        {
+          "kind": "modifyStats",
+          "target": {
+            "scope": "self"
+          },
+          "attack": 1,
+          "health": 1
+        }
       ]
     }
-  ]
+  ],
+  "art": "assets/units/scrap-titan.webp"
 }

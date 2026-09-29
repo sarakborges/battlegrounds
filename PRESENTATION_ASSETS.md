@@ -4,7 +4,7 @@ Presentation assets and playback cues are mod-owned data. They must never become
 
 ## Manifest
 
-A mod may define `assets/presentation.json`. The file is optional; omitting it produces empty presentation-asset and cue catalogs.
+Unit and action card art is authored directly in each card JSON through an optional `art` path. `assets/presentation.json` is reserved for non-card presentation metadata such as leader portraits and playback cues and is optional.
 
 ```json
 {
@@ -49,9 +49,9 @@ IDs are the same stable authored IDs used by mechanical content. Presentation me
 
 The current stable image slots are:
 
-- `leaders.<leader-id>.portrait`;
-- `units.<unit-id>.art`;
-- `actions.<action-id>.art`.
+- `content/units/<unit-id>.json` -> `art`;
+- `content/actions/<action-id>.json` -> `art`;
+- `assets/presentation.json` -> `leaders.<leader-id>.portrait` for non-card portraits.
 
 Image slots accept `.png`, `.jpg`, `.jpeg`, `.webp` and `.svg`.
 
@@ -97,7 +97,7 @@ The manifest may be partial. Missing art, audio or cue metadata is a presentatio
 
 ## Immutable Content boundary
 
-`ModPresentationAssetLoader` maps validated image metadata into an immutable `ModPresentationAssetCatalog`.
+`ModPresentationAssetLoader` derives unit/action art directly from card definitions and maps validated image metadata into an immutable `ModPresentationAssetCatalog`.
 
 `ModPresentationCueLoader` maps validated cue metadata into an immutable `ModPresentationCueCatalog`. Each cue contains only stable entity identity, a presentation role, optional animation intent/duration and an optional audio file reference. It contains no Godot node, `Tween`, `AudioStream`, texture or decoded bytes.
 

@@ -437,7 +437,7 @@ internal sealed class DirectoryModValidator
                 file.Root,
                 file.RelativePath,
                 "$",
-                ["id", "name", "tier", "attack", "health", "behaviors", "types", "tags", "triggers", "auras"],
+                ["id", "name", "tier", "attack", "health", "behaviors", "types", "tags", "triggers", "auras", "art"],
                 ["id", "name", "tier", "attack", "health"],
                 issues);
 

@@ -5,14 +5,24 @@
   "attack": 4,
   "health": 3,
   "behaviors": [],
-  "types": ["machine"],
+  "types": [
+    "machine"
+  ],
   "tags": [],
   "triggers": [
     {
       "event": "onAttack",
       "effects": [
-        { "kind": "dealDamage", "target": { "scope": "enemy", "selection": "random" }, "amount": 1 }
+        {
+          "kind": "dealDamage",
+          "target": {
+            "scope": "enemy",
+            "selection": "random"
+          },
+          "amount": 1
+        }
       ]
     }
-  ]
+  ],
+  "art": "assets/units/bomb-lobber.webp"
 }

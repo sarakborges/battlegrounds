@@ -6,9 +6,12 @@
   "effects": [
     {
       "kind": "modifyStats",
-      "target": { "scope": "selected" },
+      "target": {
+        "scope": "selected"
+      },
       "attack": 2,
       "health": 2
     }
-  ]
+  ],
+  "art": "assets/actions/veteran-drill.webp"
 }

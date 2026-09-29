@@ -6,8 +6,11 @@
   "effects": [
     {
       "kind": "modifyStats",
-      "target": { "scope": "selected" },
+      "target": {
+        "scope": "selected"
+      },
       "attack": 3
     }
-  ]
+  ],
+  "art": "assets/actions/sharpen-blades.webp"
 }
