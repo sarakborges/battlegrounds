@@ -395,6 +395,7 @@ public sealed partial class PlayerState
   if (!source.IsAlive) continue;
   foreach (var aura in source.Definition.Auras)
   {
+      if (aura.Target.Scope != EffectTargetScope.Friendly) continue;
       foreach (var target in ResolveAuraTargets(sourceIndex, aura))
       {
           var current = totals[target.Id];
@@ -408,8 +409,8 @@ public sealed partial class PlayerState
         {
   var total = totals[unit.Id];
   unit.SetAuraContribution(
-      (int)Math.Min(int.MaxValue, total.Attack),
-      (int)Math.Min(int.MaxValue, total.Health));
+      (int)Math.Clamp(total.Attack, int.MinValue, int.MaxValue),
+      (int)Math.Clamp(total.Health, 0L, int.MaxValue));
   unit.SetAuraBehaviors(behaviorTotals[unit.Id]);
         }
     }

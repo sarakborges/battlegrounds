@@ -43,11 +43,11 @@ internal sealed class UnitAuraModValidator
                 foreach (var property in aura.EnumerateObject())
                     if (!allowed.Contains(property.Name)) issues.Add(new("UNKNOWN_PROPERTY", file, basePath + "." + property.Name, $"Unknown aura property '{property.Name}'."));
 
-                var attack = ReadNonNegativeInt(aura, "attack", file, basePath, issues);
+                var attack = ReadInt(aura, "attack", file, basePath, issues);
                 var health = ReadNonNegativeInt(aura, "health", file, basePath, issues);
                 var behaviorCount = ValidateBehaviorIds(aura, behaviorHandlers, file, basePath, issues);
                 if (attack == 0 && health == 0 && behaviorCount == 0)
-                    issues.Add(new("INVALID_VALUE", file, basePath, "Aura requires a positive stat bonus or at least one behaviorId."));
+                    issues.Add(new("INVALID_VALUE", file, basePath, "Aura requires a non-zero stat contribution or at least one behaviorId."));
 
                 if (!aura.TryGetProperty("target", out var target) || target.ValueKind != JsonValueKind.Object)
                 {
@@ -55,7 +55,11 @@ internal sealed class UnitAuraModValidator
                     index++;
                     continue;
                 }
-                ValidateTarget(target, file, basePath + ".target", typeIds, tagIds, issues);
+                var scope = ValidateTarget(target, file, basePath + ".target", typeIds, tagIds, issues);
+                if (scope == "enemy" && health != 0)
+                    issues.Add(new("INVALID_VALUE", file, basePath + ".health", "Enemy auras currently support Attack contribution only."));
+                if (scope == "enemy" && behaviorCount > 0)
+                    issues.Add(new("INVALID_VALUE", file, basePath + ".behaviorIds", "Enemy auras cannot grant behaviors in the current aura surface."));
                 index++;
             }
         }
@@ -108,16 +112,22 @@ internal sealed class UnitAuraModValidator
         return behaviors.GetArrayLength();
     }
 
-    private static void ValidateTarget(JsonElement target, string file, string path, IReadOnlySet<string> typeIds, IReadOnlySet<string> tagIds, List<ModValidationIssue> issues)
+    private static string? ValidateTarget(JsonElement target, string file, string path, IReadOnlySet<string> typeIds, IReadOnlySet<string> tagIds, List<ModValidationIssue> issues)
     {
         var allowed = new HashSet<string>(["scope", "selection", "excludeSource", "typeId", "tagId", "relativeTo", "limit"], StringComparer.Ordinal);
         foreach (var property in target.EnumerateObject())
             if (!allowed.Contains(property.Name)) issues.Add(new("UNKNOWN_PROPERTY", file, path + "." + property.Name, $"Unknown aura target property '{property.Name}'."));
 
-        if (!target.TryGetProperty("scope", out var scope) || scope.ValueKind != JsonValueKind.String || scope.GetString() != "friendly")
-            issues.Add(new("INVALID_VALUE", file, path + ".scope", "Aura target scope must be 'friendly'."));
+        string? scopeValue = null;
+        if (!target.TryGetProperty("scope", out var scope) || scope.ValueKind != JsonValueKind.String || scope.GetString() is not ("friendly" or "enemy"))
+            issues.Add(new("INVALID_VALUE", file, path + ".scope", "Aura target scope must be 'friendly' or 'enemy'."));
+        else
+            scopeValue = scope.GetString();
+
         if (target.TryGetProperty("selection", out var selection) && (selection.ValueKind != JsonValueKind.String || !Selections.Contains(selection.GetString()!)))
             issues.Add(new("INVALID_VALUE", file, path + ".selection", "Aura selection must be all or source-relative adjacent."));
+        if (scopeValue == "enemy" && target.TryGetProperty("selection", out selection) && selection.ValueKind == JsonValueKind.String && selection.GetString() != "all")
+            issues.Add(new("INVALID_VALUE", file, path + ".selection", "Enemy auras currently support selection 'all' only."));
         if (target.TryGetProperty("relativeTo", out var relativeTo) && (relativeTo.ValueKind != JsonValueKind.String || relativeTo.GetString() != "source"))
             issues.Add(new("INVALID_VALUE", file, path + ".relativeTo", "Aura targets are source-relative."));
         if (target.TryGetProperty("limit", out _))
@@ -126,6 +136,18 @@ internal sealed class UnitAuraModValidator
             issues.Add(new("INVALID_TYPE", file, path + ".excludeSource", "excludeSource must be boolean."));
         ValidateReference(target, "typeId", typeIds, "unit type", file, path, issues);
         ValidateReference(target, "tagId", tagIds, "tag", file, path, issues);
+        return scopeValue;
+    }
+
+    private static int ReadInt(JsonElement aura, string name, string file, string path, List<ModValidationIssue> issues)
+    {
+        if (!aura.TryGetProperty(name, out var value)) return 0;
+        if (value.ValueKind != JsonValueKind.Number || !value.TryGetInt32(out var result))
+        {
+            issues.Add(new("INVALID_TYPE", file, path + "." + name, $"{name} must be an integer."));
+            return 0;
+        }
+        return result;
     }
 
     private static int ReadNonNegativeInt(JsonElement aura, string name, string file, string path, List<ModValidationIssue> issues)

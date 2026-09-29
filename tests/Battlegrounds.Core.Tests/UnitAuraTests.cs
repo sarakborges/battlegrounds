@@ -72,6 +72,24 @@ public sealed class UnitAuraTests
 
 
     [Fact]
+    public void EnemyAttackAuraAppliesBeforeCombatAndClampsAttackAtZero()
+    {
+        var aura = new UnitAuraDefinition(
+            new EffectTargetSelector(EffectTargetScope.Enemy),
+            attackDelta: -3);
+        var source = new UnitDefinition(new UnitId("source"), "Source", 1, 0, 10, auras: [aura]);
+        var enemy = new UnitDefinition(new UnitId("enemy"), "Enemy", 1, 2, 10);
+        var input = new CombatInput(
+            new CombatParticipant(new PlayerId(0), [Snap(1, source)]),
+            new CombatParticipant(new PlayerId(1), [Snap(2, enemy)]));
+
+        var result = new CombatEngine().Resolve(input, new CombatRules(StartingSidePolicy.Random), new SeededRandomSource(1));
+
+        Assert.True(result.IsDraw);
+        Assert.Empty(result.Attacks);
+    }
+
+    [Fact]
     public void PreparationBehaviorAuraIsDerivedAndNotBakedIntoCombatSnapshot()
     {
         var doubleStrike = new BehaviorDefinition(new BehaviorId("double-strike"), "Double Strike", NativeBehaviorKeys.ExtraAttack);

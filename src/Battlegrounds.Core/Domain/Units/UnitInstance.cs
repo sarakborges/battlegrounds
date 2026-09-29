@@ -66,8 +66,8 @@ public sealed class UnitInstance
 
     internal void SetAuraContribution(int attackDelta, int healthDelta)
     {
-        if (attackDelta < 0 || healthDelta < 0)
-            throw new ArgumentOutOfRangeException(nameof(attackDelta));
+        if (healthDelta < 0)
+            throw new ArgumentOutOfRangeException(nameof(healthDelta));
         _auraAttack = attackDelta;
         _auraHealth = healthDelta;
     }

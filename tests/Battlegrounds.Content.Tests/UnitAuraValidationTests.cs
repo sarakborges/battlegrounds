@@ -1,5 +1,6 @@
 using Battlegrounds.Content;
 using Battlegrounds.Core.Domain.Behaviors;
+using Battlegrounds.Core.Domain.Effects;
 using Battlegrounds.Core.Domain.Ids;
 
 namespace Battlegrounds.Content.Tests;
@@ -17,5 +18,10 @@ public sealed class UnitAuraValidationTests
         var moonfang = package.Units.GetRequired(new UnitId("moonfang-alpha"));
         var aura = Assert.Single(moonfang.Auras);
         Assert.Contains(aura.GrantedBehaviors, behavior => behavior.Handler == NativeBehaviorKeys.ExtraAttack);
+
+        var siegeColossus = package.Units.GetRequired(new UnitId("siege-colossus"));
+        var enemyAura = Assert.Single(siegeColossus.Auras);
+        Assert.Equal(EffectTargetScope.Enemy, enemyAura.Target.Scope);
+        Assert.Equal(-1, enemyAura.AttackDelta);
     }
 }

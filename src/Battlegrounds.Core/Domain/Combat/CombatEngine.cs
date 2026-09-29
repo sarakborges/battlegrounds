@@ -408,6 +408,7 @@ public sealed class CombatEngine
                 [input.Left.PlayerId] = new CombatEffectHistoryState(input.Left.History),
                 [input.Right.PlayerId] = new CombatEffectHistoryState(input.Right.History),
             };
+            RecalculateAuras();
             var ids = input.Left.Units.Concat(input.Right.Units).Select(unit => unit.InstanceId.Value).ToArray();
             _nextInstanceId = ids.Length == 0 ? 1 : ids.Max() + 1;
         }
@@ -616,6 +617,7 @@ public sealed class CombatEngine
                 insertionIndex = Math.Clamp(insertionIndex, 0, side.UnitCount);
                 var insertedAt = insertionIndex;
                 side.InsertAt(insertedAt, unit);
+                RecalculateAuras();
                 insertionIndex++;
                 if (source is not CombatPowerRuntimeUnit)
                 {
@@ -703,6 +705,7 @@ public sealed class CombatEngine
             var insertionIndex = Math.Clamp(ResolveSummonIndex(unit, side), 0, side.UnitCount);
             unit.ResetForReborn();
             side.InsertAt(insertionIndex, unit);
+            RecalculateAuras();
             unit.RebirthCount++;
             _summonCursors[unit.InstanceId] = insertionIndex + 1;
             _timeline.Add(new CombatUnitRevivedTimelineEvent(
@@ -732,6 +735,7 @@ public sealed class CombatEngine
                 _deathPositions[unit.InstanceId] = (side, index);
                 _summonCursors[unit.InstanceId] = index;
                 side.RemoveAt(index);
+                RecalculateAuras();
                 unit.DeathCount++;
                 _timeline.Add(new CombatUnitDiedTimelineEvent(
                     NextTimelineSequence(),
@@ -741,6 +745,88 @@ public sealed class CombatEngine
                     index));
                 result.Add(unit);
             }
+        }
+
+        private void RecalculateAuras()
+        {
+            var units = Left.Units.Concat(Right.Units).ToArray();
+            foreach (var unit in units)
+            {
+                unit.SetAuraContribution(0, 0);
+                unit.SetAuraBehaviors([]);
+            }
+
+            var totals = units.ToDictionary(unit => unit.InstanceId, _ => (Attack: 0L, Health: 0L));
+            var behaviorTotals = units.ToDictionary(unit => unit.InstanceId, _ => new List<BehaviorDefinition>());
+            AccumulateAuras(Left, Right, totals, behaviorTotals);
+            AccumulateAuras(Right, Left, totals, behaviorTotals);
+
+            foreach (var unit in units)
+            {
+                var total = totals[unit.InstanceId];
+                unit.SetAuraContribution(
+                    (int)Math.Clamp(total.Attack, int.MinValue, int.MaxValue),
+                    (int)Math.Clamp(total.Health, 0L, int.MaxValue));
+                unit.SetAuraBehaviors(behaviorTotals[unit.InstanceId]);
+            }
+        }
+
+        private static void AccumulateAuras(
+            SideState sourceSide,
+            SideState enemySide,
+            Dictionary<UnitInstanceId, (long Attack, long Health)> totals,
+            Dictionary<UnitInstanceId, List<BehaviorDefinition>> behaviorTotals)
+        {
+            for (var sourceIndex = 0; sourceIndex < sourceSide.UnitCount; sourceIndex++)
+            {
+                var source = sourceSide.Units[sourceIndex];
+                if (!source.IsAlive) continue;
+                foreach (var aura in source.Definition.Auras)
+                {
+                    foreach (var target in ResolveAuraTargets(sourceSide, enemySide, sourceIndex, aura))
+                    {
+                        var current = totals[target.InstanceId];
+                        totals[target.InstanceId] = (current.Attack + aura.AttackDelta, current.Health + aura.HealthDelta);
+                        behaviorTotals[target.InstanceId].AddRange(aura.GrantedBehaviors);
+                    }
+                }
+            }
+        }
+
+        private static IEnumerable<CombatRuntimeUnit> ResolveAuraTargets(
+            SideState sourceSide,
+            SideState enemySide,
+            int sourceIndex,
+            UnitAuraDefinition aura)
+        {
+            var source = sourceSide.Units[sourceIndex];
+            IEnumerable<CombatRuntimeUnit> candidates;
+            if (aura.Target.Scope == EffectTargetScope.Enemy)
+            {
+                candidates = enemySide.Units;
+            }
+            else
+            {
+                candidates = aura.Target.Selection switch
+                {
+                    EffectTargetSelection.All => sourceSide.Units,
+                    EffectTargetSelection.Adjacent => AdjacentUnits(sourceSide, sourceIndex),
+                    EffectTargetSelection.LeftAdjacent => sourceIndex > 0 ? [sourceSide.Units[sourceIndex - 1]] : [],
+                    EffectTargetSelection.RightAdjacent => sourceIndex + 1 < sourceSide.UnitCount ? [sourceSide.Units[sourceIndex + 1]] : [],
+                    _ => [],
+                };
+            }
+
+            return candidates.Where(target =>
+                (!aura.Target.ExcludeSource || target.InstanceId != source.InstanceId) &&
+                (aura.Target.RequiredTypeId is null || target.Definition.Types.Any(type => type.Id == aura.Target.RequiredTypeId.Value)) &&
+                (aura.Target.RequiredTagId is null || target.Definition.Tags.Any(tag => tag.Id == aura.Target.RequiredTagId.Value)));
+        }
+
+        private static IEnumerable<CombatRuntimeUnit> AdjacentUnits(SideState side, int sourceIndex)
+        {
+            if (sourceIndex > 0) yield return side.Units[sourceIndex - 1];
+            if (sourceIndex + 1 < side.UnitCount) yield return side.Units[sourceIndex + 1];
         }
 
         private int ResolveSummonIndex(IEffectRuntimeUnit source, SideState side)
@@ -801,7 +887,6 @@ public sealed class CombatEngine
             _units = participant.Units
                 .Select(snapshot => CombatRuntimeUnit.FromSnapshot(participant.PlayerId, snapshot))
                 .ToList();
-            RecalculateAuras();
         }
 
         public void SetPower(PowerId powerId) => CurrentPowerId = powerId;
@@ -866,7 +951,6 @@ public sealed class CombatEngine
             {
                 _nextAttackerIndex %= _units.Count;
             }
-            RecalculateAuras();
         }
 
         public CombatRuntimeUnit RemoveAt(int index)
@@ -885,62 +969,7 @@ public sealed class CombatEngine
                 }
                 _nextAttackerIndex %= _units.Count;
             }
-            RecalculateAuras();
             return unit;
-        }
-
-        private void RecalculateAuras()
-        {
-            foreach (var unit in _units)
-            {
-                unit.SetAuraContribution(0, 0);
-                unit.SetAuraBehaviors([]);
-            }
-            var totals = _units.ToDictionary(unit => unit.InstanceId, _ => (Attack: 0L, Health: 0L));
-            var behaviorTotals = _units.ToDictionary(unit => unit.InstanceId, _ => new List<BehaviorDefinition>());
-            for (var sourceIndex = 0; sourceIndex < _units.Count; sourceIndex++)
-            {
-                var source = _units[sourceIndex];
-                if (!source.IsAlive) continue;
-                foreach (var aura in source.Definition.Auras)
-                {
-                    foreach (var target in ResolveAuraTargets(sourceIndex, aura))
-                    {
-                        var current = totals[target.InstanceId];
-                        totals[target.InstanceId] = (current.Attack + aura.AttackDelta, current.Health + aura.HealthDelta);
-                        behaviorTotals[target.InstanceId].AddRange(aura.GrantedBehaviors);
-                    }
-                }
-            }
-            foreach (var unit in _units)
-            {
-                var total = totals[unit.InstanceId];
-                unit.SetAuraContribution((int)Math.Min(int.MaxValue, total.Attack), (int)Math.Min(int.MaxValue, total.Health));
-                unit.SetAuraBehaviors(behaviorTotals[unit.InstanceId]);
-            }
-        }
-
-        private IEnumerable<CombatRuntimeUnit> ResolveAuraTargets(int sourceIndex, UnitAuraDefinition aura)
-        {
-            IEnumerable<CombatRuntimeUnit> candidates = aura.Target.Selection switch
-            {
-                EffectTargetSelection.All => _units,
-                EffectTargetSelection.Adjacent => AdjacentUnits(sourceIndex),
-                EffectTargetSelection.LeftAdjacent => sourceIndex > 0 ? [_units[sourceIndex - 1]] : [],
-                EffectTargetSelection.RightAdjacent => sourceIndex + 1 < _units.Count ? [_units[sourceIndex + 1]] : [],
-                _ => [],
-            };
-            var source = _units[sourceIndex];
-            return candidates.Where(target =>
-                (!aura.Target.ExcludeSource || target.InstanceId != source.InstanceId) &&
-                (aura.Target.RequiredTypeId is null || target.Definition.Types.Any(type => type.Id == aura.Target.RequiredTypeId.Value)) &&
-                (aura.Target.RequiredTagId is null || target.Definition.Tags.Any(tag => tag.Id == aura.Target.RequiredTagId.Value)));
-        }
-
-        private IEnumerable<CombatRuntimeUnit> AdjacentUnits(int sourceIndex)
-        {
-            if (sourceIndex > 0) yield return _units[sourceIndex - 1];
-            if (sourceIndex + 1 < _units.Count) yield return _units[sourceIndex + 1];
         }
 
         public IReadOnlyList<CombatSurvivor> GetSurvivors() =>
