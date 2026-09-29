@@ -1,2 +1,10 @@
-.loading-panel { place-self: center; width: min(620px, 90vw); padding: 32px; }
-.loading-panel p { margin-top: 10px; color: var(--muted); }
+.loading-panel {
+  place-self: center;
+  width: min(620px, calc(100% - 64px));
+  padding: 32px;
+}
+
+.loading-panel p {
+  margin-top: 10px;
+  color: var(--muted);
+}
