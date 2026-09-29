@@ -147,29 +147,6 @@
   background: transparent !important;
   box-shadow: none !important;
 }
-.shopkeeper-portrait {
-  width: 92px;
-  height: 92px;
-  display: grid;
-  place-items: center;
-  border-radius: 50% 50% 44% 44%;
-  border: 3px solid color-mix(in srgb, var(--theme-color-focus, var(--accent)) 74%, var(--theme-color-border, var(--line)));
-  background:
-    radial-gradient(circle at 50% 32%, rgba(255,255,255,.12), transparent 28%),
-    linear-gradient(160deg, var(--theme-color-surface-raised, var(--surface-3)), var(--theme-color-surface-deep, var(--surface-0)));
-  color: var(--theme-color-focus, var(--accent));
-  font-size: 42px;
-  line-height: 1;
-  box-shadow: 0 12px 28px rgba(0,0,0,.38), inset 0 0 22px rgba(255,255,255,.04);
-}
-.shopkeeper-drop strong {
-  margin-top: -11px;
-  padding: 2px 10px 3px;
-  border-radius: 999px;
-  background: color-mix(in srgb, var(--theme-color-surface-deep, var(--surface-0)) 82%, transparent);
-  font-size: 12px;
-  box-shadow: 0 4px 12px rgba(0,0,0,.2);
-}
 
 .tavern-shelf {
   position: relative;
@@ -303,12 +280,6 @@
   font-size: 24px;
   padding: 0 !important;
 }
-.hero-actions [data-slot="combine"] .button {
-  width: auto;
-  min-height: 32px;
-  padding: 5px 9px !important;
-  font-size: 12px !important;
-}
 .resource-badge {
   min-width: 118px;
   min-height: calc(var(--theme-metric-layout-hero-dock-resource-badge-height, 42) * 1px);
@@ -422,7 +393,6 @@
 @media (max-width: 1100px) {
   .preparation-screen { grid-template-columns: 140px minmax(0, 1fr) 96px; }
   .shopkeeper-drop { width: 144px; margin-inline: 4px; }
-  .shopkeeper-portrait { width: 82px; height: 82px; }
   .tavern-control .button, .tavern-control:first-child .button { width: 58px; height: 68px; }
   .turn-rail [data-slot="ready"], .turn-rail [data-slot="ready"] .button, .waiting-banner { width: 92px; }
   .resource-badge { min-width: 100px; }
