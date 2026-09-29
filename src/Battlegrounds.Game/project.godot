@@ -7,7 +7,7 @@ config_version=5
 
 config/name="Battlegrounds"
 config/features=PackedStringArray("4.7", "C#", "GL Compatibility")
-run/main_scene="res://Scenes/ModLauncher.tscn"
+run/main_scene="res://Scenes/ModSelection.tscn"
 
 [display]
 
