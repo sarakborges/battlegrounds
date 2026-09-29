@@ -40,6 +40,13 @@ jobs:
             echo 'Preparation screen CSS must not style reusable component internals.' >&2
             exit 1
           fi
+          if grep -R --include='*.css' -nE '@media|[0-9.]+(vw|vh)' \
+            src/Battlegrounds.Game/WebUI/design-system \
+            src/Battlegrounds.Game/WebUI/components \
+            src/Battlegrounds.Game/WebUI/screens; then
+            echo 'Reusable UI and screens must use the shared logical viewport scale instead of viewport media queries or vw/vh geometry.' >&2
+            exit 1
+          fi
       - name: Check web UI JavaScript syntax
         run: find src/Battlegrounds.Game/WebUI -type f -name '*.js' -print0 | xargs -0 -n1 node --check
       - name: Test core

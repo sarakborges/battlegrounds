@@ -58,7 +58,8 @@
   position: fixed !important;
   z-index: 9999 !important;
   width: var(--card-width) !important;
-  transform: translate(-50%, -58%) rotate(2deg) scale(1.04) !important;
+  transform: translate(-50%, -58%) rotate(2deg) scale(var(--ui-scale)) scale(1.04) !important;
+  transform-origin: center center !important;
   pointer-events: none !important;
   opacity: 0.92 !important;
   box-shadow: 0 20px 54px rgba(0, 0, 0, 0.45) !important;

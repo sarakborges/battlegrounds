@@ -35,18 +35,6 @@
   pointer-events: none;
 }
 
-@media (max-width: 1200px) {
-  .turn-rail {
-    right: 96px;
-    top: 44%;
-  }
-
-  .turn-rail__ready-button,
-  .turn-rail__waiting {
-    width: 132px;
-  }
-}
-
 .turn-rail__waiting[hidden] {
   display: none;
 }

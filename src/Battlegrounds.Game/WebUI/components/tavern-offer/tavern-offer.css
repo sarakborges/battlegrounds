@@ -23,9 +23,3 @@
   gap: 10px;
   overflow: visible;
 }
-
-@media (max-width: 1200px) {
-  .tavern-offer {
-    padding-top: 36px !important;
-  }
-}

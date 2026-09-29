@@ -19,14 +19,3 @@
   transform: translateX(-50%);
   text-align: center;
 }
-
-@media (max-width: 1200px) {
-  .shopkeeper {
-    width: 116px;
-    height: 132px;
-    transform: translateY(40px);
-    --character-portrait-width: 116px;
-    --character-portrait-height: 132px;
-    --character-nameplate-width: 106px;
-  }
-}

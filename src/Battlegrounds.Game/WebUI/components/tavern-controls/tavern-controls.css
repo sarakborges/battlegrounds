@@ -69,32 +69,3 @@
 .tavern-controls__tier-badge strong {
   font-size: 22px;
 }
-
-@media (max-width: 1200px) {
-  .tavern-controls {
-    grid-template-columns: minmax(0, 1fr) 126px minmax(0, 1fr);
-  }
-
-  .tavern-controls__left {
-    padding-right: 10px;
-  }
-
-  .tavern-controls__right {
-    padding-left: 10px;
-  }
-
-  .tavern-controls__button {
-    width: 52px;
-    height: 52px;
-  }
-
-  .tavern-controls__button--upgrade {
-    width: 58px;
-    height: 58px;
-  }
-
-  .tavern-controls__tier-badge {
-    width: 46px;
-    height: 56px;
-  }
-}

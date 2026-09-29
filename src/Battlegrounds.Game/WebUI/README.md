@@ -22,6 +22,12 @@ The application starts in `ModSelection.tscn`. `ModSelectionController` owns fil
 
 Gameplay then uses `Main.WebUi.cs` to serialize presentation state from `SinglePlayerSession` and map browser messages back to the application/domain commands.
 
+## Viewport scaling
+
+The browser UI uses the same `1280x720` logical viewport declared by `project.godot`. `core/viewport-scale.js` computes one uniform scale from the actual CEF viewport using `min(actualWidth / 1280, actualHeight / 720)` and applies it to the application shell.
+
+All screens and reusable modules lay themselves out in logical pixels. Window resizing must not introduce independent viewport breakpoints, `vw`/`vh` geometry, or per-screen scaling rules. If the physical window has a different aspect ratio, the logical viewport remains centered and the unused area is letterboxed. This keeps component geometry, drag/drop hit targets, and screen composition stable at every window size.
+
 ## Source layout
 
 The browser UI is deliberately componentized without a frontend framework or build step:
@@ -31,7 +37,7 @@ WebUI/
   app.js                  # bootstrap only: state -> screen, theme, polling
   index.html              # browser entry point
   bridge/                 # Godot CEF IPC and action dispatch
-  core/                   # template/style loading infrastructure
+  core/                   # template/style loading and viewport infrastructure
   theme/                  # resolved ModThemeCatalog -> CSS/component styles
   styles/                 # global baseline only
   design-system/          # generic reusable UI primitives

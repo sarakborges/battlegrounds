@@ -138,10 +138,3 @@
 .card[data-variant="reserve"] .badges {
   gap: 2px;
 }
-
-@media (max-width: 1200px) {
-  .card[data-variant="offer"] {
-    --card-width: 124px;
-    min-width: 104px;
-  }
-}

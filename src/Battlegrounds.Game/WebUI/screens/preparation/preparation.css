@@ -37,13 +37,3 @@
   background-position: center;
   background-repeat: no-repeat;
 }
-
-@media (max-width: 1200px) {
-  .preparation-screen {
-    grid-template-columns: 140px minmax(0, 1fr);
-  }
-
-  .preparation-board {
-    grid-template-rows: 126px 156px minmax(264px, 1fr) 104px 80px;
-  }
-}
