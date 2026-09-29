@@ -273,7 +273,7 @@ public partial class Main : Control
             ("tierValue", player.Tier),
             ("upgrade", upgrade),
             ("offer", Term("offer")),
-            ("offerState", player.IsOfferFrozen ? Text("ui.frozen") : Text("ui.open")),
+            ("offerState", player.HasFrozenOfferSlots ? Text("ui.frozen") : Text("ui.open")),
             ("reserve", Term("reserve")),
             ("reserveCount", player.PlayableReserveCount),
             ("field", Term("field")),
@@ -506,11 +506,22 @@ public partial class Main : Control
                 entry.Id,
                 PlayableAssetSlot(entry.Kind),
                 PlayableName(entry.Kind, entry.Id),
-                $"{Term("acquire")} • {PlayableKindText(entry.Kind)}",
+                entry.IsFrozen
+                    ? $"{Term("acquire")} • {PlayableKindText(entry.Kind)} • {Text("ui.frozen")}"
+                    : $"{Term("acquire")} • {PlayableKindText(entry.Kind)}",
                 OfferCardStats(entry.Kind, entry.Id, entry.Tier, cost),
                 human.IsReadyForCombat || blocked);
             var slot = entry.Slot;
+            var isFrozen = entry.IsFrozen;
             button.Pressed += () => ExecuteHuman(player => new AcquirePlayableCommand(player.Id, slot));
+            button.GuiInput += input =>
+            {
+                if (input is not InputEventMouseButton { ButtonIndex: MouseButton.Right, Pressed: true }) return;
+                ExecuteHuman(player => isFrozen
+                    ? new UnfreezeOfferSlotCommand(player.Id, slot)
+                    : new FreezeOfferSlotCommand(player.Id, slot));
+                button.AcceptEvent();
+            };
             _offerButtons.AddChild(button);
         }
     }

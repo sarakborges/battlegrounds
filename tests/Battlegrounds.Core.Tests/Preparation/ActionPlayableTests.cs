@@ -143,6 +143,31 @@ public sealed class ActionPlayableTests
     }
 
     [Fact]
+    public void FreezeOfferSlot_PreservesSelectedActionDuringRefresh()
+    {
+        var unit = new UnitDefinition(new UnitId("unit"), "Unit", 1, 1, 1);
+        var a = new ActionDefinition(new ActionId("a"), "A", 1, 0, [new AddResourceEffectDefinition(1)]);
+        var b = new ActionDefinition(new ActionId("b"), "B", 1, 0, [new AddResourceEffectDefinition(1)]);
+        var c = new ActionDefinition(new ActionId("c"), "C", 1, 0, [new AddResourceEffectDefinition(1)]);
+        var units = new UnitCatalog([unit]);
+        var actions = new ActionCatalog([a, b, c]);
+        var rules = new PreparationRules(10, 0, 10, 3, 1, 0, 7, 10, 2, [1, 1], [5], [2, 2]);
+        var pool = new UnitPool(units, [new UnitPoolEntry(unit.Id, 20)]);
+        var engine = new PreparationEngine(rules, pool, new MinimumRandomSource(), units, null, null, actions);
+        var match = MatchState.Create([new PlayerId(0), new PlayerId(1)], new MatchRules(2, 2));
+        engine.BeginPreparation(match);
+        var player = match.Players[0];
+        var frozenAction = player.ActionOffer[1];
+        var playableSlot = player.Offer.Count + 1;
+
+        Assert.True(engine.Execute(match, new FreezeOfferSlotCommand(player.Id, playableSlot)).Succeeded);
+        Assert.True(engine.Execute(match, new RefreshOfferCommand(player.Id)).Succeeded);
+
+        Assert.Same(frozenAction, player.ActionOffer[1]);
+        Assert.True(player.PlayableOffer[player.Offer.Count + 1].IsFrozen);
+    }
+
+    [Fact]
     public void MutateOffer_ActionCanAddRemoveAndReplaceUnitSlotsAndClearsFreeze()
     {
         var a = new UnitDefinition(new UnitId("a"), "A", 1, 1, 1);

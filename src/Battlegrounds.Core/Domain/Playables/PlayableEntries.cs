@@ -19,20 +19,22 @@ public sealed record PlayableOfferEntry
     public string Name => Unit?.Name ?? Action!.Name;
     public int Tier => Unit?.Tier ?? Action!.Tier;
     public int? Cost => Action?.Cost;
+    public bool IsFrozen { get; }
 
-    private PlayableOfferEntry(int slot, PlayableKind kind, UnitDefinition? unit, ActionDefinition? action)
+    private PlayableOfferEntry(int slot, PlayableKind kind, UnitDefinition? unit, ActionDefinition? action, bool isFrozen)
     {
         Slot = slot;
         Kind = kind;
         Unit = unit;
         Action = action;
+        IsFrozen = isFrozen;
     }
 
-    public static PlayableOfferEntry ForUnit(int slot, UnitDefinition definition) =>
-        new(slot, PlayableKind.Unit, definition ?? throw new ArgumentNullException(nameof(definition)), null);
+    public static PlayableOfferEntry ForUnit(int slot, UnitDefinition definition, bool isFrozen = false) =>
+        new(slot, PlayableKind.Unit, definition ?? throw new ArgumentNullException(nameof(definition)), null, isFrozen);
 
-    public static PlayableOfferEntry ForAction(int slot, ActionDefinition definition) =>
-        new(slot, PlayableKind.Action, null, definition ?? throw new ArgumentNullException(nameof(definition)));
+    public static PlayableOfferEntry ForAction(int slot, ActionDefinition definition, bool isFrozen = false) =>
+        new(slot, PlayableKind.Action, null, definition ?? throw new ArgumentNullException(nameof(definition)), isFrozen);
 }
 
 public sealed record PlayableReserveEntry

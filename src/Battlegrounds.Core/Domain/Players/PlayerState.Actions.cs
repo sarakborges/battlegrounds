@@ -22,8 +22,10 @@ public sealed partial class PlayerState
         {
             var result = new List<PlayableOfferEntry>(PlayableOfferCount);
             var slot = 0;
-            foreach (var unit in _offer) result.Add(PlayableOfferEntry.ForUnit(slot++, unit));
-            foreach (var action in _actionOffer) result.Add(PlayableOfferEntry.ForAction(slot++, action));
+            for (var unitSlot = 0; unitSlot < _offer.Count; unitSlot++)
+                result.Add(PlayableOfferEntry.ForUnit(slot++, _offer[unitSlot], IsUnitOfferSlotFrozen(unitSlot)));
+            for (var actionSlot = 0; actionSlot < _actionOffer.Count; actionSlot++)
+                result.Add(PlayableOfferEntry.ForAction(slot++, _actionOffer[actionSlot], IsActionOfferSlotFrozen(actionSlot)));
             return result.AsReadOnly();
         }
     }
@@ -45,12 +47,14 @@ public sealed partial class PlayerState
         ArgumentNullException.ThrowIfNull(actions);
         _actionOffer.Clear();
         _actionOffer.AddRange(actions);
+        TrimFrozenOfferSlots(_frozenActionOfferSlots, _actionOffer.Count);
     }
 
     internal ActionDefinition TakeOfferedAction(int actionSlot)
     {
         var action = _actionOffer[actionSlot];
         _actionOffer.RemoveAt(actionSlot);
+        ShiftFrozenOfferSlotsAfterRemoval(_frozenActionOfferSlots, actionSlot);
         return action;
     }
 

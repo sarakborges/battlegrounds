@@ -15,6 +15,8 @@ public sealed partial class PlayerState
     private readonly List<UnitInstance> _reserve = [];
     private readonly List<UnitInstance> _field = [];
     private readonly List<UnitDefinition> _offer = [];
+    private readonly HashSet<int> _frozenUnitOfferSlots = [];
+    private readonly HashSet<int> _frozenActionOfferSlots = [];
     private readonly ReadOnlyCollection<UnitInstance> _reserveView;
     private readonly ReadOnlyCollection<UnitInstance> _fieldView;
     private readonly ReadOnlyCollection<UnitDefinition> _offerView;
@@ -30,6 +32,7 @@ public sealed partial class PlayerState
     public CombatOutcome? LastCombatOutcome { get; private set; }
     public bool IsReadyForCombat { get; private set; }
     public bool IsOfferFrozen { get; private set; }
+    public bool HasFrozenOfferSlots => IsOfferFrozen || _frozenUnitOfferSlots.Count > 0 || _frozenActionOfferSlots.Count > 0;
     public IReadOnlyList<UnitInstance> Reserve => _reserveView;
     public IReadOnlyList<UnitInstance> Field => _fieldView;
     public IReadOnlyList<UnitDefinition> Offer => _offerView;
@@ -120,7 +123,7 @@ public sealed partial class PlayerState
 
         var released = new List<UnitDefinition>(_offer);
         _offer.Clear();
-        IsOfferFrozen = false;
+        ClearOfferFrozen();
 
         foreach (var unit in _reserve.Concat(_field))
         {
@@ -185,6 +188,7 @@ public sealed partial class PlayerState
     {
         var unit = _offer[slot];
         _offer.RemoveAt(slot);
+        ShiftFrozenOfferSlotsAfterRemoval(_frozenUnitOfferSlots, slot);
         return unit;
     }
 
@@ -198,6 +202,7 @@ public sealed partial class PlayerState
     {
         _offer.Clear();
         _offer.AddRange(units);
+        TrimFrozenOfferSlots(_frozenUnitOfferSlots, _offer.Count);
     }
 
     internal void AddToReserve(UnitInstance unit) => _reserve.Add(unit);
@@ -303,15 +308,65 @@ public sealed partial class PlayerState
 
     internal void SetOfferFrozen(bool isFrozen)
     {
-        if (IsOfferFrozen == isFrozen)
-        {
+        if (IsOfferFrozen == isFrozen && (isFrozen || !HasFrozenOfferSlots))
             throw new InvalidOperationException("Offer freeze state must actually change.");
-        }
 
         IsOfferFrozen = isFrozen;
+        _frozenUnitOfferSlots.Clear();
+        _frozenActionOfferSlots.Clear();
     }
 
-    internal void ClearOfferFrozen() => IsOfferFrozen = false;
+    internal bool IsUnitOfferSlotFrozen(int slot) => IsOfferFrozen || _frozenUnitOfferSlots.Contains(slot);
+    internal bool IsActionOfferSlotFrozen(int slot) => IsOfferFrozen || _frozenActionOfferSlots.Contains(slot);
+
+    internal bool FreezeOfferSlot(int playableSlot)
+    {
+        if (!TryResolvePlayableOfferSlot(playableSlot, out var entry))
+            throw new ArgumentOutOfRangeException(nameof(playableSlot));
+        if (IsOfferFrozen) return false;
+        return entry.Kind == PlayableKind.Unit
+            ? _frozenUnitOfferSlots.Add(playableSlot)
+            : _frozenActionOfferSlots.Add(playableSlot - _offer.Count);
+    }
+
+    internal bool UnfreezeOfferSlot(int playableSlot)
+    {
+        if (!TryResolvePlayableOfferSlot(playableSlot, out var entry))
+            throw new ArgumentOutOfRangeException(nameof(playableSlot));
+
+        if (IsOfferFrozen)
+        {
+            IsOfferFrozen = false;
+            for (var index = 0; index < _offer.Count; index++)
+                if (entry.Kind != PlayableKind.Unit || index != playableSlot) _frozenUnitOfferSlots.Add(index);
+            var actionSlot = playableSlot - _offer.Count;
+            for (var index = 0; index < _actionOffer.Count; index++)
+                if (entry.Kind != PlayableKind.Action || index != actionSlot) _frozenActionOfferSlots.Add(index);
+            return true;
+        }
+
+        return entry.Kind == PlayableKind.Unit
+            ? _frozenUnitOfferSlots.Remove(playableSlot)
+            : _frozenActionOfferSlots.Remove(playableSlot - _offer.Count);
+    }
+
+    internal void ClearOfferFrozen()
+    {
+        IsOfferFrozen = false;
+        _frozenUnitOfferSlots.Clear();
+        _frozenActionOfferSlots.Clear();
+    }
+
+    private static void ShiftFrozenOfferSlotsAfterRemoval(HashSet<int> slots, int removedSlot)
+    {
+        if (slots.Count == 0) return;
+        var shifted = slots.Where(slot => slot != removedSlot).Select(slot => slot > removedSlot ? slot - 1 : slot).ToArray();
+        slots.Clear();
+        slots.UnionWith(shifted);
+    }
+
+    private static void TrimFrozenOfferSlots(HashSet<int> slots, int count) =>
+        slots.RemoveWhere(slot => slot < 0 || slot >= count);
 
     internal void RecordCombatOutcome(CombatOutcome outcome) => LastCombatOutcome = outcome;
 

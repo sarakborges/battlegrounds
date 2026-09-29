@@ -105,6 +105,43 @@ public sealed class PreparationEngineTests
     }
 
     [Fact]
+    public void FreezeOfferSlot_PreservesOnlySelectedSlotAcrossRefreshAndRound()
+    {
+        var (match, engine, _) = CreateStartedMatch();
+        var player = match.Players[0];
+        var frozen = player.Offer[1];
+
+        Assert.True(engine.Execute(match, new FreezeOfferSlotCommand(player.Id, 1)).Succeeded);
+        Assert.True(player.PlayableOffer[1].IsFrozen);
+        Assert.False(player.PlayableOffer[0].IsFrozen);
+
+        Assert.True(engine.Execute(match, new RefreshOfferCommand(player.Id)).Succeeded);
+        Assert.Same(frozen, player.Offer[1]);
+        Assert.True(player.PlayableOffer[1].IsFrozen);
+
+        Assert.True(engine.Execute(match, new EndPreparationCommand(player.Id)).Succeeded);
+        Assert.True(engine.Execute(match, new EndPreparationCommand(match.Players[1].Id)).Succeeded);
+        engine.BeginPreparation(match);
+        Assert.Same(frozen, player.Offer[1]);
+        Assert.True(player.PlayableOffer[1].IsFrozen);
+    }
+
+    [Fact]
+    public void FreezeOfferSlot_ShiftsWithOfferAfterAcquisition()
+    {
+        var (match, engine, _) = CreateStartedMatch();
+        var player = match.Players[0];
+        var frozen = player.Offer[2];
+
+        Assert.True(engine.Execute(match, new FreezeOfferSlotCommand(player.Id, 2)).Succeeded);
+        Assert.True(engine.Execute(match, new AcquireUnitCommand(player.Id, 0)).Succeeded);
+
+        Assert.Equal(2, player.Offer.Count);
+        Assert.Same(frozen, player.Offer[1]);
+        Assert.True(player.PlayableOffer[1].IsFrozen);
+    }
+
+    [Fact]
     public void FreezeOffer_CanBeToggledRepeatedlyWithoutLimit()
     {
         var (match, engine, _) = CreateStartedMatch();
