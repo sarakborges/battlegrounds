@@ -14,5 +14,6 @@ public partial class Main
         RefreshReferenceCockpitLayout();
         RefreshBoardReferenceLayout();
         RefreshBoardOfferReferencePolish();
+        RefreshBoardCockpitFinishing();
     }
 }
