@@ -16,8 +16,8 @@
           <strong data-field="tier"></strong>
         </div>
         <div class="shopkeeper-drop drag-target panel" data-component="panel" data-theme-role="panel.shopkeeper" data-drop-kind="shopkeeper">
-          <div class="shopkeeper-portrait" aria-hidden="true">♜</div>
-          <strong>Shopkeeper</strong>
+          <img class="shopkeeper-art" data-field="shopkeeper-art" alt="">
+          <strong data-field="shopkeeper-name">Shopkeeper</strong>
           <small class="drag-hint">Drop a board unit to sell</small>
         </div>
         <div class="tavern-control" data-slot="refresh"></div>
@@ -40,13 +40,15 @@
           <span data-field="armor"></span>
         </div>
         <div class="hero-drop drag-target panel" data-component="panel" data-theme-role="panel.heroPortrait" data-drop-kind="hero">
-          <span class="eyebrow" data-field="leader-label"></span>
-          <strong data-field="hero-name"></strong>
+          <img class="hero-art" data-field="hero-art" alt="">
+          <div class="hero-nameplate">
+            <span class="eyebrow" data-field="leader-label"></span>
+            <strong data-field="hero-name"></strong>
+          </div>
           <small class="drag-hint">Drop a tavern card to buy</small>
         </div>
         <div class="hero-actions">
           <div data-slot="power"></div>
-          <div data-slot="combine"></div>
         </div>
         <div class="resource-badge panel" data-component="panel" data-theme-role="panel.resourceBadge">
           <span class="eyebrow" data-field="resource-label"></span>
