@@ -1,0 +1,106 @@
+.combat-unit-token {
+  position: relative;
+  width: 126px;
+  min-height: 168px;
+  display: grid;
+  justify-items: center;
+  align-content: center;
+  transform-origin: center;
+}
+
+.combat-unit-token__token {
+  display: grid;
+  place-items: center;
+}
+
+.combat-unit-token__marker {
+  position: absolute;
+  z-index: 40;
+  top: -7px;
+  right: -2px;
+  min-width: 31px;
+  height: 31px;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  background: var(--theme-color-focus, var(--accent));
+  color: var(--surface-0);
+  font-weight: 900;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, .28);
+  pointer-events: none;
+}
+
+.combat-unit-token__status {
+  min-height: 14px;
+  max-width: 126px;
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 10px;
+  text-align: center;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+.combat-unit-token__marker[hidden],
+.combat-unit-token__status[hidden] {
+  display: none;
+}
+
+.combat-unit-token[data-highlight="attacker"][data-attack-direction="down"] {
+  animation: combat-token-lunge-down 250ms ease-out;
+}
+
+.combat-unit-token[data-highlight="attacker"][data-attack-direction="up"] {
+  animation: combat-token-lunge-up 250ms ease-out;
+}
+
+.combat-unit-token[data-highlight="target"],
+.combat-unit-token[data-highlight="damaged"],
+.combat-unit-token[data-highlight="destroyed"] {
+  animation: combat-token-shake 240ms ease-out;
+}
+
+.combat-unit-token[data-highlight="summoned"],
+.combat-unit-token[data-highlight="revived"] {
+  animation: combat-token-pop 260ms ease-out;
+}
+
+.combat-unit-token[data-highlight="stats"],
+.combat-unit-token[data-highlight="triggered"],
+.combat-unit-token[data-highlight="behavior"] {
+  animation: combat-token-pulse 260ms ease-out;
+}
+
+.combat-unit-token[data-highlight="destroyed"] {
+  filter: saturate(.35);
+}
+
+@keyframes combat-token-lunge-down {
+  0% { transform: translateY(0) scale(1); }
+  45% { transform: translateY(14px) scale(1.06); }
+  100% { transform: translateY(0) scale(1); }
+}
+
+@keyframes combat-token-lunge-up {
+  0% { transform: translateY(0) scale(1); }
+  45% { transform: translateY(-14px) scale(1.06); }
+  100% { transform: translateY(0) scale(1); }
+}
+
+@keyframes combat-token-shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-6px); }
+  50% { transform: translateX(6px); }
+  75% { transform: translateX(-3px); }
+}
+
+@keyframes combat-token-pop {
+  from { transform: scale(.72); opacity: .2; }
+  to { transform: scale(1); opacity: 1; }
+}
+
+@keyframes combat-token-pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.08); filter: brightness(1.25); }
+}
