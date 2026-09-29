@@ -1,4 +1,6 @@
 using System.Text.Json;
+using Battlegrounds.Content;
+using Battlegrounds.Core.Domain.Playables;
 using Godot;
 
 namespace Battlegrounds.Game;
@@ -7,6 +9,8 @@ public partial class Main
 {
     private bool _webCosmeticsLoaded;
     private JsonElement? _webCosmetics;
+    private bool _webPresentationAssetsLoaded;
+    private ModPresentationAssetCatalog? _webPresentationAssets;
 
     private object? BuildWebCosmeticsState()
     {
@@ -29,6 +33,42 @@ public partial class Main
         {
             AppendLog($"Presentation cosmetics could not be loaded: {exception.Message}");
             return null;
+        }
+    }
+
+    private string? PlayableArtPath(PlayableKind kind, string id) => kind switch
+    {
+        PlayableKind.Unit => PresentationArtPath(ModPresentationEntityKind.Unit, id, ModPresentationAssetSlots.Art),
+        PlayableKind.Action => PresentationArtPath(ModPresentationEntityKind.Action, id, ModPresentationAssetSlots.Art),
+        _ => null,
+    };
+
+    private string? UnitArtPath(string id) =>
+        PresentationArtPath(ModPresentationEntityKind.Unit, id, ModPresentationAssetSlots.Art);
+
+    private string? PresentationArtPath(ModPresentationEntityKind kind, string id, string slot)
+    {
+        EnsureWebPresentationAssetsLoaded();
+        return _webPresentationAssets is not null && _webPresentationAssets.TryGet(kind, id, slot, out var asset)
+            ? asset.RelativePath
+            : null;
+    }
+
+    private void EnsureWebPresentationAssetsLoaded()
+    {
+        if (_webPresentationAssetsLoaded)
+            return;
+
+        _webPresentationAssetsLoaded = true;
+        try
+        {
+            var modDirectory = Path.GetFullPath(ProjectSettings.GlobalizePath(ModPath));
+            _webPresentationAssets = new ModPresentationAssetLoader().Load(modDirectory);
+        }
+        catch (Exception exception)
+        {
+            AppendLog($"Presentation assets could not be loaded: {exception.Message}");
+            _webPresentationAssets = null;
         }
     }
 
