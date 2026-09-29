@@ -16,12 +16,18 @@ import { createTavernControls } from '../../components/tavern-controls/tavern-co
 import { createTavernOffer } from '../../components/tavern-offer/tavern-offer.js';
 import { createTurnRail } from '../../components/turn-rail/turn-rail.js';
 import { bindPreparationDrag } from '../../interactions/preparation-drag.js';
-import { boardArtUrl, cosmeticsForState, leaderArtUrl, shopkeeperArtUrl } from '../../theme/cosmetics.js';
+import {
+  boardArtUrl,
+  cosmeticsForState,
+  entityArtUrl,
+  leaderArtUrl,
+  shopkeeperArtUrl
+} from '../../theme/cosmetics.js';
 
 const templateUrl = new URL('./preparation.html', import.meta.url);
 useStyle(new URL('./preparation.css', import.meta.url));
 
-async function createOverlay(state) {
+async function createOverlay(state, cosmetics) {
   const labels = state.labels ?? {};
   const pending = state.pendingChoice;
 
@@ -33,6 +39,7 @@ async function createOverlay(state) {
         id: option.id,
         name: option.name,
         description: option.description,
+        art: await entityArtUrl(cosmetics, pending.kind, option.id),
         tier: option.tier,
         attack: option.attack,
         health: option.health,
@@ -66,6 +73,7 @@ async function createOverlay(state) {
       id: candidate.id,
       name: candidate.name,
       description: candidate.description,
+      art: await entityArtUrl(cosmetics, 'unit', candidate.id),
       tier: candidate.tier,
       attack: candidate.attack,
       health: candidate.health,
@@ -136,7 +144,7 @@ export async function createPreparationScreen(state) {
     const canAcquire = !blocked &&
       reserveCount < (limits.reserveCapacity ?? Number.POSITIVE_INFINITY) &&
       (human.resource ?? 0) >= (entry.cost ?? Number.POSITIVE_INFINITY);
-    tavernOfferTokens.push(await createTavernOfferToken(entry, { blocked, canAcquire }));
+    tavernOfferTokens.push(await createTavernOfferToken(entry, { cosmetics, blocked, canAcquire }));
   }
   appendChildren(element.querySelector('[data-slot="tavern-offer"]'), [
     await createTavernOffer({ tokens: tavernOfferTokens })
@@ -144,7 +152,7 @@ export async function createPreparationScreen(state) {
 
   const playerFieldTokens = [];
   for (const unit of state.field ?? []) {
-    playerFieldTokens.push(await createPlayerFieldUnitToken(unit, { blocked }));
+    playerFieldTokens.push(await createPlayerFieldUnitToken(unit, { cosmetics, blocked }));
   }
   appendChildren(element.querySelector('[data-slot="player-field"]'), [
     await createPlayerField({ tokens: playerFieldTokens })
@@ -166,6 +174,7 @@ export async function createPreparationScreen(state) {
   const playerReserveTokens = [];
   for (const entry of state.reserve ?? []) {
     playerReserveTokens.push(await createPlayerReserveToken(entry, {
+      cosmetics,
       blocked,
       canDeployUnit: canDeployReserveUnit
     }));
@@ -191,7 +200,7 @@ export async function createPreparationScreen(state) {
     );
   }
 
-  const overlay = await createOverlay(state);
+  const overlay = await createOverlay(state, cosmetics);
   if (overlay) {
     appendChildren(element.querySelector('[data-slot="overlay"]'), [overlay]);
   }
