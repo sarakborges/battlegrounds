@@ -62,14 +62,20 @@ public partial class Main
         if (_modTheme.TryResolveColor(screen.BackgroundColor, out var color))
             background.Color = Color.FromHtml(color);
 
-        if (string.IsNullOrWhiteSpace(screen.BackgroundAsset))
+        Texture2D? texture = null;
+        var gameplayScreen = string.Equals(role, ModThemeScreenRoles.Preparation, StringComparison.Ordinal) ||
+                             string.Equals(role, ModThemeScreenRoles.Combat, StringComparison.Ordinal);
+        if (gameplayScreen)
+            PresentationTextures.TryGetBoardImage(out texture);
+
+        if (texture is null && !string.IsNullOrWhiteSpace(screen.BackgroundAsset))
+            texture = _themeBuilder.LoadImage(screen.BackgroundAsset);
+
+        if (texture is null)
         {
             if (_themeBackgroundImage is not null) _themeBackgroundImage.Visible = false;
             return;
         }
-
-        var texture = _themeBuilder.LoadImage(screen.BackgroundAsset);
-        if (texture is null) return;
 
         if (_themeBackgroundImage is null)
         {
