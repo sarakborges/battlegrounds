@@ -90,6 +90,12 @@ Component names describe their responsibility. Prefer `tavern-offer`, `player-fi
 
 A reusable module owns its own geometry and visual state. Screen CSS may position component roots as part of screen composition, but it must not reach into reusable component internals. For example, preparation card width/height belongs to `components/card/card.css`; the preparation screen is not allowed to size `.card`, `.action-button`, `.horizontal-stack`, `.player-chip`, or `.character-portrait` directly.
 
+## CSS cascade and theme ownership
+
+Theme resolution must not write presentation properties such as padding, background, border, radius, font size, or opacity directly as inline styles. `theme/theme.js` exposes resolved values as element-scoped `--theme-component-*` custom properties; the owning primitive or component decides how those tokens are consumed and which geometry remains fixed by the component contract.
+
+The cascade is intentional: primitive defaults are the baseline, composed components use selectors that describe their composition (for example `.player-field.panel` or `.action-button.tavern-controls__button`), and interaction-state selectors describe temporary state. `!important` is forbidden by CI. If a rule cannot win without it, fix ownership, selector intent, or stylesheet structure instead of increasing force.
+
 `app.js` does not know component markup. It maps the application status to a screen and applies the supported theme screen role. Authoritative state and commands remain in C#.
 
 ## Contract
