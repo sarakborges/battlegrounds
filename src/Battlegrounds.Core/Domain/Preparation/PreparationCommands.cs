@@ -26,4 +26,6 @@ public sealed record ResolveUnitChoiceCommand(PlayerId PlayerId, ChoiceId Choice
 public sealed record ResolveActionChoiceCommand(PlayerId PlayerId, ChoiceId ChoiceId, int OptionIndex) : IPreparationCommand;
 public sealed record FreezeOfferCommand(PlayerId PlayerId) : IPreparationCommand;
 public sealed record UnfreezeOfferCommand(PlayerId PlayerId) : IPreparationCommand;
+public sealed record FreezeOfferSlotCommand(PlayerId PlayerId, int OfferSlot) : IPreparationCommand;
+public sealed record UnfreezeOfferSlotCommand(PlayerId PlayerId, int OfferSlot) : IPreparationCommand;
 public sealed record EndPreparationCommand(PlayerId PlayerId) : IPreparationCommand;

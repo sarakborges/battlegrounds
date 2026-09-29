@@ -119,6 +119,8 @@ public sealed class PreparationEngine
             ResolveActionChoiceCommand resolveChoice => ResolveActionChoice(match, player, resolveChoice),
             FreezeOfferCommand => FreezeOffer(player),
             UnfreezeOfferCommand => UnfreezeOffer(player),
+            FreezeOfferSlotCommand freezeSlot => FreezeOfferSlot(player, freezeSlot),
+            UnfreezeOfferSlotCommand unfreezeSlot => UnfreezeOfferSlot(player, unfreezeSlot),
             EndPreparationCommand => EndPreparation(match, player),
             _ => throw new ArgumentOutOfRangeException(nameof(command), command.GetType().Name, "Unsupported preparation command."),
         };
@@ -329,6 +331,14 @@ public sealed class PreparationEngine
 
     private void RefreshOfferFromEffect(PlayerState player)
     {
+        if (player.HasFrozenOfferSlots && !player.IsOfferFrozen)
+        {
+            var preserved = PreparePartiallyFrozenOffer(player);
+            player.ReplaceOffer(preserved.Units);
+            player.ReplaceActionOffer(preserved.Actions);
+            return;
+        }
+
         var unitOffer = _unitPool.ExchangeOffer(player.Offer.ToArray(), player.Tier, _rules.GetUnitOfferSize(player.Tier), _randomSource);
         var actionOffer = DrawActionOffer(player.Tier, _rules.GetActionOfferSize(player.Tier));
         player.ReplaceOffer(ValidateUnitOffer(unitOffer, player.Tier));
@@ -513,9 +523,27 @@ public sealed class PreparationEngine
 
     private static PreparationCommandResult UnfreezeOffer(PlayerState player)
     {
-        if (!player.IsOfferFrozen) return PreparationCommandResult.Failure(PreparationFailureCode.OfferNotFrozen);
-        player.SetOfferFrozen(false);
+        if (!player.HasFrozenOfferSlots) return PreparationCommandResult.Failure(PreparationFailureCode.OfferNotFrozen);
+        player.ClearOfferFrozen();
         return PreparationCommandResult.Success();
+    }
+
+    private static PreparationCommandResult FreezeOfferSlot(PlayerState player, FreezeOfferSlotCommand command)
+    {
+        if (!player.TryResolvePlayableOfferSlot(command.OfferSlot, out _))
+            return PreparationCommandResult.Failure(PreparationFailureCode.InvalidOfferSlot);
+        return player.FreezeOfferSlot(command.OfferSlot)
+            ? PreparationCommandResult.Success()
+            : PreparationCommandResult.Failure(PreparationFailureCode.OfferSlotAlreadyFrozen);
+    }
+
+    private static PreparationCommandResult UnfreezeOfferSlot(PlayerState player, UnfreezeOfferSlotCommand command)
+    {
+        if (!player.TryResolvePlayableOfferSlot(command.OfferSlot, out _))
+            return PreparationCommandResult.Failure(PreparationFailureCode.InvalidOfferSlot);
+        return player.UnfreezeOfferSlot(command.OfferSlot)
+            ? PreparationCommandResult.Success()
+            : PreparationCommandResult.Failure(PreparationFailureCode.OfferSlotNotFrozen);
     }
 
     private PreparationCommandResult EndPreparation(MatchState match, PlayerState player)
@@ -531,6 +559,7 @@ public sealed class PreparationEngine
         var actionCount = _rules.GetActionOfferSize(player.Tier);
         if (!player.IsOfferFrozen)
         {
+            if (player.HasFrozenOfferSlots) return PreparePartiallyFrozenOffer(player);
             var freshUnits = _unitPool.ExchangeOffer(player.Offer.ToArray(), player.Tier, unitCount, _randomSource);
             return (ValidateUnitOffer(freshUnits, player.Tier), DrawActionOffer(player.Tier, actionCount));
         }
@@ -543,6 +572,40 @@ public sealed class PreparationEngine
             actionCount - player.ActionOffer.Count,
             player.ActionOffer.Select(action => action.Id))).ToArray();
         return (ValidateUnitOffer(frozenUnits, player.Tier), frozenActions);
+    }
+
+    private (IReadOnlyList<UnitDefinition> Units, IReadOnlyList<ActionDefinition> Actions) PreparePartiallyFrozenOffer(PlayerState player)
+    {
+        var frozenUnitSlots = Enumerable.Range(0, player.Offer.Count).Where(player.IsUnitOfferSlotFrozen).ToHashSet();
+        var frozenActionSlots = Enumerable.Range(0, player.ActionOffer.Count).Where(player.IsActionOfferSlotFrozen).ToHashSet();
+        var unitCount = Math.Max(_rules.GetUnitOfferSize(player.Tier), frozenUnitSlots.Count == 0 ? 0 : frozenUnitSlots.Max() + 1);
+        var actionCount = Math.Max(_rules.GetActionOfferSize(player.Tier), frozenActionSlots.Count == 0 ? 0 : frozenActionSlots.Max() + 1);
+
+        var returningUnits = player.Offer.Where((_, index) => !frozenUnitSlots.Contains(index)).ToArray();
+        var freshUnits = _unitPool.ExchangeOffer(returningUnits, player.Tier, unitCount - frozenUnitSlots.Count, _randomSource);
+        var units = MergeFrozenOfferSlots(player.Offer, frozenUnitSlots, ValidateUnitOffer(freshUnits, player.Tier), unitCount);
+
+        var frozenActionIds = frozenActionSlots.Select(index => player.ActionOffer[index].Id).ToArray();
+        var freshActions = DrawActionOffer(player.Tier, actionCount - frozenActionSlots.Count, frozenActionIds);
+        var actions = MergeFrozenOfferSlots(player.ActionOffer, frozenActionSlots, freshActions, actionCount);
+        return (units, actions);
+    }
+
+    private static IReadOnlyList<T> MergeFrozenOfferSlots<T>(
+        IReadOnlyList<T> current,
+        IReadOnlySet<int> frozenSlots,
+        IReadOnlyList<T> fresh,
+        int targetCount)
+    {
+        var result = new T[targetCount];
+        var freshIndex = 0;
+        for (var slot = 0; slot < targetCount; slot++)
+        {
+            if (slot < current.Count && frozenSlots.Contains(slot)) result[slot] = current[slot];
+            else result[slot] = fresh[freshIndex++];
+        }
+        if (freshIndex != fresh.Count) throw new InvalidOperationException("Offer refresh produced an unexpected number of fresh entries.");
+        return result;
     }
 
     private IReadOnlyList<ActionDefinition> DrawActionOffer(

@@ -27,6 +27,8 @@ public enum PreparationFailureCode
     InvalidPowerTarget,
     OfferAlreadyFrozen,
     OfferNotFrozen,
+    OfferSlotAlreadyFrozen,
+    OfferSlotNotFrozen,
 }
 
 public readonly record struct PreparationCommandResult
