@@ -17,8 +17,7 @@ export async function createEndRecruitmentControl({
       label,
       action: 'end-preparation',
       disabled: blocked,
-      variant: 'primary',
-      themeRole: 'button.primary',
+      themeRole: 'button.endRecruitment',
       className: 'end-recruitment-control__button'
     })
   ]);
