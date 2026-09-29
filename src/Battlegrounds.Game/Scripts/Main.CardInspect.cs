@@ -41,10 +41,18 @@ public partial class Main
         ConfigureInspectBadge(_cardInspectAttackBadge!, _cardInspectAttackValue!, data.Attack);
         ConfigureInspectBadge(_cardInspectHealthBadge!, _cardInspectHealthValue!, data.Health);
 
-        var width = ResolvePresentationMetric(ModThemeMetricKeys.Card.InspectWidth, 120.0f, 1024.0f);
-        var minimumHeight = ResolvePresentationMetric(ModThemeMetricKeys.Card.InspectMinimumHeight, 120.0f, 1400.0f);
-        var badgeSize = ResolvePresentationMetric(ModThemeMetricKeys.Card.InspectBadgeSize, 16.0f, 160.0f);
-        var badgeInset = ResolvePresentationMetric(ModThemeMetricKeys.Card.InspectBadgeInset, 0.0f, 96.0f);
+        var themedWidth = ResolvePresentationMetric(ModThemeMetricKeys.Card.InspectWidth, 120.0f, 1024.0f);
+        var themedMinimumHeight = ResolvePresentationMetric(ModThemeMetricKeys.Card.InspectMinimumHeight, 120.0f, 1400.0f);
+        var viewportWidth = Mathf.Max(1.0f, Size.X);
+        var viewportHeight = Mathf.Max(1.0f, Size.Y);
+        var width = Mathf.Min(themedWidth, Mathf.Clamp(viewportWidth * 0.16f, 220.0f, 260.0f));
+        var minimumHeight = Mathf.Min(themedMinimumHeight, Mathf.Clamp(width * 1.48f, 320.0f, 400.0f));
+        var badgeSize = Mathf.Min(
+            ResolvePresentationMetric(ModThemeMetricKeys.Card.InspectBadgeSize, 16.0f, 160.0f),
+            width * 0.15f);
+        var badgeInset = Mathf.Min(
+            ResolvePresentationMetric(ModThemeMetricKeys.Card.InspectBadgeInset, 0.0f, 96.0f),
+            width * 0.035f);
 
         _cardInspectPanel!.CustomMinimumSize = new Vector2(width, minimumHeight);
         _cardInspectCanvas!.CustomMinimumSize = new Vector2(width, minimumHeight);
@@ -133,9 +141,6 @@ public partial class Main
 
     private void LayoutInspectCardSlots(bool hasTokenStats)
     {
-        // Stable semantic geometry inspired by the Battlegrounds full-card hover:
-        // portrait on top, name ribbon crossing its lower edge, rules text in the
-        // parchment body, type/details near the footer, and stat gems on corners.
         LayoutInspectSlot(_cardInspectArt!, 0.105f, 0.055f, 0.895f, 0.485f);
         LayoutInspectSlot(_cardInspectTitle!, 0.105f, 0.425f, 0.895f, 0.545f);
         LayoutInspectSlot(_cardInspectSubtitle!, 0.15f, 0.535f, 0.85f, 0.595f);
@@ -184,7 +189,21 @@ public partial class Main
         var maxX = Mathf.Max(offset, Size.X - panelSize.X - offset);
         x = Mathf.Clamp(x, offset, maxX);
 
-        var y = sourceLocal.Y + sourceRect.Size.Y * 0.5f - panelSize.Y * 0.5f;
+        var sourceCenterY = sourceLocal.Y + sourceRect.Size.Y * 0.5f;
+        float y;
+        if (sourceCenterY < Size.Y * 0.46f)
+        {
+            // Tavern cards inspect below the shop so the card never covers Bob or
+            // the upgrade/refresh/freeze controls.
+            y = sourceLocal.Y + sourceRect.Size.Y + offset;
+        }
+        else
+        {
+            // Board/hand cards inspect above their source, which keeps the bottom
+            // hero cockpit and the hand itself readable.
+            y = sourceLocal.Y - panelSize.Y - offset;
+        }
+
         var maxY = Mathf.Max(offset, Size.Y - panelSize.Y - offset);
         y = Mathf.Clamp(y, offset, maxY);
 
