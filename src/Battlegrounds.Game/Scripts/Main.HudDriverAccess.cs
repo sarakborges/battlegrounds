@@ -9,5 +9,7 @@ public partial class Main
         ApplyTavernAspectPolish();
         RefreshPreparationPresentationPolish();
         RefreshLeaderFramePolish();
+        RefreshOpponentRailReferencePolish();
+        RefreshCombatReferencePolish();
     }
 }
