@@ -12,12 +12,12 @@ func _ready() -> void:
     mouse_filter = Control.MOUSE_FILTER_IGNORE
 
     if not ClassDB.class_exists("CefTexture"):
-        web_unavailable.emit("Godot CEF is not installed (CefTexture class is unavailable)")
+        _fail("Godot CEF is not installed (CefTexture class is unavailable)")
         return
 
     _browser = ClassDB.instantiate("CefTexture")
     if _browser == null:
-        web_unavailable.emit("Godot CEF is installed but CefTexture could not be instantiated")
+        _fail("Godot CEF is installed but CefTexture could not be instantiated")
         return
 
     _browser.set("enable_accelerated_osr", true)
@@ -45,6 +45,11 @@ func _on_load_finished(_url: String, _status: int) -> void:
     web_ready.emit()
 
 func _on_load_error(url: String, error_code: int, error_text: String) -> void:
+    _fail("Failed to load %s (%d): %s" % [url, error_code, error_text])
+
+func _fail(reason: String) -> void:
     visible = false
     mouse_filter = Control.MOUSE_FILTER_IGNORE
-    web_unavailable.emit("Failed to load %s (%d): %s" % [url, error_code, error_text])
+    push_error(reason)
+    web_unavailable.emit(reason)
+    get_tree().quit(1)
