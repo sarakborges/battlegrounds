@@ -6,34 +6,35 @@
   flex-direction: column;
   align-items: center;
   gap: 6px;
-  padding: 6px 4px;
+  padding: 3px 0;
   overflow: visible;
   border: 0;
-  border-radius: 18px;
-  background: color-mix(in srgb, var(--theme-color-surface-deep, var(--surface-0)) 72%, transparent);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, .22);
-  backdrop-filter: blur(3px);
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
 }
 
 .opponent-rail__match-mark {
-  width: 100%;
-  padding: 1px 0 4px;
+  width: 66px;
+  min-height: 26px;
   display: grid;
   place-items: center;
-  gap: 1px;
   text-align: center;
+  text-shadow: 0 2px 3px rgba(0, 0, 0, .85);
 }
 
 .opponent-rail__match-mark .eyebrow {
-  max-width: 70px;
-  overflow: hidden;
-  font-size: 7px;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  display: none;
 }
 
 .opponent-rail__match-mark strong {
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--theme-color-surface-deep, #120c09) 72%, transparent);
+  color: var(--theme-color-text-muted, var(--muted));
   font-size: 9px;
+  line-height: 1;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, .26);
 }
 
 .opponent-rail__players {
@@ -42,7 +43,7 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: calc(var(--theme-metric-layout-opponent-rail-entries-gap, 6) * 1px);
+  gap: calc(var(--theme-metric-layout-opponent-rail-entries-gap, 5) * 1px);
   overflow: visible;
 }
 
