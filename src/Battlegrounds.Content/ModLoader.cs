@@ -283,7 +283,8 @@ public sealed class ModLoader
         if (data is null) throw new InvalidDataException("Validated unit query is missing.");
         return new EffectUnitQuery(data.Scope, data.ExcludeSource ?? false,
             string.IsNullOrWhiteSpace(data.TypeId) ? null : new UnitTypeId(data.TypeId),
-            string.IsNullOrWhiteSpace(data.TagId) ? null : new TagId(data.TagId));
+            string.IsNullOrWhiteSpace(data.TagId) ? null : new TagId(data.TagId),
+            data.Zone ?? EffectTargetZone.Field);
     }
 
     private static EffectUnitQuery BuildQuery(JsonElement data)
@@ -349,7 +350,7 @@ public sealed class ModLoader
         OfferSlotSelection? Selection);
     private sealed record GenerationQueryData(int? MinimumTier, int? MaximumTier, string? TypeId, string? TagId, bool? ExcludeSource);
     private sealed record ActionQueryData(int? MinimumTier, int? MaximumTier, string? ExcludeActionId);
-    private record QueryData(EffectTargetScope Scope, bool? ExcludeSource, string? TypeId, string? TagId);
+    private record QueryData(EffectTargetScope Scope, bool? ExcludeSource, string? TypeId, string? TagId, EffectTargetZone? Zone);
     private sealed record TargetData(
         EffectTargetScope Scope,
         bool? ExcludeSource,
@@ -357,7 +358,8 @@ public sealed class ModLoader
         string? TagId,
         EffectTargetSelection? Selection,
         int? Limit,
-        EffectTargetAnchor? RelativeTo)
-        : QueryData(Scope, ExcludeSource, TypeId, TagId);
+        EffectTargetAnchor? RelativeTo,
+        EffectTargetZone? Zone)
+        : QueryData(Scope, ExcludeSource, TypeId, TagId, Zone);
     private sealed record UnitPoolData(string UnitId, int Copies);
 }

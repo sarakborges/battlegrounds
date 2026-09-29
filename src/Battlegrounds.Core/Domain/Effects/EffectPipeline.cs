@@ -17,6 +17,7 @@ public sealed class EffectUnitSnapshot
     public int Position { get; }
     public int Attack { get; }
     public int Health { get; }
+    public EffectTargetZone Zone { get; }
 
     public EffectUnitSnapshot(
         UnitInstanceId instanceId,
@@ -27,7 +28,8 @@ public sealed class EffectUnitSnapshot
         int position = -1,
         bool isSelectable = true,
         IEnumerable<UnitTypeId>? types = null,
-        IEnumerable<TagId>? tags = null)
+        IEnumerable<TagId>? tags = null,
+        EffectTargetZone zone = EffectTargetZone.Field)
     {
         InstanceId = instanceId;
         OwnerPlayerId = ownerPlayerId;
@@ -36,6 +38,7 @@ public sealed class EffectUnitSnapshot
         Position = position;
         Attack = attack;
         Health = health;
+        Zone = zone;
         _types = new HashSet<UnitTypeId>(types ?? []);
         _tags = new HashSet<TagId>(tags ?? []);
     }
@@ -248,6 +251,7 @@ public sealed class EffectPipeline
     private static IReadOnlyList<EffectUnitSnapshot> QueryUnits(EffectUnitQuery query, EffectResolutionContext context) =>
         context.Units
             .Where(unit => unit.IsAlive && unit.IsSelectable)
+            .Where(unit => unit.Zone == query.Zone)
             .Where(unit => IsInScope(unit, query.Scope, context))
             .Where(unit => !query.ExcludeSource || unit.InstanceId != context.SourceInstanceId)
             .Where(unit => query.RequiredTypeId is null || unit.HasType(query.RequiredTypeId.Value))

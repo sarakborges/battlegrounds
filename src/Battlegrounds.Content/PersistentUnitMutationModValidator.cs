@@ -180,7 +180,7 @@ internal sealed class PersistentUnitMutationModValidator
             target,
             file,
             path,
-            ["scope", "excludeSource", "typeId", "tagId", "selection", "limit", "relativeTo"],
+            ["scope", "excludeSource", "typeId", "tagId", "selection", "limit", "relativeTo", "zone"],
             ["scope"],
             issues);
 

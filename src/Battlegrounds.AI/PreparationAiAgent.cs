@@ -416,8 +416,12 @@ public sealed class PreparationAiAgent
             .ToArray();
         if (selectedEffects.Length == 0) return new SelectedTarget(false, null);
 
-        var candidates = match.Players
-            .SelectMany(player => player.Field.Select(unit => new TargetCandidate(player.Id, unit)))
+        var zones = selectedEffects.Select(value => value.Selector.Zone).Distinct().ToArray();
+        if (zones.Length != 1) return new SelectedTarget(true, null);
+        var candidates = (zones[0] == EffectTargetZone.Reserve
+                ? match.Players.Where(player => player.Id == ownerPlayerId)
+                    .SelectMany(player => player.Reserve.Select(unit => new TargetCandidate(player.Id, unit)))
+                : match.Players.SelectMany(player => player.Field.Select(unit => new TargetCandidate(player.Id, unit))))
             .Where(candidate => candidate.Unit.IsAlive)
             .Where(candidate => selectedEffects.All(value => MatchesSelector(candidate.Unit, value.Selector)))
             .ToArray();

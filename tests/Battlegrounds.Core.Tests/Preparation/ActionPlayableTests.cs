@@ -207,6 +207,46 @@ public sealed class ActionPlayableTests
     }
 
     [Fact]
+    public void Preparation_ActionCanTargetUnitInReserveAndModifierPersistsAfterDeploy()
+    {
+        var unit = new UnitDefinition(new UnitId("reserve-target"), "Reserve Target", 1, 2, 2);
+        var action = new ActionDefinition(
+            new ActionId("battle-plans"),
+            "Battle Plans",
+            1,
+            0,
+            [new ApplyUnitModifierEffectDefinition(
+                new EffectTargetSelector(EffectTargetScope.Selected, zone: EffectTargetZone.Reserve),
+                "battle-plans",
+                2,
+                2)]);
+        var units = new UnitCatalog([unit]);
+        var actions = new ActionCatalog([action]);
+        var rules = new PreparationRules(10, 0, 10, 0, 1, 0, 7, 10, 2, [1, 1], [5], [1, 1]);
+        var pool = new UnitPool(units, [new UnitPoolEntry(unit.Id, 10)]);
+        var engine = new PreparationEngine(rules, pool, new MinimumRandomSource(), units, null, null, actions);
+        var match = MatchState.Create([new PlayerId(0), new PlayerId(1)], new MatchRules(2, 2));
+        engine.BeginPreparation(match);
+        var player = match.Players[0];
+
+        Assert.True(engine.Execute(match, new AcquirePlayableCommand(player.Id, 0)).Succeeded);
+        var reserveUnit = Assert.Single(player.Reserve);
+        var actionEntry = player.PlayableOffer.Single(entry => entry.Kind == PlayableKind.Action);
+        Assert.True(engine.Execute(match, new AcquirePlayableCommand(player.Id, actionEntry.Slot)).Succeeded);
+        var actionReserveSlot = player.PlayableReserve.Single(entry => entry.Kind == PlayableKind.Action).Slot;
+
+        Assert.True(engine.Execute(match, new PlayActionCommand(player.Id, actionReserveSlot, reserveUnit.Id)).Succeeded);
+        Assert.Same(reserveUnit, Assert.Single(player.Reserve));
+        Assert.Equal(4, reserveUnit.Attack);
+        Assert.Equal(4, reserveUnit.Health);
+
+        Assert.True(engine.Execute(match, new DeployUnitCommand(player.Id, 0)).Succeeded);
+        Assert.Same(reserveUnit, Assert.Single(player.Field));
+        Assert.Equal(4, reserveUnit.Attack);
+        Assert.Equal(4, reserveUnit.Health);
+    }
+
+    [Fact]
     public void ReturnUnitToReserve_PreservesUnitAndAllowsOnPlayAgainWithoutRelease()
     {
         var unit = new UnitDefinition(

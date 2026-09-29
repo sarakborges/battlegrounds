@@ -35,6 +35,8 @@ public sealed record ReturnUnitToReserveEffectDefinition : EffectDefinition
     public ReturnUnitToReserveEffectDefinition(EffectTargetSelector target)
     {
         Target = target ?? throw new ArgumentNullException(nameof(target));
+        if (Target.Zone != EffectTargetZone.Field)
+            throw new ArgumentException("returnUnitToReserve targets must be on the Field.", nameof(target));
     }
 }
 

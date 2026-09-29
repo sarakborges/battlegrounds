@@ -17,6 +17,7 @@ internal interface IEffectRuntimeUnit
     int Attack => Definition.BaseAttack;
     int Health => Definition.BaseHealth;
     bool IsAlive { get; }
+    EffectTargetZone TargetZone => EffectTargetZone.Field;
 }
 
 internal interface IPreparationEconomyEffectWorld
@@ -30,6 +31,7 @@ internal interface IPreparationEconomyEffectWorld
 internal interface IEffectRuntimeWorld
 {
     IReadOnlyList<IEffectRuntimeUnit> Units { get; }
+    IReadOnlyList<IEffectRuntimeUnit> TargetableUnits => Units;
     bool TryGetUnit(UnitInstanceId instanceId, out IEffectRuntimeUnit unit);
     IReadOnlyList<IEffectRuntimeUnit> GetHistoryEventListeners(PlayerId playerId);
     void ModifyStats(IEffectRuntimeUnit unit, int attackDelta, int healthDelta);
@@ -489,12 +491,13 @@ internal sealed class GameEffectRuntime
 
     private EffectResolutionContext BuildContext(IEffectRuntimeUnit source, UnitInstanceId? selectedTargetInstanceId = null)
     {
-        var positions = new Dictionary<PlayerId, int>();
+        var positions = new Dictionary<(PlayerId PlayerId, EffectTargetZone Zone), int>();
         var snapshots = new List<EffectUnitSnapshot>();
-        foreach (var unit in _world.Units)
+        foreach (var unit in _world.TargetableUnits)
         {
-            var position = positions.GetValueOrDefault(unit.OwnerPlayerId);
-            positions[unit.OwnerPlayerId] = position + 1;
+            var key = (unit.OwnerPlayerId, unit.TargetZone);
+            var position = positions.GetValueOrDefault(key);
+            positions[key] = position + 1;
             snapshots.Add(CreateSnapshot(unit, true, position));
         }
         if (snapshots.All(snapshot => snapshot.InstanceId != source.InstanceId)) snapshots.Add(CreateSnapshot(source, false, -1));
@@ -509,7 +512,7 @@ internal sealed class GameEffectRuntime
 
     private static EffectUnitSnapshot CreateSnapshot(IEffectRuntimeUnit unit, bool isSelectable, int position) =>
         new(unit.InstanceId, unit.OwnerPlayerId, unit.IsAlive, unit.Attack, unit.Health, position, isSelectable,
-            unit.Definition.Types.Select(type => type.Id), unit.Definition.Tags.Select(tag => tag.Id));
+            unit.Definition.Types.Select(type => type.Id), unit.Definition.Tags.Select(tag => tag.Id), unit.TargetZone);
 
     private static int FindTriggerIndex(UnitDefinition definition, TriggerDefinition trigger)
     {

@@ -220,10 +220,16 @@ internal sealed partial class PreparationEffectEngine
         public IReadOnlyList<IEffectRuntimeUnit> Units =>
             _match.Players.SelectMany(player => player.Field.Select(unit => (IEffectRuntimeUnit)Wrap(unit, player.Id))).ToArray();
 
+        public IReadOnlyList<IEffectRuntimeUnit> TargetableUnits =>
+            _match.Players.SelectMany(player =>
+                player.Field.Select(unit => (IEffectRuntimeUnit)Wrap(unit, player.Id))
+                    .Concat(player.Reserve.Select(unit => (IEffectRuntimeUnit)Wrap(unit, player.Id))))
+                .ToArray();
+
         public PreparationRuntimeUnit Wrap(UnitInstance unit, PlayerId ownerPlayerId)
         {
             if (_wrappers.TryGetValue(unit.Id, out var existing)) return existing;
-            var wrapper = new PreparationRuntimeUnit(unit, ownerPlayerId);
+            var wrapper = new PreparationRuntimeUnit(unit, ownerPlayerId, () => ResolveTargetZone(ownerPlayerId, unit.Id));
             _wrappers.Add(unit.Id, wrapper);
             return wrapper;
         }
@@ -232,7 +238,7 @@ internal sealed partial class PreparationEffectEngine
         {
             foreach (var player in _match.Players)
             {
-                if (player.TryGetFieldUnit(instanceId, out var found))
+                if (player.TryGetOwnedUnit(instanceId, out var found, out _))
                 {
                     unit = Wrap(found, player.Id);
                     return true;
@@ -437,6 +443,14 @@ internal sealed partial class PreparationEffectEngine
                 ? player
                 : throw new InvalidOperationException($"Effect history owner '{playerId}' is not part of the match.");
 
+        private EffectTargetZone ResolveTargetZone(PlayerId ownerPlayerId, UnitInstanceId instanceId)
+        {
+            var owner = GetPlayer(ownerPlayerId);
+            return owner.Reserve.Any(unit => unit.Id == instanceId)
+                ? EffectTargetZone.Reserve
+                : EffectTargetZone.Field;
+        }
+
         private int ResolveSummonIndex(IEffectRuntimeUnit source, PlayerState owner)
         {
             if (_summonCursors.TryGetValue(source.InstanceId, out var cursor)) return cursor;
@@ -453,6 +467,7 @@ internal sealed partial class PreparationEffectEngine
 
     private sealed class PreparationRuntimeUnit : IEffectRuntimeUnit
     {
+        private readonly Func<EffectTargetZone> _targetZone;
         public UnitInstance Unit { get; }
         public UnitInstanceId InstanceId => Unit.Id;
         public PlayerId OwnerPlayerId { get; }
@@ -460,10 +475,12 @@ internal sealed partial class PreparationEffectEngine
         public int Attack => Unit.Attack;
         public int Health => Unit.Health;
         public bool IsAlive => Unit.IsAlive;
-        public PreparationRuntimeUnit(UnitInstance unit, PlayerId ownerPlayerId)
+        public EffectTargetZone TargetZone => _targetZone();
+        public PreparationRuntimeUnit(UnitInstance unit, PlayerId ownerPlayerId, Func<EffectTargetZone> targetZone)
         {
             Unit = unit ?? throw new ArgumentNullException(nameof(unit));
             OwnerPlayerId = ownerPlayerId;
+            _targetZone = targetZone ?? throw new ArgumentNullException(nameof(targetZone));
         }
     }
 
