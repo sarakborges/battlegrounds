@@ -1,6 +1,7 @@
 import { bindActions } from './bridge/actions.js';
 import { createGameBridge } from './bridge/game-bridge.js';
 import { createScreen } from './screens/index.js';
+import { configureAssetBridge, receiveAsset } from './theme/cosmetics.js';
 import { applyComponentStyles, applyTheme } from './theme/theme.js';
 
 const app = document.getElementById('app');
@@ -17,6 +18,7 @@ function showError(message) {
 
 const bridge = createGameBridge({
   onError: showError,
+  onAsset: receiveAsset,
   onState: async state => {
     const version = ++renderVersion;
     applyTheme(state?.theme, state?.status === 'combat' ? 'combat' : 'preparation');
@@ -33,6 +35,7 @@ const bridge = createGameBridge({
   }
 });
 
+configureAssetBridge(bridge.send);
 bindActions(document, bridge.send);
 
 if (document.readyState === 'loading') {
