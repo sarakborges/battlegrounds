@@ -13,6 +13,16 @@ jobs:
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '8.0.x'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Check web UI JavaScript syntax
+        run: |
+          node --check src/Battlegrounds.Game/WebUI/components.js
+          node --check src/Battlegrounds.Game/WebUI/theme.js
+          node --check src/Battlegrounds.Game/WebUI/screens.js
+          node --check src/Battlegrounds.Game/WebUI/app.js
+          node --check src/Battlegrounds.Game/WebUI/combat.js
       - name: Test core
         run: dotnet test tests/Battlegrounds.Core.Tests/Battlegrounds.Core.Tests.csproj --configuration Release
       - name: Test mod content boundary
