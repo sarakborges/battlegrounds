@@ -2,15 +2,14 @@ import { appendChildren, cloneTemplate, useStyle } from '../../core/template.js'
 import { createButton } from '../../design-system/button/button.js';
 import { createHorizontalStack } from '../../design-system/horizontal-stack/horizontal-stack.js';
 import { createModalDialog } from '../../design-system/modal-dialog/modal-dialog.js';
-import { createCard } from '../../components/card/card.js';
-import { createCardBadges } from '../../components/card/card-badges.js';
-import {
-  createPlayerFieldUnitCard,
-  createPlayerReserveCard,
-  createTavernOfferCard
-} from '../../components/card/preparation-cards.js';
 import { createHeroCockpit } from '../../components/hero-cockpit/hero-cockpit.js';
 import { createOpponentRail } from '../../components/opponent-rail/opponent-rail.js';
+import { createPlayableToken } from '../../components/playable-token/playable-token.js';
+import {
+  createPlayerFieldUnitToken,
+  createPlayerReserveToken,
+  createTavernOfferToken
+} from '../../components/playable-token/preparation-tokens.js';
 import { createPlayerField } from '../../components/player-field/player-field.js';
 import { createPlayerReserve } from '../../components/player-reserve/player-reserve.js';
 import { createTavernControls } from '../../components/tavern-controls/tavern-controls.js';
@@ -27,14 +26,19 @@ async function createOverlay(state) {
   const pending = state.pendingChoice;
 
   if (pending) {
-    const cards = [];
+    const tokens = [];
     for (const option of pending.options ?? []) {
-      cards.push(await createCard({
+      tokens.push(await createPlayableToken({
         kind: pending.kind,
+        id: option.id,
         name: option.name,
-        badges: await createCardBadges(option),
+        description: option.description,
+        tier: option.tier,
+        attack: option.attack,
+        health: option.health,
+        cost: option.cost,
         action: 'resolve-choice',
-        variant: 'choice',
+        location: 'choice',
         attributes: { 'data-option-index': option.index }
       }));
     }
@@ -42,7 +46,7 @@ async function createOverlay(state) {
     return createModalDialog({
       eyebrow: 'Choice',
       title: `Choose ${pending.kind}`,
-      body: [await createHorizontalStack({ children: cards })],
+      body: [await createHorizontalStack({ children: tokens })],
       variant: 'choice'
     });
   }
@@ -57,12 +61,15 @@ async function createOverlay(state) {
 
   const targets = [];
   for (const candidate of interaction.candidates ?? []) {
-    targets.push(await createCard({
-      kind: `P${candidate.ownerId}`,
+    targets.push(await createPlayableToken({
+      kind: 'unit',
+      id: candidate.id,
       name: candidate.name,
-      badges: await createCardBadges(candidate),
+      description: candidate.description,
+      attack: candidate.attack,
+      health: candidate.health,
       action: 'select-target',
-      variant: 'target',
+      location: 'target',
       attributes: { 'data-unit-instance-id': candidate.unitInstanceId }
     }));
   }
@@ -121,44 +128,45 @@ export async function createPreparationScreen(state) {
     })
   ]);
 
-  const tavernOfferCards = [];
+  const tavernOfferTokens = [];
   for (const entry of state.offer ?? []) {
     const canAcquire = !blocked &&
       reserveCount < (limits.reserveCapacity ?? Number.POSITIVE_INFINITY) &&
       (human.resource ?? 0) >= (entry.cost ?? Number.POSITIVE_INFINITY);
-    tavernOfferCards.push(await createTavernOfferCard(entry, { blocked, canAcquire }));
+    tavernOfferTokens.push(await createTavernOfferToken(entry, { blocked, canAcquire }));
   }
   appendChildren(element.querySelector('[data-slot="tavern-offer"]'), [
-    await createTavernOffer({ cards: tavernOfferCards })
+    await createTavernOffer({ tokens: tavernOfferTokens })
   ]);
 
-  const fieldUnitCards = [];
+  const playerFieldTokens = [];
   for (const unit of state.field ?? []) {
-    fieldUnitCards.push(await createPlayerFieldUnitCard(unit, { blocked }));
+    playerFieldTokens.push(await createPlayerFieldUnitToken(unit, { blocked }));
   }
   appendChildren(element.querySelector('[data-slot="player-field"]'), [
-    await createPlayerField({ cards: fieldUnitCards })
+    await createPlayerField({ tokens: playerFieldTokens })
   ]);
 
   appendChildren(element.querySelector('[data-slot="hero-cockpit"]'), [
     await createHeroCockpit({
       labels,
       human,
+      power: human.powerInfo,
       heroName: humanPlayer?.leader ?? '—',
       heroArt: await leaderArtUrl(cosmetics, humanPlayer?.leaderId),
       blocked
     })
   ]);
 
-  const reserveCards = [];
+  const playerReserveTokens = [];
   for (const entry of state.reserve ?? []) {
-    reserveCards.push(await createPlayerReserveCard(entry, {
+    playerReserveTokens.push(await createPlayerReserveToken(entry, {
       blocked,
       canDeployUnit: canDeployReserveUnit
     }));
   }
   appendChildren(element.querySelector('[data-slot="player-reserve"]'), [
-    await createPlayerReserve({ cards: reserveCards })
+    await createPlayerReserve({ tokens: playerReserveTokens })
   ]);
 
   appendChildren(element.querySelector('[data-slot="turn-rail"]'), [
