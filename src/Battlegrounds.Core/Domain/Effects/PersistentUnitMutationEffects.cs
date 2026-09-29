@@ -27,6 +27,17 @@ public sealed record CopyUnitToReserveEffectDefinition : EffectDefinition
     }
 }
 
+public sealed record ReturnUnitToReserveEffectDefinition : EffectDefinition
+{
+    public override NativeEffectKey Kind => NativeEffectKeys.ReturnUnitToReserve;
+    public EffectTargetSelector Target { get; }
+
+    public ReturnUnitToReserveEffectDefinition(EffectTargetSelector target)
+    {
+        Target = target ?? throw new ArgumentNullException(nameof(target));
+    }
+}
+
 public sealed record ApplyUnitModifierEffectDefinition : EffectDefinition
 {
     public override NativeEffectKey Kind => NativeEffectKeys.ApplyUnitModifier;
@@ -79,6 +90,7 @@ internal interface IPersistentUnitMutationWorld
 {
     void TransformUnit(IEffectRuntimeUnit unit, UnitDefinition definition);
     int CopyUnitsToReserve(PlayerId ownerPlayerId, IReadOnlyList<IEffectRuntimeUnit> units);
+    int ReturnUnitsToReserve(IReadOnlyList<IEffectRuntimeUnit> units);
     void ApplyModifier(IEffectRuntimeUnit unit, string key, int attackDelta, int healthDelta, UnitModifierDuration duration);
     bool RemoveModifier(IEffectRuntimeUnit unit, string key);
 }

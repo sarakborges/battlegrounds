@@ -163,6 +163,7 @@ public sealed class ModLoader
                 BuildTarget(data.Target),
                 new UnitId(data.UnitId ?? throw new InvalidDataException("Validated transformUnit effect is missing unitId."))),
             "copyUnitToReserve" => new CopyUnitToReserveEffectDefinition(BuildTarget(data.Target)),
+            "returnUnitToReserve" => new ReturnUnitToReserveEffectDefinition(BuildTarget(data.Target)),
             "applyUnitModifier" => new ApplyUnitModifierEffectDefinition(
                 BuildTarget(data.Target),
                 data.ModifierKey ?? throw new InvalidDataException("Validated applyUnitModifier effect is missing modifierKey."),

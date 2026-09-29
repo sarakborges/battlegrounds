@@ -14,6 +14,7 @@ internal sealed class PersistentUnitMutationModValidator
     [
         "transformUnit",
         "copyUnitToReserve",
+        "returnUnitToReserve",
         "applyUnitModifier",
         "removeUnitModifier",
     ];
@@ -132,6 +133,7 @@ internal sealed class PersistentUnitMutationModValidator
                     ValidateReference(effect, "unitId", file, effectPath, unitIds, "unit", issues);
                     break;
                 case "copyUnitToReserve":
+                case "returnUnitToReserve":
                     ValidateKeys(effect, file, effectPath, ["kind", "target"], ["kind", "target"], issues);
                     break;
                 case "applyUnitModifier":

@@ -285,6 +285,24 @@ internal sealed partial class PreparationEffectEngine
             return count;
         }
 
+        public int ReturnUnitsToReserve(IReadOnlyList<IEffectRuntimeUnit> units)
+        {
+            ArgumentNullException.ThrowIfNull(units);
+            var moved = 0;
+            foreach (var runtimeUnit in units)
+            {
+                if (!runtimeUnit.IsAlive) continue;
+                var wrapper = GetWrapper(runtimeUnit);
+                var owner = GetPlayer(wrapper.OwnerPlayerId);
+                if (owner.PlayableReserveCount + owner.PendingChoiceCount >= _rules.ReserveCapacity) continue;
+                var unit = owner.RemoveFromField(wrapper.InstanceId);
+                if (unit is null) continue;
+                owner.AddToReserve(unit);
+                moved++;
+            }
+            return moved;
+        }
+
         public void ApplyModifier(IEffectRuntimeUnit unit, string key, int attackDelta, int healthDelta, UnitModifierDuration duration) =>
             GetUnit(unit).ApplyModifier(key, attackDelta, healthDelta, duration);
 
