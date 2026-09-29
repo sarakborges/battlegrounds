@@ -7,6 +7,7 @@ namespace Battlegrounds.Game;
 internal sealed class ModPresentationTextureStore
 {
     private const string BaseSkinId = "base";
+    private static readonly string[] CosmeticImageExtensions = [".png", ".jpg", ".jpeg"];
 
     private readonly string _modDirectory;
     private readonly ModPresentationAssetCatalog _assets;
@@ -83,6 +84,19 @@ internal sealed class ModPresentationTextureStore
             "shopkeepers",
             _cosmetics.ShopkeeperId,
             _cosmetics.ShopkeeperSkin,
+            out texture);
+    }
+
+    public bool TryGetBoardImage(out Texture2D? texture)
+    {
+        texture = null;
+        if (string.IsNullOrWhiteSpace(_cosmetics.BoardId))
+            return false;
+
+        return TryGetCosmeticImage(
+            "boards",
+            _cosmetics.BoardId,
+            _cosmetics.BoardSkin,
             out texture);
     }
 
@@ -185,43 +199,45 @@ internal sealed class ModPresentationTextureStore
         string skinId,
         out Texture2D? texture)
     {
-        var fullPath = Path.Combine(
-            _modDirectory,
-            "assets",
-            "cosmetics",
-            category,
-            entityId,
-            $"{skinId}.png");
-
-        if (_cosmeticTextures.TryGetValue(fullPath, out texture) && texture is not null)
-            return true;
-
         texture = null;
-        if (!File.Exists(fullPath))
-            return false;
 
-        try
+        foreach (var extension in CosmeticImageExtensions)
         {
-            // Godot's normal file loader is the path that successfully loaded this
-            // cosmetic in the live Windows build. Keep the null check because a
-            // corrupt/unsupported image can make the binding return null instead
-            // of a usable Image instance.
-            var image = Image.LoadFromFile(fullPath);
-            if (image is null || image.IsEmpty())
+            var fullPath = Path.Combine(
+                _modDirectory,
+                "assets",
+                "cosmetics",
+                category,
+                entityId,
+                $"{skinId}{extension}");
+
+            if (_cosmeticTextures.TryGetValue(fullPath, out texture) && texture is not null)
+                return true;
+
+            texture = null;
+            if (!File.Exists(fullPath))
+                continue;
+
+            try
             {
-                GD.PushWarning($"Could not decode cosmetic PNG '{fullPath}'.");
-                return false;
-            }
+                var image = Image.LoadFromFile(fullPath);
+                if (image is null || image.IsEmpty())
+                {
+                    GD.PushWarning($"Could not decode cosmetic image '{fullPath}'.");
+                    continue;
+                }
 
-            texture = ImageTexture.CreateFromImage(image);
-            _cosmeticTextures[fullPath] = texture;
-            return true;
+                texture = ImageTexture.CreateFromImage(image);
+                _cosmeticTextures[fullPath] = texture;
+                return true;
+            }
+            catch (Exception exception)
+            {
+                GD.PushWarning($"Could not load cosmetic image '{fullPath}': {exception.Message}");
+            }
         }
-        catch (Exception exception)
-        {
-            GD.PushWarning($"Could not load cosmetic image '{fullPath}': {exception.Message}");
-            return false;
-        }
+
+        return false;
     }
 
     private CosmeticSelection LoadCosmeticSelection()
@@ -235,21 +251,8 @@ internal sealed class ModPresentationTextureStore
             using var document = JsonDocument.Parse(File.ReadAllText(path));
             var root = document.RootElement;
 
-            string? shopkeeperId = null;
-            var shopkeeperSkin = BaseSkinId;
-            if (root.TryGetProperty("shopkeeper", out var shopkeeper) &&
-                shopkeeper.ValueKind == JsonValueKind.Object)
-            {
-                if (shopkeeper.TryGetProperty("id", out var idElement) && idElement.ValueKind == JsonValueKind.String)
-                    shopkeeperId = idElement.GetString();
-                if (shopkeeper.TryGetProperty("skin", out var skinElement) && skinElement.ValueKind == JsonValueKind.String)
-                    shopkeeperSkin = skinElement.GetString() ?? BaseSkinId;
-            }
-
-            if (!IsSafeSegment(shopkeeperId))
-                shopkeeperId = null;
-            if (!IsSafeSegment(shopkeeperSkin))
-                shopkeeperSkin = BaseSkinId;
+            var (shopkeeperId, shopkeeperSkin) = ReadCosmeticChoice(root, "shopkeeper");
+            var (boardId, boardSkin) = ReadCosmeticChoice(root, "board");
 
             var leaderSkins = new Dictionary<string, string>(StringComparer.Ordinal);
             if (root.TryGetProperty("leaders", out var leaders) && leaders.ValueKind == JsonValueKind.Object)
@@ -278,13 +281,38 @@ internal sealed class ModPresentationTextureStore
                 }
             }
 
-            return new CosmeticSelection(shopkeeperId, shopkeeperSkin, leaderSkins, cardArtLeaderPool);
+            return new CosmeticSelection(
+                shopkeeperId,
+                shopkeeperSkin,
+                boardId,
+                boardSkin,
+                leaderSkins,
+                cardArtLeaderPool);
         }
         catch (Exception exception)
         {
             GD.PushWarning($"Could not load optional cosmetics selection '{path}': {exception.Message}");
             return CosmeticSelection.Empty;
         }
+    }
+
+    private static (string? Id, string Skin) ReadCosmeticChoice(JsonElement root, string property)
+    {
+        string? id = null;
+        var skin = BaseSkinId;
+        if (root.TryGetProperty(property, out var choice) && choice.ValueKind == JsonValueKind.Object)
+        {
+            if (choice.TryGetProperty("id", out var idElement) && idElement.ValueKind == JsonValueKind.String)
+                id = idElement.GetString();
+            if (choice.TryGetProperty("skin", out var skinElement) && skinElement.ValueKind == JsonValueKind.String)
+                skin = skinElement.GetString() ?? BaseSkinId;
+        }
+
+        if (!IsSafeSegment(id))
+            id = null;
+        if (!IsSafeSegment(skin))
+            skin = BaseSkinId;
+        return (id, skin);
     }
 
     private static bool IsSafeSegment(string? value) =>
@@ -294,10 +322,14 @@ internal sealed class ModPresentationTextureStore
     private sealed record CosmeticSelection(
         string? ShopkeeperId,
         string ShopkeeperSkin,
+        string? BoardId,
+        string BoardSkin,
         IReadOnlyDictionary<string, string> LeaderSkins,
         IReadOnlyList<string> CardArtLeaderPool)
     {
         public static CosmeticSelection Empty { get; } = new(
+            null,
+            BaseSkinId,
             null,
             BaseSkinId,
             new Dictionary<string, string>(StringComparer.Ordinal),
