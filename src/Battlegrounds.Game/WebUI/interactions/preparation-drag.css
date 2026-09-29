@@ -13,7 +13,7 @@
   line-height: 1.1;
 }
 
-.preparation-screen[data-drag-kind="tavern-offer-card"] [data-drop-kind="player-hero"] .drag-hint,
+.preparation-screen[data-drag-kind="tavern-offer-token"] [data-drop-kind="player-hero"] .drag-hint,
 .preparation-screen[data-drag-kind="player-field-unit"] [data-drop-kind="tavern-shopkeeper"] .drag-hint {
   display: block;
 }
@@ -49,18 +49,18 @@
   cursor: grabbing;
 }
 
-.preparation-screen .card.is-dragging {
-  opacity: 0.32;
-  transform: scale(0.97);
+.preparation-screen .playable-token.is-dragging {
+  opacity: .32;
+  transform: scale(.97);
 }
 
-body > .card.drag-ghost[data-variant] {
+body > .playable-token.drag-ghost[data-variant] {
   position: fixed;
   z-index: 9999;
-  width: var(--card-width);
   transform: translate(-50%, -58%) rotate(2deg) scale(var(--ui-scale)) scale(1.04);
   transform-origin: center center;
   pointer-events: none;
-  opacity: 0.92;
-  box-shadow: 0 20px 54px rgba(0, 0, 0, 0.45);
+  opacity: .92;
+  filter: none;
+  box-shadow: 0 20px 54px rgba(0, 0, 0, .45);
 }
