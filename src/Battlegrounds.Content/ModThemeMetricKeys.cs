@@ -59,6 +59,7 @@ public static class ModThemeMetricKeys
 
         public static class PreparationScene
         {
+            public const string OpponentRailWidth = "layout.preparationScene.opponentRailWidth";
             public const string TavernTop = "layout.preparationScene.tavernTop";
             public const string OfferTop = "layout.preparationScene.offerTop";
             public const string FieldTop = "layout.preparationScene.fieldTop";
