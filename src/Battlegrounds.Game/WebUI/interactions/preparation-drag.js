@@ -32,7 +32,7 @@ function isDragEnabled(element) {
 function isCompatibleDropTarget(target, dragSource) {
   const dropKind = target?.dataset.dropKind;
   if (!dropKind || !dragSource) return false;
-  if (dropKind === 'player-hero') return dragSource.kind === 'tavern-offer-card';
+  if (dropKind === 'player-hero') return dragSource.kind === 'tavern-offer-token';
   if (dropKind === 'tavern-shopkeeper') return dragSource.kind === 'player-field-unit';
   if (dropKind === 'player-field') {
     return dragSource.kind === 'player-field-unit' || dragSource.kind === 'player-reserve-unit';
@@ -50,12 +50,12 @@ function isValidDrop(target, dragSource) {
 }
 
 function findPlayerFieldInsertionIndex(playerField, clientX) {
-  const unitCards = [...playerField.querySelectorAll('[data-drag-kind="player-field-unit"]')];
-  for (let index = 0; index < unitCards.length; index += 1) {
-    const rect = unitCards[index].getBoundingClientRect();
+  const unitTokens = [...playerField.querySelectorAll('[data-drag-kind="player-field-unit"]')];
+  for (let index = 0; index < unitTokens.length; index += 1) {
+    const rect = unitTokens[index].getBoundingClientRect();
     if (clientX < rect.left + rect.width / 2) return index;
   }
-  return unitCards.length;
+  return unitTokens.length;
 }
 
 function clearDropFeedback(root) {
@@ -75,6 +75,7 @@ function createDragGhost(sourceElement) {
   const ghost = sourceElement.cloneNode(true);
   ghost.classList.add('drag-ghost');
   ghost.removeAttribute('data-action');
+  ghost.removeAttribute('data-inspect-kind');
   document.body.appendChild(ghost);
   return ghost;
 }
