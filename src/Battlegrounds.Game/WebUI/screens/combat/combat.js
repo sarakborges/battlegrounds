@@ -1,6 +1,6 @@
 import { appendChildren, cloneTemplate, useStyle } from '../../core/template.js';
 import { createEmptyState } from '../../design-system/empty-state/empty-state.js';
-import { createCombatCard } from '../../components/combat-card/combat-card.js';
+import { createPlayableToken } from '../../components/playable-token/playable-token.js';
 
 const templateUrl = new URL('./combat.html', import.meta.url);
 useStyle(new URL('../../design-system/panel/panel.css', import.meta.url));
@@ -29,12 +29,26 @@ async function populateSide(element, side, sideName) {
   sideElement.querySelector(`[data-field="${sideName}-label"]`).textContent = side?.label ?? `P${side?.playerId ?? '?'}`;
   sideElement.querySelector(`[data-field="${sideName}-archived"]`).hidden = !side?.archived;
 
-  const units = [];
+  const tokens = [];
   for (const unit of side?.units ?? []) {
-    units.push(await createCombatCard({ name: unit.name, attack: unit.attack, health: unit.health, tier: unit.tier, status: unit.status, marker: unit.highlight, highlight: highlightClass(unit.highlight), instanceId: unit.instanceId }));
+    tokens.push(await createPlayableToken({
+      kind: 'unit',
+      id: unit.id ?? '',
+      name: unit.name,
+      description: unit.description ?? '',
+      art: unit.art ?? null,
+      attack: unit.attack,
+      health: unit.health,
+      tier: unit.tier,
+      marker: unit.highlight,
+      status: unit.status,
+      highlight: highlightClass(unit.highlight),
+      location: 'combat',
+      attributes: { 'data-unit-instance-id': unit.instanceId ?? '' }
+    }));
   }
-  if (!units.length) units.push(await createEmptyState({ label: 'Empty field' }));
-  appendChildren(sideElement.querySelector(`[data-slot="${sideName}-board"]`), units);
+  if (!tokens.length) tokens.push(await createEmptyState({ label: 'Empty field' }));
+  appendChildren(sideElement.querySelector(`[data-slot="${sideName}-board"]`), tokens);
 }
 
 export async function createCombatScreen(state) {
