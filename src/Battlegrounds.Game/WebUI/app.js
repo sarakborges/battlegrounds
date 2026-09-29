@@ -34,11 +34,13 @@ const bridge = createGameBridge({
   onDevCssReload: reloadStyles,
   onState: async state => {
     const version = ++renderVersion;
-    applyTheme(state?.theme, themeScreenRole(state?.status));
-    hoverInspector?.setTheme(state?.theme);
     bridge.setPolling(state?.status === 'combat');
 
     try {
+      await applyTheme(state?.theme, themeScreenRole(state?.status));
+      if (version !== renderVersion) return;
+      hoverInspector?.setTheme(state?.theme);
+
       const screen = await createScreen(state);
       if (version !== renderVersion) return;
       app.replaceChildren(screen);

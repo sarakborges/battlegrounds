@@ -1,5 +1,9 @@
 import { loadAsset } from './assets.js';
 
+let fontGeneration = 0;
+let installedFontKeys = new Set();
+let fontStyleElement = null;
+
 function slug(value) {
   return String(value).replace(/([a-z0-9])([A-Z])/g, '$1-$2').replace(/[^a-zA-Z0-9]+/g, '-').toLowerCase();
 }
@@ -18,7 +22,48 @@ export function resolveMetric(collection, value) {
   return resolved == null ? null : `${resolved}px`;
 }
 
-export function applyTheme(theme, screenRole) {
+function resolveFontFamily(theme, value) {
+  if (!value) return null;
+  if (theme?.fonts?.[value]) return `var(--theme-font-${slug(value)})`;
+  return value;
+}
+
+function ensureFontStyleElement() {
+  if (fontStyleElement?.isConnected) return fontStyleElement;
+  fontStyleElement = document.createElement('style');
+  fontStyleElement.dataset.themeFonts = 'true';
+  document.head.appendChild(fontStyleElement);
+  return fontStyleElement;
+}
+
+async function applyThemeFonts(theme) {
+  const root = document.documentElement;
+  const generation = ++fontGeneration;
+  const entries = Object.entries(theme?.fonts ?? {});
+  const loaded = await Promise.all(entries.map(async ([key, font]) => {
+    const relativePath = font?.relativePath ?? font?.asset ?? null;
+    return [key, relativePath ? await loadAsset(relativePath) : null];
+  }));
+
+  if (generation !== fontGeneration) return;
+
+  for (const key of installedFontKeys) {
+    root.style.removeProperty(`--theme-font-${slug(key)}`);
+  }
+
+  installedFontKeys = new Set();
+  const rules = [];
+  for (const [key, dataUrl] of loaded) {
+    if (!dataUrl) continue;
+    const family = `BattlegroundsMod-${slug(key)}`;
+    installedFontKeys.add(key);
+    root.style.setProperty(`--theme-font-${slug(key)}`, `"${family}"`);
+    rules.push(`@font-face{font-family:"${family}";src:url("${dataUrl}");font-display:swap;}`);
+  }
+  ensureFontStyleElement().textContent = rules.join('\n');
+}
+
+export async function applyTheme(theme, screenRole) {
   if (!theme) return;
   const root = document.documentElement;
   Object.entries(theme.colors ?? {}).forEach(([key, value]) => root.style.setProperty(`--theme-color-${slug(key)}`, value));
@@ -26,14 +71,38 @@ export function applyTheme(theme, screenRole) {
   Object.entries(theme.radii ?? {}).forEach(([key, value]) => root.style.setProperty(`--theme-radius-${slug(key)}`, `${value}px`));
   Object.entries(theme.fontSizes ?? {}).forEach(([key, value]) => root.style.setProperty(`--theme-font-size-${slug(key)}`, `${value}px`));
   Object.entries(theme.metrics ?? {}).forEach(([key, value]) => root.style.setProperty(`--theme-metric-${slug(key)}`, String(value)));
-  const screenColor = resolveColor(theme, theme.screens?.[screenRole]?.backgroundColor);
+
+  await applyThemeFonts(theme);
+
+  const screen = theme.screens?.[screenRole] ?? null;
+  const screenColor = resolveColor(theme, screen?.backgroundColor);
   if (screenColor) root.style.setProperty('--surface-0', screenColor);
+
+  const screenAsset = screen?.backgroundAsset ? await loadAsset(screen.backgroundAsset) : null;
+  if (screenAsset) root.style.setProperty('--theme-screen-background-image', `url("${screenAsset}")`);
+  else root.style.removeProperty('--theme-screen-background-image');
+}
+
+function mergeRoleStyles(base, specific) {
+  if (!base && !specific) return null;
+  const merged = { ...(base ?? {}), ...(specific ?? {}) };
+  const baseStates = base?.states ?? {};
+  const specificStates = specific?.states ?? {};
+  const stateNames = new Set([...Object.keys(baseStates), ...Object.keys(specificStates)]);
+  merged.states = {};
+  for (const stateName of stateNames) {
+    merged.states[stateName] = {
+      ...(baseStates[stateName] ?? {}),
+      ...(specificStates[stateName] ?? {})
+    };
+  }
+  return merged;
 }
 
 function roleStyle(theme, element) {
   const base = element.dataset.component ? theme.components?.[element.dataset.component] : null;
   const specific = element.dataset.themeRole ? theme.components?.[element.dataset.themeRole] : null;
-  return base || specific ? { ...(base ?? {}), ...(specific ?? {}) } : null;
+  return mergeRoleStyles(base, specific);
 }
 
 function setThemeVariable(element, name, value) {
@@ -41,7 +110,9 @@ function setThemeVariable(element, name, value) {
   else element.style.setProperty(name, String(value));
 }
 
-async function applyResolvedComponentStyle(element, style, theme) {
+async function applyStyleVariables(element, style, theme, stateName = null) {
+  const suffix = stateName ? `-${stateName}` : '';
+  const variable = property => `--theme-component${suffix}-${property}`;
   const textColor = resolveColor(theme, style?.textColor);
   const backgroundColor = resolveColor(theme, style?.backgroundColor);
   const borderColor = resolveColor(theme, style?.borderColor);
@@ -49,26 +120,49 @@ async function applyResolvedComponentStyle(element, style, theme) {
   const radius = resolveMetric(theme.radii, style?.radius);
   const padX = resolveMetric(theme.spacing, style?.padding?.horizontal);
   const padY = resolveMetric(theme.spacing, style?.padding?.vertical);
+  const fontFamily = resolveFontFamily(theme, style?.font);
   const backgroundAsset = style?.backgroundAsset ? await loadAsset(style.backgroundAsset) : null;
 
-  setThemeVariable(element, '--theme-component-text-color', textColor);
-  setThemeVariable(element, '--theme-component-background-color', backgroundColor);
-  setThemeVariable(element, '--theme-component-background-image', backgroundAsset ? `url("${backgroundAsset}")` : null);
-  setThemeVariable(element, '--theme-component-border-color', borderColor);
-  setThemeVariable(
-    element,
-    '--theme-component-border-width',
-    style?.borderWidth == null ? null : `${style.borderWidth}px`
-  );
-  setThemeVariable(element, '--theme-component-font-size', fontSize);
-  setThemeVariable(element, '--theme-component-radius', radius);
-  setThemeVariable(element, '--theme-component-padding-x', padX);
-  setThemeVariable(element, '--theme-component-padding-y', padY);
-  setThemeVariable(element, '--theme-component-opacity', style?.opacity);
-  setThemeVariable(element, '--theme-component-slice-left', style?.slice?.left);
-  setThemeVariable(element, '--theme-component-slice-top', style?.slice?.top);
-  setThemeVariable(element, '--theme-component-slice-right', style?.slice?.right);
-  setThemeVariable(element, '--theme-component-slice-bottom', style?.slice?.bottom);
+  setThemeVariable(element, variable('text-color'), textColor);
+  setThemeVariable(element, variable('background-color'), backgroundColor);
+  setThemeVariable(element, variable('background-image'), backgroundAsset ? `url("${backgroundAsset}")` : null);
+  setThemeVariable(element, variable('border-color'), borderColor);
+  setThemeVariable(element, variable('border-width'), style?.borderWidth == null ? null : `${style.borderWidth}px`);
+  setThemeVariable(element, variable('font-family'), fontFamily);
+  setThemeVariable(element, variable('font-size'), fontSize);
+  setThemeVariable(element, variable('radius'), radius);
+  setThemeVariable(element, variable('padding-x'), padX);
+  setThemeVariable(element, variable('padding-y'), padY);
+  setThemeVariable(element, variable('opacity'), style?.opacity);
+
+  const slice = style?.slice;
+  setThemeVariable(element, variable('slice-left'), slice?.left ?? null);
+  setThemeVariable(element, variable('slice-top'), slice?.top ?? null);
+  setThemeVariable(element, variable('slice-right'), slice?.right ?? null);
+  setThemeVariable(element, variable('slice-bottom'), slice?.bottom ?? null);
+  setThemeVariable(element, variable('slice-left-width'), slice == null ? null : `${slice.left}px`);
+  setThemeVariable(element, variable('slice-top-width'), slice == null ? null : `${slice.top}px`);
+  setThemeVariable(element, variable('slice-right-width'), slice == null ? null : `${slice.right}px`);
+  setThemeVariable(element, variable('slice-bottom-width'), slice == null ? null : `${slice.bottom}px`);
+
+  return { hasBackgroundAsset: !!backgroundAsset, hasSlice: !!backgroundAsset && !!slice };
+}
+
+async function applyResolvedComponentStyle(element, style, theme) {
+  const baseResult = await applyStyleVariables(element, style, theme);
+  element.dataset.themeBackgroundAsset = baseResult.hasBackgroundAsset ? 'true' : 'false';
+  element.dataset.themeSlicedBackground = baseResult.hasSlice ? 'true' : 'false';
+
+  const stateNames = new Set([
+    'hover',
+    'pressed',
+    'focus',
+    'disabled',
+    ...Object.keys(style?.states ?? {})
+  ]);
+  await Promise.all([...stateNames].map(stateName =>
+    applyStyleVariables(element, style?.states?.[stateName] ?? null, theme, stateName)
+  ));
 }
 
 export async function applyComponentStyles(theme, root = document) {

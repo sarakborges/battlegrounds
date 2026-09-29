@@ -115,6 +115,10 @@ public partial class Main
                 ".jpg" or ".jpeg" => "image/jpeg",
                 ".webp" => "image/webp",
                 ".svg" => "image/svg+xml",
+                ".ttf" => "font/ttf",
+                ".otf" => "font/otf",
+                ".woff" => "font/woff",
+                ".woff2" => "font/woff2",
                 _ => null,
             };
             if (mimeType is null)

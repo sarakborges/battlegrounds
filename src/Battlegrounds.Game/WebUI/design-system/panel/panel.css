@@ -3,8 +3,13 @@
   border-width: var(--theme-component-border-width, 1px);
   border-color: var(--theme-component-border-color, var(--line));
   background-color: var(--theme-component-background-color, var(--surface-1));
+  background-image: var(--theme-component-background-image, none);
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: 100% 100%;
   color: var(--theme-component-text-color, inherit);
   border-radius: var(--theme-component-radius, var(--radius));
+  font-family: var(--theme-component-font-family, inherit);
   font-size: var(--theme-component-font-size, inherit);
   padding-left: var(--theme-component-padding-x, 0);
   padding-right: var(--theme-component-padding-x, 0);
