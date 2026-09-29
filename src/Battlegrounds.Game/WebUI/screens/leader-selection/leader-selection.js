@@ -16,9 +16,13 @@ export async function createLeaderSelectionScreen(state) {
 
   const leaders = [];
   for (const leader of state.leaders ?? []) {
-    const meta = [];
+    const badges = [];
     if ((leader.armor ?? 0) > 0) {
-      meta.push(await createBadge({ text: leader.armor, variant: 'armor', className: 'leader-armor-token' }));
+      badges.push(await createBadge({
+        text: leader.armor,
+        variant: 'armor',
+        className: 'leader-armor-token'
+      }));
     }
 
     leaders.push(await createCard({
@@ -26,7 +30,7 @@ export async function createLeaderSelectionScreen(state) {
       name: leader.name,
       art: await leaderArtUrl(cosmetics, leader.id),
       artAlt: leader.name,
-      meta,
+      badges,
       action: 'select-leader',
       variant: 'leader',
       className: 'leader-card',
