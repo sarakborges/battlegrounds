@@ -891,8 +891,13 @@ public sealed class CombatEngine
 
         private void RecalculateAuras()
         {
-            foreach (var unit in _units) unit.SetAuraContribution(0, 0);
+            foreach (var unit in _units)
+            {
+                unit.SetAuraContribution(0, 0);
+                unit.SetAuraBehaviors([]);
+            }
             var totals = _units.ToDictionary(unit => unit.InstanceId, _ => (Attack: 0L, Health: 0L));
+            var behaviorTotals = _units.ToDictionary(unit => unit.InstanceId, _ => new List<BehaviorDefinition>());
             for (var sourceIndex = 0; sourceIndex < _units.Count; sourceIndex++)
             {
                 var source = _units[sourceIndex];
@@ -903,6 +908,7 @@ public sealed class CombatEngine
                     {
                         var current = totals[target.InstanceId];
                         totals[target.InstanceId] = (current.Attack + aura.AttackDelta, current.Health + aura.HealthDelta);
+                        behaviorTotals[target.InstanceId].AddRange(aura.GrantedBehaviors);
                     }
                 }
             }
@@ -910,6 +916,7 @@ public sealed class CombatEngine
             {
                 var total = totals[unit.InstanceId];
                 unit.SetAuraContribution((int)Math.Min(int.MaxValue, total.Attack), (int)Math.Min(int.MaxValue, total.Health));
+                unit.SetAuraBehaviors(behaviorTotals[unit.InstanceId]);
             }
         }
 
@@ -944,6 +951,7 @@ public sealed class CombatEngine
     {
         private readonly List<BehaviorDefinition> _initialBehaviors;
         private readonly List<BehaviorDefinition> _behaviors;
+        private readonly List<BehaviorDefinition> _auraBehaviors = [];
         private readonly int _initialAttack;
         private int _intrinsicAttack;
         private int _intrinsicHealth;
@@ -1014,9 +1022,14 @@ public sealed class CombatEngine
       definition.BaseHealth,
       definition.Behaviors);
 
-        public bool Has(NativeBehaviorKey handler) => _behaviors.Any(behavior => behavior.Handler == handler);
-        public BehaviorDefinition? FindBehavior(NativeBehaviorKey handler) => _behaviors.FirstOrDefault(behavior => behavior.Handler == handler);
-        public BehaviorDefinition? FindBehavior(BehaviorId behaviorId) => _behaviors.FirstOrDefault(behavior => behavior.Id == behaviorId);
+        public bool Has(NativeBehaviorKey handler) =>
+            _behaviors.Any(behavior => behavior.Handler == handler) || _auraBehaviors.Any(behavior => behavior.Handler == handler);
+        public BehaviorDefinition? FindBehavior(NativeBehaviorKey handler) =>
+            _behaviors.FirstOrDefault(behavior => behavior.Handler == handler)
+            ?? _auraBehaviors.FirstOrDefault(behavior => behavior.Handler == handler);
+        public BehaviorDefinition? FindBehavior(BehaviorId behaviorId) =>
+            _behaviors.FirstOrDefault(behavior => behavior.Id == behaviorId)
+            ?? _auraBehaviors.FirstOrDefault(behavior => behavior.Id == behaviorId);
 
         public bool RemoveBehavior(NativeBehaviorKey handler)
         {
@@ -1043,9 +1056,21 @@ public sealed class CombatEngine
 
         public void SetAuraContribution(int attackDelta, int healthDelta)
         {
-  _auraAttack = attackDelta;
-  _auraHealth = healthDelta;
+            _auraAttack = attackDelta;
+            _auraHealth = healthDelta;
         }
+
+        public void SetAuraBehaviors(IEnumerable<BehaviorDefinition> behaviors)
+        {
+            _auraBehaviors.Clear();
+            var seenHandlers = new HashSet<NativeBehaviorKey>(_behaviors.Select(behavior => behavior.Handler));
+            foreach (var behavior in behaviors)
+            {
+                if (seenHandlers.Add(behavior.Handler)) _auraBehaviors.Add(behavior);
+            }
+        }
+
+        private IEnumerable<BehaviorDefinition> EffectiveBehaviors() => _behaviors.Concat(_auraBehaviors);
 
         public void ModifyStats(int attackDelta, int healthDelta)
         {
@@ -1065,6 +1090,7 @@ public sealed class CombatEngine
   _intrinsicHealth = 1;
   _auraAttack = 0;
   _auraHealth = 0;
+  _auraBehaviors.Clear();
   _behaviors.Clear();
   _behaviors.AddRange(_initialBehaviors.Where(behavior => behavior.Handler != NativeBehaviorKeys.ReviveOnce));
         }
@@ -1076,7 +1102,7 @@ public sealed class CombatEngine
       Definition.Tier,
       Attack,
       Health,
-      _behaviors.Select(behavior => new CombatBehaviorSnapshot(behavior.Id, behavior.Handler)),
+      EffectiveBehaviors().Select(behavior => new CombatBehaviorSnapshot(behavior.Id, behavior.Handler)),
       Definition);
     }
 

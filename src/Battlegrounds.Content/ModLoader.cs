@@ -95,7 +95,7 @@ public sealed class ModLoader
             (unit.Types ?? []).Select(id => unitTypeCatalog.GetRequired(new UnitTypeId(id))),
             (unit.Tags ?? []).Select(id => tagCatalog.GetRequired(new TagId(id))),
             (unit.Triggers ?? []).Select(BuildTrigger),
-            (unit.Auras ?? []).Select(BuildAura))).ToArray();
+            (unit.Auras ?? []).Select(aura => BuildAura(aura, behaviorCatalog)))).ToArray();
 
         var combineCatalog = new UnitCombineCatalog(combineData.Select(data =>
             new UnitCombineDefinition(
@@ -265,8 +265,12 @@ public sealed class ModLoader
         return element;
     }
 
-    private static UnitAuraDefinition BuildAura(AuraData data) =>
-        new(BuildTarget(data.Target), data.Attack ?? 0, data.Health ?? 0);
+    private static UnitAuraDefinition BuildAura(AuraData data, BehaviorCatalog behaviorCatalog) =>
+        new(
+            BuildTarget(data.Target),
+            data.Attack ?? 0,
+            data.Health ?? 0,
+            (data.BehaviorIds ?? []).Select(id => behaviorCatalog.GetRequired(new BehaviorId(id))));
 
     private static EffectTargetSelector BuildTarget(TargetData? data)
     {
@@ -322,7 +326,7 @@ public sealed class ModLoader
     private sealed record LeaderData(string Id, string Name, int HealthModifier, int Armor, string InitialPowerId);
     private sealed record NamedIdData(string Id, string Name);
     private sealed record UnitData(string Id, string Name, int Tier, int Attack, int Health, string[]? Behaviors, string[]? Types, string[]? Tags, TriggerData[]? Triggers, AuraData[]? Auras);
-    private sealed record AuraData(TargetData Target, int? Attack, int? Health);
+    private sealed record AuraData(TargetData Target, int? Attack, int? Health, string[]? BehaviorIds);
     private sealed record UnitCombineData(string Id, string Name, string SourceUnitId, int RequiredCopies, string ResultUnitId, bool? InheritPersistentModifiers);
     private sealed record TriggerData(string Event, EffectData[] Effects, int? Count, ConditionData[]? Conditions, TriggerActivationLimitData? ActivationLimit, HistoryQueryData? Counter);
     private sealed record TriggerActivationLimitData(EffectHistoryScope Scope, int Count);

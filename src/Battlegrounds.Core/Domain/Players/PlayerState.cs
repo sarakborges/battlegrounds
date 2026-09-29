@@ -1,5 +1,6 @@
 using System.Collections.ObjectModel;
 using Battlegrounds.Core.Domain.Actions;
+using Battlegrounds.Core.Domain.Behaviors;
 using Battlegrounds.Core.Domain.Combat;
 using Battlegrounds.Core.Domain.Effects;
 using Battlegrounds.Core.Domain.Ids;
@@ -379,10 +380,15 @@ public sealed partial class PlayerState
 
     internal void RecalculateFieldAuras()
     {
-        foreach (var unit in _field) unit.SetAuraContribution(0, 0);
+        foreach (var unit in _field)
+        {
+            unit.SetAuraContribution(0, 0);
+            unit.SetAuraBehaviors([]);
+        }
         if (_field.Count == 0) return;
 
         var totals = _field.ToDictionary(unit => unit.Id, _ => (Attack: 0L, Health: 0L));
+        var behaviorTotals = _field.ToDictionary(unit => unit.Id, _ => new List<BehaviorDefinition>());
         for (var sourceIndex = 0; sourceIndex < _field.Count; sourceIndex++)
         {
   var source = _field[sourceIndex];
@@ -393,6 +399,7 @@ public sealed partial class PlayerState
       {
           var current = totals[target.Id];
           totals[target.Id] = (current.Attack + aura.AttackDelta, current.Health + aura.HealthDelta);
+          behaviorTotals[target.Id].AddRange(aura.GrantedBehaviors);
       }
   }
         }
@@ -403,6 +410,7 @@ public sealed partial class PlayerState
   unit.SetAuraContribution(
       (int)Math.Min(int.MaxValue, total.Attack),
       (int)Math.Min(int.MaxValue, total.Health));
+  unit.SetAuraBehaviors(behaviorTotals[unit.Id]);
         }
     }
 
