@@ -1,3 +1,5 @@
+import { loadAsset } from './assets.js';
+
 function slug(value) {
   return String(value).replace(/([a-z0-9])([A-Z])/g, '$1-$2').replace(/[^a-zA-Z0-9]+/g, '-').toLowerCase();
 }
@@ -39,7 +41,7 @@ function setThemeVariable(element, name, value) {
   else element.style.setProperty(name, String(value));
 }
 
-function applyResolvedComponentStyle(element, style, theme) {
+async function applyResolvedComponentStyle(element, style, theme) {
   const textColor = resolveColor(theme, style?.textColor);
   const backgroundColor = resolveColor(theme, style?.backgroundColor);
   const borderColor = resolveColor(theme, style?.borderColor);
@@ -47,9 +49,11 @@ function applyResolvedComponentStyle(element, style, theme) {
   const radius = resolveMetric(theme.radii, style?.radius);
   const padX = resolveMetric(theme.spacing, style?.padding?.horizontal);
   const padY = resolveMetric(theme.spacing, style?.padding?.vertical);
+  const backgroundAsset = style?.backgroundAsset ? await loadAsset(style.backgroundAsset) : null;
 
   setThemeVariable(element, '--theme-component-text-color', textColor);
   setThemeVariable(element, '--theme-component-background-color', backgroundColor);
+  setThemeVariable(element, '--theme-component-background-image', backgroundAsset ? `url("${backgroundAsset}")` : null);
   setThemeVariable(element, '--theme-component-border-color', borderColor);
   setThemeVariable(
     element,
@@ -61,16 +65,20 @@ function applyResolvedComponentStyle(element, style, theme) {
   setThemeVariable(element, '--theme-component-padding-x', padX);
   setThemeVariable(element, '--theme-component-padding-y', padY);
   setThemeVariable(element, '--theme-component-opacity', style?.opacity);
+  setThemeVariable(element, '--theme-component-slice-left', style?.slice?.left);
+  setThemeVariable(element, '--theme-component-slice-top', style?.slice?.top);
+  setThemeVariable(element, '--theme-component-slice-right', style?.slice?.right);
+  setThemeVariable(element, '--theme-component-slice-bottom', style?.slice?.bottom);
 }
 
-export function applyComponentStyles(theme, root = document) {
+export async function applyComponentStyles(theme, root = document) {
   if (!theme) return;
   const elements = [
     ...(root.matches?.('[data-component]') ? [root] : []),
     ...root.querySelectorAll('[data-component]')
   ];
 
-  for (const element of elements) {
-    applyResolvedComponentStyle(element, roleStyle(theme, element), theme);
-  }
+  await Promise.all(elements.map(element =>
+    applyResolvedComponentStyle(element, roleStyle(theme, element), theme)
+  ));
 }
