@@ -16,18 +16,23 @@
   overflow: visible;
 }
 
-.playable-token:hover:not(:disabled),
-.playable-token:focus-visible:not(:disabled) {
+.playable-token:hover,
+.playable-token:focus-visible {
   z-index: 30;
   transform: translateY(-8px) scale(1.05);
   outline: none;
   filter: brightness(1.08);
 }
 
-.playable-token:disabled {
+.playable-token[data-disabled="true"] {
   cursor: default;
   opacity: .58;
   filter: grayscale(.35);
+}
+
+.playable-token[data-disabled="true"]:hover,
+.playable-token[data-disabled="true"]:focus-visible {
+  filter: grayscale(.35) brightness(1.08);
 }
 
 .playable-token__body {
