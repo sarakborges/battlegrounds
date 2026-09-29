@@ -25,7 +25,7 @@ export async function createHeroCockpit({
     artAlt: heroName,
     hint: 'Drop a tavern card to buy',
     themeRole: 'panel.heroPortrait',
-    dropKind: 'hero',
+    dropKind: 'player-hero',
     className: 'hero-cockpit__portrait'
   });
 
