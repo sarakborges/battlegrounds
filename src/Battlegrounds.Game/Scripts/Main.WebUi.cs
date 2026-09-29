@@ -24,7 +24,7 @@ public partial class Main
     private bool _webUiInitializationAttempted;
     private bool _webUiReady;
 
-    public override void _Process(double delta)
+    private void EnsureWebUiInitialized()
     {
         if (_webUiInitializationAttempted)
             return;
