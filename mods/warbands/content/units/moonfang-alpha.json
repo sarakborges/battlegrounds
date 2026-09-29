@@ -5,7 +5,9 @@
   "attack": 4,
   "health": 4,
   "behaviors": [],
-  "types": ["beast"],
+  "types": [
+    "beast"
+  ],
   "tags": [],
   "triggers": [
     {
@@ -13,9 +15,26 @@
       "effects": [
         {
           "kind": "modifyStats",
-          "target": { "scope": "friendly", "selection": "all", "typeId": "beast" },
+          "target": {
+            "scope": "friendly",
+            "selection": "all",
+            "typeId": "beast"
+          },
           "attack": 1
         }
+      ]
+    }
+  ],
+  "auras": [
+    {
+      "target": {
+        "scope": "friendly",
+        "selection": "adjacent",
+        "excludeSource": true,
+        "typeId": "beast"
+      },
+      "behaviorIds": [
+        "double-strike"
       ]
     }
   ]
