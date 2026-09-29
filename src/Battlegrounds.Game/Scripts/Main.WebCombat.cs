@@ -20,6 +20,7 @@ public partial class Main
             mod = new { id = _session.Mod.Id, name = _session.Mod.Name },
             seed = Seed,
             labels = BuildWebLabels(),
+            cosmetics = BuildWebCosmeticsState(),
             theme = BuildWebThemeState(),
             combat = new
             {
@@ -69,6 +70,7 @@ public partial class Main
                     instanceId = unit.InstanceId.Value,
                     unitId = unitId?.Value,
                     name = unit.Name,
+                    description = unitId is UnitId resolvedUnitId ? UnitDescription(resolvedUnitId) : string.Empty,
                     tier = ResolveCombatUnitTier(unitId),
                     attack = unit.Attack,
                     health = Math.Max(0, unit.Health),
