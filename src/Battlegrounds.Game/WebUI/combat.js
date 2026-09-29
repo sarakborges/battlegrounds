@@ -1,4 +1,8 @@
 (() => {
+  const ui = window.BgUi = window.BgUi || {};
+  const C = ui.components;
+  const { escapeHtml } = ui;
+
   const root = document.createElement('section');
   root.id = 'combat-ui';
   root.className = 'combat-ui';
@@ -9,18 +13,8 @@
   let pollTimer = null;
   let lastStepKey = '';
 
-  function escapeHtml(value) {
-    return String(value ?? '')
-      .replaceAll('&', '&amp;')
-      .replaceAll('<', '&lt;')
-      .replaceAll('>', '&gt;')
-      .replaceAll('"', '&quot;')
-      .replaceAll("'", '&#039;');
-  }
-
   function requestState() {
-    if (typeof window.sendIpcMessage !== 'function') return;
-    window.sendIpcMessage(JSON.stringify({ type: 'request-state' }));
+    ui.bridge?.send('request-state');
   }
 
   function startPolling() {
@@ -50,34 +44,28 @@
   }
 
   function renderUnit(unit) {
-    const marker = unit.highlight ? `<span class="combat-marker">${escapeHtml(unit.highlight)}</span>` : '';
-    const tier = unit.tier > 0 ? `<span class="combat-tier">T${escapeHtml(unit.tier)}</span>` : '';
-    const status = unit.status ? `<span class="combat-unit-status">${escapeHtml(unit.status)}</span>` : '';
-    const attack = unit.attack == null ? '—' : escapeHtml(unit.attack);
-
-    return `
-      <article class="combat-card ${highlightClass(unit.highlight)}" data-instance-id="${escapeHtml(unit.instanceId)}">
-        ${marker}
-        ${tier}
-        <strong class="combat-card-name">${escapeHtml(unit.name)}</strong>
-        <div class="combat-card-stats">
-          <span><b>${attack}</b> ATK</span>
-          <span><b>${escapeHtml(unit.health)}</b> HP</span>
-        </div>
-        ${status}
-      </article>`;
+    return C.CombatCard({
+      name: unit.name,
+      attack: unit.attack,
+      health: unit.health,
+      tier: unit.tier,
+      status: unit.status,
+      marker: unit.highlight,
+      highlight: highlightClass(unit.highlight),
+      instanceId: unit.instanceId
+    });
   }
 
   function renderSide(side, position) {
     const units = side?.units ?? [];
     return `
-      <section class="combat-side combat-side-${position} ${side?.human ? 'human' : ''}">
+      <section class="combat-side combat-side-${position} ${side?.human ? 'human' : ''}" data-component="combat-side" data-variant="${escapeHtml(position)}">
         <header class="combat-side-header">
           <span>${escapeHtml(side?.label ?? `P${side?.playerId ?? '?'}`)}</span>
           ${side?.archived ? '<small>archived</small>' : ''}
         </header>
         <div class="combat-board">
-          ${units.length ? units.map(renderUnit).join('') : '<div class="combat-empty">Empty field</div>'}
+          ${units.length ? units.map(renderUnit).join('') : C.Empty({ label: 'Empty field' })}
         </div>
       </section>`;
   }
@@ -97,59 +85,41 @@
         : `0 / ${combat.eventCount}`;
 
     root.innerHTML = `
-      <div class="combat-shell ${stepChanged ? 'combat-step-changed' : ''} ${combat.settlementVisible ? 'settlement' : ''}">
-        <header class="combat-topbar">
-          <div>
-            <span class="eyebrow">${escapeHtml(combatState.mod?.name ?? 'Battlegrounds')}</span>
-            <strong>${escapeHtml(combatState.labels?.combat ?? 'Combat')}</strong>
-          </div>
-          <div class="combat-round">${escapeHtml(combatState.labels?.round ?? 'Round')} ${escapeHtml(combat.round)}</div>
-          <div class="combat-progress">${escapeHtml(progress)}</div>
-        </header>
-
+      <div class="combat-shell ${stepChanged ? 'combat-step-changed' : ''} ${combat.settlementVisible ? 'settlement' : ''}" data-screen="combat">
+        ${C.Panel({
+          className: 'combat-topbar',
+          children: `
+            <div><span class="eyebrow">${escapeHtml(combatState.mod?.name ?? 'Battlegrounds')}</span><strong>${escapeHtml(combatState.labels?.combat ?? 'Combat')}</strong></div>
+            <div class="combat-round">${escapeHtml(combatState.labels?.round ?? 'Round')} ${escapeHtml(combat.round)}</div>
+            <div class="combat-progress">${escapeHtml(progress)}</div>`
+        })}
         <main class="combat-stage">
           ${renderSide(combat.right, 'top')}
-
-          <section class="combat-event ${combat.settlementVisible ? 'settlement' : ''}">
+          <section class="combat-event ${combat.settlementVisible ? 'settlement' : ''}" data-component="combat-event">
             <span class="combat-event-kind">${escapeHtml(combat.settlementVisible ? 'result' : (combat.eventKind ?? 'ready'))}</span>
             <strong>${escapeHtml(combat.eventText)}</strong>
           </section>
-
           ${renderSide(combat.left, 'bottom')}
         </main>
       </div>`;
+
+    ui.theme.applyComponentStyles(combatState.theme, root);
   }
 
-  function receive(raw) {
-    try {
-      const message = typeof raw === 'string' ? JSON.parse(raw) : raw;
-      if (message?.type !== 'state') return;
-
-      if (message.payload?.status === 'combat') {
-        combatState = message.payload;
-        root.hidden = false;
-        render();
-        startPolling();
-        return;
-      }
-
-      combatState = null;
-      root.hidden = true;
-      root.replaceChildren();
-      lastStepKey = '';
-      stopPolling();
-    } catch {
-      // app.js owns user-visible IPC errors; combat rendering fails closed.
+  window.addEventListener('battlegrounds:state', event => {
+    const nextState = event.detail;
+    if (nextState?.status === 'combat') {
+      combatState = nextState;
+      root.hidden = false;
+      render();
+      startPolling();
+      return;
     }
-  }
 
-  if (window.ipcMessage?.addListener) {
-    window.ipcMessage.addListener(receive);
-  } else {
-    const previous = window.onIpcMessage;
-    window.onIpcMessage = raw => {
-      if (typeof previous === 'function') previous(raw);
-      receive(raw);
-    };
-  }
+    combatState = null;
+    root.hidden = true;
+    root.replaceChildren();
+    lastStepKey = '';
+    stopPolling();
+  });
 })();
