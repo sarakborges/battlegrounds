@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 80">
+  <defs>
+    <radialGradient id="stone" cx="45%" cy="38%" r="68%">
+      <stop offset="0" stop-color="#506574"/>
+      <stop offset="0.6" stop-color="#263743"/>
+      <stop offset="1" stop-color="#121d24"/>
+    </radialGradient>
+    <linearGradient id="rim" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#f2d596"/>
+      <stop offset="0.38" stop-color="#ad7c43"/>
+      <stop offset="0.72" stop-color="#63401f"/>
+      <stop offset="1" stop-color="#d7aa61"/>
+    </linearGradient>
+    <filter id="shadow" x="-35%" y="-35%" width="170%" height="180%">
+      <feDropShadow dx="0" dy="5" stdDeviation="4" flood-color="#000" flood-opacity=".55"/>
+    </filter>
+  </defs>
+  <g filter="url(#shadow)">
+    <circle cx="40" cy="40" r="35" fill="url(#stone)" stroke="#160f0b" stroke-width="7"/>
+    <circle cx="40" cy="40" r="31" fill="none" stroke="url(#rim)" stroke-width="5"/>
+    <circle cx="40" cy="40" r="24" fill="none" stroke="#8ca6b7" stroke-opacity=".45" stroke-width="2"/>
+    <path d="M40 8 44 16 40 20 36 16ZM72 40 64 44 60 40 64 36ZM40 72 36 64 40 60 44 64ZM8 40 16 36 20 40 16 44Z" fill="#d8b36e" stroke="#5d3c21" stroke-width="1.5"/>
+  </g>
+</svg>
