@@ -191,10 +191,13 @@
         </div>`
     });
 
-    const players = (state.players ?? []).map(player => `
-      <span class="player-chip ${player.human ? 'human' : ''} ${player.eliminated ? 'eliminated' : ''}" data-component="player-chip">
-        P${escapeHtml(player.id)} · ${escapeHtml(player.leader ?? '—')} · ${escapeHtml(player.health)} HP
-      </span>`).join('');
+    const players = (state.players ?? []).map(player => C.PlayerChip({
+      id: player.id,
+      leader: player.leader ?? '—',
+      health: player.health,
+      human: player.human,
+      eliminated: player.eliminated
+    })).join('');
 
     const field = (state.field ?? []).map(unit => renderFieldCard(state, unit, blocked)).join('') || C.Empty({ label: labels.field ?? 'Field' });
     const offer = (state.offer ?? []).map(entry => renderOfferCard(entry, blocked)).join('') || C.Empty({ label: labels.offer ?? 'Offer' });
