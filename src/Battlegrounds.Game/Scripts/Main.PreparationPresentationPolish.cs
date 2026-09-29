@@ -10,6 +10,7 @@ public partial class Main
     private PanelContainer? _preparationReserveShelf;
     private HBoxContainer? _bottomHandRow;
     private Control? _bottomHandBalanceSpacer;
+    private Control? _turnButtonOverlay;
 
     private void RefreshPreparationPresentationPolish()
     {
@@ -26,9 +27,6 @@ public partial class Main
 
         if (match.TryGetPlayer(_session.HumanPlayerId, out var human) && _preparationReserveShelf is not null)
         {
-            // The hand belongs to the bottom cockpit. Keep that bottom bar present
-            // even when the hand is empty because the resource display still lives
-            // there, exactly like the Battlegrounds reference.
             _preparationReserveShelf.Visible = true;
             _reserveButtons.Visible = human.PlayableReserveCount > 0;
         }
@@ -47,6 +45,7 @@ public partial class Main
 
         ApplyBattlegroundsHeroComposition();
         ApplyBottomHandComposition();
+        ApplyTurnButtonComposition();
     }
 
     private void BindPreparationPresentationPolish()
@@ -58,31 +57,27 @@ public partial class Main
         var heroDock = GetNode<PanelContainer>($"{preparationPath}/HeroDock");
         _preparationReserveShelf = reserve;
 
-        board.SizeFlagsVertical = Control.SizeFlags.ShrinkBegin;
+        // The board itself owns all spare center height. Do not create a second
+        // dashboard-like rectangle between the board and the hero cockpit.
+        board.SizeFlagsVertical = Control.SizeFlags.ExpandFill;
         heroDock.SizeFlagsVertical = Control.SizeFlags.ShrinkEnd;
         reserve.SizeFlagsVertical = Control.SizeFlags.ShrinkEnd;
 
-        var tableSpace = preparation.GetNodeOrNull<PanelContainer>("TableSpace");
-        if (tableSpace is null)
+        if (preparation.GetNodeOrNull<PanelContainer>("TableSpace") is { } obsoleteTableSpace)
         {
-            tableSpace = new PanelContainer
-            {
-                Name = "TableSpace",
-                ThemeTypeVariation = "BoardSurface",
-                SizeFlagsVertical = Control.SizeFlags.ExpandFill,
-                MouseFilter = Control.MouseFilterEnum.Ignore,
-            };
-            preparation.AddChild(tableSpace);
+            obsoleteTableSpace.Visible = false;
+            obsoleteTableSpace.SizeFlagsVertical = Control.SizeFlags.ShrinkBegin;
+            obsoleteTableSpace.CustomMinimumSize = Vector2.Zero;
         }
 
-        // Reference grammar, top to bottom: board -> open table -> hero/power -> hand.
-        // The hand is the actual bottom row, not a strip above the hero.
-        preparation.MoveChild(tableSpace, board.GetIndex() + 1);
-        preparation.MoveChild(heroDock, tableSpace.GetIndex() + 1);
+        // Exact bottom grammar from the reference: board -> hero/power -> hand.
+        preparation.MoveChild(board, GetPreparationBoardIndex(preparation));
+        preparation.MoveChild(heroDock, board.GetIndex() + 1);
         preparation.MoveChild(reserve, heroDock.GetIndex() + 1);
 
         var heroRow = heroDock.GetNode<HBoxContainer>("HeroDockRow");
         var leftSpacer = heroRow.GetNode<Control>("LeftSpacer");
+        var rightSpacer = heroRow.GetNode<Control>("RightSpacer");
         var heroCore = heroRow.GetNode<VBoxContainer>("HeroCore");
         var portraitCluster = heroRow.GetNodeOrNull<Control>("HeroPortraitCluster");
         if (portraitCluster is not null)
@@ -91,21 +86,27 @@ public partial class Main
             heroRow.MoveChild(portraitCluster, first);
             heroRow.MoveChild(heroCore, first + 1);
             heroRow.Alignment = BoxContainer.AlignmentMode.Center;
+            heroRow.AddThemeConstantOverride("separation", 4);
 
+            leftSpacer.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
+            rightSpacer.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
             heroCore.SizeFlagsHorizontal = Control.SizeFlags.ShrinkCenter;
             heroCore.SizeFlagsVertical = Control.SizeFlags.ShrinkEnd;
             heroCore.Alignment = BoxContainer.AlignmentMode.End;
             portraitCluster.SizeFlagsHorizontal = Control.SizeFlags.ShrinkCenter;
             portraitCluster.SizeFlagsVertical = Control.SizeFlags.ShrinkEnd;
             _powerButton.SizeFlagsHorizontal = Control.SizeFlags.ShrinkCenter;
-            _powerButton.SizeFlagsVertical = Control.SizeFlags.ShrinkEnd;
+            _powerButton.SizeFlagsVertical = Control.SizeFlags.ShrinkCenter;
         }
 
         BuildBottomHandRow(reserve);
+        BuildFloatingTurnButton();
+    }
 
-        var turnRail = GetNode<PanelContainer>("Margin/Shell/TurnRail");
-        turnRail.SizeFlagsHorizontal = Control.SizeFlags.ShrinkEnd;
-        _endPreparationButton.SizeFlagsHorizontal = Control.SizeFlags.ShrinkCenter;
+    private static int GetPreparationBoardIndex(VBoxContainer preparation)
+    {
+        var shelf = preparation.GetNodeOrNull<PanelContainer>("TavernShelf");
+        return shelf is null ? 0 : shelf.GetIndex() + 1;
     }
 
     private void BuildBottomHandRow(PanelContainer reserve)
@@ -123,8 +124,10 @@ public partial class Main
             Name = "BottomHandRow",
             Alignment = BoxContainer.AlignmentMode.Center,
             SizeFlagsHorizontal = Control.SizeFlags.ExpandFill,
+            SizeFlagsVertical = Control.SizeFlags.ShrinkEnd,
             MouseFilter = Control.MouseFilterEnum.Ignore,
         };
+        _bottomHandRow.AddThemeConstantOverride("separation", 8);
         reserve.AddChild(_bottomHandRow);
 
         _bottomHandBalanceSpacer = new Control
@@ -172,6 +175,53 @@ public partial class Main
         _reserveButtons.QueueSort();
     }
 
+    private void BuildFloatingTurnButton()
+    {
+        if (_turnButtonOverlay is not null)
+            return;
+
+        var turnRail = GetNode<PanelContainer>("Margin/Shell/TurnRail");
+        if (_endPreparationButton.GetParent() is Node oldParent)
+            oldParent.RemoveChild(_endPreparationButton);
+
+        _turnButtonOverlay = new Control
+        {
+            Name = "PreparationTurnOverlay",
+            MouseFilter = Control.MouseFilterEnum.Ignore,
+            ZIndex = 30,
+        };
+        AddChild(_turnButtonOverlay);
+        _turnButtonOverlay.SetAnchorsAndOffsetsPreset(Control.LayoutPreset.FullRect);
+        _turnButtonOverlay.AddChild(_endPreparationButton);
+
+        turnRail.Visible = false;
+        turnRail.CustomMinimumSize = Vector2.Zero;
+        ApplyTurnButtonComposition();
+    }
+
+    private void ApplyTurnButtonComposition()
+    {
+        if (_turnButtonOverlay is null)
+            return;
+
+        var buttonHeight = ResolvePresentationMetric(
+            ModThemeMetricKeys.Layout.TurnRailEndButtonHeight,
+            1.0f,
+            512.0f);
+        var width = Mathf.Max(92.0f, buttonHeight * 1.45f);
+
+        _endPreparationButton.AnchorLeft = 1.0f;
+        _endPreparationButton.AnchorTop = 0.5f;
+        _endPreparationButton.AnchorRight = 1.0f;
+        _endPreparationButton.AnchorBottom = 0.5f;
+        _endPreparationButton.OffsetLeft = -width - 18.0f;
+        _endPreparationButton.OffsetTop = -buttonHeight * 0.5f;
+        _endPreparationButton.OffsetRight = -18.0f;
+        _endPreparationButton.OffsetBottom = buttonHeight * 0.5f;
+        _endPreparationButton.SizeFlagsHorizontal = Control.SizeFlags.ShrinkCenter;
+        _endPreparationButton.SizeFlagsVertical = Control.SizeFlags.ShrinkCenter;
+    }
+
     private void ApplyBattlegroundsHeroComposition()
     {
         const string heroRowPath = "Margin/Shell/CenterStage/PreparationPanel/HeroDock/HeroDockRow";
@@ -194,10 +244,7 @@ public partial class Main
             1.0f,
             512.0f);
 
-        // The reference uses a compact framed hero above the bottom hand, not a
-        // tall portrait card. Keep this footprint square so it can share the same
-        // frame grammar used by the bartender and leader selection.
-        var badgeAllowance = Mathf.Max(healthWidth, armorWidth) * 0.42f;
+        var badgeAllowance = Mathf.Max(healthWidth, armorWidth) * 0.28f;
         portraitCluster.CustomMinimumSize = new Vector2(
             portraitSize + badgeAllowance,
             portraitSize + badgeAllowance * 0.35f);
@@ -214,44 +261,23 @@ public partial class Main
         _hudHeroPortrait.CustomMinimumSize = new Vector2(portraitSize, portraitSize);
         _hudHeroPortrait.StretchMode = TextureRect.StretchModeEnum.KeepAspectCovered;
 
-        ApplyHeroPortraitFrameStyle(frame, portraitSize);
-        ApplyHeroPowerStyle(portraitSize, portraitSize);
-    }
-
-    private void ApplyHeroPortraitFrameStyle(PanelContainer frame, float portraitWidth)
-    {
-        if (!ResolveThemeColor("surfaceDeep", out var background))
-            background = new Color(0.08f, 0.05f, 0.04f, 1.0f);
-        if (!ResolveThemeColor("focus", out var border))
-            border = new Color(0.9f, 0.68f, 0.38f, 1.0f);
-
-        var radius = Mathf.RoundToInt(portraitWidth * 0.18f);
-        var box = new StyleBoxFlat
+        // The SVG overlay is the actual portrait frame. Keep the PanelContainer
+        // itself transparent so we do not draw a second competing frame behind it.
+        frame.AddThemeStyleboxOverride("panel", new StyleBoxFlat
         {
-            BgColor = background,
-            BorderColor = border,
-            BorderWidthLeft = 3,
-            BorderWidthTop = 3,
-            BorderWidthRight = 3,
-            BorderWidthBottom = 3,
-            CornerRadiusTopLeft = radius,
-            CornerRadiusTopRight = radius,
-            CornerRadiusBottomLeft = radius,
-            CornerRadiusBottomRight = radius,
-            ContentMarginLeft = 3,
-            ContentMarginTop = 3,
-            ContentMarginRight = 3,
-            ContentMarginBottom = 3,
-        };
-        frame.AddThemeStyleboxOverride("panel", box);
+            BgColor = Colors.Transparent,
+            BorderWidthLeft = 0,
+            BorderWidthTop = 0,
+            BorderWidthRight = 0,
+            BorderWidthBottom = 0,
+        });
+
+        ApplyHeroPowerStyle(portraitSize);
     }
 
-    private void ApplyHeroPowerStyle(float portraitWidth, float portraitHeight)
+    private void ApplyHeroPowerStyle(float portraitSize)
     {
-        var powerSize = Mathf.Clamp(
-            Mathf.Min(portraitWidth, portraitHeight) * 0.72f,
-            54.0f,
-            96.0f);
+        var powerSize = Mathf.Clamp(portraitSize * 0.68f, 58.0f, 92.0f);
         _powerButton.CustomMinimumSize = new Vector2(powerSize, powerSize);
         _powerButton.Text = "✦";
         _powerButton.AddThemeFontSizeOverride("font_size", Mathf.RoundToInt(powerSize * 0.34f));
