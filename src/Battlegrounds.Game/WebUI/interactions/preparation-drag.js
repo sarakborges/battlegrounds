@@ -26,7 +26,9 @@ function readDragSource(element) {
 }
 
 function isDragEnabled(element) {
-  return element.hasAttribute('data-drag-enabled') && element.dataset.dragEnabled !== 'false';
+  return element.dataset.disabled !== 'true' &&
+    element.hasAttribute('data-drag-enabled') &&
+    element.dataset.dragEnabled !== 'false';
 }
 
 function isCompatibleDropTarget(target, dragSource) {
@@ -144,7 +146,7 @@ export function bindPreparationDrag(root) {
   root.addEventListener('pointerdown', event => {
     if (event.button !== 0) return;
     const sourceElement = event.target.closest('[data-drag-kind]');
-    if (!sourceElement || sourceElement.disabled || !isDragEnabled(sourceElement)) return;
+    if (!sourceElement || !isDragEnabled(sourceElement)) return;
 
     event.preventDefault();
     const dragSource = readDragSource(sourceElement);
