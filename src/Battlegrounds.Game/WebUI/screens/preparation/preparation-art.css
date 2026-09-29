@@ -4,9 +4,9 @@
 }
 
 .table-stage {
-  grid-template-rows: 146px 184px minmax(300px, 1fr) 132px 94px;
+  grid-template-rows: 132px 176px minmax(330px, 1fr) 116px 94px;
   background-image:
-    linear-gradient(180deg, rgba(8,5,3,.28), rgba(8,5,3,.08) 27%, rgba(8,5,3,.12) 70%, rgba(8,5,3,.42)),
+    linear-gradient(180deg, rgba(8,5,3,.24), rgba(8,5,3,.04) 27%, rgba(8,5,3,.08) 70%, rgba(8,5,3,.38)),
     var(--board-art),
     linear-gradient(180deg, var(--theme-color-surface-deep, var(--surface-0)), var(--theme-color-surface-warm, var(--surface-2)));
   background-size: cover, cover, cover;
@@ -14,9 +14,9 @@
   background-repeat: no-repeat;
 }
 .table-stage::before {
-  inset: 30% 5% 14%;
-  background: radial-gradient(ellipse at center, rgba(0,0,0,.02), rgba(0,0,0,.18) 74%);
-  box-shadow: inset 0 1px 0 rgba(255,255,255,.035), inset 0 -24px 72px rgba(0,0,0,.14);
+  inset: 29% 5% 14%;
+  background: radial-gradient(ellipse at center, rgba(0,0,0,.015), rgba(0,0,0,.16) 74%);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.035), inset 0 -24px 72px rgba(0,0,0,.12);
 }
 
 .opponent-rail {
@@ -25,14 +25,53 @@
 }
 .match-mark { padding-bottom: 5px; }
 
+/* Bob is the visual anchor at the top center. Controls orbit him rather than
+   participating in one long flex row. */
 .tavern-controls {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 150px minmax(0, 1fr);
   align-items: end;
-  padding-bottom: 3px !important;
-  background: linear-gradient(180deg, rgba(0,0,0,.34), rgba(0,0,0,.04)) !important;
+  justify-items: center;
+  gap: 0 !important;
+  padding: 0 12px !important;
+  overflow: visible;
+  background: linear-gradient(180deg, rgba(0,0,0,.34), rgba(0,0,0,.02)) !important;
 }
+.tavern-left-controls,
+.tavern-right-controls {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding-bottom: 18px;
+}
+.tavern-left-controls { justify-self: end; padding-right: 16px; }
+.tavern-right-controls { justify-self: start; padding-left: 16px; }
+.tavern-control { display: grid; place-items: center; }
+.tavern-control .button {
+  width: 58px;
+  height: 58px;
+  padding: 0 !important;
+  border-radius: 50% !important;
+  font-size: 23px;
+  box-shadow: 0 10px 24px rgba(0,0,0,.32);
+}
+.tavern-upgrade .button {
+  width: 66px;
+  height: 66px;
+  font-size: 17px;
+}
+.tier-badge {
+  width: 52px;
+  height: 62px;
+  transform: translateX(-15px);
+  z-index: 10;
+  box-shadow: 0 10px 24px rgba(0,0,0,.30);
+}
+
 .character-portrait {
-  width: 136px;
-  height: 154px;
+  width: 132px;
+  height: 150px;
   position: relative;
   display: block;
   padding: 0 !important;
@@ -68,13 +107,13 @@
   position: absolute;
   z-index: 5;
   left: 50%;
-  bottom: -16px;
-  width: 122px;
-  min-height: 34px;
+  bottom: -15px;
+  width: 120px;
+  min-height: 32px;
   transform: translateX(-50%);
   display: grid;
   place-items: center;
-  padding: 3px 9px;
+  padding: 3px 8px;
   border-radius: 10px 10px 16px 16px;
   border: 1px solid color-mix(in srgb, var(--theme-color-border-strong, var(--line)) 78%, transparent);
   background: color-mix(in srgb, var(--theme-color-surface-deep, var(--surface-0)) 92%, transparent);
@@ -82,15 +121,17 @@
 }
 .character-nameplate strong {
   width: 100%;
-  max-width: none;
   text-align: center;
   font-size: 11px;
   line-height: 1.05;
   white-space: normal;
 }
 .shopkeeper-drop {
-  margin-inline: 22px;
-  transform: translateY(18px);
+  grid-column: 2;
+  align-self: end;
+  margin: 0;
+  transform: translateY(25px);
+  z-index: 12;
 }
 .shopkeeper-drop .drag-hint {
   position: absolute;
@@ -101,34 +142,22 @@
   width: 150px;
   text-align: center;
 }
-.tavern-control .button {
-  height: 62px;
-  width: 62px;
-  border-radius: 50% !important;
-}
-.tavern-control:first-child .button { width: 70px; height: 70px; }
-.tier-badge {
-  width: 58px;
-  height: 70px;
-  transform: translate(10px, 6px);
-  z-index: 10;
-}
 
 .tavern-shelf {
   align-items: start;
-  padding-top: 28px !important;
-  background: linear-gradient(180deg, rgba(0,0,0,.03), rgba(0,0,0,.12) 92%) !important;
+  padding-top: 38px !important;
+  background: linear-gradient(180deg, rgba(0,0,0,.02), rgba(0,0,0,.10) 92%) !important;
 }
 .tavern-shelf::before {
   content: '';
   position: absolute;
-  left: 15%;
-  right: 15%;
-  top: 20px;
+  left: 14%;
+  right: 14%;
+  top: 18px;
   bottom: 7px;
   border-radius: 50% 50% 12% 12% / 18% 18% 10% 10%;
-  border-top: 1px solid color-mix(in srgb, var(--theme-color-border-strong, var(--line)) 44%, transparent);
-  background: linear-gradient(180deg, rgba(0,0,0,.05), rgba(0,0,0,.12));
+  border-top: 1px solid color-mix(in srgb, var(--theme-color-border-strong, var(--line)) 40%, transparent);
+  background: linear-gradient(180deg, rgba(0,0,0,.03), rgba(0,0,0,.10));
   pointer-events: none;
 }
 .tavern-offers { position: relative; z-index: 2; }
@@ -142,12 +171,12 @@
 .board-stage {
   margin-inline: 4.5%;
   overflow: visible;
-  background: radial-gradient(ellipse at center, rgba(255,255,255,.018), transparent 70%) !important;
+  background: radial-gradient(ellipse at center, rgba(255,255,255,.014), transparent 70%) !important;
 }
 .board-stage .component-row {
   min-height: 190px;
   gap: 7px;
-  padding: 18px 28px 34px;
+  padding: 18px 28px 30px;
 }
 .board-stage .card {
   flex-basis: 142px;
@@ -155,35 +184,97 @@
   min-height: 184px;
 }
 
+/* The hero cockpit is anchored to the table instead of laid out as a row.
+   This keeps the portrait centered, stats attached to it, hero power on its
+   right, and gold in the bottom-right HUD area. */
 .hero-dock {
-  transform: translateY(-46px);
-  min-height: 144px;
-  gap: 5px;
+  position: static !important;
+  min-height: 0;
+  transform: none !important;
+  border: 0 !important;
+  background: transparent !important;
+}
+.hero-cluster {
+  position: absolute;
+  z-index: 22;
+  left: 50%;
+  bottom: 98px;
+  width: 132px;
+  height: 150px;
+  transform: translateX(-50%);
+}
+.hero-drop {
+  position: absolute;
+  inset: 0;
+  width: 132px;
+  height: 150px;
 }
 .hero-nameplate .eyebrow { display: none; }
-.health-badge { margin-right: -24px; margin-top: 88px; }
-.armor-badge { margin-right: -30px; margin-top: -86px; }
-.hero-actions {
-  width: 62px;
-  margin-left: -3px;
-  margin-right: 4px;
+.hero-stat {
+  position: absolute;
+  z-index: 28;
+  display: grid;
+  place-items: center;
+  padding: 0 !important;
+  border-radius: 50% !important;
+  font-size: 18px;
+  font-weight: 800;
+  box-shadow: 0 8px 16px rgba(0,0,0,.36);
 }
-.hero-actions [data-slot="power"] .button {
-  width: 58px;
-  height: 58px;
+.health-badge {
+  width: 46px;
+  height: 46px;
+  left: 50%;
+  bottom: -35px;
+  transform: translateX(-50%);
+}
+.armor-badge {
+  width: 39px;
+  height: 39px;
+  left: calc(50% + 23px);
+  bottom: -15px;
+}
+.hero-power {
+  position: absolute;
+  z-index: 26;
+  left: calc(100% + 13px);
+  top: 66%;
+  transform: translateY(-50%);
+}
+.hero-power .button {
+  width: 60px;
+  height: 60px;
+  min-width: 60px;
+  padding: 0 !important;
+  border-radius: 50% !important;
+  font-size: 24px;
+  box-shadow: 0 10px 24px rgba(0,0,0,.34);
 }
 .resource-badge {
-  min-width: 104px;
-  margin-left: 2px;
-  align-self: end;
-  margin-bottom: 14px;
+  position: absolute;
+  z-index: 24;
+  right: 32px;
+  bottom: 26px;
+  min-width: 116px;
+  min-height: 42px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin: 0;
+  border-radius: 999px !important;
+  box-shadow: 0 8px 18px rgba(0,0,0,.30);
 }
+.resource-badge strong { font-size: 20px; }
 
 .reserve-shelf {
-  margin-top: -56px;
-  padding-bottom: 2px !important;
+  margin-top: -20px;
+  padding: 0 180px 4px 20px !important;
 }
-.reserve-shelf .component-row { transform: translateY(8px); }
+.reserve-shelf .component-row {
+  transform: translateY(8px);
+  justify-content: center;
+}
 .reserve-shelf .component-row > .card + .card { margin-left: -24px; }
 .reserve-shelf .card {
   flex-basis: 96px;
@@ -194,8 +285,8 @@
 .turn-rail {
   position: absolute;
   z-index: 40;
-  right: 26px;
-  top: 54%;
+  right: 24px;
+  top: 52%;
   width: auto;
   height: auto;
   display: block;
@@ -227,12 +318,25 @@
 
 @media (max-width: 1200px) {
   .preparation-screen { grid-template-columns: 140px minmax(0, 1fr); }
-  .table-stage { grid-template-rows: 132px 164px minmax(250px,1fr) 120px 84px; }
-  .character-portrait { width: 118px; height: 136px; }
-  .character-nameplate { width: 108px; }
-  .shopkeeper-drop { margin-inline: 10px; }
+  .table-stage { grid-template-rows: 122px 160px minmax(260px,1fr) 108px 82px; }
+  .tavern-controls { grid-template-columns: minmax(0,1fr) 126px minmax(0,1fr); }
+  .character-portrait,
+  .hero-drop { width: 116px; height: 132px; }
+  .character-nameplate { width: 106px; }
+  .shopkeeper-drop { transform: translateY(20px); }
+  .tavern-left-controls { padding-right: 10px; }
+  .tavern-right-controls { padding-left: 10px; }
+  .tavern-control .button { width: 52px; height: 52px; }
+  .tavern-upgrade .button { width: 58px; height: 58px; }
+  .tier-badge { width: 46px; height: 56px; }
   .tavern-shelf .card { flex-basis: 124px; min-width: 104px; }
-  .turn-rail { right: 16px; }
+  .hero-cluster { width: 116px; height: 132px; bottom: 88px; }
+  .health-badge { width: 42px; height: 42px; bottom: -32px; }
+  .armor-badge { width: 36px; height: 36px; left: calc(50% + 21px); bottom: -14px; }
+  .hero-power { left: calc(100% + 10px); }
+  .hero-power .button { width: 54px; height: 54px; min-width: 54px; }
+  .resource-badge { right: 20px; bottom: 20px; min-width: 104px; }
+  .turn-rail { right: 14px; }
   .turn-rail [data-slot="ready"] .button,
   .waiting-banner { width: 132px; }
 }
