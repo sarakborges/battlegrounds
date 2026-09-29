@@ -31,40 +31,11 @@
   display: grid;
   grid-template-rows: 140px 170px minmax(324px, 1fr) 110px 88px;
   overflow: hidden;
-  background-image:
-    linear-gradient(
-      180deg,
-      rgba(8, 5, 3, 0.24),
-      rgba(8, 5, 3, 0.04) 27%,
-      rgba(8, 5, 3, 0.08) 70%,
-      rgba(8, 5, 3, 0.38)
-    ),
-    var(--board-art),
-    linear-gradient(
-      180deg,
-      var(--theme-color-surface-deep, var(--surface-0)),
-      var(--theme-color-surface-warm, var(--surface-2))
-    );
-  background-size: cover, cover, cover;
-  background-position: center, center, center;
+  background-color: var(--theme-color-surface-deep, var(--surface-0));
+  background-image: var(--board-art, none);
+  background-size: cover;
+  background-position: center;
   background-repeat: no-repeat;
-}
-
-.table-stage::before {
-  content: "";
-  position: absolute;
-  inset: 29% 5% 14%;
-  z-index: -1;
-  pointer-events: none;
-  border-radius: 48% 48% 16% 16% / 18% 18% 12% 12%;
-  background: radial-gradient(
-    ellipse at center,
-    rgba(0, 0, 0, 0.015),
-    rgba(0, 0, 0, 0.16) 74%
-  );
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.035),
-    inset 0 -24px 72px rgba(0, 0, 0, 0.12);
 }
 
 @media (max-width: 1200px) {
