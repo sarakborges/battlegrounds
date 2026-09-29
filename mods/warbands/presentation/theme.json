@@ -319,9 +319,9 @@
       "padding": { "horizontal": "xs", "vertical": "xs" }
     },
     "panel.heroPortrait": {
-      "backgroundColor": "#21150F",
-      "borderColor": "focus",
-      "borderWidth": 3,
+      "backgroundColor": "#00000000",
+      "borderColor": "#00000000",
+      "borderWidth": 0,
       "padding": { "horizontal": "xs", "vertical": "xs" }
     },
     "panel.opponent": {
@@ -332,8 +332,9 @@
     "panel.opponent.self": { "backgroundColor": "surfaceRaised", "borderColor": "primary", "borderWidth": 2 },
     "panel.opponent.eliminated": { "backgroundColor": "eliminatedSurface", "borderColor": "eliminatedBorder", "opacity": 0.55 },
     "panel.opponentPortrait": {
-      "backgroundColor": "surfaceDeep",
-      "borderColor": "borderStrong",
+      "backgroundColor": "#00000000",
+      "borderColor": "#00000000",
+      "borderWidth": 0,
       "padding": { "horizontal": "xs", "vertical": "xs" }
     },
     "panel.tierBadge": {
@@ -428,7 +429,13 @@
   },
   "screens": {
     "launcher": { "backgroundColor": "background" },
-    "preparation": { "backgroundColor": "background", "backgroundAsset": "assets/ui/board-surface.jpg" },
-    "combat": { "backgroundColor": "#0D0907", "backgroundAsset": "assets/ui/board-surface.jpg" }
+    "preparation": {
+      "backgroundColor": "background",
+      "backgroundAsset": "assets/ui/board-surface.jpg"
+    },
+    "combat": {
+      "backgroundColor": "#0D0907",
+      "backgroundAsset": "assets/ui/board-surface.jpg"
+    }
   }
 }
