@@ -34,4 +34,9 @@ const bridge = createGameBridge({
 });
 
 bindActions(document, bridge.send);
-bridge.requestState();
+
+if (document.readyState === 'loading') {
+  window.addEventListener('DOMContentLoaded', bridge.requestState, { once: true });
+} else {
+  bridge.requestState();
+}

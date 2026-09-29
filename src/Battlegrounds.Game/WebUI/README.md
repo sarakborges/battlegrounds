@@ -16,18 +16,50 @@ On Windows, install the pinned version from the repository root:
 
 The installer currently pins Godot CEF `v1.16.2` and verifies the published SHA-256 before copying the addon into `src/Battlegrounds.Game/addons/godot_cef`.
 
-If `CefTexture` is unavailable, `WebUiHost.gd` emits `web_unavailable` and the existing Godot UI remains active. This makes the migration screen-by-screen and keeps the current presentation as a fallback while the browser UI is incomplete.
+If `CefTexture` is unavailable, `WebUiHost.gd` emits `web_unavailable` and the existing Godot UI remains active.
 
-## Files
+## Source layout
 
-- `index.html` — browser entry point loaded through `res://`.
-- `styles.css` — layout and baseline visual styles.
-- `app.js` — renderer, event binding, IPC client, and mod-theme application.
-- `WebUiHost.gd` — optional CEF host and Godot/JavaScript IPC relay.
-- `WebUiHost.tscn` — full-screen host scene.
-- `../Scripts/Main.WebUi.cs` — C# state/command bridge.
+The browser UI is deliberately componentized without a frontend framework or build step:
 
-There is deliberately no frontend build step yet. The first migration slice stays as plain HTML/CSS/JavaScript so UI changes can be made directly and reloaded without introducing npm/Vite/React before the bridge and presentation contract are stable.
+```text
+WebUI/
+  app.js                  # bootstrap only: state -> screen, theme, polling
+  index.html              # browser entry point
+  bridge/                 # Godot CEF IPC and action dispatch
+  core/                   # template/style loading primitives
+  theme/                  # resolved ModThemeCatalog -> CSS/component styles
+  styles/                 # global baseline only
+  components/
+    button/
+      button.html         # markup
+      button.css          # component presentation
+      button.js           # behavior/data binding
+    card/
+      card.html
+      card.css
+      card.js
+    ...
+  screens/
+    leader-selection/
+      leader-selection.html
+      leader-selection.css
+      leader-selection.js
+    preparation/
+      preparation.html
+      preparation.css
+      preparation.js
+    combat/
+      combat.html
+      combat.css
+      combat.js
+```
+
+HTML structure must live in `.html` templates. Component and screen JavaScript clones those templates, fills text/state, assigns semantic `data-*` properties and connects behavior. It must not build markup with template strings or `innerHTML`.
+
+Every reusable UI component owns a directory named after the component and contains the matching `.html`, `.css`, and `.js` files. The CI checks this convention and rejects HTML construction in component/screen JavaScript.
+
+`app.js` does not know card/button/panel markup. Screens compose components; components do not know game rules. Authoritative state and commands remain in C#.
 
 ## Contract
 
@@ -42,4 +74,4 @@ Browser to Godot messages are JSON objects with a `type` field. Godot responds w
 
 The browser never mutates authoritative match state. It sends user intent; C# translates that intent to the existing domain/application commands and then pushes a fresh presentation snapshot.
 
-The resolved `ModThemeCatalog` is included in the state snapshot. `app.js` maps colors, spacing, radii, font sizes, metrics, component roles, and screen roles into CSS/custom properties. Asset-backed theme fields are the next presentation slice.
+The resolved `ModThemeCatalog` is included in the state snapshot. `theme/theme.js` maps colors, spacing, radii, font sizes, metrics, component roles and screen roles into CSS/custom properties. Asset-backed theme fields remain a separate presentation slice.
