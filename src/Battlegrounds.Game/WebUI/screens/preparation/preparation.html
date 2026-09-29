@@ -16,6 +16,7 @@
           <strong data-field="tier"></strong>
         </div>
         <div class="shopkeeper-drop drag-target panel" data-component="panel" data-theme-role="panel.shopkeeper" data-drop-kind="shopkeeper">
+          <div class="shopkeeper-portrait" aria-hidden="true">♜</div>
           <strong>Shopkeeper</strong>
           <small class="drag-hint">Drop a board unit to sell</small>
         </div>
@@ -24,14 +25,10 @@
       </section>
 
       <section class="tavern-shelf panel" data-component="panel" data-theme-role="panel.tavern">
-        <div data-slot="offer"></div>
+        <div class="tavern-offers" data-slot="offer"></div>
       </section>
 
       <section class="board-stage panel" data-component="panel" data-theme-role="panel.board" data-drop-kind="field-surface">
-        <div class="board-caption">
-          <span class="eyebrow" data-field="field-label"></span>
-          <span data-field="field-count"></span>
-        </div>
         <div class="board-row" data-slot="field"></div>
       </section>
 
@@ -51,23 +48,20 @@
           <div data-slot="power"></div>
           <div data-slot="combine"></div>
         </div>
-      </section>
-
-      <section class="reserve-shelf panel" data-component="panel" data-theme-role="panel.reserve">
         <div class="resource-badge panel" data-component="panel" data-theme-role="panel.resourceBadge">
           <span class="eyebrow" data-field="resource-label"></span>
           <strong data-field="resource"></strong>
         </div>
+      </section>
+
+      <section class="reserve-shelf panel" data-component="panel" data-theme-role="panel.reserve">
         <div class="hand-row" data-slot="reserve"></div>
-        <div class="resource-balance" aria-hidden="true"></div>
       </section>
     </main>
 
     <aside class="turn-rail panel" data-component="panel" data-theme-role="panel.turnRail">
-      <div class="turn-spacer"></div>
       <div data-slot="ready"></div>
       <div class="waiting-banner" data-field="waiting" hidden></div>
-      <div class="turn-spacer"></div>
     </aside>
 
     <div data-slot="overlay"></div>
