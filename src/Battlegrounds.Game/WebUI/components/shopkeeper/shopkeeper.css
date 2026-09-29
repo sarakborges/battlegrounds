@@ -1,12 +1,12 @@
 .shopkeeper {
   position: relative;
   z-index: 12;
-  width: 112px;
-  height: 124px;
+  width: 104px;
+  height: 112px;
   margin: 0;
-  --character-portrait-width: 112px;
-  --character-portrait-height: 124px;
-  --character-nameplate-width: 104px;
+  --character-portrait-width: 104px;
+  --character-portrait-height: 112px;
+  --character-nameplate-width: 96px;
 }
 
 .shopkeeper__portrait {
@@ -14,6 +14,7 @@
   height: 100%;
 }
 
+.shopkeeper .character-portrait__nameplate,
 .shopkeeper .drag-hint {
   display: none;
 }
