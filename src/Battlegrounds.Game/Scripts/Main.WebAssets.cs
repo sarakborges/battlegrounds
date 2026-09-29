@@ -1,6 +1,5 @@
 using System.Text.Json;
 using Battlegrounds.Content;
-using Battlegrounds.Core.Domain.Playables;
 using Godot;
 
 namespace Battlegrounds.Game;
@@ -66,24 +65,6 @@ public partial class Main
         }
 
         return new { leaders, units, actions };
-    }
-
-    private string? PlayableArtPath(PlayableKind kind, string id) => kind switch
-    {
-        PlayableKind.Unit => PresentationArtPath(ModPresentationEntityKind.Unit, id, ModPresentationAssetSlots.Art),
-        PlayableKind.Action => PresentationArtPath(ModPresentationEntityKind.Action, id, ModPresentationAssetSlots.Art),
-        _ => null,
-    };
-
-    private string? UnitArtPath(string id) =>
-        PresentationArtPath(ModPresentationEntityKind.Unit, id, ModPresentationAssetSlots.Art);
-
-    private string? PresentationArtPath(ModPresentationEntityKind kind, string id, string slot)
-    {
-        EnsureWebPresentationAssetsLoaded();
-        return _webPresentationAssets is not null && _webPresentationAssets.TryGet(kind, id, slot, out var asset)
-            ? asset.RelativePath
-            : null;
     }
 
     private void EnsureWebPresentationAssetsLoaded()
