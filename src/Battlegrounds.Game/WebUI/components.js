@@ -44,8 +44,26 @@
       </button>`;
   }
 
+  function CombatCard({ name = '', attack = '—', health = '—', tier = null, status = '', marker = '', highlight = '', instanceId = '' } = {}) {
+    return `
+      <article class="combat-card ${escapeHtml(highlight)}" data-component="combat-card" data-variant="${escapeHtml(highlight || 'default')}" data-instance-id="${escapeHtml(instanceId)}">
+        ${marker ? `<span class="combat-marker">${escapeHtml(marker)}</span>` : ''}
+        ${tier > 0 ? `<span class="combat-tier">T${escapeHtml(tier)}</span>` : ''}
+        <strong class="combat-card-name">${escapeHtml(name)}</strong>
+        <div class="combat-card-stats">
+          <span><b>${escapeHtml(attack ?? '—')}</b> ATK</span>
+          <span><b>${escapeHtml(health ?? '—')}</b> HP</span>
+        </div>
+        ${status ? `<span class="combat-unit-status">${escapeHtml(status)}</span>` : ''}
+      </article>`;
+  }
+
   function Stat({ label = '', value = '—' } = {}) {
     return `<div class="stat" data-component="stat"><span>${escapeHtml(label)}</span><strong>${escapeHtml(value ?? '—')}</strong></div>`;
+  }
+
+  function PlayerChip({ id = '', leader = '—', health = '—', human = false, eliminated = false } = {}) {
+    return `<span class="player-chip ${human ? 'human' : ''} ${eliminated ? 'eliminated' : ''}" data-component="player-chip" data-variant="${human ? 'human' : eliminated ? 'eliminated' : 'default'}">P${escapeHtml(id)} · ${escapeHtml(leader)} · ${escapeHtml(health)} HP</span>`;
   }
 
   function Empty({ label = '' } = {}) {
@@ -72,5 +90,5 @@
 
   ui.escapeHtml = escapeHtml;
   ui.attrs = attrs;
-  ui.components = { Panel, Button, Badge, Card, Stat, Empty, Zone, Dialog };
+  ui.components = { Panel, Button, Badge, Card, CombatCard, Stat, PlayerChip, Empty, Zone, Dialog };
 })();
