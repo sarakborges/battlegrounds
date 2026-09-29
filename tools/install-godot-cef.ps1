@@ -9,11 +9,38 @@ $RepoRoot = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path
 $GameRoot = Join-Path $RepoRoot "src/Battlegrounds.Game"
 $AddonsRoot = Join-Path $GameRoot "addons"
 $Destination = Join-Path $AddonsRoot "godot_cef"
+$NestedDestination = Join-Path $Destination "godot_cef"
 $TempRoot = Join-Path ([System.IO.Path]::GetTempPath()) "battlegrounds-godot-cef-$Version"
 $ArchivePath = Join-Path $TempRoot $AssetName
 $ExtractRoot = Join-Path $TempRoot "extract"
 $InstalledExtension = Join-Path $Destination "godot_cef.gdextension"
 $InstalledWindowsDll = Join-Path $Destination "bin/x86_64-pc-windows-msvc/gdcef.dll"
+$NestedExtension = Join-Path $NestedDestination "godot_cef.gdextension"
+
+function Test-CefInstall {
+    return (Test-Path $InstalledExtension -PathType Leaf) -and
+           (Test-Path $InstalledWindowsDll -PathType Leaf)
+}
+
+function Write-InstalledPaths {
+    Write-Host "Godot CEF $Version is installed correctly."
+    Write-Host "  Extension: $InstalledExtension"
+    Write-Host "  Windows DLL: $InstalledWindowsDll"
+}
+
+# Repair the layout produced by the previous installer revision without re-downloading
+# the ~1 GB release archive.
+if ((-not (Test-Path $InstalledExtension -PathType Leaf)) -and
+    (Test-Path $NestedExtension -PathType Leaf)) {
+    Write-Host "Repairing nested Godot CEF addon layout..."
+    Get-ChildItem -Path $NestedDestination -Force | Move-Item -Destination $Destination -Force
+    Remove-Item $NestedDestination -Recurse -Force
+}
+
+if (Test-CefInstall) {
+    Write-InstalledPaths
+    exit 0
+}
 
 try {
     if (Test-Path $TempRoot) {
@@ -47,22 +74,14 @@ try {
     }
     New-Item $Destination -ItemType Directory -Force | Out-Null
 
-    # Copy the addon contents, not the addon directory itself. This avoids creating
-    # addons/godot_cef/godot_cef/... on PowerShell installations where Copy-Item
-    # preserves the source directory name when the destination is absent.
+    # Copy addon contents directly into addons/godot_cef.
     Copy-Item -Path (Join-Path $SourceAddon "*") -Destination $Destination -Recurse -Force
 
-    if (-not (Test-Path $InstalledExtension -PathType Leaf)) {
-        throw "Godot CEF install failed: expected extension file was not created at $InstalledExtension."
+    if (-not (Test-CefInstall)) {
+        throw "Godot CEF install failed. Expected $InstalledExtension and $InstalledWindowsDll."
     }
 
-    if (-not (Test-Path $InstalledWindowsDll -PathType Leaf)) {
-        throw "Godot CEF install failed: expected Windows x64 library was not created at $InstalledWindowsDll."
-    }
-
-    Write-Host "Godot CEF $Version installed successfully."
-    Write-Host "  Extension: $InstalledExtension"
-    Write-Host "  Windows DLL: $InstalledWindowsDll"
+    Write-InstalledPaths
 }
 finally {
     if (Test-Path $TempRoot) {
