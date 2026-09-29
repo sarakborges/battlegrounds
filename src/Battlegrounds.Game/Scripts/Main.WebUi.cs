@@ -1,7 +1,6 @@
 using System.Text.Json;
 using Battlegrounds.Content;
 using Battlegrounds.Core.Domain.Choices;
-using Battlegrounds.Core.Domain.Combines;
 using Battlegrounds.Core.Domain.Effects;
 using Battlegrounds.Core.Domain.Ids;
 using Battlegrounds.Core.Domain.Match;
@@ -133,18 +132,6 @@ public partial class Main
                 case "select-target":
                     SubmitSelectedTarget(new UnitInstanceId(RequiredLong(root, "unitInstanceId")));
                     break;
-                case "begin-combine":
-                    BeginCombineSelection();
-                    break;
-                case "select-combine-recipe":
-                    SelectCombineRecipe(new UnitCombineId(RequiredString(root, "combineId")));
-                    break;
-                case "toggle-combine-unit":
-                    ToggleWebCombineUnit(new UnitInstanceId(RequiredLong(root, "unitInstanceId")));
-                    break;
-                case "confirm-interaction":
-                    ConfirmInteraction();
-                    break;
                 case "cancel-interaction":
                     CancelInteraction();
                     break;
@@ -170,21 +157,6 @@ public partial class Main
             throw new InvalidOperationException("There is no pending choice to resolve.");
 
         ResolveChoice(human.PendingChoice, optionIndex);
-    }
-
-    private void ToggleWebCombineUnit(UnitInstanceId unitInstanceId)
-    {
-        if (!TryGetHuman(out var human) || _session is null ||
-            _interaction.Kind != PresentationInteractionKind.CombineComponents ||
-            _interaction.CombineId is not UnitCombineId combineId)
-        {
-            throw new InvalidOperationException("No combine component selection is active.");
-        }
-
-        var unit = human.Reserve.Concat(human.Field).FirstOrDefault(value => value.Id == unitInstanceId)
-            ?? throw new InvalidOperationException($"Unit instance '{unitInstanceId}' is not owned by the human player.");
-        var definition = _session.Mod.Combines.GetRequired(combineId);
-        ToggleCombineUnit(unit, definition);
     }
 
     private void PushWebUiState()
@@ -276,7 +248,6 @@ public partial class Main
             tier = entry.Unit?.Definition.Tier,
             attack = entry.Unit?.Attack,
             health = entry.Unit?.Health,
-            selectedForCombine = entry.Unit is not null && _interaction.IsSelected(entry.Unit.Id),
         }).ToArray();
 
         var field = human.Field.Select((unit, slot) => new
@@ -288,7 +259,6 @@ public partial class Main
             tier = unit.Definition.Tier,
             attack = unit.Attack,
             health = unit.Health,
-            selectedForCombine = _interaction.IsSelected(unit.Id),
         }).ToArray();
 
         var players = match.Players.OrderBy(player => player.Id.Value).Select(player => new
@@ -300,6 +270,7 @@ public partial class Main
             tier = player.Tier,
             eliminated = player.IsEliminated,
             ready = player.IsReadyForCombat,
+            leaderId = player.Leader?.Definition.Id.Value,
             leader = player.Leader is null ? null : LeaderName(player.Leader.Definition.Id),
         }).ToArray();
 
@@ -382,36 +353,6 @@ public partial class Main
         if (!_interaction.IsActive)
             return null;
 
-        if (_interaction.Kind == PresentationInteractionKind.CombineRecipe)
-        {
-            return new
-            {
-                kind = "combine-recipe",
-                recipes = GetAvailableCombines(human).Select(definition => new
-                {
-                    id = definition.Id.Value,
-                    name = CombineName(definition.Id),
-                    requiredCopies = definition.RequiredCopies,
-                    source = UnitName(definition.SourceUnitId),
-                    result = UnitName(definition.ResultUnitId),
-                }).ToArray(),
-            };
-        }
-
-        if (_interaction.Kind == PresentationInteractionKind.CombineComponents &&
-            _interaction.CombineId is UnitCombineId combineId)
-        {
-            var definition = _session!.Mod.Combines.GetRequired(combineId);
-            return new
-            {
-                kind = "combine-components",
-                combineId = combineId.Value,
-                name = CombineName(combineId),
-                requiredCopies = definition.RequiredCopies,
-                selected = _interaction.SelectedUnits.Count,
-            };
-        }
-
         var candidates = GetWebTargetCandidates(match, human);
         return new
         {
@@ -479,14 +420,12 @@ public partial class Main
         freeze = Text("ui.freezeOffer", ("offer", Term("offer"))),
         unfreeze = Text("ui.unfreezeOffer", ("offer", Term("offer"))),
         usePower = Text("ui.usePower", ("power", Term("power"))),
-        combine = Text("ui.combineUnits", ("units", Term("units"))),
         endPreparation = Text("ui.endPreparation", ("preparation", Term("preparation"))),
         acquire = Term("acquire"),
         release = Term("release"),
         deploy = Text("ui.deploy"),
         play = Text("ui.play"),
         chooseLeader = Text("ui.chooseLeader", ("leader", Term("leader"))),
-        confirm = Text("ui.confirm"),
         cancel = Text("ui.cancel"),
     };
 
