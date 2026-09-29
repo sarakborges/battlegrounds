@@ -1,7 +1,7 @@
 import { addClasses, applyAttributes, cloneTemplate, useStyle } from '../../core/template.js';
 
 const templateUrl = new URL('./character-portrait.html', import.meta.url);
-useStyle(new URL('../panel/panel.css', import.meta.url));
+useStyle(new URL('../../design-system/panel/panel.css', import.meta.url));
 useStyle(new URL('./character-portrait.css', import.meta.url));
 
 export async function createCharacterPortrait({

@@ -1,9 +1,9 @@
 import { appendChildren, cloneTemplate, useStyle } from '../../core/template.js';
-import { createRow } from '../row/row.js';
+import { createHorizontalStack } from '../../design-system/horizontal-stack/horizontal-stack.js';
 
-const templateUrl = new URL('./card-zone.html', import.meta.url);
-useStyle(new URL('../panel/panel.css', import.meta.url));
-useStyle(new URL('./card-zone.css', import.meta.url));
+const templateUrl = new URL('./card-area.html', import.meta.url);
+useStyle(new URL('../../design-system/panel/panel.css', import.meta.url));
+useStyle(new URL('./card-area.css', import.meta.url));
 
 const roles = {
   offer: 'panel.tavern',
@@ -11,7 +11,7 @@ const roles = {
   reserve: 'panel.reserve'
 };
 
-export async function createCardZone({
+export async function createCardArea({
   variant = 'offer',
   children = [],
   dropKind = null,
@@ -22,11 +22,11 @@ export async function createCardZone({
   element.dataset.themeRole = themeRole ?? roles[variant] ?? 'panel';
   if (dropKind) element.dataset.dropKind = dropKind;
 
-  const row = await createRow({
+  const cards = await createHorizontalStack({
     children,
     variant,
-    className: 'card-zone__row'
+    className: 'card-area__cards'
   });
-  appendChildren(element.querySelector('[data-slot="content"]'), [row]);
+  appendChildren(element.querySelector('[data-slot="content"]'), [cards]);
   return element;
 }

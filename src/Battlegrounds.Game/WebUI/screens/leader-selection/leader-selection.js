@@ -1,5 +1,5 @@
 import { appendChildren, cloneTemplate, useStyle } from '../../core/template.js';
-import { createBadge } from '../../components/badge/badge.js';
+import { createBadge } from '../../design-system/badge/badge.js';
 import { createCard } from '../../components/card/card.js';
 import { cosmeticsForState, leaderArtUrl } from '../../theme/cosmetics.js';
 

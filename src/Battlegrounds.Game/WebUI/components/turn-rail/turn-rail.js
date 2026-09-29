@@ -1,8 +1,8 @@
 import { appendChildren, cloneTemplate, useStyle } from '../../core/template.js';
-import { createButton } from '../button/button.js';
+import { createButton } from '../../design-system/button/button.js';
 
 const templateUrl = new URL('./turn-rail.html', import.meta.url);
-useStyle(new URL('../panel/panel.css', import.meta.url));
+useStyle(new URL('../../design-system/panel/panel.css', import.meta.url));
 useStyle(new URL('./turn-rail.css', import.meta.url));
 
 export async function createTurnRail({

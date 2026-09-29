@@ -1,11 +1,11 @@
 import { appendChildren, cloneTemplate, useStyle } from '../../core/template.js';
-import { createButton } from '../../components/button/button.js';
+import { createButton } from '../../design-system/button/button.js';
+import { createHorizontalStack } from '../../design-system/horizontal-stack/horizontal-stack.js';
+import { createModalDialog } from '../../design-system/modal-dialog/modal-dialog.js';
 import { createCard } from '../../components/card/card.js';
-import { createCardZone } from '../../components/card-zone/card-zone.js';
-import { createDialog } from '../../components/dialog/dialog.js';
+import { createCardArea } from '../../components/card-area/card-area.js';
 import { createHeroCockpit } from '../../components/hero-cockpit/hero-cockpit.js';
 import { createOpponentRail } from '../../components/opponent-rail/opponent-rail.js';
-import { createRow } from '../../components/row/row.js';
 import { createTavernControls } from '../../components/tavern-controls/tavern-controls.js';
 import { createTurnRail } from '../../components/turn-rail/turn-rail.js';
 import { bindPreparationDrag } from '../../interactions/preparation-drag.js';
@@ -95,10 +95,10 @@ async function createOverlay(state) {
       }));
     }
 
-    return createDialog({
+    return createModalDialog({
       eyebrow: 'Choice',
       title: `Choose ${pending.kind}`,
-      body: [await createRow({ children: cards })],
+      body: [await createHorizontalStack({ children: cards })],
       variant: 'choice'
     });
   }
@@ -123,11 +123,11 @@ async function createOverlay(state) {
     }));
   }
 
-  return createDialog({
+  return createModalDialog({
     eyebrow: 'Target',
     title: `Choose target · ${interaction.zone}`,
     actions: [cancel],
-    body: [await createRow({ children: targets })],
+    body: [await createHorizontalStack({ children: targets })],
     variant: 'target'
   });
 }
@@ -185,7 +185,7 @@ export async function createPreparationScreen(state) {
     offer.push(await createOfferCard(entry, blocked, canAcquire));
   }
   appendChildren(element.querySelector('[data-slot="offer-zone"]'), [
-    await createCardZone({ variant: 'offer', children: offer })
+    await createCardArea({ variant: 'offer', children: offer })
   ]);
 
   const field = [];
@@ -193,7 +193,7 @@ export async function createPreparationScreen(state) {
     field.push(await createFieldCard(unit, blocked));
   }
   appendChildren(element.querySelector('[data-slot="field-zone"]'), [
-    await createCardZone({
+    await createCardArea({
       variant: 'field',
       children: field,
       dropKind: 'field-surface'
@@ -215,7 +215,7 @@ export async function createPreparationScreen(state) {
     reserve.push(await createReserveCard(entry, blocked, canDeploy));
   }
   appendChildren(element.querySelector('[data-slot="reserve-zone"]'), [
-    await createCardZone({ variant: 'reserve', children: reserve })
+    await createCardArea({ variant: 'reserve', children: reserve })
   ]);
 
   appendChildren(element.querySelector('[data-slot="turn-rail"]'), [

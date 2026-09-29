@@ -1,9 +1,9 @@
 import { appendChildren, cloneTemplate, useStyle } from '../../core/template.js';
-import { createButton } from '../button/button.js';
+import { createButton } from '../../design-system/button/button.js';
 import { createShopkeeper } from '../shopkeeper/shopkeeper.js';
 
 const templateUrl = new URL('./tavern-controls.html', import.meta.url);
-useStyle(new URL('../panel/panel.css', import.meta.url));
+useStyle(new URL('../../design-system/panel/panel.css', import.meta.url));
 useStyle(new URL('./tavern-controls.css', import.meta.url));
 
 export async function createTavernControls({

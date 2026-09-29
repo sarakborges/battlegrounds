@@ -1,19 +1,19 @@
-.card-zone {
+.card-area {
   min-width: 0;
   border: 0 !important;
   border-radius: 0 !important;
   background: transparent !important;
 }
 
-.card-zone__content {
+.card-area__content {
   min-width: 0;
 }
 
-.card-zone__row {
+.card-area__cards {
   overflow: visible;
 }
 
-.card-zone[data-variant="offer"] {
+.card-area[data-variant="offer"] {
   position: relative;
   z-index: 6;
   display: grid;
@@ -22,18 +22,18 @@
   padding-top: 148px !important;
 }
 
-.card-zone[data-variant="offer"] .card-zone__content {
+.card-area[data-variant="offer"] .card-area__content {
   position: relative;
   z-index: 2;
 }
 
-.card-zone[data-variant="offer"] .card-zone__row {
+.card-area[data-variant="offer"] .card-area__cards {
   justify-content: center;
   align-items: center;
   gap: 10px;
 }
 
-.card-zone[data-variant="field"] {
+.card-area[data-variant="field"] {
   position: relative;
   z-index: 2;
   min-height: 0;
@@ -44,7 +44,7 @@
   transition: box-shadow 100ms ease;
 }
 
-.card-zone[data-variant="field"] .card-zone__row {
+.card-area[data-variant="field"] .card-area__cards {
   min-height: 190px;
   align-items: center;
   justify-content: center;
@@ -52,7 +52,7 @@
   padding: 18px 28px 30px;
 }
 
-.card-zone[data-variant="reserve"] {
+.card-area[data-variant="reserve"] {
   position: relative;
   z-index: 7;
   display: grid;
@@ -62,19 +62,19 @@
   padding: 0 20px 4px !important;
 }
 
-.card-zone[data-variant="reserve"] .card-zone__row {
+.card-area[data-variant="reserve"] .card-area__cards {
   justify-content: center;
   align-items: end;
   transform: translateY(8px);
   padding: 0;
 }
 
-.card-zone[data-variant="reserve"] .card-zone__row > * + * {
+.card-area[data-variant="reserve"] .card-area__cards > * + * {
   margin-left: -24px;
 }
 
 @media (max-width: 1200px) {
-  .card-zone[data-variant="offer"] {
+  .card-area[data-variant="offer"] {
     padding-top: 36px !important;
   }
 }

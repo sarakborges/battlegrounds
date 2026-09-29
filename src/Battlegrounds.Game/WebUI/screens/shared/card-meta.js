@@ -1,4 +1,4 @@
-import { createBadge } from '../../components/badge/badge.js';
+import { createBadge } from '../../design-system/badge/badge.js';
 
 export async function createCardMeta(entry = {}) {
   const badges = [];

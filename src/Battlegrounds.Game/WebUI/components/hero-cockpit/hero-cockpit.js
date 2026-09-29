@@ -1,9 +1,9 @@
 import { appendChildren, cloneTemplate, useStyle } from '../../core/template.js';
-import { createButton } from '../button/button.js';
+import { createButton } from '../../design-system/button/button.js';
 import { createCharacterPortrait } from '../character-portrait/character-portrait.js';
 
 const templateUrl = new URL('./hero-cockpit.html', import.meta.url);
-useStyle(new URL('../panel/panel.css', import.meta.url));
+useStyle(new URL('../../design-system/panel/panel.css', import.meta.url));
 useStyle(new URL('./hero-cockpit.css', import.meta.url));
 
 export async function createHeroCockpit({
