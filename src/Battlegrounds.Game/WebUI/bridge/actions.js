@@ -20,4 +20,10 @@ export function bindActions(root, send) {
     const action = element.dataset.action;
     send(action, payloadFor(element, action));
   });
+
+  root.addEventListener('battlegrounds-action', event => {
+    const action = event.detail?.action;
+    if (typeof action !== 'string' || !action) return;
+    send(action, event.detail?.payload ?? {});
+  });
 }
