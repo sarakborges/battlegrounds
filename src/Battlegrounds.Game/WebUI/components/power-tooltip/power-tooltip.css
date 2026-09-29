@@ -1,0 +1,71 @@
+.power-tooltip {
+  width: 232px;
+  min-height: 118px;
+  display: grid;
+  grid-template-columns: 66px 1fr;
+  align-items: center;
+  gap: 12px;
+  padding: 13px 15px;
+  border: 3px solid #8b6038;
+  border-radius: 18px;
+  background: linear-gradient(145deg, #412b1d, #1d1410);
+  color: #fff0d5;
+  box-shadow: 0 16px 28px rgba(0, 0, 0, .5);
+}
+
+.power-tooltip__medallion {
+  position: relative;
+  width: 62px;
+  height: 62px;
+  display: grid;
+  place-items: center;
+  border: 4px solid #d6a956;
+  border-radius: 50%;
+  background: radial-gradient(circle at 42% 36%, #53647e, #1b2637 72%);
+  box-shadow: inset 0 0 0 4px rgba(255, 255, 255, .06);
+}
+
+.power-tooltip__glyph {
+  color: #fff4cf;
+  font-size: 26px;
+}
+
+.power-tooltip__cost {
+  position: absolute;
+  left: -9px;
+  top: -9px;
+  width: 27px;
+  height: 27px;
+  display: grid;
+  place-items: center;
+  border: 2px solid #ddb14e;
+  border-radius: 50%;
+  background: #19110d;
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.power-tooltip__copy {
+  min-width: 0;
+  display: grid;
+  gap: 4px;
+}
+
+.power-tooltip__kind {
+  color: #b9a68f;
+  text-transform: uppercase;
+  letter-spacing: .12em;
+  font-size: 8px;
+  font-weight: 800;
+}
+
+.power-tooltip__copy strong {
+  font-size: 15px;
+  line-height: 1.05;
+}
+
+.power-tooltip__copy p {
+  color: #e4d5be;
+  font-size: 10px;
+  line-height: 1.3;
+}

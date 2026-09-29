@@ -1,12 +1,16 @@
 import { useStyle } from '../core/template.js';
-import { createCardPreview } from '../components/card-preview/card-preview.js';
+import { createActionCardPreview } from '../components/action-card-preview/action-card-preview.js';
+import { createLeaderInspector } from '../components/leader-inspector/leader-inspector.js';
+import { createPowerTooltip } from '../components/power-tooltip/power-tooltip.js';
+import { createUnitCardPreview } from '../components/unit-card-preview/unit-card-preview.js';
 import { applyComponentStyles } from '../theme/theme.js';
 
 useStyle(new URL('./hover-inspector.css', import.meta.url));
 
-const SHOW_DELAY_MS = 110;
+const SHOW_DELAY_MS = 90;
 const HIDE_DELAY_MS = 70;
 const EDGE_PADDING = 18;
+const TARGET_GAP = 14;
 
 function inspectionArt(element) {
   const image = element.querySelector?.('img:not([hidden])');
@@ -28,6 +32,16 @@ function readInspection(element) {
   };
 }
 
+async function createInspectionView(inspection) {
+  switch (inspection.kind) {
+    case 'unit': return createUnitCardPreview(inspection);
+    case 'action': return createActionCardPreview(inspection);
+    case 'leader': return createLeaderInspector(inspection);
+    case 'power': return createPowerTooltip(inspection);
+    default: return null;
+  }
+}
+
 function logicalRect(element, overlay) {
   const targetRect = element.getBoundingClientRect();
   const overlayRect = overlay.getBoundingClientRect();
@@ -36,7 +50,39 @@ function logicalRect(element, overlay) {
     left: (targetRect.left - overlayRect.left) / scale,
     right: (targetRect.right - overlayRect.left) / scale,
     top: (targetRect.top - overlayRect.top) / scale,
-    bottom: (targetRect.bottom - overlayRect.top) / scale
+    bottom: (targetRect.bottom - overlayRect.top) / scale,
+    centerX: (targetRect.left + targetRect.width / 2 - overlayRect.left) / scale,
+    centerY: (targetRect.top + targetRect.height / 2 - overlayRect.top) / scale
+  };
+}
+
+function clamp(value, minimum, maximum) {
+  return Math.max(minimum, Math.min(value, maximum));
+}
+
+function sidePosition(targetRect, previewWidth, previewHeight, logicalWidth) {
+  let left = targetRect.right + TARGET_GAP;
+  if (left + previewWidth > logicalWidth - EDGE_PADDING) {
+    left = targetRect.left - previewWidth - TARGET_GAP;
+  }
+  return { left, top: targetRect.centerY - previewHeight / 2 };
+}
+
+function inspectionPosition(kind, targetRect, previewWidth, previewHeight, logicalWidth, logicalHeight) {
+  let position;
+  if (kind === 'power') {
+    position = {
+      left: targetRect.centerX - previewWidth / 2,
+      top: targetRect.top - previewHeight - TARGET_GAP
+    };
+    if (position.top < EDGE_PADDING) position.top = targetRect.bottom + TARGET_GAP;
+  } else {
+    position = sidePosition(targetRect, previewWidth, previewHeight, logicalWidth);
+  }
+
+  return {
+    left: clamp(position.left, EDGE_PADDING, logicalWidth - previewWidth - EDGE_PADDING),
+    top: clamp(position.top, EDGE_PADDING, logicalHeight - previewHeight - EDGE_PADDING)
   };
 }
 
@@ -81,30 +127,29 @@ export function bindHoverInspector(root = document) {
     const version = ++renderVersion;
 
     showTimer = setTimeout(async () => {
-      const preview = await createCardPreview(inspection);
+      const preview = await createInspectionView(inspection);
+      if (!preview) return;
       await applyComponentStyles(theme, preview);
       if (version !== renderVersion || activeTarget !== target) return;
 
       mount.replaceChildren(preview);
+      mount.dataset.kind = inspection.kind;
       mount.hidden = false;
 
       const targetRect = logicalRect(target, overlay);
       const previewWidth = mount.offsetWidth;
       const previewHeight = mount.offsetHeight;
-      const logicalWidth = overlay.clientWidth;
-      const logicalHeight = overlay.clientHeight;
+      const position = inspectionPosition(
+        inspection.kind,
+        targetRect,
+        previewWidth,
+        previewHeight,
+        overlay.clientWidth,
+        overlay.clientHeight
+      );
 
-      let left = targetRect.right + 14;
-      if (left + previewWidth > logicalWidth - EDGE_PADDING) {
-        left = targetRect.left - previewWidth - 14;
-      }
-      left = Math.max(EDGE_PADDING, Math.min(left, logicalWidth - previewWidth - EDGE_PADDING));
-
-      let top = targetRect.top - 18;
-      top = Math.max(EDGE_PADDING, Math.min(top, logicalHeight - previewHeight - EDGE_PADDING));
-
-      mount.style.left = `${left}px`;
-      mount.style.top = `${top}px`;
+      mount.style.left = `${position.left}px`;
+      mount.style.top = `${position.top}px`;
       requestAnimationFrame(() => mount.classList.add('is-visible'));
     }, SHOW_DELAY_MS);
   };

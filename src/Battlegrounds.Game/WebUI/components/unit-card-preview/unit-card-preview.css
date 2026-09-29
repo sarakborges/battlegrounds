@@ -1,0 +1,149 @@
+.unit-card-preview {
+  width: 208px;
+  height: 302px;
+  display: grid;
+  place-items: center;
+  filter: drop-shadow(0 18px 24px rgba(0, 0, 0, .52));
+}
+
+.unit-card-preview__frame {
+  position: relative;
+  width: 196px;
+  height: 290px;
+  clip-path: polygon(12% 0, 88% 0, 100% 8%, 96% 88%, 84% 100%, 16% 100%, 4% 88%, 0 8%);
+  background:
+    linear-gradient(145deg, #e7c36c 0 4%, #6b4020 5% 9%, #2f2117 10% 90%, #8a5528 91% 96%, #e2bb61 97%);
+}
+
+.unit-card-preview__frame::before {
+  content: "";
+  position: absolute;
+  inset: 8px;
+  clip-path: inherit;
+  background: linear-gradient(#483425, #241a14);
+}
+
+.unit-card-preview__art-wrap {
+  position: absolute;
+  z-index: 2;
+  left: 23px;
+  right: 23px;
+  top: 22px;
+  height: 145px;
+  overflow: hidden;
+  border: 3px solid #d4b064;
+  border-radius: 46% 46% 16px 16px;
+  background: #15110f;
+}
+
+.unit-card-preview__art {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center top;
+}
+
+.unit-card-preview__fallback {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  color: #f1ddac;
+  font-size: 58px;
+  font-weight: 900;
+  opacity: .26;
+}
+
+.unit-card-preview__fallback[hidden] { display: none; }
+
+.unit-card-preview__tier {
+  position: absolute;
+  z-index: 6;
+  left: 12px;
+  top: 12px;
+  min-width: 34px;
+  height: 36px;
+  display: grid;
+  place-items: center;
+  padding: 0 7px 3px;
+  clip-path: polygon(10% 0, 90% 0, 100% 72%, 50% 100%, 0 72%);
+  background: linear-gradient(#9644bd, #4f216e);
+  color: #fff4cf;
+  font-size: 13px;
+  font-weight: 900;
+  text-shadow: 0 1px 2px #180d09;
+}
+
+.unit-card-preview__nameplate {
+  position: absolute;
+  z-index: 5;
+  left: 19px;
+  right: 19px;
+  top: 151px;
+  min-height: 39px;
+  display: grid;
+  place-items: center;
+  padding: 5px 12px;
+  transform: rotate(-1deg);
+  border: 3px solid #6c401e;
+  border-radius: 48% 42% 46% 44%;
+  background: linear-gradient(#e4c78c, #b18a54);
+  color: #22160f;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, .34);
+  text-align: center;
+}
+
+.unit-card-preview__nameplate strong {
+  font-size: 15px;
+  line-height: 1.04;
+}
+
+.unit-card-preview__text {
+  position: absolute;
+  z-index: 4;
+  left: 27px;
+  right: 27px;
+  top: 190px;
+  min-height: 55px;
+  display: grid;
+  place-items: center;
+  padding: 8px 7px;
+  border-radius: 5px;
+  background: #d9c5a1;
+  color: #2a1c13;
+  font-size: 10px;
+  line-height: 1.25;
+  text-align: center;
+}
+
+.unit-card-preview__stat {
+  position: absolute;
+  z-index: 7;
+  bottom: 8px;
+  width: 40px;
+  height: 40px;
+  display: grid;
+  place-items: center;
+  border: 3px solid;
+  border-radius: 50%;
+  background: #17110d;
+  color: #fff5d8;
+  font-size: 18px;
+  font-weight: 900;
+  text-shadow: 0 1px 2px #000;
+}
+
+.unit-card-preview__stat--attack { left: 9px; border-color: #d4a23f; }
+.unit-card-preview__stat--health { right: 9px; border-color: #d15348; }
+
+.unit-card-preview__status {
+  position: absolute;
+  z-index: 6;
+  left: 52px;
+  right: 52px;
+  bottom: 14px;
+  color: #dff7ff;
+  font-size: 9px;
+  font-weight: 800;
+  text-align: center;
+}
