@@ -288,19 +288,19 @@
       "padding": { "horizontal": "xs", "vertical": "xs" }
     },
     "panel.tavern": {
-      "backgroundColor": "#2B1A12",
+      "backgroundColor": "#00000000",
       "borderColor": "#00000000",
       "borderWidth": 0,
       "padding": { "horizontal": "sm", "vertical": "sm" }
     },
     "panel.board": {
-      "backgroundColor": "#23150F",
+      "backgroundColor": "#00000000",
       "borderColor": "#00000000",
       "borderWidth": 0,
       "padding": { "horizontal": "sm", "vertical": "xs" }
     },
     "panel.reserve": {
-      "backgroundColor": "#180F0C",
+      "backgroundColor": "#00000000",
       "borderColor": "#00000000",
       "borderWidth": 0,
       "radius": "medium",
@@ -391,7 +391,7 @@
       "borderWidth": 0,
       "padding": { "horizontal": "xs", "vertical": "xs" }
     },
-    "panel.combat": { "backgroundColor": "surfaceDeep", "borderColor": "borderStrong", "borderWidth": 2 },
+    "panel.combat": { "backgroundColor": "#00000000", "borderColor": "#00000000", "borderWidth": 0 },
     "label.heroName": { "textColor": "textMuted", "fontSize": "body" },
     "label.attack": { "textColor": "attackAccent", "fontSize": "heading" },
     "label.health": { "textColor": "healthAccent", "fontSize": "heading" },
@@ -428,7 +428,7 @@
   },
   "screens": {
     "launcher": { "backgroundColor": "background" },
-    "preparation": { "backgroundColor": "background" },
-    "combat": { "backgroundColor": "#0D0907" }
+    "preparation": { "backgroundColor": "background", "backgroundAsset": "assets/ui/board-surface.jpg" },
+    "combat": { "backgroundColor": "#0D0907", "backgroundAsset": "assets/ui/board-surface.jpg" }
   }
 }
