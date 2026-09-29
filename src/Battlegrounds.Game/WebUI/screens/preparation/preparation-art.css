@@ -4,7 +4,7 @@
 }
 
 .table-stage {
-  grid-template-rows: 144px 174px minmax(320px, 1fr) 110px 88px;
+  grid-template-rows: 140px 170px minmax(324px, 1fr) 110px 88px;
   background-image:
     linear-gradient(180deg, rgba(8,5,3,.24), rgba(8,5,3,.04) 27%, rgba(8,5,3,.08) 70%, rgba(8,5,3,.38)),
     var(--board-art),
@@ -43,7 +43,7 @@
   display: flex;
   align-items: center;
   gap: 7px;
-  padding-bottom: 19px;
+  padding-bottom: 20px;
 }
 .tavern-left-controls { justify-self: end; padding-right: 18px; }
 .tavern-right-controls { justify-self: start; padding-left: 18px; }
@@ -130,7 +130,7 @@
   grid-column: 2;
   align-self: end;
   margin: 0;
-  transform: translateY(34px);
+  transform: translateY(28px);
   z-index: 12;
 }
 .shopkeeper-drop .drag-hint {
@@ -145,7 +145,7 @@
 
 .tavern-shelf {
   align-items: start;
-  padding-top: 45px !important;
+  padding-top: 38px !important;
   background: linear-gradient(180deg, rgba(0,0,0,.02), rgba(0,0,0,.10) 92%) !important;
 }
 .tavern-shelf::before {
@@ -153,7 +153,7 @@
   position: absolute;
   left: 14%;
   right: 14%;
-  top: 24px;
+  top: 20px;
   bottom: 7px;
   border-radius: 50% 50% 12% 12% / 18% 18% 10% 10%;
   border-top: 1px solid color-mix(in srgb, var(--theme-color-border-strong, var(--line)) 40%, transparent);
@@ -185,8 +185,8 @@
 }
 
 /* The hero cockpit is pinned to the lower board socket. Hearthstone keeps
-   Health on the portrait's bottom-right, Armor just above it, and Hero Power
-   immediately to the right. */
+   Health and Armor attached to the portrait and Hero Power immediately to
+   its right, while Gold stays close to the lower-right side of the cockpit. */
 .hero-dock {
   position: static !important;
   min-height: 0;
@@ -198,7 +198,7 @@
   position: absolute;
   z-index: 22;
   left: 50%;
-  bottom: 132px;
+  bottom: 140px;
   width: 132px;
   height: 150px;
   transform: translateX(-50%);
@@ -224,20 +224,20 @@
 .health-badge {
   width: 46px;
   height: 46px;
-  right: -22px;
-  bottom: -18px;
+  right: -17px;
+  bottom: -14px;
 }
 .armor-badge {
   width: 39px;
   height: 39px;
-  right: -26px;
-  bottom: 24px;
+  right: -20px;
+  bottom: 28px;
 }
 .hero-power {
   position: absolute;
   z-index: 26;
-  left: calc(100% + 25px);
-  top: 50%;
+  left: calc(100% + 14px);
+  top: 45%;
   transform: translateY(-50%);
 }
 .hero-power .button {
@@ -252,8 +252,8 @@
 .resource-badge {
   position: absolute;
   z-index: 24;
-  left: calc(50% + 250px);
-  bottom: 60px;
+  left: calc(50% + 196px);
+  bottom: 74px;
   min-width: 116px;
   min-height: 42px;
   display: flex;
@@ -318,25 +318,25 @@
 
 @media (max-width: 1200px) {
   .preparation-screen { grid-template-columns: 140px minmax(0, 1fr); }
-  .table-stage { grid-template-rows: 128px 160px minmax(260px,1fr) 104px 80px; }
+  .table-stage { grid-template-rows: 126px 156px minmax(264px,1fr) 104px 80px; }
   .tavern-controls { grid-template-columns: minmax(0,1fr) 126px minmax(0,1fr); }
   .character-portrait,
   .hero-drop { width: 116px; height: 132px; }
   .character-nameplate { width: 106px; }
-  .shopkeeper-drop { transform: translateY(28px); }
+  .shopkeeper-drop { transform: translateY(23px); }
   .tavern-left-controls { padding-right: 10px; }
   .tavern-right-controls { padding-left: 10px; }
   .tavern-control .button { width: 52px; height: 52px; }
   .tavern-upgrade .button { width: 58px; height: 58px; }
   .tier-badge { width: 46px; height: 56px; }
-  .tavern-shelf { padding-top: 38px !important; }
+  .tavern-shelf { padding-top: 32px !important; }
   .tavern-shelf .card { flex-basis: 124px; min-width: 104px; }
-  .hero-cluster { width: 116px; height: 132px; bottom: 116px; }
-  .health-badge { width: 42px; height: 42px; right: -20px; bottom: -16px; }
-  .armor-badge { width: 36px; height: 36px; right: -23px; bottom: 22px; }
-  .hero-power { left: calc(100% + 20px); }
+  .hero-cluster { width: 116px; height: 132px; bottom: 122px; }
+  .health-badge { width: 42px; height: 42px; right: -16px; bottom: -13px; }
+  .armor-badge { width: 36px; height: 36px; right: -19px; bottom: 25px; }
+  .hero-power { left: calc(100% + 12px); top: 45%; }
   .hero-power .button { width: 54px; height: 54px; min-width: 54px; }
-  .resource-badge { left: calc(50% + 210px); bottom: 48px; min-width: 104px; }
+  .resource-badge { left: calc(50% + 168px); bottom: 60px; min-width: 104px; }
   .turn-rail { right: 138px; top: 44%; }
   .turn-rail [data-slot="ready"] .button,
   .waiting-banner { width: 132px; }
