@@ -1,7 +1,7 @@
 .action-token {
   position: relative;
   width: var(--action-token-width, 78px);
-  height: var(--action-token-height, 112px);
+  height: var(--action-token-height, 108px);
   flex: 0 0 var(--action-token-width, 78px);
   padding: 0;
   overflow: visible;
@@ -9,16 +9,16 @@
   background: transparent;
   color: var(--theme-component-text-color, var(--text));
   cursor: pointer;
-  transform-origin: 50% 72%;
+  transform-origin: 50% 78%;
   transition: transform 110ms ease, filter 110ms ease, opacity 110ms ease;
 }
 
 .action-token:hover,
 .action-token:focus-visible {
   z-index: 30;
-  transform: translateY(-6px) scale(1.075);
+  transform: translateY(-8px) scale(1.08);
   outline: none;
-  filter: brightness(1.08);
+  filter: brightness(1.08) drop-shadow(0 8px 10px rgba(0, 0, 0, .28));
 }
 
 .action-token[data-disabled="true"] {
@@ -28,19 +28,25 @@
 
 .action-token__body {
   position: absolute;
-  inset: 7px 2px 4px;
+  inset: 6px 1px 3px;
   overflow: hidden;
   border: 3px solid var(--theme-component-border-color, var(--theme-color-focus, #d2a34b));
-  border-radius: 20px 20px 16px 16px;
-  background: linear-gradient(160deg, #473260, #20162b 72%);
+  border-radius: 22px 22px 16px 16px;
+  background: linear-gradient(160deg, #553b6f, #21172b 72%);
   box-shadow: 0 8px 14px rgba(0, 0, 0, .42);
+}
+
+.action-token[data-theme-background-asset="true"] .action-token__body {
+  border-color: transparent;
+  background: transparent;
+  box-shadow: none;
 }
 
 .action-token__body::after {
   content: "";
   position: absolute;
   z-index: 4;
-  inset: -1px;
+  inset: -2px;
   background-image: var(--theme-component-background-image, none);
   background-position: center;
   background-repeat: no-repeat;
@@ -51,9 +57,10 @@
 .action-token__art {
   position: absolute;
   z-index: 1;
-  inset: 0;
-  width: 100%;
-  height: 100%;
+  inset: 7px 8px 8px;
+  width: calc(100% - 16px);
+  height: calc(100% - 15px);
+  border-radius: 16px 16px 11px 11px;
   object-fit: cover;
   object-position: center;
   user-select: none;
@@ -63,11 +70,12 @@
 .action-token__fallback {
   position: absolute;
   z-index: 2;
-  inset: 0;
+  inset: 8px;
   display: grid;
   place-items: center;
+  border-radius: 14px;
   color: #f3ddff;
-  font-size: 28px;
+  font-size: 27px;
   font-weight: 900;
   opacity: .4;
 }
@@ -80,27 +88,29 @@
 .action-token__cost {
   position: absolute;
   z-index: 8;
-  top: -2px;
-  min-width: 27px;
-  height: 27px;
+  top: -4px;
+  min-width: 29px;
+  height: 29px;
   display: grid;
   place-items: center;
   padding: 0 5px;
-  border: 2px solid;
+  border: 3px solid;
   border-radius: 50%;
-  background: #17110d;
   color: #fff6dc;
   font-size: 11px;
   font-weight: 900;
-  box-shadow: 0 4px 9px rgba(0, 0, 0, .48);
+  text-shadow: 0 1px 2px #000;
+  box-shadow: 0 4px 9px rgba(0, 0, 0, .48), inset 0 1px 3px rgba(255, 255, 255, .15);
 }
 
 .action-token__tier {
-  left: -3px;
-  border-color: #8c4bb5;
+  left: -5px;
+  border-color: #a45ac5;
+  background: radial-gradient(circle at 38% 28%, #6f4a83, #28172f 70%);
 }
 
 .action-token__cost {
-  right: -3px;
+  right: -5px;
   border-color: var(--theme-color-resource-accent, #edb847);
+  background: radial-gradient(circle at 38% 28%, #7c5a22, #24170c 70%);
 }
