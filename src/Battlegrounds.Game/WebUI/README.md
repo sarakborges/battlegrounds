@@ -52,11 +52,10 @@ WebUI/
     card/                  # full card surface used where the card itself is the persistent object
     card-preview/          # inspection-only card shown by hover inspector
     character-portrait/
-    combat-card/
     hero-cockpit/
     mod-option/
     opponent-rail/
-    playable-token/        # persistent tavern/field/reserve/choice/target representation
+    playable-token/        # persistent unit/action representation in preparation and combat
     player-chip/
     player-field/
     player-reserve/
@@ -83,11 +82,13 @@ A reusable module owns its own geometry and visual state. Screen CSS may positio
 
 ## Tokens and inspection
 
-Preparation gameplay uses `playable-token` as the persistent representation of a unit or action in the tavern offer, player field, reserve, choice and target surfaces. A full rectangular card is not used as the board piece.
+Gameplay uses `playable-token` as the persistent representation of a unit or action. Preparation uses it in the tavern offer, player field, reserve, choice and target surfaces; combat reuses the same token and adds timeline highlight states such as attacker, target, damage, summon and trigger. A full rectangular card is not used as the board piece.
 
 Full card presentation belongs to `card-preview` and is created on demand by `interactions/hover-inspector.js`. Any inspectable surface opts in with semantic `data-inspect-*` metadata. The same inspector is used for playable tokens, leaders and hero powers so hover behavior stays consistent rather than being reimplemented per screen.
 
 Descriptions are presentation content owned by the mod. C# resolves `entity.<kind>.<id>.description` through `ModPresentationText` and sends the resolved description in the Web UI snapshot. The browser must not invent gameplay descriptions.
+
+Static entity art is also mod-owned. The Web UI consumes the existing validated `assets/presentation.json` catalog (`leaders.<id>.portrait`, `units.<id>.art`, `actions.<id>.art`). Missing authored art falls back visually without changing gameplay.
 
 An element may remain inspectable while it is not actionable. `playable-token` therefore uses `aria-disabled` / `data-disabled` instead of the native `disabled` attribute; the action and drag dispatchers enforce that semantic disabled state while pointer/focus inspection remains available.
 
