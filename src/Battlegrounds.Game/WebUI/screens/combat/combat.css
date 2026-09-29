@@ -98,7 +98,7 @@
   align-items: center;
   justify-content: center;
   gap: 12px;
-  overflow: hidden;
+  overflow: visible;
 }
 
 .combat-event {
@@ -130,11 +130,65 @@
   animation: combat-event-pop 180ms ease-out;
 }
 
-.combat-side-bottom .combat-card.attacker {
+.combat-board .playable-token.attacker {
+  animation: combat-lunge 250ms ease-out;
+}
+
+.combat-side-bottom .playable-token.attacker {
   animation-name: combat-lunge-up;
+}
+
+.combat-board .playable-token.target,
+.combat-board .playable-token.damaged,
+.combat-board .playable-token.destroyed {
+  animation: combat-shake 240ms ease-out;
+}
+
+.combat-board .playable-token.summoned,
+.combat-board .playable-token.revived {
+  animation: combat-pop 260ms ease-out;
+}
+
+.combat-board .playable-token.stats,
+.combat-board .playable-token.triggered,
+.combat-board .playable-token.behavior {
+  animation: combat-pulse 260ms ease-out;
+}
+
+.combat-board .playable-token.destroyed {
+  filter: saturate(.35);
 }
 
 @keyframes combat-event-pop {
   from { transform: scale(.97); opacity: .68; }
   to { transform: scale(1); opacity: 1; }
+}
+
+@keyframes combat-lunge {
+  0% { transform: translateY(0) scale(1); }
+  45% { transform: translateY(14px) scale(1.06); }
+  100% { transform: translateY(0) scale(1); }
+}
+
+@keyframes combat-lunge-up {
+  0% { transform: translateY(0) scale(1); }
+  45% { transform: translateY(-14px) scale(1.06); }
+  100% { transform: translateY(0) scale(1); }
+}
+
+@keyframes combat-shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-6px); }
+  50% { transform: translateX(6px); }
+  75% { transform: translateX(-3px); }
+}
+
+@keyframes combat-pop {
+  from { transform: scale(.72); opacity: .2; }
+  to { transform: scale(1); opacity: 1; }
+}
+
+@keyframes combat-pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.08); filter: brightness(1.25); }
 }
