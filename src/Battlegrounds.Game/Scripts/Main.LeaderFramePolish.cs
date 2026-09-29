@@ -45,7 +45,7 @@ public partial class Main
             return;
 
         if (layer.GetNodeOrNull<TextureRect>("CosmeticArt") is { } art)
-            FramedCosmeticPortrait.ConfigureArt(art, TextureRect.StretchModeEnum.KeepAspectCentered);
+            FramedCosmeticPortrait.ConfigureArt(art, TextureRect.StretchModeEnum.KeepAspectCovered);
 
         FramedCosmeticPortrait.ApplyFrame(
             layer,
@@ -64,7 +64,11 @@ public partial class Main
             return;
 
         FramedCosmeticPortrait.ConfigureArt(_hudHeroPortrait, TextureRect.StretchModeEnum.KeepAspectCovered);
-        FramedCosmeticPortrait.ApplyFrame(frame, texture, "LeaderFrameOverlay");
+        FramedCosmeticPortrait.ApplyFrame(frame, texture, "LeaderFrameOverlay", zIndex: 10);
+
+        // Health/armor belong on top of the portrait frame, not underneath it.
+        _hudHealthBadge.ZIndex = 20;
+        _hudArmorBadge.ZIndex = 20;
     }
 
     private void ApplyOpponentLeaderFrames(Texture2D texture)
