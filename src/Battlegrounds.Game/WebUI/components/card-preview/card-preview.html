@@ -1,0 +1,20 @@
+<template>
+  <article class="card-preview" data-component="card-preview" data-variant="unit">
+    <div class="card-preview__art-wrap">
+      <img class="card-preview__art" data-field="art" alt="" hidden>
+      <span class="card-preview__fallback" data-field="fallback" aria-hidden="true"></span>
+      <span class="card-preview__tier" data-field="tier" hidden></span>
+      <span class="card-preview__cost" data-field="cost" hidden></span>
+    </div>
+    <div class="card-preview__copy">
+      <span class="card-preview__kind eyebrow" data-field="kind"></span>
+      <strong class="card-preview__name" data-field="name"></strong>
+      <p class="card-preview__description" data-field="description" hidden></p>
+    </div>
+    <div class="card-preview__stats" data-slot="stats">
+      <span class="card-preview__stat card-preview__stat--attack" data-field="attack" hidden></span>
+      <span class="card-preview__stat card-preview__stat--health" data-field="health" hidden></span>
+    </div>
+    <div class="card-preview__status" data-field="status" hidden></div>
+  </article>
+</template>
