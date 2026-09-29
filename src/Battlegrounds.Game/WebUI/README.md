@@ -29,25 +29,28 @@ WebUI/
   app.js                  # bootstrap only: state -> screen, theme, polling
   index.html              # browser entry point
   bridge/                 # Godot CEF IPC and action dispatch
-  core/                   # template/style loading primitives
+  core/                   # template/style loading infrastructure
   theme/                  # resolved ModThemeCatalog -> CSS/component styles
   styles/                 # global baseline only
-  components/
+  design-system/          # generic reusable UI primitives
+    badge/
     button/
-      button.html         # markup
-      button.css          # component presentation
-      button.js           # behavior/data binding
+    empty-state/
+    horizontal-stack/
+    modal-dialog/
+    panel/
+  components/             # gameplay-aware reusable composition
     card/
-      card.html
-      card.css
-      card.js
+    card-area/
     character-portrait/
-    card-zone/
+    combat-card/
     hero-cockpit/
     opponent-rail/
+    player-chip/
     shopkeeper/
     tavern-controls/
     turn-rail/
+    zone/
     ...
   screens/
     leader-selection/
@@ -64,13 +67,15 @@ WebUI/
       combat.js
 ```
 
-HTML structure must live in `.html` templates. Component and screen JavaScript clones those templates, fills text/state, assigns semantic `data-*` properties and connects behavior. It must not build markup with template strings or `innerHTML`.
+HTML structure must live in `.html` templates. Design-system, component and screen JavaScript clones those templates, fills text/state, assigns semantic `data-*` properties and connects behavior. It must not build markup with template strings or `innerHTML`.
 
-Every reusable UI component owns a directory named after the component and contains the matching `.html`, `.css`, and `.js` files. The CI checks this convention and rejects HTML construction in component/screen JavaScript.
+Every reusable UI module under `design-system/` or `components/` owns a directory named after the module and contains matching `.html`, `.css`, and `.js` files. The CI checks this convention and rejects HTML construction in reusable modules and screens.
 
-A component owns its own geometry and visual state. Screen CSS may position component roots as part of the screen composition, but it must not reach into reusable component internals. For example, preparation card width/height belongs to `components/card/card.css`; the preparation screen is not allowed to size `.card`, `.button`, `.component-row`, `.player-chip`, or `.character-portrait` directly.
+Design-system modules are generic presentation primitives and must not know gameplay concepts. Components may compose design-system primitives and other components, but they do not know game rules. Screens compose gameplay components from presentation state.
 
-`app.js` does not know card/button/panel markup. Screens compose components; components do not know game rules. Authoritative state and commands remain in C#.
+A reusable module owns its own geometry and visual state. Screen CSS may position component roots as part of the screen composition, but it must not reach into reusable internals. For example, preparation card width/height belongs to `components/card/card.css`; the preparation screen is not allowed to size `.card`, `.action-button`, `.horizontal-stack`, `.player-chip`, or `.character-portrait` directly.
+
+`app.js` does not know card/button/panel markup. Authoritative state and commands remain in C#.
 
 ## Contract
 
