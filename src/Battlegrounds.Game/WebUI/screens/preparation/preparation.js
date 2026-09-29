@@ -5,7 +5,7 @@ import { createDialog } from '../../components/dialog/dialog.js';
 import { createPlayerChip } from '../../components/player-chip/player-chip.js';
 import { createRow } from '../../components/row/row.js';
 import { bindPreparationDrag } from '../../interactions/preparation-drag.js';
-import { boardArtUrl, leaderArtUrl, loadCosmetics, shopkeeperArtUrl } from '../../theme/cosmetics.js';
+import { boardArtUrl, cosmeticsForState, leaderArtUrl, shopkeeperArtUrl } from '../../theme/cosmetics.js';
 import { createCardMeta } from '../shared/card-meta.js';
 
 const templateUrl = new URL('./preparation.html', import.meta.url);
@@ -20,6 +20,7 @@ function bindArt(image, source) {
     if (image) image.hidden = true;
     return;
   }
+  image.hidden = false;
   image.src = source;
   image.addEventListener('error', () => { image.hidden = true; }, { once: true });
 }
@@ -127,8 +128,7 @@ export async function createPreparationScreen(state) {
   const reserveCount = (state.reserve ?? []).length;
   const fieldCount = (state.field ?? []).length;
   const canDeploy = !blocked && fieldCount < (limits.fieldCapacity ?? Number.POSITIVE_INFINITY);
-  const modId = state.mod?.id;
-  const cosmetics = await loadCosmetics(modId);
+  const cosmetics = cosmeticsForState(state);
   const humanPlayer = (state.players ?? []).find(player => player.human);
 
   element.querySelector('[data-field="mod-name"]').textContent = state.mod?.name ?? '';
@@ -145,9 +145,10 @@ export async function createPreparationScreen(state) {
 
   const shopkeeperId = cosmetics?.shopkeeper?.id ?? 'bob';
   element.querySelector('[data-field="shopkeeper-name"]').textContent = shopkeeperId === 'bob' ? 'Bob' : shopkeeperId;
-  bindArt(element.querySelector('[data-field="shopkeeper-art"]'), shopkeeperArtUrl(modId, cosmetics));
-  bindArt(element.querySelector('[data-field="hero-art"]'), leaderArtUrl(modId, cosmetics, humanPlayer?.leaderId));
-  element.querySelector('.table-stage')?.style.setProperty('--board-art', `url("${boardArtUrl(modId, cosmetics)}")`);
+  bindArt(element.querySelector('[data-field="shopkeeper-art"]'), await shopkeeperArtUrl(cosmetics));
+  bindArt(element.querySelector('[data-field="hero-art"]'), await leaderArtUrl(cosmetics, humanPlayer?.leaderId));
+  const boardArt = await boardArtUrl(cosmetics);
+  if (boardArt) element.querySelector('.table-stage')?.style.setProperty('--board-art', `url("${boardArt}")`);
 
   const players = [];
   for (const player of state.players ?? []) {
@@ -155,7 +156,7 @@ export async function createPreparationScreen(state) {
       id: player.id,
       leader: player.leader ?? '—',
       health: player.health,
-      portrait: leaderArtUrl(modId, cosmetics, player.leaderId),
+      portrait: await leaderArtUrl(cosmetics, player.leaderId),
       human: player.human,
       eliminated: player.eliminated
     }));
