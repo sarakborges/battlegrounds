@@ -43,8 +43,11 @@
   padding: 0;
   border-radius: 18px 18px 22px 22px;
   clip-path: polygon(14% 2%, 86% 2%, 100% 18%, 94% 72%, 72% 94%, 50% 100%, 28% 94%, 6% 72%, 0 18%);
+  background-image: none;
   font-size: 22px;
-  box-shadow: 0 8px 17px rgba(0, 0, 0, .34);
+  box-shadow:
+    0 8px 17px rgba(0, 0, 0, .34),
+    inset 0 0 0 3px color-mix(in srgb, var(--action-button-border-color) 44%, transparent);
 }
 
 .action-button.tavern-controls__button--upgrade {
