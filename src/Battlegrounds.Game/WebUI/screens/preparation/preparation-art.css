@@ -6,24 +6,46 @@
 .table-stage {
   grid-template-rows: 140px 170px minmax(324px, 1fr) 110px 88px;
   background-image:
-    linear-gradient(180deg, rgba(8,5,3,.24), rgba(8,5,3,.04) 27%, rgba(8,5,3,.08) 70%, rgba(8,5,3,.38)),
+    linear-gradient(
+      180deg,
+      rgba(8, 5, 3, 0.24),
+      rgba(8, 5, 3, 0.04) 27%,
+      rgba(8, 5, 3, 0.08) 70%,
+      rgba(8, 5, 3, 0.38)
+    ),
     var(--board-art),
-    linear-gradient(180deg, var(--theme-color-surface-deep, var(--surface-0)), var(--theme-color-surface-warm, var(--surface-2)));
+    linear-gradient(
+      180deg,
+      var(--theme-color-surface-deep, var(--surface-0)),
+      var(--theme-color-surface-warm, var(--surface-2))
+    );
   background-size: cover, cover, cover;
   background-position: center, center, center;
   background-repeat: no-repeat;
 }
 .table-stage::before {
   inset: 29% 5% 14%;
-  background: radial-gradient(ellipse at center, rgba(0,0,0,.015), rgba(0,0,0,.16) 74%);
-  box-shadow: inset 0 1px 0 rgba(255,255,255,.035), inset 0 -24px 72px rgba(0,0,0,.12);
+  background: radial-gradient(
+    ellipse at center,
+    rgba(0, 0, 0, 0.015),
+    rgba(0, 0, 0, 0.16) 74%
+  );
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.035),
+    inset 0 -24px 72px rgba(0, 0, 0, 0.12);
 }
 
 .opponent-rail {
-  background: color-mix(in srgb, var(--theme-color-surface-deep, var(--surface-0)) 86%, transparent) !important;
+  background: color-mix(
+    in srgb,
+    var(--theme-color-surface-deep, var(--surface-0)) 86%,
+    transparent
+  ) !important;
   backdrop-filter: blur(5px);
 }
-.match-mark { padding-bottom: 5px; }
+.match-mark {
+  padding-bottom: 5px;
+}
 
 .tavern-controls {
   position: relative;
@@ -34,25 +56,37 @@
   gap: 0 !important;
   padding: 0 12px !important;
   overflow: visible;
-  background: linear-gradient(180deg, rgba(0,0,0,.34), rgba(0,0,0,.02)) !important;
+  background: linear-gradient(
+    180deg,
+    rgba(0, 0, 0, 0.34),
+    rgba(0, 0, 0, 0.02)
+  ) !important;
 }
 .tavern-left-controls,
 .tavern-right-controls {
   display: flex;
   align-items: center;
   gap: 7px;
-  padding-bottom: 20px;
 }
-.tavern-left-controls { justify-self: end; padding-right: 18px; }
-.tavern-right-controls { justify-self: start; padding-left: 18px; }
-.tavern-control { display: grid; place-items: center; }
+.tavern-left-controls {
+  justify-self: end;
+  padding-right: 18px;
+}
+.tavern-right-controls {
+  justify-self: start;
+  padding-left: 18px;
+}
+.tavern-control {
+  display: grid;
+  place-items: center;
+}
 .tavern-control .button {
   width: 58px;
   height: 58px;
   padding: 0 !important;
   border-radius: 50% !important;
   font-size: 23px;
-  box-shadow: 0 10px 24px rgba(0,0,0,.32);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.32);
 }
 .tavern-upgrade .button {
   width: 66px;
@@ -64,7 +98,7 @@
   height: 62px;
   transform: translateX(-15px);
   z-index: 10;
-  box-shadow: 0 10px 24px rgba(0,0,0,.30);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.3);
 }
 
 .character-portrait {
@@ -76,16 +110,23 @@
   overflow: visible;
   border-radius: 49% 49% 42% 42% !important;
   background: var(--theme-color-surface-deep, var(--surface-0)) !important;
-  box-shadow: 0 18px 34px rgba(0,0,0,.36), inset 0 0 24px rgba(255,255,255,.04) !important;
+  box-shadow:
+    0 18px 34px rgba(0, 0, 0, 0.36),
+    inset 0 0 24px rgba(255, 255, 255, 0.04) !important;
 }
 .character-portrait::before {
-  content: '';
+  content: "";
   position: absolute;
   z-index: 2;
   inset: -4px;
   border-radius: inherit;
-  border: 3px solid color-mix(in srgb, var(--theme-color-focus, var(--accent)) 58%, var(--theme-color-border, var(--line)));
-  box-shadow: inset 0 0 18px rgba(0,0,0,.36);
+  border: 3px solid
+    color-mix(
+      in srgb,
+      var(--theme-color-focus, var(--accent)) 58%,
+      var(--theme-color-border, var(--line))
+    );
+  box-shadow: inset 0 0 18px rgba(0, 0, 0, 0.36);
   pointer-events: none;
 }
 .character-art {
@@ -100,7 +141,9 @@
   user-select: none;
   pointer-events: none;
 }
-.character-art[hidden] { display: none; }
+.character-art[hidden] {
+  display: none;
+}
 .character-nameplate {
   position: absolute;
   z-index: 5;
@@ -113,9 +156,18 @@
   place-items: center;
   padding: 3px 8px;
   border-radius: 10px 10px 16px 16px;
-  border: 1px solid color-mix(in srgb, var(--theme-color-border-strong, var(--line)) 78%, transparent);
-  background: color-mix(in srgb, var(--theme-color-surface-deep, var(--surface-0)) 92%, transparent);
-  box-shadow: 0 5px 12px rgba(0,0,0,.38);
+  border: 1px solid
+    color-mix(
+      in srgb,
+      var(--theme-color-border-strong, var(--line)) 78%,
+      transparent
+    );
+  background: color-mix(
+    in srgb,
+    var(--theme-color-surface-deep, var(--surface-0)) 92%,
+    transparent
+  );
+  box-shadow: 0 5px 12px rgba(0, 0, 0, 0.38);
 }
 .character-nameplate strong {
   width: 100%;
@@ -128,7 +180,7 @@
   grid-column: 2;
   align-self: end;
   margin: 0;
-  transform: translateY(48px);
+  transform: translateY(116px);
   z-index: 12;
 }
 .shopkeeper-drop .drag-hint {
@@ -143,23 +195,37 @@
 
 .tavern-shelf {
   align-items: start;
-  padding-top: 42px !important;
-  background: linear-gradient(180deg, rgba(0,0,0,.02), rgba(0,0,0,.10) 92%) !important;
+  padding-top: 148px !important;
+  background: linear-gradient(
+    180deg,
+    rgba(0, 0, 0, 0.02),
+    rgba(0, 0, 0, 0.1) 92%
+  ) !important;
 }
 .tavern-shelf::before {
-  content: '';
+  content: "";
   position: absolute;
   left: 14%;
   right: 14%;
   top: 22px;
   bottom: 7px;
   border-radius: 50% 50% 12% 12% / 18% 18% 10% 10%;
-  border-top: 1px solid color-mix(in srgb, var(--theme-color-border-strong, var(--line)) 40%, transparent);
-  background: linear-gradient(180deg, rgba(0,0,0,.03), rgba(0,0,0,.10));
+  border-top: 1px solid
+    color-mix(
+      in srgb,
+      var(--theme-color-border-strong, var(--line)) 40%,
+      transparent
+    );
+  background: linear-gradient(180deg, rgba(0, 0, 0, 0.03), rgba(0, 0, 0, 0.1));
   pointer-events: none;
 }
-.tavern-offers { position: relative; z-index: 2; }
-.tavern-shelf .component-row { gap: 10px; }
+.tavern-offers {
+  position: relative;
+  z-index: 2;
+}
+.tavern-shelf .component-row {
+  gap: 10px;
+}
 .tavern-shelf .card {
   flex-basis: 142px;
   min-width: 126px;
@@ -169,7 +235,11 @@
 .board-stage {
   margin-inline: 4.5%;
   overflow: visible;
-  background: radial-gradient(ellipse at center, rgba(255,255,255,.014), transparent 70%) !important;
+  background: radial-gradient(
+    ellipse at center,
+    rgba(255, 255, 255, 0.014),
+    transparent 70%
+  ) !important;
 }
 .board-stage .component-row {
   min-height: 190px;
@@ -204,7 +274,9 @@
   width: 132px;
   height: 150px;
 }
-.hero-nameplate .eyebrow { display: none; }
+.hero-nameplate .eyebrow {
+  display: none;
+}
 .hero-stat {
   position: absolute;
   z-index: 28;
@@ -214,7 +286,7 @@
   border-radius: 50% !important;
   font-size: 18px;
   font-weight: 800;
-  box-shadow: 0 8px 16px rgba(0,0,0,.36);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.36);
 }
 .health-badge {
   width: 46px;
@@ -242,7 +314,7 @@
   padding: 0 !important;
   border-radius: 50% !important;
   font-size: 24px;
-  box-shadow: 0 10px 24px rgba(0,0,0,.34);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.34);
 }
 .resource-badge {
   position: absolute;
@@ -257,9 +329,11 @@
   gap: 8px;
   margin: 0;
   border-radius: 999px !important;
-  box-shadow: 0 8px 18px rgba(0,0,0,.30);
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.3);
 }
-.resource-badge strong { font-size: 20px; }
+.resource-badge strong {
+  font-size: 20px;
+}
 
 .reserve-shelf {
   margin-top: -20px;
@@ -269,7 +343,9 @@
   transform: translateY(8px);
   justify-content: center;
 }
-.reserve-shelf .component-row > .card + .card { margin-left: -24px; }
+.reserve-shelf .component-row > .card + .card {
+  margin-left: -24px;
+}
 .reserve-shelf .card {
   flex-basis: 96px;
   min-width: 78px;
@@ -300,7 +376,7 @@
   width: 154px;
   min-height: 58px;
   border-radius: 999px !important;
-  box-shadow: 0 10px 28px rgba(0,0,0,.38);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.38);
   font-size: 14px;
 }
 .waiting-banner {
@@ -311,27 +387,88 @@
 }
 
 @media (max-width: 1200px) {
-  .preparation-screen { grid-template-columns: 140px minmax(0, 1fr); }
-  .table-stage { grid-template-rows: 126px 156px minmax(264px,1fr) 104px 80px; }
-  .tavern-controls { grid-template-columns: minmax(0,1fr) 126px minmax(0,1fr); }
+  .preparation-screen {
+    grid-template-columns: 140px minmax(0, 1fr);
+  }
+  .table-stage {
+    grid-template-rows: 126px 156px minmax(264px, 1fr) 104px 80px;
+  }
+  .tavern-controls {
+    grid-template-columns: minmax(0, 1fr) 126px minmax(0, 1fr);
+  }
   .character-portrait,
-  .hero-drop { width: 116px; height: 132px; }
-  .character-nameplate { width: 106px; }
-  .shopkeeper-drop { transform: translateY(40px); }
-  .tavern-left-controls { padding-right: 10px; }
-  .tavern-right-controls { padding-left: 10px; }
-  .tavern-control .button { width: 52px; height: 52px; }
-  .tavern-upgrade .button { width: 58px; height: 58px; }
-  .tier-badge { width: 46px; height: 56px; }
-  .tavern-shelf { padding-top: 36px !important; }
-  .tavern-shelf .card { flex-basis: 124px; min-width: 104px; }
-  .hero-cluster { width: 116px; height: 132px; bottom: 124px; }
-  .health-badge { width: 42px; height: 42px; right: -8px; bottom: -8px; }
-  .armor-badge { width: 36px; height: 36px; right: 10px; bottom: 25px; }
-  .hero-power { left: calc(100% + 7px); top: 58%; }
-  .hero-power .button { width: 54px; height: 54px; min-width: 54px; }
-  .resource-badge { right: 6.5%; bottom: 50px; min-width: 104px; }
-  .turn-rail { right: 96px; top: 44%; }
+  .hero-drop {
+    width: 116px;
+    height: 132px;
+  }
+  .character-nameplate {
+    width: 106px;
+  }
+  .shopkeeper-drop {
+    transform: translateY(40px);
+  }
+  .tavern-left-controls {
+    padding-right: 10px;
+  }
+  .tavern-right-controls {
+    padding-left: 10px;
+  }
+  .tavern-control .button {
+    width: 52px;
+    height: 52px;
+  }
+  .tavern-upgrade .button {
+    width: 58px;
+    height: 58px;
+  }
+  .tier-badge {
+    width: 46px;
+    height: 56px;
+  }
+  .tavern-shelf {
+    padding-top: 36px !important;
+  }
+  .tavern-shelf .card {
+    flex-basis: 124px;
+    min-width: 104px;
+  }
+  .hero-cluster {
+    width: 116px;
+    height: 132px;
+    bottom: 124px;
+  }
+  .health-badge {
+    width: 42px;
+    height: 42px;
+    right: -8px;
+    bottom: -8px;
+  }
+  .armor-badge {
+    width: 36px;
+    height: 36px;
+    right: 10px;
+    bottom: 25px;
+  }
+  .hero-power {
+    left: calc(100% + 7px);
+    top: 58%;
+  }
+  .hero-power .button {
+    width: 54px;
+    height: 54px;
+    min-width: 54px;
+  }
+  .resource-badge {
+    right: 6.5%;
+    bottom: 50px;
+    min-width: 104px;
+  }
+  .turn-rail {
+    right: 96px;
+    top: 44%;
+  }
   .turn-rail [data-slot="ready"] .button,
-  .waiting-banner { width: 132px; }
+  .waiting-banner {
+    width: 132px;
+  }
 }
