@@ -13,7 +13,7 @@ namespace Battlegrounds.Game;
 public partial class Main : Control
 {
     [Export] public string ModPath { get; set; } = "res://../../mods/example";
-    [Export] public int Seed { get; set; } = 20260927;
+    [Export] public int Seed { get; set; }
     [Export] public int ParticipantCount { get; set; } = 4;
 
     private readonly PresentationInteractionState _interaction = new();
@@ -38,6 +38,10 @@ public partial class Main : Control
             var aiPlayerIds = Enumerable.Range(1, ParticipantCount - 1)
                 .Select(value => new PlayerId(value))
                 .ToArray();
+
+            if (Seed == 0)
+                Seed = Random.Shared.Next(1, int.MaxValue);
+
             _session = SinglePlayerSession.Create(mod, humanPlayerId, aiPlayerIds, Seed);
 
             AppendLog($"Loaded mod '{mod.Name}' ({mod.Id}) with seed {Seed}.");
