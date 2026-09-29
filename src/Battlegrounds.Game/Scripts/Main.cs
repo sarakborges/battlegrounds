@@ -1,13 +1,11 @@
 using Battlegrounds.Application;
 using Battlegrounds.Content;
 using Battlegrounds.Core.Domain.Choices;
-using Battlegrounds.Core.Domain.Combines;
 using Battlegrounds.Core.Domain.Effects;
 using Battlegrounds.Core.Domain.Ids;
 using Battlegrounds.Core.Domain.Match;
 using Battlegrounds.Core.Domain.Preparation;
 using Battlegrounds.Core.Domain.Players;
-using Battlegrounds.Core.Domain.Units;
 using Godot;
 
 namespace Battlegrounds.Game;
@@ -90,19 +88,6 @@ public partial class Main : Control
         SubmitHumanCommand(command);
         Render();
     }
-
-    private IReadOnlyList<UnitCombineDefinition> GetAvailableCombines(PlayerState human)
-    {
-        if (_session is null) return [];
-
-        return _session.Mod.Combines.All
-            .Where(definition => CountOwnedCopies(human, definition.SourceUnitId) >= definition.RequiredCopies)
-            .ToArray();
-    }
-
-    private static int CountOwnedCopies(PlayerState human, UnitId sourceUnitId) =>
-        human.Reserve.Count(unit => unit.Definition.Id == sourceUnitId) +
-        human.Field.Count(unit => unit.Definition.Id == sourceUnitId);
 
     private void ToggleFreeze()
     {
@@ -221,47 +206,6 @@ public partial class Main : Control
         else if (result.HasValue)
             AppendLog($"Selected target rejected: {result.Value.FailureCode}.");
 
-        Render();
-    }
-
-    private void BeginCombineSelection()
-    {
-        if (!TryGetHuman(out _)) return;
-        _interaction.BeginCombineRecipeSelection();
-        Render();
-    }
-
-    private void SelectCombineRecipe(UnitCombineId combineId)
-    {
-        _interaction.BeginCombineComponents(combineId);
-        Render();
-    }
-
-    private void ToggleCombineUnit(UnitInstance unit, UnitCombineDefinition definition)
-    {
-        if (!_interaction.IsSelected(unit.Id) && _interaction.SelectedUnits.Count >= definition.RequiredCopies)
-            return;
-
-        _interaction.ToggleUnit(unit.Id);
-        Render();
-    }
-
-    private void ConfirmInteraction()
-    {
-        if (_interaction.Kind != PresentationInteractionKind.CombineComponents ||
-            _interaction.CombineId is not UnitCombineId combineId ||
-            !TryGetHuman(out var human) || _session is null)
-        {
-            return;
-        }
-
-        var definition = _session.Mod.Combines.GetRequired(combineId);
-        if (_interaction.SelectedUnits.Count != definition.RequiredCopies) return;
-
-        var command = new CombineUnitsCommand(human.Id, combineId, _interaction.SelectedUnits.ToArray());
-        var result = SubmitHumanCommand(command);
-        if (result.HasValue && result.Value.Succeeded)
-            _interaction.Reset();
         Render();
     }
 
