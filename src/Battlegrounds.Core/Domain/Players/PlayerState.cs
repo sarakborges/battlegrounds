@@ -1,5 +1,6 @@
 using System.Collections.ObjectModel;
 using Battlegrounds.Core.Domain.Actions;
+using Battlegrounds.Core.Domain.Combat;
 using Battlegrounds.Core.Domain.Effects;
 using Battlegrounds.Core.Domain.Ids;
 using Battlegrounds.Core.Domain.Leaders;
@@ -26,6 +27,7 @@ public sealed partial class PlayerState
     public int Tier { get; private set; } = 1;
     public int? UpgradeCost { get; private set; }
     public int NextAcquireDiscount { get; private set; }
+    public CombatOutcome? LastCombatOutcome { get; private set; }
     public bool IsReadyForCombat { get; private set; }
     public bool IsOfferFrozen { get; private set; }
     public IReadOnlyList<UnitInstance> Reserve => _reserveView;
@@ -304,6 +306,10 @@ public sealed partial class PlayerState
     }
 
     internal void ClearOfferFrozen() => IsOfferFrozen = false;
+
+    internal void RecordCombatOutcome(CombatOutcome outcome) => LastCombatOutcome = outcome;
+
+    internal void ClearLastCombatOutcome() => LastCombatOutcome = null;
 
     internal void ExpireUnitModifiers(UnitModifierDuration duration)
     {

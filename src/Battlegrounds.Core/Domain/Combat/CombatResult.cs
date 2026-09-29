@@ -4,6 +4,13 @@ using Battlegrounds.Core.Domain.Ids;
 
 namespace Battlegrounds.Core.Domain.Combat;
 
+public enum CombatOutcome
+{
+    Win,
+    Loss,
+    Draw,
+}
+
 public enum CombatEndReason
 {
     Elimination,
