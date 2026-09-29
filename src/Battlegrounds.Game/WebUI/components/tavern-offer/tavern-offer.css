@@ -1,0 +1,31 @@
+.tavern-offer {
+  position: relative;
+  z-index: 6;
+  min-width: 0;
+  display: grid;
+  align-items: start;
+  overflow: visible;
+  padding-top: 148px !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+}
+
+.tavern-offer__content {
+  position: relative;
+  z-index: 2;
+  min-width: 0;
+}
+
+.tavern-offer__cards {
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+  overflow: visible;
+}
+
+@media (max-width: 1200px) {
+  .tavern-offer {
+    padding-top: 36px !important;
+  }
+}
