@@ -57,6 +57,19 @@ public static class ModThemeMetricKeys
         public const string TurnRailGap = "layout.turnRail.gap";
         public const string TurnRailEndButtonHeight = "layout.turnRail.endButtonHeight";
 
+        public static class PreparationScene
+        {
+            public const string TavernTop = "layout.preparationScene.tavernTop";
+            public const string OfferTop = "layout.preparationScene.offerTop";
+            public const string FieldTop = "layout.preparationScene.fieldTop";
+            public const string HeroBottom = "layout.preparationScene.heroBottom";
+            public const string ReserveBottom = "layout.preparationScene.reserveBottom";
+            public const string ResourceRight = "layout.preparationScene.resourceRight";
+            public const string ResourceBottom = "layout.preparationScene.resourceBottom";
+            public const string EndTurnRight = "layout.preparationScene.endTurnRight";
+            public const string EndTurnTop = "layout.preparationScene.endTurnTop";
+        }
+
         public static class Interaction
         {
             public const string AnchorLeft = "layout.interaction.anchorLeft";
