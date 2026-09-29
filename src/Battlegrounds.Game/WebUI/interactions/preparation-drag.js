@@ -83,7 +83,6 @@ export function bindPreparationDrag(root) {
   let pending = null;
   let drag = null;
   let capturedPointer = null;
-  let lastDragEnd = 0;
 
   const releasePointer = () => {
     if (!capturedPointer) return;
@@ -118,7 +117,6 @@ export function bindPreparationDrag(root) {
       }
     }
 
-    lastDragEnd = performance.now();
     drag.element.classList.remove('is-dragging');
     drag.ghost.remove();
     root.removeAttribute('data-drag-kind');
@@ -133,6 +131,7 @@ export function bindPreparationDrag(root) {
     const element = event.target.closest('[data-drag-kind]');
     if (!element || element.disabled || !dragEnabled(element)) return;
 
+    event.preventDefault();
     const source = sourceFrom(element);
     if (!source) return;
     pending = { ...source, startX: event.clientX, startY: event.clientY };
@@ -172,7 +171,8 @@ export function bindPreparationDrag(root) {
   root.addEventListener('pointerup', finish);
   root.addEventListener('pointercancel', finish);
   root.addEventListener('click', event => {
-    if (performance.now() - lastDragEnd > 250) return;
+    const element = event.target.closest('[data-drag-kind]');
+    if (!element || !dragEnabled(element)) return;
     event.preventDefault();
     event.stopImmediatePropagation();
   }, true);
