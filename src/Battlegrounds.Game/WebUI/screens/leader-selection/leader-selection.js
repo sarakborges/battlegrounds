@@ -25,6 +25,14 @@ export async function createLeaderSelectionScreen(state) {
       }));
     }
 
+    const attributes = {
+      'data-leader-id': leader.id,
+      'data-inspect-kind': 'leader',
+      'data-inspect-id': leader.id,
+      'data-inspect-name': leader.name
+    };
+    if (leader.description) attributes['data-inspect-description'] = leader.description;
+
     leaders.push(await createCard({
       kind: labels.leader ?? 'Leader',
       name: leader.name,
@@ -34,7 +42,7 @@ export async function createLeaderSelectionScreen(state) {
       action: 'select-leader',
       variant: 'leader',
       className: 'leader-card',
-      attributes: { 'data-leader-id': leader.id }
+      attributes
     }));
   }
 
