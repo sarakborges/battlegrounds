@@ -19,6 +19,7 @@ public static class ModThemeRoleNames
     public const string ActionCardPreview = "action-card-preview";
     public const string LeaderInspector = "leader-inspector";
     public const string PowerTooltip = "power-tooltip";
+    public const string PlayerChip = "player-chip";
     public const string EndRecruitmentButton = "button.endRecruitment";
 
     private static readonly HashSet<string> ComponentRoles = new(StringComparer.Ordinal)
@@ -41,6 +42,7 @@ public static class ModThemeRoleNames
         ActionCardPreview,
         LeaderInspector,
         PowerTooltip,
+        PlayerChip,
         ModThemeComponentRoles.Input,
         ModThemeComponentRoles.Panel,
         ModThemePanelRoles.OpponentRail,
