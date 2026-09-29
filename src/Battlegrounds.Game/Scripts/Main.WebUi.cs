@@ -339,8 +339,8 @@ public partial class Main
                     id = option.Id.Value,
                     name = UnitName(option.Id),
                     tier = option.Tier,
-                    attack = option.Attack,
-                    health = option.Health,
+                    attack = option.BaseAttack,
+                    health = option.BaseHealth,
                 }).ToArray(),
             },
             PendingActionChoice actionChoice => new
