@@ -23,7 +23,7 @@ async function createTavernOfferCard(entry, blocked, canAcquire) {
   return createCard({
     kind: entry.kind,
     name: entry.name,
-    meta: await createCardStatBadges(entry),
+    badges: await createCardStatBadges(entry),
     disabled: blocked,
     variant: 'offer',
     attributes: {
@@ -53,7 +53,7 @@ async function createPlayerReserveCard(entry, blocked, canDeployReserveUnit) {
   return createCard({
     kind: entry.kind,
     name: entry.name,
-    meta: await createCardStatBadges(entry),
+    badges: await createCardStatBadges(entry),
     action: isUnit ? null : 'play-action',
     disabled: blocked,
     variant: 'reserve',
@@ -65,7 +65,7 @@ async function createPlayerFieldUnitCard(unit, blocked) {
   return createCard({
     kind: 'unit',
     name: unit.name,
-    meta: await createCardStatBadges(unit),
+    badges: await createCardStatBadges(unit),
     disabled: blocked,
     variant: 'board',
     themeRole: 'card.board',
@@ -90,7 +90,7 @@ async function createOverlay(state) {
       cards.push(await createCard({
         kind: pending.kind,
         name: option.name,
-        meta: await createCardStatBadges(option),
+        badges: await createCardStatBadges(option),
         action: 'resolve-choice',
         variant: 'choice',
         attributes: { 'data-option-index': option.index }
@@ -118,7 +118,7 @@ async function createOverlay(state) {
     targets.push(await createCard({
       kind: `P${candidate.ownerId}`,
       name: candidate.name,
-      meta: await createCardStatBadges(candidate),
+      badges: await createCardStatBadges(candidate),
       action: 'select-target',
       variant: 'target',
       attributes: { 'data-unit-instance-id': candidate.unitInstanceId }
