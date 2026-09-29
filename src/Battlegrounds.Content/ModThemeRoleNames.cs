@@ -11,6 +11,9 @@ public static class ModThemeInteractionRoles
 
 public static class ModThemeRoleNames
 {
+    public const string PlayableToken = "playable-token";
+    public const string CardPreview = "card-preview";
+
     private static readonly HashSet<string> ComponentRoles = new(StringComparer.Ordinal)
     {
         ModThemeComponentRoles.Button,
@@ -21,6 +24,8 @@ public static class ModThemeRoleNames
         ModThemeComponentRoles.ButtonTavernFreeze,
         ModThemeComponentRoles.Card,
         ModThemeComponentRoles.CardBoard,
+        PlayableToken,
+        CardPreview,
         ModThemeComponentRoles.Input,
         ModThemeComponentRoles.Panel,
         ModThemePanelRoles.OpponentRail,
