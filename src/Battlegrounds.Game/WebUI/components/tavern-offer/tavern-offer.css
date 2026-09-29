@@ -17,9 +17,9 @@
   min-width: 0;
 }
 
-.tavern-offer__cards {
+.tavern-offer__tokens {
   justify-content: center;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
   overflow: visible;
 }
