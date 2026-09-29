@@ -1,11 +1,11 @@
 .tavern-controls.panel {
-  width: 430px;
-  height: 142px;
+  width: 390px;
+  height: 122px;
   display: grid;
-  grid-template-columns: 150px 112px 150px;
+  grid-template-columns: 132px 104px 132px;
   align-items: start;
   justify-content: center;
-  gap: 9px;
+  gap: 11px;
   padding: 0;
   overflow: visible;
   border: 0;
@@ -17,9 +17,9 @@
 .tavern-controls__left,
 .tavern-controls__right {
   display: flex;
-  align-items: flex-start;
-  gap: 8px;
-  padding-top: 26px;
+  align-items: center;
+  gap: 7px;
+  padding-top: 31px;
 }
 
 .tavern-controls__left {
@@ -37,28 +37,38 @@
 
 .action-button.tavern-controls__button {
   width: 56px;
-  height: 72px;
+  height: 56px;
   min-width: 56px;
-  min-height: 72px;
+  min-height: 56px;
   padding: 0;
-  border-radius: 18px 18px 22px 22px;
-  clip-path: polygon(14% 2%, 86% 2%, 100% 18%, 94% 72%, 72% 94%, 50% 100%, 28% 94%, 6% 72%, 0 18%);
-  background-image: none;
-  font-size: 22px;
-  box-shadow:
-    0 8px 17px rgba(0, 0, 0, .34),
-    inset 0 0 0 3px color-mix(in srgb, var(--action-button-border-color) 44%, transparent);
+  border: 0;
+  border-radius: 50%;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: 100% 100%;
+  font-size: 20px;
+  font-weight: 900;
+  text-shadow: 0 2px 3px rgba(0, 0, 0, .75);
+  box-shadow: none;
+}
+
+.action-button.tavern-controls__button:hover:not(:disabled),
+.action-button.tavern-controls__button:focus-visible {
+  transform: translateY(-3px) scale(1.06);
+  filter: brightness(1.1);
 }
 
 .action-button.tavern-controls__button--upgrade {
-  width: 62px;
-  min-width: 62px;
-  font-size: 15px;
+  width: 60px;
+  height: 60px;
+  min-width: 60px;
+  min-height: 60px;
+  font-size: 14px;
 }
 
 .panel.tavern-controls__tier-badge {
   width: 42px;
-  height: 54px;
+  height: 52px;
   display: grid;
   place-content: center;
   align-self: center;
@@ -73,6 +83,6 @@
 }
 
 .tavern-controls__tier-badge strong {
-  font-size: 22px;
+  font-size: 21px;
   line-height: 1;
 }
