@@ -4,7 +4,7 @@ import { reloadStyles } from './core/template.js';
 import { initializeViewportScale } from './core/viewport-scale.js';
 import { bindHoverInspector } from './interactions/hover-inspector.js';
 import { createScreen } from './screens/index.js';
-import { configureAssetBridge, receiveAsset } from './theme/cosmetics.js';
+import { configureAssetBridge, receiveAsset } from './theme/assets.js';
 import { applyComponentStyles, applyTheme } from './theme/theme.js';
 
 const app = document.getElementById('app');
@@ -41,7 +41,7 @@ const bridge = createGameBridge({
       const screen = await createScreen(state);
       if (version !== renderVersion) return;
       app.replaceChildren(screen);
-      applyComponentStyles(state?.theme, screen);
+      await applyComponentStyles(state?.theme, screen);
     } catch (error) {
       showError(`Unable to render game UI: ${error.message}`);
     }
