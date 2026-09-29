@@ -42,6 +42,17 @@ internal sealed class ModPresentationTextureStore
             return true;
         }
 
+        // Optional mod-driven visual testing fallback. Warbands currently uses this
+        // to populate every unit/action card with an existing leader portrait so
+        // shop, board, hand, inspect and combat can be evaluated with real art
+        // density before bespoke card art is available.
+        if ((entityKind == ModPresentationEntityKind.Unit || entityKind == ModPresentationEntityKind.Action) &&
+            string.Equals(slot, ModPresentationAssetSlots.Art, StringComparison.Ordinal) &&
+            TryGetCardArtLeaderFallback(entityKind, entityId, out texture))
+        {
+            return true;
+        }
+
         if (!_assets.TryGet(entityKind, entityId, slot, out var asset) || asset.Type != ModPresentationAssetType.Image)
             return false;
 
@@ -101,6 +112,50 @@ internal sealed class ModPresentationTextureStore
 
     private string ResolveLeaderSkin(string leaderId) =>
         _cosmetics.LeaderSkins.TryGetValue(leaderId, out var skinId) ? skinId : BaseSkinId;
+
+    private bool TryGetCardArtLeaderFallback(
+        ModPresentationEntityKind entityKind,
+        string entityId,
+        out Texture2D? texture)
+    {
+        texture = null;
+        var pool = _cosmetics.CardArtLeaderPool;
+        if (pool.Count == 0)
+            return false;
+
+        var start = StablePoolIndex(entityKind, entityId, pool.Count);
+        for (var offset = 0; offset < pool.Count; offset++)
+        {
+            var leaderId = pool[(start + offset) % pool.Count];
+            if (TryGetCosmeticImage("leaders", leaderId, ResolveLeaderSkin(leaderId), out texture))
+                return true;
+        }
+
+        return false;
+    }
+
+    private static int StablePoolIndex(ModPresentationEntityKind entityKind, string entityId, int count)
+    {
+        unchecked
+        {
+            uint hash = 2166136261;
+            foreach (var character in entityKind.ToString())
+            {
+                hash ^= character;
+                hash *= 16777619;
+            }
+
+            hash ^= ':';
+            hash *= 16777619;
+            foreach (var character in entityId)
+            {
+                hash ^= character;
+                hash *= 16777619;
+            }
+
+            return (int)(hash % (uint)count);
+        }
+    }
 
     private bool TryGetCosmeticImage(
         string category,
@@ -209,7 +264,21 @@ internal sealed class ModPresentationTextureStore
                 }
             }
 
-            return new CosmeticSelection(shopkeeperId, shopkeeperSkin, leaderSkins);
+            var cardArtLeaderPool = new List<string>();
+            if (root.TryGetProperty("cardArtLeaderPool", out var cardArtLeaders) &&
+                cardArtLeaders.ValueKind == JsonValueKind.Array)
+            {
+                foreach (var leader in cardArtLeaders.EnumerateArray())
+                {
+                    if (leader.ValueKind != JsonValueKind.String)
+                        continue;
+                    var leaderId = leader.GetString();
+                    if (IsSafeSegment(leaderId) && !cardArtLeaderPool.Contains(leaderId!, StringComparer.Ordinal))
+                        cardArtLeaderPool.Add(leaderId!);
+                }
+            }
+
+            return new CosmeticSelection(shopkeeperId, shopkeeperSkin, leaderSkins, cardArtLeaderPool);
         }
         catch (Exception exception)
         {
@@ -225,11 +294,13 @@ internal sealed class ModPresentationTextureStore
     private sealed record CosmeticSelection(
         string? ShopkeeperId,
         string ShopkeeperSkin,
-        IReadOnlyDictionary<string, string> LeaderSkins)
+        IReadOnlyDictionary<string, string> LeaderSkins,
+        IReadOnlyList<string> CardArtLeaderPool)
     {
         public static CosmeticSelection Empty { get; } = new(
             null,
             BaseSkinId,
-            new Dictionary<string, string>(StringComparer.Ordinal));
+            new Dictionary<string, string>(StringComparer.Ordinal),
+            Array.Empty<string>());
     }
 }
