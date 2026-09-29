@@ -1,5 +1,6 @@
 import { bindActions } from './bridge/actions.js';
 import { createGameBridge } from './bridge/game-bridge.js';
+import { reloadStyles } from './core/template.js';
 import { createScreen } from './screens/index.js';
 import { configureAssetBridge, receiveAsset } from './theme/cosmetics.js';
 import { applyComponentStyles, applyTheme } from './theme/theme.js';
@@ -19,6 +20,7 @@ function showError(message) {
 const bridge = createGameBridge({
   onError: showError,
   onAsset: receiveAsset,
+  onDevCssReload: reloadStyles,
   onState: async state => {
     const version = ++renderVersion;
     applyTheme(state?.theme, state?.status === 'combat' ? 'combat' : 'preparation');
