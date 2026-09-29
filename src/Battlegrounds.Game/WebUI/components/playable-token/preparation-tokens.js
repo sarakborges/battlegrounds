@@ -1,13 +1,15 @@
+import { entityArtUrl } from '../../theme/cosmetics.js';
 import { createPlayableToken } from './playable-token.js';
 
 const boolText = value => value ? 'true' : 'false';
 
-export async function createTavernOfferToken(entry, { blocked = false, canAcquire = false } = {}) {
+export async function createTavernOfferToken(entry, { cosmetics = null, blocked = false, canAcquire = false } = {}) {
   return createPlayableToken({
     kind: entry.kind,
     id: entry.id,
     name: entry.name,
     description: entry.description,
+    art: await entityArtUrl(cosmetics, entry.kind, entry.id),
     tier: entry.tier,
     attack: entry.attack,
     health: entry.health,
@@ -25,7 +27,7 @@ export async function createTavernOfferToken(entry, { blocked = false, canAcquir
   });
 }
 
-export async function createPlayerReserveToken(entry, { blocked = false, canDeployUnit = false } = {}) {
+export async function createPlayerReserveToken(entry, { cosmetics = null, blocked = false, canDeployUnit = false } = {}) {
   const isUnit = entry.kind === 'unit';
   const attributes = {
     'data-slot': entry.slot,
@@ -44,6 +46,7 @@ export async function createPlayerReserveToken(entry, { blocked = false, canDepl
     id: entry.id,
     name: entry.name,
     description: entry.description,
+    art: await entityArtUrl(cosmetics, entry.kind, entry.id),
     tier: entry.tier,
     attack: entry.attack,
     health: entry.health,
@@ -55,12 +58,13 @@ export async function createPlayerReserveToken(entry, { blocked = false, canDepl
   });
 }
 
-export async function createPlayerFieldUnitToken(unit, { blocked = false } = {}) {
+export async function createPlayerFieldUnitToken(unit, { cosmetics = null, blocked = false } = {}) {
   return createPlayableToken({
     kind: 'unit',
     id: unit.id,
     name: unit.name,
     description: unit.description,
+    art: await entityArtUrl(cosmetics, 'unit', unit.id),
     tier: unit.tier,
     attack: unit.attack,
     health: unit.health,
