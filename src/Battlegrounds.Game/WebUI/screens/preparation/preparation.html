@@ -8,12 +8,34 @@
       <div class="round-pill"><span data-field="round-label"></span> <span data-field="round"></span></div>
       <div class="stats" data-slot="stats"></div>
     </section>
+
     <section class="game-stage">
       <div class="player-strip" data-slot="players"></div>
-      <div data-slot="field"></div>
-      <div data-slot="offer"></div>
-      <div data-slot="reserve"></div>
+
+      <section class="tavern-stage">
+        <div class="shopkeeper-drop drag-target" data-drop-kind="shopkeeper">
+          <span class="eyebrow">Tavern</span>
+          <strong>Shopkeeper</strong>
+          <small>Drop a board unit here to sell</small>
+        </div>
+        <div class="tavern-offer" data-slot="offer"></div>
+      </section>
+
+      <section class="board-stage" data-drop-kind="field-surface">
+        <div class="stage-caption"><span data-field="field-label"></span></div>
+        <div data-slot="field"></div>
+      </section>
+
+      <section class="bottom-stage">
+        <div class="hero-drop drag-target" data-drop-kind="hero">
+          <span class="eyebrow" data-field="leader-label"></span>
+          <strong data-field="hero-name"></strong>
+          <small>Drop a tavern card here to buy</small>
+        </div>
+        <div class="hand-stage" data-slot="reserve"></div>
+      </section>
     </section>
+
     <footer>
       <div class="waiting-banner" data-field="waiting" hidden></div>
       <section class="panel actions" data-component="panel" data-theme-role="panel" data-slot="actions"></section>
