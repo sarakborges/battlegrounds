@@ -3,25 +3,27 @@ import { createButton } from '../../design-system/button/button.js';
 import { createHorizontalStack } from '../../design-system/horizontal-stack/horizontal-stack.js';
 import { createModalDialog } from '../../design-system/modal-dialog/modal-dialog.js';
 import { createCard } from '../../components/card/card.js';
-import { createCardArea } from '../../components/card-area/card-area.js';
 import { createHeroCockpit } from '../../components/hero-cockpit/hero-cockpit.js';
 import { createOpponentRail } from '../../components/opponent-rail/opponent-rail.js';
+import { createPlayerField } from '../../components/player-field/player-field.js';
+import { createPlayerReserve } from '../../components/player-reserve/player-reserve.js';
 import { createTavernControls } from '../../components/tavern-controls/tavern-controls.js';
+import { createTavernOffer } from '../../components/tavern-offer/tavern-offer.js';
 import { createTurnRail } from '../../components/turn-rail/turn-rail.js';
 import { bindPreparationDrag } from '../../interactions/preparation-drag.js';
 import { boardArtUrl, cosmeticsForState, leaderArtUrl, shopkeeperArtUrl } from '../../theme/cosmetics.js';
-import { createCardMeta } from '../shared/card-meta.js';
+import { createCardStatBadges } from '../shared/card-stat-badges.js';
 
 const templateUrl = new URL('./preparation.html', import.meta.url);
 useStyle(new URL('./preparation.css', import.meta.url));
 
 const boolText = value => value ? 'true' : 'false';
 
-async function createOfferCard(entry, blocked, canAcquire) {
+async function createTavernOfferCard(entry, blocked, canAcquire) {
   return createCard({
     kind: entry.kind,
     name: entry.name,
-    meta: await createCardMeta(entry),
+    meta: await createCardStatBadges(entry),
     disabled: blocked,
     variant: 'offer',
     attributes: {
@@ -51,7 +53,7 @@ async function createReserveCard(entry, blocked, canDeploy) {
   return createCard({
     kind: entry.kind,
     name: entry.name,
-    meta: await createCardMeta(entry),
+    meta: await createCardStatBadges(entry),
     action: isUnit ? null : 'play-action',
     disabled: blocked,
     variant: 'reserve',
@@ -59,11 +61,11 @@ async function createReserveCard(entry, blocked, canDeploy) {
   });
 }
 
-async function createFieldCard(unit, blocked) {
+async function createFieldUnitCard(unit, blocked) {
   return createCard({
     kind: 'field',
     name: unit.name,
-    meta: await createCardMeta(unit),
+    meta: await createCardStatBadges(unit),
     disabled: blocked,
     variant: 'board',
     themeRole: 'card.board',
@@ -88,7 +90,7 @@ async function createOverlay(state) {
       cards.push(await createCard({
         kind: pending.kind,
         name: option.name,
-        meta: await createCardMeta(option),
+        meta: await createCardStatBadges(option),
         action: 'resolve-choice',
         variant: 'choice',
         attributes: { 'data-option-index': option.index }
@@ -116,7 +118,7 @@ async function createOverlay(state) {
     targets.push(await createCard({
       kind: `P${candidate.ownerId}`,
       name: candidate.name,
-      meta: await createCardMeta(candidate),
+      meta: await createCardStatBadges(candidate),
       action: 'select-target',
       variant: 'target',
       attributes: { 'data-unit-instance-id': candidate.unitInstanceId }
@@ -177,27 +179,23 @@ export async function createPreparationScreen(state) {
     })
   ]);
 
-  const offer = [];
+  const tavernOfferCards = [];
   for (const entry of state.offer ?? []) {
     const canAcquire = !blocked &&
       reserveCount < (limits.reserveCapacity ?? Number.POSITIVE_INFINITY) &&
       (human.resource ?? 0) >= (entry.cost ?? Number.POSITIVE_INFINITY);
-    offer.push(await createOfferCard(entry, blocked, canAcquire));
+    tavernOfferCards.push(await createTavernOfferCard(entry, blocked, canAcquire));
   }
   appendChildren(element.querySelector('[data-slot="offer-zone"]'), [
-    await createCardArea({ variant: 'offer', children: offer })
+    await createTavernOffer({ cards: tavernOfferCards })
   ]);
 
-  const field = [];
+  const fieldUnitCards = [];
   for (const unit of state.field ?? []) {
-    field.push(await createFieldCard(unit, blocked));
+    fieldUnitCards.push(await createFieldUnitCard(unit, blocked));
   }
   appendChildren(element.querySelector('[data-slot="field-zone"]'), [
-    await createCardArea({
-      variant: 'field',
-      children: field,
-      dropKind: 'field-surface'
-    })
+    await createPlayerField({ cards: fieldUnitCards })
   ]);
 
   appendChildren(element.querySelector('[data-slot="hero-cockpit"]'), [
@@ -210,12 +208,12 @@ export async function createPreparationScreen(state) {
     })
   ]);
 
-  const reserve = [];
+  const reserveCards = [];
   for (const entry of state.reserve ?? []) {
-    reserve.push(await createReserveCard(entry, blocked, canDeploy));
+    reserveCards.push(await createReserveCard(entry, blocked, canDeploy));
   }
   appendChildren(element.querySelector('[data-slot="reserve-zone"]'), [
-    await createCardArea({ variant: 'reserve', children: reserve })
+    await createPlayerReserve({ cards: reserveCards })
   ]);
 
   appendChildren(element.querySelector('[data-slot="turn-rail"]'), [
