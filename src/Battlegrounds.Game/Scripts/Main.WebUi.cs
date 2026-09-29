@@ -72,6 +72,7 @@ public partial class Main
 
     private void OnWebUiMessage(string message)
     {
+        var pushState = true;
         try
         {
             using var document = JsonDocument.Parse(message);
@@ -83,6 +84,10 @@ public partial class Main
             switch (type)
             {
                 case "request-state":
+                    break;
+                case "request-asset":
+                    SendWebAsset(RequiredString(root, "path"));
+                    pushState = false;
                     break;
                 case "select-leader":
                     SelectLeader(new LeaderId(RequiredString(root, "leaderId")));
@@ -146,8 +151,11 @@ public partial class Main
         }
         finally
         {
-            ObserveLatestCombat();
-            PushWebUiState();
+            if (pushState)
+            {
+                ObserveLatestCombat();
+                PushWebUiState();
+            }
         }
     }
 
@@ -201,7 +209,6 @@ public partial class Main
                     {
                         id = id.Value,
                         name = LeaderName(id),
-                        healthModifier = definition.HealthModifier,
                         armor = definition.StartingArmor,
                     };
                 })
@@ -214,6 +221,7 @@ public partial class Main
                 seed = Seed,
                 labels = BuildWebLabels(),
                 leaders,
+                cosmetics = BuildWebCosmeticsState(),
                 theme = BuildWebThemeState(),
             };
         }
@@ -227,15 +235,23 @@ public partial class Main
                      !human.IsReadyForCombat &&
                      _session.CurrentPreparationPlayerId == human.Id;
 
-        var offer = human.PlayableOffer.Select(entry => new
+        var offer = human.PlayableOffer.Select(entry =>
         {
-            slot = entry.Slot,
-            kind = entry.Kind.ToString().ToLowerInvariant(),
-            id = entry.Id,
-            name = PlayableName(entry.Kind, entry.Id),
-            tier = entry.Tier,
-            cost = human.GetAcquireCost(entry, _session.Mod.PreparationRules),
-            frozen = entry.IsFrozen,
+            var unit = entry.Kind == PlayableKind.Unit
+                ? _session.Mod.Units.GetRequired(new UnitId(entry.Id))
+                : null;
+            return new
+            {
+                slot = entry.Slot,
+                kind = entry.Kind.ToString().ToLowerInvariant(),
+                id = entry.Id,
+                name = PlayableName(entry.Kind, entry.Id),
+                tier = entry.Tier,
+                attack = unit?.BaseAttack,
+                health = unit?.BaseHealth,
+                cost = human.GetAcquireCost(entry, _session.Mod.PreparationRules),
+                frozen = entry.IsFrozen,
+            };
         }).ToArray();
 
         var reserve = human.PlayableReserve.Select(entry => new
@@ -308,6 +324,7 @@ public partial class Main
             field,
             pendingChoice = BuildWebPendingChoice(human.PendingChoice),
             interaction = BuildWebInteraction(match, human),
+            cosmetics = BuildWebCosmeticsState(),
             theme = BuildWebThemeState(),
         };
     }
