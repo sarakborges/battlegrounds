@@ -47,6 +47,10 @@ jobs:
             echo 'Reusable UI and screens must use the shared logical viewport scale instead of viewport media queries or vw/vh geometry.' >&2
             exit 1
           fi
+          if grep -R --include='*.css' -n '!important' src/Battlegrounds.Game/WebUI; then
+            echo 'CSS must rely on ownership, load order, and appropriate selector specificity instead of !important.' >&2
+            exit 1
+          fi
       - name: Check web UI JavaScript syntax
         run: find src/Battlegrounds.Game/WebUI -type f -name '*.js' -print0 | xargs -0 -n1 node --check
       - name: Test core
