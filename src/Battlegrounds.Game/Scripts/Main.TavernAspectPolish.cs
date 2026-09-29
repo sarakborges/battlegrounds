@@ -63,6 +63,27 @@ public partial class Main
         string widthMetricKey,
         Texture2D? texture)
     {
+        // Older builds wrapped every button in an aspect slot. Runtime invariant
+        // repair then moved the button back out, so both systems fought every frame.
+        // Unwrap any legacy slot once and let the button own its footprint directly.
+        var slotName = button.Name + "AspectSlot";
+        if (controlsRow.GetNodeOrNull<Control>(slotName) is { } slot)
+        {
+            if (button.GetParent() == slot)
+            {
+                slot.RemoveChild(button);
+                controlsRow.AddChild(button);
+                controlsRow.MoveChild(button, slot.GetIndex());
+            }
+            slot.QueueFree();
+        }
+
+        if (button.GetParent() != controlsRow)
+        {
+            button.GetParent()?.RemoveChild(button);
+            controlsRow.AddChild(button);
+        }
+
         var width = ResolvePresentationMetric(widthMetricKey, 1.0f, 1024.0f);
         var height = ResolvePresentationMetric(
             ModThemeMetricKeys.Layout.TavernControlHeight,
@@ -71,27 +92,9 @@ public partial class Main
         if (texture is not null && texture.GetWidth() > 0)
             height = width * texture.GetHeight() / texture.GetWidth();
 
-        var slotName = button.Name + "AspectSlot";
-        var slot = controlsRow.GetNodeOrNull<Control>(slotName);
-        if (slot is null)
-        {
-            var index = button.GetIndex();
-            controlsRow.RemoveChild(button);
-            slot = new Control
-            {
-                Name = slotName,
-                MouseFilter = Control.MouseFilterEnum.Ignore,
-            };
-            controlsRow.AddChild(slot);
-            controlsRow.MoveChild(slot, index);
-            slot.AddChild(button);
-            button.SetAnchorsAndOffsetsPreset(Control.LayoutPreset.FullRect);
-        }
-
-        slot.CustomMinimumSize = new Vector2(width, height);
-        slot.SizeFlagsHorizontal = Control.SizeFlags.ShrinkCenter;
-        slot.SizeFlagsVertical = Control.SizeFlags.ShrinkCenter;
-        button.CustomMinimumSize = Vector2.Zero;
+        button.CustomMinimumSize = new Vector2(width, height);
+        button.SizeFlagsHorizontal = Control.SizeFlags.ShrinkCenter;
+        button.SizeFlagsVertical = Control.SizeFlags.ShrinkCenter;
     }
 
     private void ApplyCompactTavernRow(HorizontalCardRow row)
@@ -123,55 +126,25 @@ public partial class Main
             ModThemeMetricKeys.Layout.TavernShopkeeperWidth,
             1.0f,
             2048.0f);
-        var offerWidth = ResolvePresentationMetric(
-            ModThemeMetricKeys.Row.PreferredCardWidth(ModThemeMetricKeys.Row.Offer),
-            1.0f,
-            2048.0f);
 
-        // The square bartender frame was intentionally made visually dominant in the
-        // previous pass. Reduce that exact resolved footprint by 25% while keeping
-        // its 1:1 geometry and mod-driven base metrics intact.
-        var width = Mathf.Max(configuredWidth, offerWidth * 1.75f) * 0.75f;
-        var height = ResolvePresentationMetric(
-            ModThemeMetricKeys.Layout.TavernControlsMinimumHeight,
-            1.0f,
-            2048.0f);
-
-        Texture2D? frameTexture = null;
-        if (_modTheme is not null &&
-            _themeBuilder is not null &&
-            _modTheme.Components.TryGetValue(ModThemePanelRoles.Shopkeeper, out var style) &&
-            style is not null &&
-            !string.IsNullOrWhiteSpace(style.BackgroundAsset))
-        {
-            frameTexture = _themeBuilder.LoadImage(style.BackgroundAsset);
-            if (frameTexture is not null && frameTexture.GetWidth() > 0)
-                height = width * frameTexture.GetHeight() / frameTexture.GetWidth();
-        }
-
-        var size = new Vector2(width, height);
+        // The requested shopkeeper presentation is a square frame at 75% of the
+        // original configured footprint. Do not let offer-card width inflate it.
+        var side = configuredWidth * 0.75f;
+        var size = new Vector2(side, side);
         shopkeeper.CustomMinimumSize = size;
         shopkeeper.SizeFlagsHorizontal = Control.SizeFlags.ShrinkCenter;
         shopkeeper.SizeFlagsVertical = Control.SizeFlags.ShrinkCenter;
+        shopkeeper.ClipContents = false;
 
         if (shopkeeper.GetNodeOrNull<Control>("CosmeticLayer") is not { } layer)
             return;
 
-        layer.CustomMinimumSize = size;
-        layer.ClipContents = true;
-
-        if (layer.GetNodeOrNull<TextureRect>("CosmeticFrame") is { } frame)
-        {
-            frame.StretchMode = TextureRect.StretchModeEnum.KeepAspectCentered;
-            if (frameTexture is not null)
-                frame.Texture = frameTexture;
-        }
-
+        FramedCosmeticPortrait.ConfigureSquare(layer, side);
         if (layer.GetNodeOrNull<TextureRect>("CosmeticArt") is { } art)
-        {
-            art.StretchMode = TextureRect.StretchModeEnum.KeepAspectCentered;
-            art.SetAnchorsAndOffsetsPreset(Control.LayoutPreset.FullRect);
-        }
+            FramedCosmeticPortrait.ConfigureArt(art, TextureRect.StretchModeEnum.KeepAspectCovered);
+
+        if (ResolveSharedPortraitFrameTexture() is { } frameTexture)
+            FramedCosmeticPortrait.ApplyFrame(layer, frameTexture);
     }
 
     private void ApplyCompactResourceBadge()
