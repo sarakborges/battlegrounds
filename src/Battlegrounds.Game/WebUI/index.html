@@ -8,7 +8,9 @@
 </head>
 <body>
   <main id="app" class="app-shell" aria-live="polite"></main>
-  <div id="toast" class="toast" role="status" aria-live="assertive"></div>
+  <div class="ui-overlay-shell" aria-hidden="true">
+    <div id="toast" class="toast" role="status" aria-live="assertive"></div>
+  </div>
   <script type="module" src="app.js"></script>
 </body>
 </html>
