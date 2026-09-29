@@ -2,6 +2,7 @@
   min-width: 0;
   border: 0 !important;
   border-radius: 0 !important;
+  background: transparent !important;
 }
 
 .card-zone__content {
@@ -19,29 +20,6 @@
   align-items: start;
   overflow: visible;
   padding-top: 148px !important;
-  background: linear-gradient(
-    180deg,
-    rgba(0, 0, 0, 0.02),
-    rgba(0, 0, 0, 0.1) 92%
-  ) !important;
-}
-
-.card-zone[data-variant="offer"]::before {
-  content: "";
-  position: absolute;
-  left: 14%;
-  right: 14%;
-  top: 22px;
-  bottom: 7px;
-  border-radius: 50% 50% 12% 12% / 18% 18% 10% 10%;
-  border-top: 1px solid
-    color-mix(
-      in srgb,
-      var(--theme-color-border-strong, var(--line)) 40%,
-      transparent
-    );
-  background: linear-gradient(180deg, rgba(0, 0, 0, 0.03), rgba(0, 0, 0, 0.1));
-  pointer-events: none;
 }
 
 .card-zone[data-variant="offer"] .card-zone__content {
@@ -63,14 +41,7 @@
   align-items: center;
   margin-inline: 4.5%;
   overflow: visible;
-  background: radial-gradient(
-    ellipse at center,
-    rgba(255, 255, 255, 0.014),
-    transparent 70%
-  ) !important;
-  transition:
-    box-shadow 100ms ease,
-    background 100ms ease;
+  transition: box-shadow 100ms ease;
 }
 
 .card-zone[data-variant="field"] .card-zone__row {
@@ -89,7 +60,6 @@
   overflow: visible;
   margin-top: -20px;
   padding: 0 20px 4px !important;
-  background: transparent !important;
 }
 
 .card-zone[data-variant="reserve"] .card-zone__row {
