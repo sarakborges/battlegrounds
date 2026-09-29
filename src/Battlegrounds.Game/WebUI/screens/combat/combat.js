@@ -1,6 +1,7 @@
 import { appendChildren, cloneTemplate, useStyle } from '../../core/template.js';
+import { createCombatUnitToken } from '../../components/combat-unit-token/combat-unit-token.js';
 import { createEmptyState } from '../../design-system/empty-state/empty-state.js';
-import { createPlayableToken } from '../../components/playable-token/playable-token.js';
+import { cosmeticsForState, entityArtUrl } from '../../theme/cosmetics.js';
 
 const templateUrl = new URL('./combat.html', import.meta.url);
 useStyle(new URL('../../design-system/panel/panel.css', import.meta.url));
@@ -8,22 +9,7 @@ useStyle(new URL('./combat.css', import.meta.url));
 
 let lastStepKey = '';
 
-function highlightClass(highlight) {
-  switch (highlight) {
-    case '→': return 'attacker';
-    case '◎': return 'target';
-    case '+': return 'summoned';
-    case 'Δ': return 'stats';
-    case '−': return 'damaged';
-    case '×': return 'destroyed';
-    case '↻': return 'revived';
-    case '◆': return 'triggered';
-    case '◇': return 'behavior';
-    default: return '';
-  }
-}
-
-async function populateSide(element, side, sideName) {
+async function populateSide(element, side, sideName, cosmetics) {
   const sideElement = element.querySelector(`[data-side="${sideName}"]`);
   sideElement.classList.toggle('human', !!side?.human);
   sideElement.querySelector(`[data-field="${sideName}-label"]`).textContent = side?.label ?? `P${side?.playerId ?? '?'}`;
@@ -31,20 +17,10 @@ async function populateSide(element, side, sideName) {
 
   const tokens = [];
   for (const unit of side?.units ?? []) {
-    tokens.push(await createPlayableToken({
-      kind: 'unit',
-      id: unit.id ?? '',
-      name: unit.name,
-      description: unit.description ?? '',
-      art: unit.art ?? null,
-      attack: unit.attack,
-      health: unit.health,
-      tier: unit.tier,
-      marker: unit.highlight,
-      status: unit.status,
-      highlight: highlightClass(unit.highlight),
-      location: 'combat',
-      attributes: { 'data-unit-instance-id': unit.instanceId ?? '' }
+    tokens.push(await createCombatUnitToken({
+      unit,
+      art: await entityArtUrl(cosmetics, 'unit', unit.unitId),
+      attackDirection: sideName === 'left' ? 'up' : 'down'
     }));
   }
   if (!tokens.length) tokens.push(await createEmptyState({ label: 'Empty field' }));
@@ -71,8 +47,9 @@ export async function createCombatScreen(state) {
   element.querySelector('[data-field="event-kind"]').textContent = combat.settlementVisible ? 'result' : (combat.eventKind ?? 'ready');
   element.querySelector('[data-field="event-text"]').textContent = combat.eventText ?? '';
 
-  await populateSide(element, combat.right, 'right');
-  await populateSide(element, combat.left, 'left');
+  const cosmetics = cosmeticsForState(state);
+  await populateSide(element, combat.right, 'right', cosmetics);
+  await populateSide(element, combat.left, 'left', cosmetics);
   return element;
 }
 
