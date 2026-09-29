@@ -2,6 +2,7 @@ using Battlegrounds.Application;
 using Battlegrounds.Content;
 using Battlegrounds.Core.Domain.Choices;
 using Battlegrounds.Core.Domain.Combines;
+using Battlegrounds.Core.Domain.Effects;
 using Battlegrounds.Core.Domain.Ids;
 using Battlegrounds.Core.Domain.Match;
 using Battlegrounds.Core.Domain.Playables;
@@ -400,25 +401,40 @@ public partial class Main : Control
     private void RenderTargetCandidates(MatchState match)
     {
         var count = 0;
-        foreach (var player in match.Players.OrderBy(value => value.Id.Value))
+        IEnumerable<(PlayerId OwnerId, UnitInstance Unit)> candidates;
+        if (_interaction.TargetZone == EffectTargetZone.Reserve && _session is not null &&
+            match.TryGetPlayer(_session.HumanPlayerId, out var human))
         {
-            foreach (var unit in player.Field)
+            UnitInstanceId? excluded = null;
+            if (_interaction.Kind == PresentationInteractionKind.DeployTarget &&
+                _interaction.UnitReserveSlot is int reserveSlot && reserveSlot >= 0 && reserveSlot < human.Reserve.Count)
+                excluded = human.Reserve[reserveSlot].Id;
+            candidates = human.Reserve
+                .Where(unit => unit.Id != excluded)
+                .Select(unit => (human.Id, unit));
+        }
+        else
+        {
+            candidates = match.Players.OrderBy(value => value.Id.Value)
+                .SelectMany(player => player.Field.Select(unit => (player.Id, unit)));
+        }
+
+        foreach (var candidate in candidates)
+        {
+            count++;
+            var capturedUnitId = candidate.Unit.Id;
+            var button = new Button
             {
-                count++;
-                var capturedUnitId = unit.Id;
-                var button = new Button
-                {
-                    Text = Text(
-                        "ui.targetCandidate",
-                        ("player", player.Id.Value),
-                        ("name", UnitName(unit.Definition.Id)),
-                        ("attack", unit.Attack),
-                        ("health", unit.Health)),
-                    SizeFlagsHorizontal = Control.SizeFlags.ExpandFill,
-                };
-                button.Pressed += () => SubmitSelectedTarget(capturedUnitId);
-                _interactionButtons.AddChild(button);
-            }
+                Text = Text(
+                    "ui.targetCandidate",
+                    ("player", candidate.OwnerId.Value),
+                    ("name", UnitName(candidate.Unit.Definition.Id)),
+                    ("attack", candidate.Unit.Attack),
+                    ("health", candidate.Unit.Health)),
+                SizeFlagsHorizontal = Control.SizeFlags.ExpandFill,
+            };
+            button.Pressed += () => SubmitSelectedTarget(capturedUnitId);
+            _interactionButtons.AddChild(button);
         }
 
         if (count == 0)
@@ -666,7 +682,11 @@ public partial class Main : Control
         if (result.HasValue && !result.Value.Succeeded &&
             result.Value.FailureCode == PreparationFailureCode.InvalidDeployTarget)
         {
-            _interaction.BeginDeployTarget(reserveSlot);
+            var targetZone = GetSelectedTargetZone(
+                human.Reserve[reserveSlot].Definition.Triggers
+                    .Where(trigger => trigger.Event == NativeTriggerKeys.OnPlay)
+                    .SelectMany(trigger => trigger.Effects));
+            _interaction.BeginDeployTarget(reserveSlot, targetZone);
             AppendLog($"{Term("unit")} requires a selected {Term("unit")} target.");
         }
         else if (result.HasValue && !result.Value.Succeeded)
@@ -686,7 +706,9 @@ public partial class Main : Control
         if (result.HasValue && !result.Value.Succeeded &&
             result.Value.FailureCode == PreparationFailureCode.InvalidActionTarget)
         {
-            _interaction.BeginActionTarget(reserveSlot);
+            var action = human.PlayableReserve.Single(entry => entry.Slot == reserveSlot).Action
+                ?? throw new InvalidOperationException("Targeted reserve entry is not an Action.");
+            _interaction.BeginActionTarget(reserveSlot, GetSelectedTargetZone(action.Definition.Effects));
             AppendLog($"{Term("action")} requires a selected {Term("unit")} target.");
         }
         else if (result.HasValue && !result.Value.Succeeded)
@@ -706,7 +728,10 @@ public partial class Main : Control
         if (result.HasValue && !result.Value.Succeeded &&
             result.Value.FailureCode == PreparationFailureCode.InvalidPowerTarget)
         {
-            _interaction.BeginPowerTarget();
+            var powerId = human.Leader?.CurrentPowerId ?? throw new InvalidOperationException("Targeted power is unavailable.");
+            var power = _session?.Mod.Powers.GetRequired(powerId) ?? throw new InvalidOperationException("Targeted power definition is unavailable.");
+            var effects = power.FindTrigger(NativeTriggerKeys.OnActivate)?.Effects ?? [];
+            _interaction.BeginPowerTarget(GetSelectedTargetZone(effects));
             AppendLog($"{Term("power")} requires a selected {Term("unit")} target.");
         }
         else if (result.HasValue && !result.Value.Succeeded)
@@ -716,6 +741,33 @@ public partial class Main : Control
 
         Render();
     }
+
+    private static EffectTargetZone GetSelectedTargetZone(IEnumerable<EffectDefinition> effects)
+    {
+        var zones = effects
+            .Select(GetEffectTargetSelector)
+            .Where(selector => selector?.Scope == EffectTargetScope.Selected)
+            .Select(selector => selector!.Zone)
+            .Distinct()
+            .ToArray();
+        return zones.Length == 1 ? zones[0] : EffectTargetZone.Field;
+    }
+
+    private static EffectTargetSelector? GetEffectTargetSelector(EffectDefinition effect) => effect switch
+    {
+        ModifyStatsEffectDefinition value => value.Target,
+        DealDamageEffectDefinition value => value.Target,
+        DestroyUnitEffectDefinition value => value.Target,
+        TriggerEventEffectDefinition value => value.Target,
+        AddBehaviorEffectDefinition value => value.Target,
+        RemoveBehaviorEffectDefinition value => value.Target,
+        TransformUnitEffectDefinition value => value.Target,
+        CopyUnitToReserveEffectDefinition value => value.Target,
+        ReturnUnitToReserveEffectDefinition value => value.Target,
+        ApplyUnitModifierEffectDefinition value => value.Target,
+        RemoveUnitModifierEffectDefinition value => value.Target,
+        _ => null,
+    };
 
     private void SubmitSelectedTarget(UnitInstanceId unitId)
     {

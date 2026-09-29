@@ -748,7 +748,7 @@ internal sealed class DirectoryModValidator
             target,
             file,
             targetPath,
-            ["scope", "selection", "excludeSource", "limit", "typeId", "tagId", "relativeTo"],
+            ["scope", "selection", "excludeSource", "limit", "typeId", "tagId", "relativeTo", "zone"],
             ["scope"],
             issues);
         RequireNonEmptyString(target, "scope", file, targetPath + ".scope", issues, out _);

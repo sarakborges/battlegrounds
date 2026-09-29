@@ -205,14 +205,7 @@ public sealed class PreparationEngine
             .Where(selector => selector?.Scope == EffectTargetScope.Selected)
             .Cast<EffectTargetSelector>()
             .ToArray();
-        if (selectedSelectors.Length > 0)
-        {
-            if (command.TargetUnitInstanceId is null ||
-                !TryGetFieldUnit(match, command.TargetUnitInstanceId.Value, out var selected) ||
-                selectedSelectors.Any(selector => !MatchesSelector(selected, selector)))
-                return PreparationCommandResult.Failure(PreparationFailureCode.InvalidDeployTarget);
-        }
-        else if (command.TargetUnitInstanceId is not null)
+        if (!IsValidSelectedTarget(match, player, command.TargetUnitInstanceId, selectedSelectors, unit.Id))
             return PreparationCommandResult.Failure(PreparationFailureCode.InvalidDeployTarget);
 
         unit = player.DeployFromReserve(command.ReserveSlot);
@@ -249,14 +242,7 @@ public sealed class PreparationEngine
             .Cast<EffectTargetSelector>()
             .ToArray();
 
-        if (selectedSelectors.Length > 0)
-        {
-            if (command.TargetUnitInstanceId is null ||
-                !TryGetFieldUnit(match, command.TargetUnitInstanceId.Value, out var selected) ||
-                selectedSelectors.Any(selector => !MatchesSelector(selected, selector)))
-                return PreparationCommandResult.Failure(PreparationFailureCode.InvalidActionTarget);
-        }
-        else if (command.TargetUnitInstanceId is not null)
+        if (!IsValidSelectedTarget(match, player, command.TargetUnitInstanceId, selectedSelectors))
             return PreparationCommandResult.Failure(PreparationFailureCode.InvalidActionTarget);
 
         action = player.RemoveActionFromReserve(actionSlot);
@@ -449,13 +435,8 @@ public sealed class PreparationEngine
             ?? throw new InvalidOperationException($"Power '{power.Id}' has no onActivate trigger.");
         var selectedSelectors = activationTrigger.Effects.Select(GetTargetSelector)
             .Where(selector => selector?.Scope == EffectTargetScope.Selected).Cast<EffectTargetSelector>().ToArray();
-        if (selectedSelectors.Length > 0)
-        {
-            if (command.TargetUnitInstanceId is null || !TryGetFieldUnit(match, command.TargetUnitInstanceId.Value, out var selected) ||
-                selectedSelectors.Any(selector => !MatchesSelector(selected, selector)))
-                return PreparationCommandResult.Failure(PreparationFailureCode.InvalidPowerTarget);
-        }
-        else if (command.TargetUnitInstanceId is not null) return PreparationCommandResult.Failure(PreparationFailureCode.InvalidPowerTarget);
+        if (!IsValidSelectedTarget(match, player, command.TargetUnitInstanceId, selectedSelectors))
+            return PreparationCommandResult.Failure(PreparationFailureCode.InvalidPowerTarget);
 
         player.SpendResource(activation.Cost);
         _effectEngine.ProcessGameEvent(match, player, NativeGameEventKeys.PowerActivated);
@@ -503,10 +484,38 @@ public sealed class PreparationEngine
             _ => null,
         };
 
-    private static bool TryGetFieldUnit(MatchState match, UnitInstanceId instanceId, out UnitInstance unit)
+    private static bool IsValidSelectedTarget(
+        MatchState match,
+        PlayerState player,
+        UnitInstanceId? targetInstanceId,
+        IReadOnlyList<EffectTargetSelector> selectors,
+        UnitInstanceId? excludedReserveInstanceId = null)
     {
-        foreach (var player in match.Players)
-            if (player.TryGetFieldUnit(instanceId, out unit)) return unit.IsAlive;
+        if (selectors.Count == 0) return targetInstanceId is null;
+        if (targetInstanceId is null) return false;
+        var zones = selectors.Select(selector => selector.Zone).Distinct().ToArray();
+        if (zones.Length != 1) return false;
+        if (zones[0] == EffectTargetZone.Reserve && excludedReserveInstanceId == targetInstanceId) return false;
+        if (!TryGetSelectedTargetUnit(match, player, targetInstanceId.Value, zones[0], out var selected)) return false;
+        return selectors.All(selector => MatchesSelector(selected, selector));
+    }
+
+    private static bool TryGetSelectedTargetUnit(
+        MatchState match,
+        PlayerState player,
+        UnitInstanceId instanceId,
+        EffectTargetZone zone,
+        out UnitInstance unit)
+    {
+        if (zone == EffectTargetZone.Reserve)
+        {
+            if (player.TryGetOwnedUnit(instanceId, out unit, out var isReserve) && isReserve) return unit.IsAlive;
+            unit = null!;
+            return false;
+        }
+
+        foreach (var candidate in match.Players)
+            if (candidate.TryGetFieldUnit(instanceId, out unit)) return unit.IsAlive;
         unit = null!;
         return false;
     }

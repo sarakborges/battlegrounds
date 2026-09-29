@@ -1,3 +1,4 @@
+using Battlegrounds.Core.Domain.Effects;
 using Battlegrounds.Core.Domain.Ids;
 
 namespace Battlegrounds.Game;
@@ -20,28 +21,32 @@ internal sealed class PresentationInteractionState
     public int? UnitReserveSlot { get; private set; }
     public int? ActionReserveSlot { get; private set; }
     public UnitCombineId? CombineId { get; private set; }
+    public EffectTargetZone TargetZone { get; private set; } = EffectTargetZone.Field;
     public IReadOnlyCollection<UnitInstanceId> SelectedUnits => _selectedUnits;
 
     public bool IsActive => Kind != PresentationInteractionKind.None;
 
-    public void BeginDeployTarget(int reserveSlot)
+    public void BeginDeployTarget(int reserveSlot, EffectTargetZone targetZone = EffectTargetZone.Field)
     {
         Reset();
         Kind = PresentationInteractionKind.DeployTarget;
         UnitReserveSlot = reserveSlot;
+        TargetZone = targetZone;
     }
 
-    public void BeginActionTarget(int reserveSlot)
+    public void BeginActionTarget(int reserveSlot, EffectTargetZone targetZone = EffectTargetZone.Field)
     {
         Reset();
         Kind = PresentationInteractionKind.ActionTarget;
         ActionReserveSlot = reserveSlot;
+        TargetZone = targetZone;
     }
 
-    public void BeginPowerTarget()
+    public void BeginPowerTarget(EffectTargetZone targetZone = EffectTargetZone.Field)
     {
         Reset();
         Kind = PresentationInteractionKind.PowerTarget;
+        TargetZone = targetZone;
     }
 
     public void BeginCombineRecipeSelection()
@@ -75,6 +80,7 @@ internal sealed class PresentationInteractionState
         UnitReserveSlot = null;
         ActionReserveSlot = null;
         CombineId = null;
+        TargetZone = EffectTargetZone.Field;
         _selectedUnits.Clear();
     }
 }

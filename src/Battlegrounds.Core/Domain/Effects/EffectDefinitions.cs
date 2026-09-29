@@ -14,6 +14,12 @@ public enum EffectTargetScope
     Enemy,
 }
 
+public enum EffectTargetZone
+{
+    Field,
+    Reserve,
+}
+
 public enum EffectTargetSelection
 {
     All,
@@ -41,12 +47,14 @@ public sealed record EffectUnitQuery
     public bool ExcludeSource { get; }
     public UnitTypeId? RequiredTypeId { get; }
     public TagId? RequiredTagId { get; }
+    public EffectTargetZone Zone { get; }
 
     public EffectUnitQuery(
         EffectTargetScope scope,
         bool excludeSource = false,
         UnitTypeId? requiredTypeId = null,
-        TagId? requiredTagId = null)
+        TagId? requiredTagId = null,
+        EffectTargetZone zone = EffectTargetZone.Field)
     {
         if (excludeSource && scope is EffectTargetScope.Self or EffectTargetScope.Selected or EffectTargetScope.Enemy)
             throw new ArgumentException("excludeSource is only valid for friendly queries.", nameof(excludeSource));
@@ -55,6 +63,7 @@ public sealed record EffectUnitQuery
         ExcludeSource = excludeSource;
         RequiredTypeId = requiredTypeId;
         RequiredTagId = requiredTagId;
+        Zone = zone;
     }
 }
 
@@ -69,6 +78,7 @@ public sealed record EffectTargetSelector
     public bool ExcludeSource => Query.ExcludeSource;
     public UnitTypeId? RequiredTypeId => Query.RequiredTypeId;
     public TagId? RequiredTagId => Query.RequiredTagId;
+    public EffectTargetZone Zone => Query.Zone;
 
     public EffectTargetSelector(
         EffectTargetScope scope,
@@ -77,8 +87,9 @@ public sealed record EffectTargetSelector
         int? limit = null,
         UnitTypeId? requiredTypeId = null,
         TagId? requiredTagId = null,
-        EffectTargetAnchor relativeTo = EffectTargetAnchor.Source)
-        : this(new EffectUnitQuery(scope, excludeSource, requiredTypeId, requiredTagId), selection, limit, relativeTo)
+        EffectTargetAnchor relativeTo = EffectTargetAnchor.Source,
+        EffectTargetZone zone = EffectTargetZone.Field)
+        : this(new EffectUnitQuery(scope, excludeSource, requiredTypeId, requiredTagId, zone), selection, limit, relativeTo)
     {
     }
 
@@ -101,6 +112,8 @@ public sealed record EffectTargetSelector
             throw new ArgumentException("Selected-relative targeting is only valid for adjacent selections.", nameof(relativeTo));
         if (isAdjacentSelection && relativeTo == EffectTargetAnchor.Source && query.Scope != EffectTargetScope.Friendly)
             throw new ArgumentException("Source-relative adjacent target selection is only valid for friendly targets.", nameof(selection));
+        if (isAdjacentSelection && query.Zone != EffectTargetZone.Field)
+            throw new ArgumentException("Adjacent target selection is only valid on the Field.", nameof(selection));
 
         Selection = selection;
         Limit = limit;
@@ -230,6 +243,8 @@ public sealed record DealDamageEffectDefinition : EffectDefinition
     public DealDamageEffectDefinition(EffectTargetSelector target, EffectValueExpression amount)
     {
         Target = target ?? throw new ArgumentNullException(nameof(target));
+        if (Target.Zone != EffectTargetZone.Field)
+            throw new ArgumentException("dealDamage targets must be on the Field.", nameof(target));
         Amount = amount ?? throw new ArgumentNullException(nameof(amount));
     }
 }
@@ -242,6 +257,8 @@ public sealed record DestroyUnitEffectDefinition : EffectDefinition
     public DestroyUnitEffectDefinition(EffectTargetSelector target)
     {
         Target = target ?? throw new ArgumentNullException(nameof(target));
+        if (Target.Zone != EffectTargetZone.Field)
+            throw new ArgumentException("destroyUnit targets must be on the Field.", nameof(target));
     }
 }
 

@@ -308,7 +308,7 @@ internal sealed class DynamicEffectValueModValidator
             return;
         }
 
-        ValidateKeys(query, file, path, ["scope", "excludeSource", "typeId", "tagId"], ["scope"], issues);
+        ValidateKeys(query, file, path, ["scope", "excludeSource", "typeId", "tagId", "zone"], ["scope"], issues);
         string? scope = null;
         if (TryRequiredString(query, "scope", file, path + ".scope", issues, out var parsedScope))
         {

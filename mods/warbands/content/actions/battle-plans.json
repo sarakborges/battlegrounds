@@ -1,0 +1,15 @@
+{
+  "id": "battle-plans",
+  "name": "Battle Plans",
+  "tier": 1,
+  "cost": 1,
+  "effects": [
+    {
+      "kind": "applyUnitModifier",
+      "target": { "scope": "selected", "zone": "reserve" },
+      "modifierKey": "battle-plans",
+      "attack": 2,
+      "health": 2
+    }
+  ]
+}

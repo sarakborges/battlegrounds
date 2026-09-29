@@ -17,6 +17,7 @@ internal sealed class AdvancedEffectModValidator
         "leftmost", "rightmost", "adjacent", "leftAdjacent", "rightAdjacent",
     ];
     private static readonly HashSet<string> RelativeTargets = ["source", "selected"];
+    private static readonly HashSet<string> Zones = ["field", "reserve"];
     private static readonly HashSet<string> Comparisons =
     [
         "equal", "notEqual", "lessThan", "lessThanOrEqual", "greaterThan", "greaterThanOrEqual",
@@ -228,7 +229,7 @@ internal sealed class AdvancedEffectModValidator
             target,
             file,
             path,
-            ["scope", "selection", "excludeSource", "limit", "typeId", "tagId", "relativeTo"],
+            ["scope", "selection", "excludeSource", "limit", "typeId", "tagId", "relativeTo", "zone"],
             ["scope"],
             issues);
 
@@ -242,6 +243,7 @@ internal sealed class AdvancedEffectModValidator
                 issues.Add(new("INVALID_VALUE", file, path + ".selection", $"Unknown target selection '{selection}'."));
         }
 
+        var zone = ValidateZone(target, file, path, issues);
         var hasRelativeTo = target.TryGetProperty("relativeTo", out _);
         var relativeTo = "source";
         if (hasRelativeTo &&
@@ -265,7 +267,7 @@ internal sealed class AdvancedEffectModValidator
         if (hasLimit && TryRequiredInt(target, "limit", file, path + ".limit", issues, out var limit) && limit <= 0)
             issues.Add(new("INVALID_VALUE", file, path + ".limit", "limit must be positive."));
 
-        ValidateSelectorCombination(file, path, scope, selection, relativeTo, hasRelativeTo, allowSelected, excludeSource, hasLimit, issues);
+        ValidateSelectorCombination(file, path, scope, selection, relativeTo, zone, hasRelativeTo, allowSelected, excludeSource, hasLimit, issues);
         ValidateReferences(target, file, path, typeIds, tagIds, issues);
     }
 
@@ -284,8 +286,9 @@ internal sealed class AdvancedEffectModValidator
             return;
         }
 
-        ValidateKeys(query, file, path, ["scope", "excludeSource", "typeId", "tagId"], ["scope"], issues);
+        ValidateKeys(query, file, path, ["scope", "excludeSource", "typeId", "tagId", "zone"], ["scope"], issues);
         var scope = ValidateScope(query, file, path, allowSelected, issues);
+        ValidateZone(query, file, path, issues);
         var excludeSource = false;
         if (query.TryGetProperty("excludeSource", out var excludeElement))
         {
@@ -297,6 +300,15 @@ internal sealed class AdvancedEffectModValidator
         if (excludeSource && scope != "friendly")
             issues.Add(new("INVALID_PARAMETER", file, path + ".excludeSource", "excludeSource is only valid for friendly queries."));
         ValidateReferences(query, file, path, typeIds, tagIds, issues);
+    }
+
+    private static string ValidateZone(JsonElement element, string file, string path, List<ModValidationIssue> issues)
+    {
+        if (!element.TryGetProperty("zone", out _)) return "field";
+        if (!TryRequiredString(element, "zone", file, path + ".zone", issues, out var zone)) return "field";
+        if (!Zones.Contains(zone!))
+            issues.Add(new("INVALID_VALUE", file, path + ".zone", $"Unknown target zone '{zone}'."));
+        return zone!;
     }
 
     private static string? ValidateScope(
@@ -320,6 +332,7 @@ internal sealed class AdvancedEffectModValidator
         string? scope,
         string selection,
         string relativeTo,
+        string zone,
         bool hasRelativeTo,
         bool allowSelected,
         bool excludeSource,
@@ -338,6 +351,8 @@ internal sealed class AdvancedEffectModValidator
         }
 
         var isAdjacentSelection = selection is "adjacent" or "leftAdjacent" or "rightAdjacent";
+        if (isAdjacentSelection && zone != "field")
+            issues.Add(new("INVALID_PARAMETER", file, path + ".zone", "Adjacent targeting is only valid on the Field."));
         if (hasRelativeTo && !isAdjacentSelection)
             issues.Add(new("INVALID_PARAMETER", file, path + ".relativeTo", "relativeTo is only valid for adjacent selections."));
         if (relativeTo == "selected" && !allowSelected)
