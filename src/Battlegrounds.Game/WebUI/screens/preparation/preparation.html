@@ -10,11 +10,14 @@
 
     <main class="table-stage">
       <section class="tavern-controls panel" data-component="panel" data-theme-role="panel.tavernControls">
-        <div class="tavern-control" data-slot="upgrade"></div>
-        <div class="tier-badge panel" data-component="panel" data-theme-role="panel.tierBadge">
-          <span class="eyebrow" data-field="tier-label"></span>
-          <strong data-field="tier"></strong>
+        <div class="tavern-left-controls">
+          <div class="tavern-control tavern-upgrade" data-slot="upgrade"></div>
+          <div class="tier-badge panel" data-component="panel" data-theme-role="panel.tierBadge">
+            <span class="eyebrow" data-field="tier-label"></span>
+            <strong data-field="tier"></strong>
+          </div>
         </div>
+
         <div class="character-portrait shopkeeper-drop drag-target panel" data-component="panel" data-theme-role="panel.shopkeeper" data-drop-kind="shopkeeper">
           <img class="character-art shopkeeper-art" data-field="shopkeeper-art" alt="">
           <div class="character-nameplate">
@@ -22,8 +25,11 @@
           </div>
           <small class="drag-hint">Drop a board unit to sell</small>
         </div>
-        <div class="tavern-control" data-slot="refresh"></div>
-        <div class="tavern-control" data-slot="freeze"></div>
+
+        <div class="tavern-right-controls">
+          <div class="tavern-control" data-slot="refresh"></div>
+          <div class="tavern-control" data-slot="freeze"></div>
+        </div>
       </section>
 
       <section class="tavern-shelf panel" data-component="panel" data-theme-role="panel.tavern">
@@ -35,23 +41,25 @@
       </section>
 
       <section class="hero-dock panel" data-component="panel" data-theme-role="panel.heroDock">
-        <div class="hero-stat health-badge panel" data-component="panel" data-theme-role="panel.healthBadge">
-          <span data-field="health"></span>
-        </div>
-        <div class="hero-stat armor-badge panel" data-component="panel" data-theme-role="panel.armorBadge">
-          <span data-field="armor"></span>
-        </div>
-        <div class="character-portrait hero-drop drag-target panel" data-component="panel" data-theme-role="panel.heroPortrait" data-drop-kind="hero">
-          <img class="character-art hero-art" data-field="hero-art" alt="">
-          <div class="character-nameplate hero-nameplate">
-            <span class="eyebrow" data-field="leader-label"></span>
-            <strong data-field="hero-name"></strong>
+        <div class="hero-cluster">
+          <div class="character-portrait hero-drop drag-target panel" data-component="panel" data-theme-role="panel.heroPortrait" data-drop-kind="hero">
+            <img class="character-art hero-art" data-field="hero-art" alt="">
+            <div class="character-nameplate hero-nameplate">
+              <span class="eyebrow" data-field="leader-label"></span>
+              <strong data-field="hero-name"></strong>
+            </div>
+            <small class="drag-hint">Drop a tavern card to buy</small>
           </div>
-          <small class="drag-hint">Drop a tavern card to buy</small>
+
+          <div class="hero-stat health-badge panel" data-component="panel" data-theme-role="panel.healthBadge">
+            <span data-field="health"></span>
+          </div>
+          <div class="hero-stat armor-badge panel" data-component="panel" data-theme-role="panel.armorBadge">
+            <span data-field="armor"></span>
+          </div>
+          <div class="hero-power" data-slot="power"></div>
         </div>
-        <div class="hero-actions">
-          <div data-slot="power"></div>
-        </div>
+
         <div class="resource-badge panel" data-component="panel" data-theme-role="panel.resourceBadge">
           <span class="eyebrow" data-field="resource-label"></span>
           <strong data-field="resource"></strong>
