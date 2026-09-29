@@ -11,9 +11,16 @@
   min-height: 56px;
   padding-inline: 18px;
   border-radius: 18px 6px 6px 18px;
-  box-shadow: 0 9px 22px rgba(0, 0, 0, .36);
+  background-image: none;
+  box-shadow:
+    0 9px 22px rgba(0, 0, 0, .36),
+    inset 0 0 0 2px color-mix(in srgb, var(--action-button-border-color) 38%, transparent);
   font-size: 14px;
   pointer-events: auto;
+}
+
+.action-button.end-recruitment-control__button[data-theme-sliced-background="true"]::before {
+  display: none;
 }
 
 .end-recruitment-control__waiting {
