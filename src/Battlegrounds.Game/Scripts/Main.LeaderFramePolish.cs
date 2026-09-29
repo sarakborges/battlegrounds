@@ -56,14 +56,14 @@ public partial class Main
 
     private void ApplyLocalLeaderFrame(Texture2D texture)
     {
-        const string framePath = "Margin/Shell/CenterStage/PreparationPanel/HeroDock/HeroDockRow/HeroPortraitCluster/HeroPortraitFrame";
-        var frame = GetNodeOrNull<PanelContainer>(framePath);
+        if (!_hudBound)
+            return;
+
+        var frame = _hudHeroPortrait.GetParent() as Control;
         if (frame is null)
             return;
 
-        if (frame.GetNodeOrNull<TextureRect>("Portrait") is { } art)
-            FramedCosmeticPortrait.ConfigureArt(art, TextureRect.StretchModeEnum.KeepAspectCovered);
-
+        FramedCosmeticPortrait.ConfigureArt(_hudHeroPortrait, TextureRect.StretchModeEnum.KeepAspectCovered);
         FramedCosmeticPortrait.ApplyFrame(frame, texture, "LeaderFrameOverlay");
     }
 
