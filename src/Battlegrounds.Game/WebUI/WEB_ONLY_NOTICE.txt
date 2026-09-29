@@ -1,1 +1,0 @@
-Gameplay presentation is provided exclusively by the WebUI surface. The Godot launcher remains active until its dedicated web migration slice.
