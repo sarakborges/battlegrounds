@@ -47,6 +47,7 @@ public static class ModThemeMetricNames
         ModThemeMetricKeys.Layout.TurnRailWidth,
         ModThemeMetricKeys.Layout.TurnRailGap,
         ModThemeMetricKeys.Layout.TurnRailEndButtonHeight,
+        ModThemeMetricKeys.Layout.PreparationScene.OpponentRailWidth,
         ModThemeMetricKeys.Layout.PreparationScene.TavernTop,
         ModThemeMetricKeys.Layout.PreparationScene.OfferTop,
         ModThemeMetricKeys.Layout.PreparationScene.FieldTop,
