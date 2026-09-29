@@ -35,6 +35,22 @@ public partial class Main
         if (_referenceCockpit is null || _referenceCenterStage is null || _referenceHeroCluster is null)
             return;
 
+        // Older preparation layout code still touches these containers every tick.
+        // The reference cockpit owns these controls now, so keep the obsolete hosts
+        // collapsed rather than letting them steal board height again.
+        if (_referenceHeroDock is not null)
+        {
+            _referenceHeroDock.Visible = false;
+            _referenceHeroDock.CustomMinimumSize = Vector2.Zero;
+        }
+        if (_referenceReserveShelf is not null)
+        {
+            _referenceReserveShelf.Visible = false;
+            _referenceReserveShelf.CustomMinimumSize = Vector2.Zero;
+        }
+        if (_turnButtonOverlay is not null)
+            _turnButtonOverlay.Visible = false;
+
         _referenceCockpit.Visible = true;
         ApplyReferenceCockpitGeometry();
     }
@@ -70,21 +86,6 @@ public partial class Main
         if (_referenceCombineButton is not null)
             ReparentForReferenceLayout(_referenceCombineButton, _referenceCockpit);
         ReparentForReferenceLayout(_endPreparationButton, _referenceCockpit);
-
-        if (_referenceHeroDock is not null)
-        {
-            _referenceHeroDock.Visible = false;
-            _referenceHeroDock.CustomMinimumSize = Vector2.Zero;
-        }
-
-        if (_referenceReserveShelf is not null)
-        {
-            _referenceReserveShelf.Visible = false;
-            _referenceReserveShelf.CustomMinimumSize = Vector2.Zero;
-        }
-
-        if (_turnButtonOverlay is not null)
-            _turnButtonOverlay.Visible = false;
     }
 
     private void ApplyReferenceCockpitGeometry()
@@ -114,14 +115,31 @@ public partial class Main
             ModThemeMetricKeys.Layout.HeroDockArmorBadgeWidth,
             1.0f,
             512.0f);
-        var handCardHeight = ResolvePresentationMetric(
-            ModThemeMetricKeys.Row.PreferredCardHeight(ModThemeMetricKeys.Row.Reserve),
+
+        // A hand card must have an actual card footprint. The previous reserve-row
+        // metric was intentionally tiny for the old dashboard layout, which made a
+        // vertical card escape upward over the hero. Reuse the Tavern card metrics
+        // as the mod-driven source and scale them into a compact bottom hand.
+        var offerCardWidth = ResolvePresentationMetric(
+            ModThemeMetricKeys.Row.PreferredCardWidth(ModThemeMetricKeys.Row.Offer),
             1.0f,
-            1024.0f);
+            2048.0f);
+        var offerCardHeight = ResolvePresentationMetric(
+            ModThemeMetricKeys.Row.PreferredCardHeight(ModThemeMetricKeys.Row.Offer),
+            1.0f,
+            2048.0f);
         var handPadding = ResolvePresentationMetric(
             ModThemeMetricKeys.Row.Padding(ModThemeMetricKeys.Row.Reserve),
             0.0f,
             256.0f);
+        var handGap = ResolvePresentationMetric(
+            ModThemeMetricKeys.Row.Gap(ModThemeMetricKeys.Row.Reserve),
+            0.0f,
+            256.0f);
+        var handCardWidth = Mathf.Clamp(offerCardWidth * 0.82f, 82.0f, 132.0f);
+        var handCardHeight = Mathf.Clamp(offerCardHeight * 0.92f, 118.0f, 168.0f);
+        var handHeight = handCardHeight + handPadding * 2.0f;
+
         var resourceWidth = ResolvePresentationMetric(
             ModThemeMetricKeys.Layout.HeroDockResourceBadgeWidth,
             1.0f,
@@ -135,42 +153,49 @@ public partial class Main
             1.0f,
             512.0f);
 
-        var handHeight = Mathf.Max(72.0f, handCardHeight + handPadding * 2.0f);
         var badgeAllowance = Mathf.Max(healthWidth, armorWidth) * 0.30f;
         var heroWidth = portraitSize + badgeAllowance;
         var heroHeight = portraitSize + badgeAllowance * 0.45f;
         var centerX = width * 0.5f;
-        var handTop = height - handHeight;
-        var heroOverlap = Mathf.Min(18.0f, handHeight * 0.20f);
-        var heroY = handTop - heroHeight + heroOverlap;
+        var handTop = height - handHeight - 2.0f;
+        var heroY = handTop - heroHeight - 4.0f;
 
         ResetFreeControl(_referenceHeroCluster);
         _referenceHeroCluster.Position = new Vector2(centerX - heroWidth * 0.5f, heroY);
         _referenceHeroCluster.Size = new Vector2(heroWidth, heroHeight);
         _referenceHeroCluster.CustomMinimumSize = _referenceHeroCluster.Size;
+        _referenceHeroCluster.ZIndex = 43;
 
         var powerSize = Mathf.Clamp(portraitSize * 0.68f, 58.0f, 96.0f);
         ResetFreeControl(_powerButton);
         _powerButton.Position = new Vector2(
-            centerX + portraitSize * 0.5f + 10.0f,
+            centerX + portraitSize * 0.5f + 8.0f,
             heroY + heroHeight * 0.5f - powerSize * 0.5f);
         _powerButton.Size = new Vector2(powerSize, powerSize);
         _powerButton.CustomMinimumSize = _powerButton.Size;
+        _powerButton.ZIndex = 44;
 
         ResetFreeControl(_reserveButtons);
         _reserveButtons.Position = new Vector2(0.0f, handTop);
         _reserveButtons.Size = new Vector2(width, handHeight);
         _reserveButtons.CustomMinimumSize = new Vector2(0.0f, handHeight);
         _reserveButtons.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
+        _reserveButtons.PreferredCardWidth = handCardWidth;
+        _reserveButtons.MinimumCardWidth = handCardWidth * 0.72f;
+        _reserveButtons.PreferredCardHeight = handCardHeight;
+        _reserveButtons.Gap = handGap;
+        _reserveButtons.Padding = handPadding;
+        _reserveButtons.ZIndex = 41;
         _reserveButtons.QueueSort();
 
         ResetFreeControl(_hudResourceBadge);
-        var resolvedResourceWidth = Mathf.Min(resourceWidth, Mathf.Max(96.0f, width * 0.16f));
+        var resolvedResourceWidth = Mathf.Min(resourceWidth * 0.82f, Mathf.Max(108.0f, width * 0.13f));
         _hudResourceBadge.Position = new Vector2(
             width - resolvedResourceWidth - 18.0f,
             height - resourceHeight - 10.0f);
         _hudResourceBadge.Size = new Vector2(resolvedResourceWidth, resourceHeight);
         _hudResourceBadge.CustomMinimumSize = _hudResourceBadge.Size;
+        _hudResourceBadge.ZIndex = 45;
 
         if (_referenceCombineButton is not null)
         {
@@ -187,6 +212,7 @@ public partial class Main
                 width - resolvedResourceWidth - combineWidth - 28.0f,
                 height - combineHeight - 14.0f);
             _referenceCombineButton.Size = new Vector2(combineWidth, combineHeight);
+            _referenceCombineButton.ZIndex = 45;
         }
 
         var readyWidth = Mathf.Max(92.0f, readyHeight * 1.45f);
@@ -196,6 +222,7 @@ public partial class Main
             Mathf.Clamp(height * 0.43f - readyHeight * 0.5f, 8.0f, height - readyHeight - 8.0f));
         _endPreparationButton.Size = new Vector2(readyWidth, readyHeight);
         _endPreparationButton.CustomMinimumSize = _endPreparationButton.Size;
+        _endPreparationButton.ZIndex = 45;
     }
 
     private static void ReparentForReferenceLayout(Control control, Control parent)
