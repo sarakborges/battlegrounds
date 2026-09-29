@@ -21,6 +21,10 @@ function sourceFrom(element) {
   };
 }
 
+function dragEnabled(element) {
+  return element.hasAttribute('data-drag-enabled') && element.dataset.dragEnabled !== 'false';
+}
+
 function compatible(target, drag) {
   const kind = target?.dataset.dropKind;
   if (!kind || !drag) return false;
@@ -78,11 +82,20 @@ function moveGhost(ghost, event) {
 export function bindPreparationDrag(root) {
   let pending = null;
   let drag = null;
+  let capturedPointer = null;
   let lastDragEnd = 0;
+
+  const releasePointer = () => {
+    if (!capturedPointer) return;
+    const { element, pointerId } = capturedPointer;
+    if (element.hasPointerCapture?.(pointerId)) element.releasePointerCapture(pointerId);
+    capturedPointer = null;
+  };
 
   const finish = event => {
     if (!drag) {
       pending = null;
+      releasePointer();
       return;
     }
 
@@ -112,16 +125,22 @@ export function bindPreparationDrag(root) {
     clearFeedback(root);
     drag = null;
     pending = null;
+    releasePointer();
   };
 
   root.addEventListener('pointerdown', event => {
     if (event.button !== 0) return;
     const element = event.target.closest('[data-drag-kind]');
-    if (!element || element.disabled || element.dataset.dragEnabled !== 'true') return;
+    if (!element || element.disabled || !dragEnabled(element)) return;
 
     const source = sourceFrom(element);
     if (!source) return;
     pending = { ...source, startX: event.clientX, startY: event.clientY };
+
+    if (element.setPointerCapture) {
+      element.setPointerCapture(event.pointerId);
+      capturedPointer = { element, pointerId: event.pointerId };
+    }
   });
 
   root.addEventListener('pointermove', event => {
