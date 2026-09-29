@@ -28,7 +28,7 @@ async function createTavernOfferCard(entry, blocked, canAcquire) {
     variant: 'offer',
     attributes: {
       'data-slot': entry.slot,
-      'data-drag-kind': 'offer',
+      'data-drag-kind': 'tavern-offer-card',
       'data-drag-slot': entry.slot,
       'data-drag-enabled': boolText(!blocked),
       'data-drag-valid': boolText(canAcquire)
@@ -36,7 +36,7 @@ async function createTavernOfferCard(entry, blocked, canAcquire) {
   });
 }
 
-async function createReserveCard(entry, blocked, canDeploy) {
+async function createPlayerReserveCard(entry, blocked, canDeployReserveUnit) {
   const isUnit = entry.kind === 'unit';
   const attributes = {
     'data-slot': entry.slot,
@@ -44,10 +44,10 @@ async function createReserveCard(entry, blocked, canDeploy) {
   };
 
   if (isUnit) {
-    attributes['data-drag-kind'] = 'reserve-unit';
+    attributes['data-drag-kind'] = 'player-reserve-unit';
     attributes['data-drag-slot'] = entry.slot;
     attributes['data-drag-enabled'] = boolText(!blocked);
-    attributes['data-drag-valid'] = boolText(canDeploy);
+    attributes['data-drag-valid'] = boolText(canDeployReserveUnit);
   }
 
   return createCard({
@@ -61,9 +61,9 @@ async function createReserveCard(entry, blocked, canDeploy) {
   });
 }
 
-async function createFieldUnitCard(unit, blocked) {
+async function createPlayerFieldUnitCard(unit, blocked) {
   return createCard({
-    kind: 'field',
+    kind: 'unit',
     name: unit.name,
     meta: await createCardStatBadges(unit),
     disabled: blocked,
@@ -72,7 +72,7 @@ async function createFieldUnitCard(unit, blocked) {
     attributes: {
       'data-slot': unit.slot,
       'data-unit-instance-id': unit.unitInstanceId,
-      'data-drag-kind': 'field',
+      'data-drag-kind': 'player-field-unit',
       'data-drag-index': unit.slot,
       'data-drag-enabled': boolText(!blocked),
       'data-drag-valid': boolText(!blocked)
@@ -142,7 +142,7 @@ export async function createPreparationScreen(state) {
   const limits = state.limits ?? {};
   const reserveCount = (state.reserve ?? []).length;
   const fieldCount = (state.field ?? []).length;
-  const canDeploy = !blocked &&
+  const canDeployReserveUnit = !blocked &&
     fieldCount < (limits.fieldCapacity ?? Number.POSITIVE_INFINITY);
   const cosmetics = cosmeticsForState(state);
   const humanPlayer = (state.players ?? []).find(player => player.human);
@@ -186,15 +186,15 @@ export async function createPreparationScreen(state) {
       (human.resource ?? 0) >= (entry.cost ?? Number.POSITIVE_INFINITY);
     tavernOfferCards.push(await createTavernOfferCard(entry, blocked, canAcquire));
   }
-  appendChildren(element.querySelector('[data-slot="offer-zone"]'), [
+  appendChildren(element.querySelector('[data-slot="tavern-offer"]'), [
     await createTavernOffer({ cards: tavernOfferCards })
   ]);
 
   const fieldUnitCards = [];
   for (const unit of state.field ?? []) {
-    fieldUnitCards.push(await createFieldUnitCard(unit, blocked));
+    fieldUnitCards.push(await createPlayerFieldUnitCard(unit, blocked));
   }
-  appendChildren(element.querySelector('[data-slot="field-zone"]'), [
+  appendChildren(element.querySelector('[data-slot="player-field"]'), [
     await createPlayerField({ cards: fieldUnitCards })
   ]);
 
@@ -210,9 +210,9 @@ export async function createPreparationScreen(state) {
 
   const reserveCards = [];
   for (const entry of state.reserve ?? []) {
-    reserveCards.push(await createReserveCard(entry, blocked, canDeploy));
+    reserveCards.push(await createPlayerReserveCard(entry, blocked, canDeployReserveUnit));
   }
-  appendChildren(element.querySelector('[data-slot="reserve-zone"]'), [
+  appendChildren(element.querySelector('[data-slot="player-reserve"]'), [
     await createPlayerReserve({ cards: reserveCards })
   ]);
 
@@ -227,7 +227,7 @@ export async function createPreparationScreen(state) {
 
   const boardArt = await boardArtUrl(cosmetics);
   if (boardArt) {
-    element.querySelector('.table-stage')?.style.setProperty(
+    element.querySelector('.preparation-board')?.style.setProperty(
       '--board-art',
       `url("${boardArt}")`
     );
