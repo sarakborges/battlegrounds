@@ -1,4 +1,4 @@
-export function createGameBridge({ onState, onError, onAsset }) {
+export function createGameBridge({ onState, onError, onAsset, onDevCssReload }) {
   let pollTimer = null;
 
   function send(type, payload = {}) {
@@ -15,6 +15,7 @@ export function createGameBridge({ onState, onError, onAsset }) {
       if (!message || typeof message.type !== 'string') return;
       if (message.type === 'state') onState?.(message.payload);
       else if (message.type === 'asset') onAsset?.(message.payload);
+      else if (message.type === 'dev-css-reload') onDevCssReload?.();
       else if (message.type === 'error') onError?.(message.payload?.message ?? 'Unknown game error');
     } catch (error) {
       onError?.(`Invalid game message: ${error.message}`);
