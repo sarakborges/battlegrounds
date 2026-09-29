@@ -14,10 +14,16 @@ function payloadFor(element, action) {
   }
 }
 
+function isDisabled(element) {
+  return element.disabled === true ||
+    element.dataset.disabled === 'true' ||
+    element.getAttribute('aria-disabled') === 'true';
+}
+
 export function bindActions(root, send) {
   root.addEventListener('click', event => {
     const element = event.target.closest('[data-action]');
-    if (!element || element.disabled) return;
+    if (!element || isDisabled(element)) return;
     const action = element.dataset.action;
     send(action, payloadFor(element, action));
   });
