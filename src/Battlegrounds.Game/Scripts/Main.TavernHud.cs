@@ -230,9 +230,10 @@ public partial class Main
 
         controlSpacer.Visible = false;
         balanceSpacer.Visible = false;
-        shopkeeper.SizeFlagsVertical = Control.SizeFlags.ExpandFill;
+        shopkeeper.SizeFlagsHorizontal = Control.SizeFlags.ShrinkCenter;
+        shopkeeper.SizeFlagsVertical = Control.SizeFlags.ShrinkCenter;
         shopkeeper.MouseFilter = Control.MouseFilterEnum.Stop;
-        shopkeeper.ClipContents = true;
+        shopkeeper.ClipContents = false;
         BindShopkeeperCosmetic(shopkeeper);
         BindShopkeeperFrame(shopkeeper);
         BindActionOfferShelf(shelfRow);
@@ -291,20 +292,25 @@ public partial class Main
     private Control EnsureShopkeeperCosmeticLayer(PanelContainer shopkeeper)
     {
         var layer = shopkeeper.GetNodeOrNull<Control>("CosmeticLayer");
-        if (layer is not null)
-            return layer;
+        var size = ResolvePresentationMetric(
+            ModThemeMetricKeys.Layout.TavernShopkeeperWidth,
+            1.0f,
+            2048.0f) * 0.75f;
 
-        layer = new Control
+        if (layer is null)
         {
-            Name = "CosmeticLayer",
-            CustomMinimumSize = new Vector2(
-                ResolvePresentationMetric(ModThemeMetricKeys.Layout.TavernShopkeeperWidth, 1.0f, 2048.0f),
-                ResolvePresentationMetric(ModThemeMetricKeys.Layout.TavernControlsMinimumHeight, 1.0f, 2048.0f)),
-            MouseFilter = Control.MouseFilterEnum.Ignore,
-            ZIndex = 1,
-        };
-        shopkeeper.AddChild(layer);
-        shopkeeper.MoveChild(layer, 0);
+            layer = new Control
+            {
+                Name = "CosmeticLayer",
+                MouseFilter = Control.MouseFilterEnum.Ignore,
+                ZIndex = 1,
+            };
+            shopkeeper.AddChild(layer);
+            shopkeeper.MoveChild(layer, 0);
+        }
+
+        FramedCosmeticPortrait.ConfigureSquare(layer, size);
+        shopkeeper.CustomMinimumSize = new Vector2(size, size);
         return layer;
     }
 
@@ -314,16 +320,10 @@ public partial class Main
         var art = layer.GetNodeOrNull<TextureRect>("CosmeticArt");
         if (art is null)
         {
-            art = new TextureRect
-            {
-                Name = "CosmeticArt",
-                ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize,
-                StretchMode = TextureRect.StretchModeEnum.KeepAspectCovered,
-                MouseFilter = Control.MouseFilterEnum.Ignore,
-            };
+            art = new TextureRect { Name = "CosmeticArt" };
             layer.AddChild(art);
-            art.SetAnchorsAndOffsetsPreset(Control.LayoutPreset.FullRect);
         }
+        FramedCosmeticPortrait.ConfigureArt(art);
 
         var hasImage = PresentationTextures.TryGetShopkeeperImage(out var texture);
         art.Texture = texture;
@@ -340,6 +340,7 @@ public partial class Main
                 HorizontalAlignment = HorizontalAlignment.Center,
                 VerticalAlignment = VerticalAlignment.Center,
                 MouseFilter = Control.MouseFilterEnum.Ignore,
+                ZIndex = 1,
             };
             if (ResolveThemeColor("focus", out var focusColor))
                 fallback.AddThemeColorOverride("font_color", focusColor);
@@ -368,23 +369,7 @@ public partial class Main
             return;
 
         var layer = EnsureShopkeeperCosmeticLayer(shopkeeper);
-        var frame = layer.GetNodeOrNull<TextureRect>("CosmeticFrame");
-        if (frame is null)
-        {
-            frame = new TextureRect
-            {
-                Name = "CosmeticFrame",
-                ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize,
-                StretchMode = TextureRect.StretchModeEnum.Scale,
-                MouseFilter = Control.MouseFilterEnum.Ignore,
-                ZIndex = 1,
-            };
-            layer.AddChild(frame);
-            frame.SetAnchorsAndOffsetsPreset(Control.LayoutPreset.FullRect);
-        }
-
-        frame.Texture = texture;
-        frame.Visible = true;
+        FramedCosmeticPortrait.ApplyFrame(layer, texture);
     }
 
     private void RefreshHeroPortraitFallback()
