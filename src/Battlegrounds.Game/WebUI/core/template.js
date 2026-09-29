@@ -36,7 +36,29 @@ export function useStyle(url) {
   const link = document.createElement('link');
   link.rel = 'stylesheet';
   link.href = key;
+  link.dataset.styleSource = key;
   document.head.appendChild(link);
+}
+
+export function reloadStyles() {
+  const stamp = String(Date.now());
+  const links = [...document.querySelectorAll('link[rel="stylesheet"]')];
+
+  for (const link of links) {
+    const source = link.dataset.styleSource ?? link.getAttribute('href');
+    if (!source) continue;
+
+    const url = new URL(source, document.baseURI);
+    url.searchParams.set('__hot', stamp);
+
+    const replacement = document.createElement('link');
+    replacement.rel = 'stylesheet';
+    replacement.href = url.href;
+    replacement.dataset.styleSource = source;
+    replacement.addEventListener('load', () => link.remove(), { once: true });
+    replacement.addEventListener('error', () => replacement.remove(), { once: true });
+    link.after(replacement);
+  }
 }
 
 export function appendChildren(target, children = []) {
