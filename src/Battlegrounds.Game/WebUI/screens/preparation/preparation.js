@@ -16,6 +16,8 @@ const templateUrl = new URL('./preparation.html', import.meta.url);
 useStyle(new URL('../../components/panel/panel.css', import.meta.url));
 useStyle(new URL('./preparation.css', import.meta.url));
 
+const boolText = value => value ? 'true' : 'false';
+
 async function createOfferCard(entry, blocked, canAcquire) {
   return createCard({
     kind: entry.kind,
@@ -28,8 +30,8 @@ async function createOfferCard(entry, blocked, canAcquire) {
       'data-slot': entry.slot,
       'data-drag-kind': 'offer',
       'data-drag-slot': entry.slot,
-      'data-drag-enabled': !blocked,
-      'data-drag-valid': canAcquire
+      'data-drag-enabled': boolText(!blocked),
+      'data-drag-valid': boolText(canAcquire)
     }
   });
 }
@@ -41,8 +43,8 @@ async function createReserveCard(state, entry, blocked, canDeploy) {
   if (entry.kind === 'unit' && !combining) {
     attributes['data-drag-kind'] = 'reserve-unit';
     attributes['data-drag-slot'] = entry.slot;
-    attributes['data-drag-enabled'] = !blocked;
-    attributes['data-drag-valid'] = canDeploy;
+    attributes['data-drag-enabled'] = boolText(!blocked);
+    attributes['data-drag-valid'] = boolText(canDeploy);
   }
 
   return createCard({
@@ -63,8 +65,8 @@ async function createFieldCard(state, unit, blocked) {
   if (!combining) {
     attributes['data-drag-kind'] = 'field';
     attributes['data-drag-index'] = unit.slot;
-    attributes['data-drag-enabled'] = !blocked;
-    attributes['data-drag-valid'] = !blocked;
+    attributes['data-drag-enabled'] = boolText(!blocked);
+    attributes['data-drag-valid'] = boolText(!blocked);
   }
 
   return createCard({
