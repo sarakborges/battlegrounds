@@ -1,0 +1,134 @@
+.hero-cockpit {
+  position: static !important;
+  min-height: 0;
+  transform: none !important;
+  border: 0 !important;
+  background: transparent !important;
+}
+
+.hero-cockpit__cluster {
+  position: absolute;
+  z-index: 22;
+  left: 50%;
+  bottom: 140px;
+  width: 132px;
+  height: 150px;
+  transform: translateX(-50%);
+}
+
+.hero-cockpit__portrait-slot {
+  position: absolute;
+  inset: 0;
+  --character-portrait-width: 132px;
+  --character-portrait-height: 150px;
+  --character-nameplate-width: 120px;
+}
+
+.hero-cockpit__stat {
+  position: absolute;
+  z-index: 28;
+  display: grid;
+  place-items: center;
+  padding: 0 !important;
+  border-radius: 50% !important;
+  font-size: 18px;
+  font-weight: 800;
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.36);
+}
+
+.hero-cockpit__health {
+  width: 46px;
+  height: 46px;
+  right: -9px;
+  bottom: -9px;
+}
+
+.hero-cockpit__armor {
+  width: 39px;
+  height: 39px;
+  right: 12px;
+  bottom: 28px;
+}
+
+.hero-cockpit__power {
+  position: absolute;
+  z-index: 26;
+  left: calc(100% + 8px);
+  top: 58%;
+  transform: translateY(-50%);
+}
+
+.hero-cockpit__power-button {
+  width: 60px;
+  height: 60px;
+  min-width: 60px;
+  padding: 0 !important;
+  border-radius: 50% !important;
+  font-size: 24px;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.34);
+}
+
+.hero-cockpit__resource {
+  position: absolute;
+  z-index: 24;
+  right: 8.5%;
+  bottom: 58px;
+  min-width: 116px;
+  min-height: 42px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin: 0;
+  border-radius: 999px !important;
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.3);
+}
+
+.hero-cockpit__resource strong {
+  font-size: 20px;
+}
+
+@media (max-width: 1200px) {
+  .hero-cockpit__cluster {
+    width: 116px;
+    height: 132px;
+    bottom: 124px;
+  }
+
+  .hero-cockpit__portrait-slot {
+    --character-portrait-width: 116px;
+    --character-portrait-height: 132px;
+    --character-nameplate-width: 106px;
+  }
+
+  .hero-cockpit__health {
+    width: 42px;
+    height: 42px;
+    right: -8px;
+    bottom: -8px;
+  }
+
+  .hero-cockpit__armor {
+    width: 36px;
+    height: 36px;
+    right: 10px;
+    bottom: 25px;
+  }
+
+  .hero-cockpit__power {
+    left: calc(100% + 7px);
+    top: 58%;
+  }
+
+  .hero-cockpit__power-button {
+    width: 54px;
+    height: 54px;
+    min-width: 54px;
+  }
+
+  .hero-cockpit__resource {
+    right: 6.5%;
+    bottom: 50px;
+    min-width: 104px;
+  }
+}

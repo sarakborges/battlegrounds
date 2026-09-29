@@ -41,6 +41,13 @@ WebUI/
       card.html
       card.css
       card.js
+    character-portrait/
+    card-zone/
+    hero-cockpit/
+    opponent-rail/
+    shopkeeper/
+    tavern-controls/
+    turn-rail/
     ...
   screens/
     leader-selection/
@@ -48,9 +55,9 @@ WebUI/
       leader-selection.css
       leader-selection.js
     preparation/
-      preparation.html
-      preparation.css
-      preparation.js
+      preparation.html    # screen composition slots only
+      preparation.css     # screen-level grid/stage only
+      preparation.js      # state -> component orchestration
     combat/
       combat.html
       combat.css
@@ -60,6 +67,8 @@ WebUI/
 HTML structure must live in `.html` templates. Component and screen JavaScript clones those templates, fills text/state, assigns semantic `data-*` properties and connects behavior. It must not build markup with template strings or `innerHTML`.
 
 Every reusable UI component owns a directory named after the component and contains the matching `.html`, `.css`, and `.js` files. The CI checks this convention and rejects HTML construction in component/screen JavaScript.
+
+A component owns its own geometry and visual state. Screen CSS may position component roots as part of the screen composition, but it must not reach into reusable component internals. For example, preparation card width/height belongs to `components/card/card.css`; the preparation screen is not allowed to size `.card`, `.button`, `.component-row`, `.player-chip`, or `.character-portrait` directly.
 
 `app.js` does not know card/button/panel markup. Screens compose components; components do not know game rules. Authoritative state and commands remain in C#.
 

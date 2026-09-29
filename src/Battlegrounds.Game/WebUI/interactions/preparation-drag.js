@@ -1,3 +1,7 @@
+import { useStyle } from '../core/template.js';
+
+useStyle(new URL('./preparation-drag.css', import.meta.url));
+
 const DRAG_THRESHOLD = 5;
 
 function sourceFrom(element) {

@@ -1,81 +1,16 @@
 <template>
   <div class="preparation-screen" data-screen="preparation">
-    <aside class="opponent-rail panel" data-component="panel" data-theme-role="panel.opponentRail">
-      <div class="match-mark">
-        <span class="eyebrow" data-field="mod-name"></span>
-        <strong><span data-field="round-label"></span> <span data-field="round"></span></strong>
-      </div>
-      <div class="opponent-list" data-slot="players"></div>
-    </aside>
+    <div data-slot="opponents"></div>
 
     <main class="table-stage">
-      <section class="tavern-controls panel" data-component="panel" data-theme-role="panel.tavernControls">
-        <div class="tavern-left-controls">
-          <div class="tavern-control tavern-upgrade" data-slot="upgrade"></div>
-          <div class="tier-badge panel" data-component="panel" data-theme-role="panel.tierBadge">
-            <span class="eyebrow" data-field="tier-label"></span>
-            <strong data-field="tier"></strong>
-          </div>
-        </div>
-
-        <div class="character-portrait shopkeeper-drop drag-target panel" data-component="panel" data-theme-role="panel.shopkeeper" data-drop-kind="shopkeeper">
-          <img class="character-art shopkeeper-art" data-field="shopkeeper-art" alt="">
-          <div class="character-nameplate">
-            <strong data-field="shopkeeper-name">Shopkeeper</strong>
-          </div>
-          <small class="drag-hint">Drop a board unit to sell</small>
-        </div>
-
-        <div class="tavern-right-controls">
-          <div class="tavern-control" data-slot="refresh"></div>
-          <div class="tavern-control" data-slot="freeze"></div>
-        </div>
-      </section>
-
-      <section class="tavern-shelf panel" data-component="panel" data-theme-role="panel.tavern">
-        <div class="tavern-offers" data-slot="offer"></div>
-      </section>
-
-      <section class="board-stage panel" data-component="panel" data-theme-role="panel.board" data-drop-kind="field-surface">
-        <div class="board-row" data-slot="field"></div>
-      </section>
-
-      <section class="hero-dock panel" data-component="panel" data-theme-role="panel.heroDock">
-        <div class="hero-cluster">
-          <div class="character-portrait hero-drop drag-target panel" data-component="panel" data-theme-role="panel.heroPortrait" data-drop-kind="hero">
-            <img class="character-art hero-art" data-field="hero-art" alt="">
-            <div class="character-nameplate hero-nameplate">
-              <span class="eyebrow" data-field="leader-label"></span>
-              <strong data-field="hero-name"></strong>
-            </div>
-            <small class="drag-hint">Drop a tavern card to buy</small>
-          </div>
-
-          <div class="hero-stat health-badge panel" data-component="panel" data-theme-role="panel.healthBadge">
-            <span data-field="health"></span>
-          </div>
-          <div class="hero-stat armor-badge panel" data-component="panel" data-theme-role="panel.armorBadge">
-            <span data-field="armor"></span>
-          </div>
-          <div class="hero-power" data-slot="power"></div>
-        </div>
-
-        <div class="resource-badge panel" data-component="panel" data-theme-role="panel.resourceBadge">
-          <span class="eyebrow" data-field="resource-label"></span>
-          <strong data-field="resource"></strong>
-        </div>
-      </section>
-
-      <section class="reserve-shelf panel" data-component="panel" data-theme-role="panel.reserve">
-        <div class="hand-row" data-slot="reserve"></div>
-      </section>
+      <div data-slot="tavern-controls"></div>
+      <div data-slot="offer-zone"></div>
+      <div data-slot="field-zone"></div>
+      <div data-slot="hero-cockpit"></div>
+      <div data-slot="reserve-zone"></div>
     </main>
 
-    <aside class="turn-rail panel" data-component="panel" data-theme-role="panel.turnRail">
-      <div data-slot="ready"></div>
-      <div class="waiting-banner" data-field="waiting" hidden></div>
-    </aside>
-
+    <div data-slot="turn-rail"></div>
     <div data-slot="overlay"></div>
   </div>
 </template>

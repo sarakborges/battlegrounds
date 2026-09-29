@@ -1,0 +1,104 @@
+.tavern-controls {
+  position: relative;
+  z-index: 8;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 150px minmax(0, 1fr);
+  align-items: end;
+  justify-items: center;
+  gap: 0 !important;
+  padding: 0 12px !important;
+  overflow: visible;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: linear-gradient(
+    180deg,
+    rgba(0, 0, 0, 0.34),
+    rgba(0, 0, 0, 0.02)
+  ) !important;
+}
+
+.tavern-controls__left,
+.tavern-controls__right {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.tavern-controls__left {
+  grid-column: 1;
+  justify-self: end;
+  padding-right: 18px;
+}
+
+.tavern-controls__shopkeeper-slot {
+  grid-column: 2;
+  align-self: end;
+  display: grid;
+  place-items: center;
+}
+
+.tavern-controls__right {
+  grid-column: 3;
+  justify-self: start;
+  padding-left: 18px;
+}
+
+.tavern-controls__button {
+  width: 58px;
+  height: 58px;
+  padding: 0 !important;
+  border-radius: 50% !important;
+  font-size: 23px;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.32);
+}
+
+.tavern-controls__button--upgrade {
+  width: 66px;
+  height: 66px;
+  font-size: 17px;
+}
+
+.tavern-controls__tier-badge {
+  width: 52px;
+  height: 62px;
+  display: grid;
+  place-content: center;
+  text-align: center;
+  padding: 4px !important;
+  transform: translateX(-15px);
+  z-index: 10;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.3);
+}
+
+.tavern-controls__tier-badge strong {
+  font-size: 22px;
+}
+
+@media (max-width: 1200px) {
+  .tavern-controls {
+    grid-template-columns: minmax(0, 1fr) 126px minmax(0, 1fr);
+  }
+
+  .tavern-controls__left {
+    padding-right: 10px;
+  }
+
+  .tavern-controls__right {
+    padding-left: 10px;
+  }
+
+  .tavern-controls__button {
+    width: 52px;
+    height: 52px;
+  }
+
+  .tavern-controls__button--upgrade {
+    width: 58px;
+    height: 58px;
+  }
+
+  .tavern-controls__tier-badge {
+    width: 46px;
+    height: 56px;
+  }
+}
