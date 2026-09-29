@@ -26,9 +26,13 @@ export async function createCardPreview({
 } = {}) {
   const element = await cloneTemplate(templateUrl);
   element.dataset.variant = kind;
+  element.dataset.themeRole = kind === 'power' ? 'panel.powerInspect' : 'panel.cardInspect';
   element.querySelector('[data-field="kind"]').textContent = kind;
   element.querySelector('[data-field="name"]').textContent = name;
-  element.querySelector('[data-field="fallback"]').textContent = name.trim().slice(0, 1).toUpperCase() || '•';
+
+  const fallback = element.querySelector('[data-field="fallback"]');
+  fallback.textContent = name.trim().slice(0, 1).toUpperCase() || '•';
+
   setOptionalText(element.querySelector('[data-field="description"]'), description);
   setOptionalText(element.querySelector('[data-field="tier"]'), tier == null ? null : `T${tier}`);
   setOptionalText(element.querySelector('[data-field="cost"]'), cost);
@@ -38,10 +42,14 @@ export async function createCardPreview({
 
   const image = element.querySelector('[data-field="art"]');
   if (art) {
+    fallback.hidden = true;
     image.hidden = false;
     image.src = art;
     image.alt = name;
-    image.addEventListener('error', () => { image.hidden = true; }, { once: true });
+    image.addEventListener('error', () => {
+      image.hidden = true;
+      fallback.hidden = false;
+    }, { once: true });
   }
 
   return element;
