@@ -15,6 +15,10 @@ public static class ModThemeRoleNames
     public const string UnitToken = "unit-token";
     public const string ActionToken = "action-token";
     public const string CardPreview = "card-preview";
+    public const string UnitCardPreview = "unit-card-preview";
+    public const string ActionCardPreview = "action-card-preview";
+    public const string LeaderInspector = "leader-inspector";
+    public const string PowerTooltip = "power-tooltip";
 
     private static readonly HashSet<string> ComponentRoles = new(StringComparer.Ordinal)
     {
@@ -31,6 +35,10 @@ public static class ModThemeRoleNames
         UnitToken,
         ActionToken,
         CardPreview,
+        UnitCardPreview,
+        ActionCardPreview,
+        LeaderInspector,
+        PowerTooltip,
         ModThemeComponentRoles.Input,
         ModThemeComponentRoles.Panel,
         ModThemePanelRoles.OpponentRail,
