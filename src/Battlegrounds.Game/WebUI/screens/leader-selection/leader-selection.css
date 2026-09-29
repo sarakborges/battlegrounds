@@ -1,0 +1,4 @@
+.leader-screen { height: 100%; display: grid; place-content: center; gap: 20px; padding: 28px; }
+.leader-copy { text-align: center; display: grid; gap: 7px; }
+.leader-grid { display: flex; justify-content: center; flex-wrap: wrap; gap: 12px; }
+.leader-grid .card { min-height: 210px; width: 190px; }

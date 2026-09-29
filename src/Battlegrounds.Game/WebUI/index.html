@@ -4,22 +4,11 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Battlegrounds</title>
-  <link rel="stylesheet" href="styles.css">
-  <link rel="stylesheet" href="combat.css">
+  <link rel="stylesheet" href="styles/base.css">
 </head>
 <body>
-  <main id="app" class="app-shell" aria-live="polite">
-    <section class="loading-panel" data-component="panel" data-theme-role="panel">
-      <span class="eyebrow">Battlegrounds</span>
-      <h1>Connecting to game…</h1>
-      <p>The Godot session remains authoritative. This surface only renders state and submits commands.</p>
-    </section>
-  </main>
+  <main id="app" class="app-shell" aria-live="polite"></main>
   <div id="toast" class="toast" role="status" aria-live="assertive"></div>
-  <script src="components.js"></script>
-  <script src="theme.js"></script>
-  <script src="screens.js"></script>
-  <script src="app.js"></script>
-  <script src="combat.js"></script>
+  <script type="module" src="app.js"></script>
 </body>
 </html>
