@@ -11,5 +11,6 @@ public partial class Main
         RefreshLeaderFramePolish();
         RefreshOpponentRailReferencePolish();
         RefreshCombatReferencePolish();
+        RefreshReferenceCockpitLayout();
     }
 }
