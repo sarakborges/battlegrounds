@@ -7,16 +7,12 @@
       <stop offset="0.82" stop-color="#c98d3d"/>
       <stop offset="1" stop-color="#5a3418"/>
     </linearGradient>
-    <linearGradient id="wood" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#704326"/>
-      <stop offset="1" stop-color="#2a1911"/>
-    </linearGradient>
     <filter id="shadow" x="-25%" y="-20%" width="150%" height="155%">
       <feDropShadow dx="0" dy="7" stdDeviation="5" flood-color="#000" flood-opacity=".62"/>
     </filter>
   </defs>
   <g filter="url(#shadow)">
-    <path d="M42 6h112l29 25 7 169-24 69-35 15H65l-35-15-24-69 7-169Z" fill="url(#wood)" stroke="#180e09" stroke-width="10"/>
+    <path d="M42 6h112l29 25 7 169-24 69-35 15H65l-35-15-24-69 7-169Z" fill="none" stroke="#180e09" stroke-width="12"/>
     <path d="M43 12h110l23 22 6 162-21 65-32 13H67l-32-13-21-65 6-162Z" fill="none" stroke="url(#gold)" stroke-width="6"/>
     <path d="M53 25c13-10 28-15 45-15s32 5 45 15" fill="none" stroke="#ffe7a0" stroke-width="2.5" opacity=".52"/>
     <path d="M24 90 8 107l13 24M172 90l16 17-13 24" fill="#815029" stroke="#d7a24b" stroke-width="3"/>
