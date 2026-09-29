@@ -1,3 +1,46 @@
-.player-chip { padding: 6px 9px; border: 1px solid var(--line); border-radius: 999px; background: rgba(0,0,0,.18); font-size: 11px; color: var(--muted); }
-.player-chip[data-variant="human"] { color: var(--text); border-color: color-mix(in srgb, var(--accent) 45%, var(--line)); }
-.player-chip[data-eliminated="true"] { opacity: .42; text-decoration: line-through; }
+.player-chip {
+  position: relative;
+  min-height: 52px;
+  display: flex;
+  align-items: center;
+  align-content: center;
+  flex-wrap: wrap;
+  padding: 7px 8px 7px 48px;
+  border: 1px solid color-mix(in srgb, var(--theme-color-border, var(--line)) 72%, transparent);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--theme-color-surface, var(--surface-1)) 72%, transparent);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.025), 0 6px 14px rgba(0,0,0,.12);
+  font-size: 10px;
+  line-height: 1.25;
+  color: var(--muted);
+  overflow: hidden;
+}
+.player-chip::before {
+  content: '';
+  position: absolute;
+  left: 7px;
+  top: 50%;
+  width: 34px;
+  height: 34px;
+  transform: translateY(-50%);
+  border-radius: 50%;
+  border: 2px solid color-mix(in srgb, var(--theme-color-border-strong, var(--line)) 78%, transparent);
+  background:
+    radial-gradient(circle at 42% 34%, rgba(255,255,255,.12), transparent 25%),
+    linear-gradient(145deg, var(--theme-color-surface-raised, var(--surface-3)), var(--theme-color-surface-deep, var(--surface-0)));
+  box-shadow: inset 0 0 12px rgba(255,255,255,.03), 0 3px 8px rgba(0,0,0,.28);
+}
+.player-chip[data-variant="human"] {
+  color: var(--text);
+  border-color: color-mix(in srgb, var(--theme-color-focus, var(--accent)) 72%, var(--line));
+  background: color-mix(in srgb, var(--theme-color-surface-raised, var(--surface-3)) 70%, transparent);
+}
+.player-chip[data-variant="human"]::before {
+  border-color: var(--theme-color-focus, var(--accent));
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--theme-color-focus, var(--accent)) 20%, transparent), 0 3px 8px rgba(0,0,0,.3);
+}
+.player-chip[data-eliminated="true"] {
+  opacity: .42;
+  text-decoration: line-through;
+  filter: grayscale(.8);
+}
