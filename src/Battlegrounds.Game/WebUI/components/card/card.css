@@ -5,13 +5,18 @@
   display: grid;
   grid-template-rows: auto auto 1fr auto;
   gap: 8px;
-  padding: 12px;
-  color: var(--text);
+  padding: var(--theme-component-padding-y, 12px) var(--theme-component-padding-x, 12px);
+  color: var(--theme-component-text-color, var(--text));
+  font-size: var(--theme-component-font-size, inherit);
   text-align: left;
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
+  border-style: solid;
+  border-width: var(--theme-component-border-width, 1px);
+  border-color: var(--theme-component-border-color, var(--line));
+  border-radius: var(--theme-component-radius, var(--radius));
   background: linear-gradient(160deg, var(--surface-3), var(--surface-2));
+  background-color: var(--theme-component-background-color, transparent);
   box-shadow: 0 9px 24px rgba(0, 0, 0, 0.22);
+  opacity: var(--theme-component-opacity, 1);
   transition:
     transform 120ms ease,
     border-color 120ms ease,
@@ -41,7 +46,7 @@
 .card:disabled {
   cursor: not-allowed;
   filter: grayscale(0.45);
-  opacity: 0.55;
+  opacity: calc(var(--theme-component-opacity, 1) * 0.55);
 }
 
 .card.is-selected {
@@ -109,7 +114,7 @@
   min-height: 90px;
   grid-template-rows: 1fr auto;
   gap: 2px;
-  padding: 6px;
+  padding: var(--theme-component-padding-y, 6px) var(--theme-component-padding-x, 6px);
   transform-origin: 50% 130%;
   box-shadow: 0 12px 22px rgba(0, 0, 0, 0.34);
 }

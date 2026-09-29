@@ -1,1 +1,17 @@
-.empty-state { color: var(--muted); min-height: 84px; display: grid; place-items: center; grid-auto-flow: column; justify-content: center; text-align: center; }
+.empty-state {
+  min-height: 84px;
+  display: grid;
+  place-items: center;
+  grid-auto-flow: column;
+  justify-content: center;
+  padding: var(--theme-component-padding-y, 0) var(--theme-component-padding-x, 0);
+  border-style: solid;
+  border-width: var(--theme-component-border-width, 0);
+  border-color: var(--theme-component-border-color, transparent);
+  border-radius: var(--theme-component-radius, 0);
+  background-color: var(--theme-component-background-color, transparent);
+  color: var(--theme-component-text-color, var(--muted));
+  font-size: var(--theme-component-font-size, inherit);
+  opacity: var(--theme-component-opacity, 1);
+  text-align: center;
+}

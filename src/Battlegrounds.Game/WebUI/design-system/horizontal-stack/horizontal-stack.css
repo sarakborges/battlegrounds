@@ -5,7 +5,18 @@
   gap: 10px;
   overflow-x: auto;
   overflow-y: hidden;
-  padding: 2px 4px 8px;
+  padding-left: var(--theme-component-padding-x, 4px);
+  padding-right: var(--theme-component-padding-x, 4px);
+  padding-top: var(--theme-component-padding-y, 2px);
+  padding-bottom: var(--theme-component-padding-y, 8px);
+  border-style: solid;
+  border-width: var(--theme-component-border-width, 0);
+  border-color: var(--theme-component-border-color, transparent);
+  border-radius: var(--theme-component-radius, 0);
+  background-color: var(--theme-component-background-color, transparent);
+  color: var(--theme-component-text-color, inherit);
+  font-size: var(--theme-component-font-size, inherit);
+  opacity: var(--theme-component-opacity, 1);
   scrollbar-width: thin;
 }
 

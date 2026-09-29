@@ -1,13 +1,30 @@
 .action-button {
   min-height: 38px;
-  padding: 8px 13px;
-  border-radius: 10px;
-  border: 1px solid var(--line);
-  background: var(--surface-2);
-  color: var(--text);
+  padding: var(--theme-component-padding-y, 8px) var(--theme-component-padding-x, 13px);
+  border-style: solid;
+  border-width: var(--theme-component-border-width, 1px);
+  border-color: var(--theme-component-border-color, var(--line));
+  border-radius: var(--theme-component-radius, 10px);
+  background-color: var(--theme-component-background-color, var(--surface-2));
+  color: var(--theme-component-text-color, var(--text));
+  font-size: var(--theme-component-font-size, inherit);
+  opacity: var(--theme-component-opacity, 1);
   cursor: pointer;
   white-space: nowrap;
 }
-.action-button:hover:not(:disabled) { background: var(--surface-3); }
-.action-button[data-variant="primary"] { background: var(--accent); color: #111; border-color: var(--accent); font-weight: 800; }
-.action-button:disabled { opacity: .42; cursor: not-allowed; }
+
+.action-button:hover:not(:disabled) {
+  background-color: var(--surface-3);
+}
+
+.action-button[data-variant="primary"] {
+  background-color: var(--theme-component-background-color, var(--accent));
+  color: var(--theme-component-text-color, #111);
+  border-color: var(--theme-component-border-color, var(--accent));
+  font-weight: 800;
+}
+
+.action-button:disabled {
+  opacity: .42;
+  cursor: not-allowed;
+}

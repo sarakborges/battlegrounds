@@ -1,4 +1,4 @@
-.player-reserve {
+.player-reserve.panel {
   position: relative;
   z-index: 7;
   min-width: 0;
@@ -6,10 +6,10 @@
   align-items: end;
   overflow: visible;
   margin-top: -20px;
-  padding: 0 20px 4px !important;
-  border: 0 !important;
-  border-radius: 0 !important;
-  background: transparent !important;
+  padding: 0 20px 4px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
 }
 
 .player-reserve__content {

@@ -11,7 +11,7 @@ export function resolveColor(theme, value) {
 export function resolveMetric(collection, value) {
   if (value == null) return null;
   if (typeof value === 'number') return `${value}px`;
-  if (/^-?\d+(\.\d+)?(px|rem|em|%|vh|vw)$/.test(value)) return value;
+  if (/^-?\d+(\.\d+)?(px|rem|em|%)$/.test(value)) return value;
   const resolved = collection?.[value];
   return resolved == null ? null : `${resolved}px`;
 }
@@ -34,27 +34,43 @@ function roleStyle(theme, element) {
   return base || specific ? { ...(base ?? {}), ...(specific ?? {}) } : null;
 }
 
+function setThemeVariable(element, name, value) {
+  if (value == null) element.style.removeProperty(name);
+  else element.style.setProperty(name, String(value));
+}
+
+function applyResolvedComponentStyle(element, style, theme) {
+  const textColor = resolveColor(theme, style?.textColor);
+  const backgroundColor = resolveColor(theme, style?.backgroundColor);
+  const borderColor = resolveColor(theme, style?.borderColor);
+  const fontSize = resolveMetric(theme.fontSizes, style?.fontSize);
+  const radius = resolveMetric(theme.radii, style?.radius);
+  const padX = resolveMetric(theme.spacing, style?.padding?.horizontal);
+  const padY = resolveMetric(theme.spacing, style?.padding?.vertical);
+
+  setThemeVariable(element, '--theme-component-text-color', textColor);
+  setThemeVariable(element, '--theme-component-background-color', backgroundColor);
+  setThemeVariable(element, '--theme-component-border-color', borderColor);
+  setThemeVariable(
+    element,
+    '--theme-component-border-width',
+    style?.borderWidth == null ? null : `${style.borderWidth}px`
+  );
+  setThemeVariable(element, '--theme-component-font-size', fontSize);
+  setThemeVariable(element, '--theme-component-radius', radius);
+  setThemeVariable(element, '--theme-component-padding-x', padX);
+  setThemeVariable(element, '--theme-component-padding-y', padY);
+  setThemeVariable(element, '--theme-component-opacity', style?.opacity);
+}
+
 export function applyComponentStyles(theme, root = document) {
   if (!theme) return;
-  const elements = [...(root.matches?.('[data-component]') ? [root] : []), ...root.querySelectorAll('[data-component]')];
+  const elements = [
+    ...(root.matches?.('[data-component]') ? [root] : []),
+    ...root.querySelectorAll('[data-component]')
+  ];
+
   for (const element of elements) {
-    const style = roleStyle(theme, element);
-    if (!style) continue;
-    const textColor = resolveColor(theme, style.textColor);
-    const backgroundColor = resolveColor(theme, style.backgroundColor);
-    const borderColor = resolveColor(theme, style.borderColor);
-    const fontSize = resolveMetric(theme.fontSizes, style.fontSize);
-    const radius = resolveMetric(theme.radii, style.radius);
-    const padX = resolveMetric(theme.spacing, style.padding?.horizontal);
-    const padY = resolveMetric(theme.spacing, style.padding?.vertical);
-    if (textColor) element.style.color = textColor;
-    if (backgroundColor) element.style.backgroundColor = backgroundColor;
-    if (borderColor) element.style.borderColor = borderColor;
-    if (style.borderWidth != null) element.style.borderWidth = `${style.borderWidth}px`;
-    if (fontSize) element.style.fontSize = fontSize;
-    if (radius) element.style.borderRadius = radius;
-    if (padX) { element.style.paddingLeft = padX; element.style.paddingRight = padX; }
-    if (padY) { element.style.paddingTop = padY; element.style.paddingBottom = padY; }
-    if (style.opacity != null) element.style.opacity = String(style.opacity);
+    applyResolvedComponentStyle(element, roleStyle(theme, element), theme);
   }
 }

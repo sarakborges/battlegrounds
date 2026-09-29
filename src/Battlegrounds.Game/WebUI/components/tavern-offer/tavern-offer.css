@@ -1,14 +1,14 @@
-.tavern-offer {
+.tavern-offer.panel {
   position: relative;
   z-index: 6;
   min-width: 0;
   display: grid;
   align-items: start;
   overflow: visible;
-  padding-top: 148px !important;
-  border: 0 !important;
-  border-radius: 0 !important;
-  background: transparent !important;
+  padding-top: 148px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
 }
 
 .tavern-offer__content {

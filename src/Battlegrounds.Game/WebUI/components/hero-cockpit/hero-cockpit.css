@@ -1,9 +1,9 @@
-.hero-cockpit {
-  position: static !important;
+.hero-cockpit.panel {
+  position: static;
   min-height: 0;
-  transform: none !important;
-  border: 0 !important;
-  background: transparent !important;
+  transform: none;
+  border: 0;
+  background: transparent;
 }
 
 .hero-cockpit__cluster {
@@ -24,13 +24,13 @@
   --character-nameplate-width: 120px;
 }
 
-.hero-cockpit__stat {
+.panel.hero-cockpit__stat {
   position: absolute;
   z-index: 28;
   display: grid;
   place-items: center;
-  padding: 0 !important;
-  border-radius: 50% !important;
+  padding: 0;
+  border-radius: 50%;
   font-size: 18px;
   font-weight: 800;
   box-shadow: 0 8px 16px rgba(0, 0, 0, 0.36);
@@ -58,17 +58,17 @@
   transform: translateY(-50%);
 }
 
-.hero-cockpit__power-button {
+.action-button.hero-cockpit__power-button {
   width: 60px;
   height: 60px;
   min-width: 60px;
-  padding: 0 !important;
-  border-radius: 50% !important;
+  padding: 0;
+  border-radius: 50%;
   font-size: 24px;
   box-shadow: 0 10px 24px rgba(0, 0, 0, 0.34);
 }
 
-.hero-cockpit__resource {
+.panel.hero-cockpit__resource {
   position: absolute;
   z-index: 24;
   right: 8.5%;
@@ -80,7 +80,7 @@
   justify-content: center;
   gap: 8px;
   margin: 0;
-  border-radius: 999px !important;
+  border-radius: 999px;
   box-shadow: 0 8px 18px rgba(0, 0, 0, 0.3);
 }
 

@@ -18,13 +18,13 @@
   display: block;
 }
 
-.is-drop-hover {
-  border-color: var(--theme-color-focus, var(--accent)) !important;
+.preparation-screen [data-drop-kind].is-drop-hover {
+  border-color: var(--theme-color-focus, var(--accent));
   background-color: color-mix(
     in srgb,
     var(--theme-color-focus, var(--accent)) 14%,
     var(--surface-2)
-  ) !important;
+  );
   box-shadow:
     0 0 0 3px
       color-mix(
@@ -37,30 +37,30 @@
         in srgb,
         var(--theme-color-focus, var(--accent)) 24%,
         transparent
-      ) !important;
+      );
 }
 
-.is-drop-invalid {
-  border-color: color-mix(in srgb, #ff5b5b 70%, var(--line)) !important;
-  background-color: color-mix(in srgb, #ff5b5b 8%, var(--surface-2)) !important;
+.preparation-screen [data-drop-kind].is-drop-invalid {
+  border-color: color-mix(in srgb, #ff5b5b 70%, var(--line));
+  background-color: color-mix(in srgb, #ff5b5b 8%, var(--surface-2));
 }
 
 .preparation-screen[data-drag-kind] [data-drag-kind] {
   cursor: grabbing;
 }
 
-.is-dragging {
-  opacity: 0.32 !important;
-  transform: scale(0.97) !important;
+.preparation-screen .card.is-dragging {
+  opacity: 0.32;
+  transform: scale(0.97);
 }
 
-.drag-ghost {
-  position: fixed !important;
-  z-index: 9999 !important;
-  width: var(--card-width) !important;
-  transform: translate(-50%, -58%) rotate(2deg) scale(var(--ui-scale)) scale(1.04) !important;
-  transform-origin: center center !important;
-  pointer-events: none !important;
-  opacity: 0.92 !important;
-  box-shadow: 0 20px 54px rgba(0, 0, 0, 0.45) !important;
+body > .card.drag-ghost[data-variant] {
+  position: fixed;
+  z-index: 9999;
+  width: var(--card-width);
+  transform: translate(-50%, -58%) rotate(2deg) scale(var(--ui-scale)) scale(1.04);
+  transform-origin: center center;
+  pointer-events: none;
+  opacity: 0.92;
+  box-shadow: 0 20px 54px rgba(0, 0, 0, 0.45);
 }
