@@ -61,6 +61,7 @@ public partial class Main
     {
         _webUiReady = true;
         AppendLog("Web UI connected through Godot CEF.");
+        ObserveLatestCombat();
         PushWebUiState();
     }
 
@@ -150,6 +151,7 @@ public partial class Main
         }
         finally
         {
+            ObserveLatestCombat();
             PushWebUiState();
         }
     }
@@ -205,6 +207,9 @@ public partial class Main
                 theme = BuildWebThemeState(),
             };
         }
+
+        if (_combatPlayback is not null)
+            return BuildWebCombatState();
 
         if (!_session.HasStarted)
         {
