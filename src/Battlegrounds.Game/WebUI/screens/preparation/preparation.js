@@ -1,20 +1,28 @@
 import { appendChildren, cloneTemplate, useStyle } from '../../core/template.js';
-import { createBadge } from '../../components/badge/badge.js';
 import { createButton } from '../../components/button/button.js';
 import { createCard } from '../../components/card/card.js';
 import { createDialog } from '../../components/dialog/dialog.js';
-import { createDropSlot } from '../../components/drop-slot/drop-slot.js';
-import { createEmpty } from '../../components/empty/empty.js';
 import { createPlayerChip } from '../../components/player-chip/player-chip.js';
 import { createRow } from '../../components/row/row.js';
 import { bindPreparationDrag } from '../../interactions/preparation-drag.js';
+import { boardArtUrl, leaderArtUrl, loadCosmetics, shopkeeperArtUrl } from '../../theme/cosmetics.js';
 import { createCardMeta } from '../shared/card-meta.js';
 
 const templateUrl = new URL('./preparation.html', import.meta.url);
 useStyle(new URL('../../components/panel/panel.css', import.meta.url));
 useStyle(new URL('./preparation.css', import.meta.url));
+useStyle(new URL('./preparation-art.css', import.meta.url));
 
 const boolText = value => value ? 'true' : 'false';
+
+function bindArt(image, source) {
+  if (!image || !source) {
+    if (image) image.hidden = true;
+    return;
+  }
+  image.src = source;
+  image.addEventListener('error', () => { image.hidden = true; }, { once: true });
+}
 
 async function createOfferCard(entry, blocked, canAcquire) {
   return createCard({
@@ -33,11 +41,10 @@ async function createOfferCard(entry, blocked, canAcquire) {
   });
 }
 
-async function createReserveCard(state, entry, blocked, canDeploy) {
-  const combining = state.interaction?.kind === 'combine-components' && entry.kind === 'unit';
+async function createReserveCard(entry, blocked, canDeploy) {
   const isUnit = entry.kind === 'unit';
   const attributes = { 'data-slot': entry.slot, 'data-unit-instance-id': entry.unitInstanceId ?? '' };
-  if (isUnit && !combining) {
+  if (isUnit) {
     attributes['data-drag-kind'] = 'reserve-unit';
     attributes['data-drag-slot'] = entry.slot;
     attributes['data-drag-enabled'] = boolText(!blocked);
@@ -48,34 +55,29 @@ async function createReserveCard(state, entry, blocked, canDeploy) {
     kind: entry.kind,
     name: entry.name,
     meta: await createCardMeta(entry),
-    action: combining ? 'toggle-combine-unit' : isUnit ? null : 'play-action',
-    disabled: combining ? !state.canAct : blocked,
-    selected: entry.selectedForCombine,
+    action: isUnit ? null : 'play-action',
+    disabled: blocked,
     variant: 'reserve',
     attributes
   });
 }
 
-async function createFieldCard(state, unit, blocked) {
-  const combining = state.interaction?.kind === 'combine-components';
-  const attributes = { 'data-slot': unit.slot, 'data-unit-instance-id': unit.unitInstanceId };
-  if (!combining) {
-    attributes['data-drag-kind'] = 'field';
-    attributes['data-drag-index'] = unit.slot;
-    attributes['data-drag-enabled'] = boolText(!blocked);
-    attributes['data-drag-valid'] = boolText(!blocked);
-  }
-
+async function createFieldCard(unit, blocked) {
   return createCard({
     kind: 'field',
     name: unit.name,
     meta: await createCardMeta(unit),
-    action: combining ? 'toggle-combine-unit' : null,
-    disabled: combining ? !state.canAct : blocked,
-    selected: unit.selectedForCombine,
+    disabled: blocked,
     variant: 'board',
     themeRole: 'card.board',
-    attributes
+    attributes: {
+      'data-slot': unit.slot,
+      'data-unit-instance-id': unit.unitInstanceId,
+      'data-drag-kind': 'field',
+      'data-drag-index': unit.slot,
+      'data-drag-enabled': boolText(!blocked),
+      'data-drag-valid': boolText(!blocked)
+    }
   });
 }
 
@@ -86,51 +88,34 @@ async function createOverlay(state) {
   if (pending) {
     const cards = [];
     for (const option of pending.options ?? []) {
-      cards.push(await createCard({ kind: pending.kind, name: option.name, meta: await createCardMeta(option), action: 'resolve-choice', variant: 'choice', attributes: { 'data-option-index': option.index } }));
+      cards.push(await createCard({
+        kind: pending.kind,
+        name: option.name,
+        meta: await createCardMeta(option),
+        action: 'resolve-choice',
+        variant: 'choice',
+        attributes: { 'data-option-index': option.index }
+      }));
     }
     return createDialog({ eyebrow: 'Choice', title: `Choose ${pending.kind}`, body: [await createRow({ children: cards })], variant: 'choice' });
   }
 
   const interaction = state.interaction;
-  if (!interaction) return null;
+  if (!interaction || interaction.kind !== 'target') return null;
+
   const cancel = await createButton({ label: labels.cancel ?? 'Cancel', action: 'cancel-interaction' });
-
-  if (interaction.kind === 'combine-recipe') {
-    const recipes = [];
-    for (const recipe of interaction.recipes ?? []) {
-      recipes.push(await createCard({
-        kind: `${recipe.requiredCopies} × ${recipe.source}`,
-        name: recipe.name,
-        meta: [await createBadge({ text: `→ ${recipe.result}`, variant: 'accent' })],
-        action: 'select-combine-recipe',
-        variant: 'choice',
-        attributes: { 'data-combine-id': recipe.id }
-      }));
-    }
-    if (!recipes.length) recipes.push(await createEmpty({ label: 'No available recipes' }));
-    return createDialog({ eyebrow: labels.combine ?? 'Combine', title: 'Choose recipe', actions: [cancel], body: [await createRow({ children: recipes })], variant: 'combine-recipe' });
+  const targets = [];
+  for (const candidate of interaction.candidates ?? []) {
+    targets.push(await createCard({
+      kind: `P${candidate.ownerId}`,
+      name: candidate.name,
+      meta: await createCardMeta(candidate),
+      action: 'select-target',
+      variant: 'target',
+      attributes: { 'data-unit-instance-id': candidate.unitInstanceId }
+    }));
   }
-
-  if (interaction.kind === 'combine-components') {
-    const confirm = await createButton({ label: labels.confirm ?? 'Confirm', action: 'confirm-interaction', variant: 'primary', disabled: interaction.selected !== interaction.requiredCopies });
-    return createDialog({
-      eyebrow: interaction.name,
-      title: `Select ${interaction.requiredCopies} components · ${interaction.selected} selected`,
-      body: [await createRow({ children: [cancel, confirm], variant: 'actions' })],
-      variant: 'combine-components'
-    });
-  }
-
-  if (interaction.kind === 'target') {
-    const targets = [];
-    for (const candidate of interaction.candidates ?? []) {
-      targets.push(await createCard({ kind: `P${candidate.ownerId}`, name: candidate.name, meta: await createCardMeta(candidate), action: 'select-target', variant: 'target', attributes: { 'data-unit-instance-id': candidate.unitInstanceId } }));
-    }
-    if (!targets.length) targets.push(await createEmpty({ label: 'No valid targets' }));
-    return createDialog({ eyebrow: 'Target', title: `Choose target · ${interaction.zone}`, actions: [cancel], body: [await createRow({ children: targets })], variant: 'target' });
-  }
-
-  return null;
+  return createDialog({ eyebrow: 'Target', title: `Choose target · ${interaction.zone}`, actions: [cancel], body: [await createRow({ children: targets })], variant: 'target' });
 }
 
 export async function createPreparationScreen(state) {
@@ -142,6 +127,9 @@ export async function createPreparationScreen(state) {
   const reserveCount = (state.reserve ?? []).length;
   const fieldCount = (state.field ?? []).length;
   const canDeploy = !blocked && fieldCount < (limits.fieldCapacity ?? Number.POSITIVE_INFINITY);
+  const modId = state.mod?.id;
+  const cosmetics = await loadCosmetics(modId);
+  const humanPlayer = (state.players ?? []).find(player => player.human);
 
   element.querySelector('[data-field="mod-name"]').textContent = state.mod?.name ?? '';
   element.querySelector('[data-field="round-label"]').textContent = labels.round ?? 'Round';
@@ -149,23 +137,33 @@ export async function createPreparationScreen(state) {
   element.querySelector('[data-field="tier-label"]').textContent = labels.tier ?? 'Tier';
   element.querySelector('[data-field="tier"]').textContent = human.tier ?? '';
   element.querySelector('[data-field="leader-label"]').textContent = labels.leader ?? 'Leader';
-  element.querySelector('[data-field="hero-name"]').textContent = (state.players ?? []).find(player => player.human)?.leader ?? '—';
+  element.querySelector('[data-field="hero-name"]').textContent = humanPlayer?.leader ?? '—';
   element.querySelector('[data-field="health"]').textContent = human.health ?? '';
   element.querySelector('[data-field="armor"]').textContent = human.armor ?? '';
   element.querySelector('[data-field="resource-label"]').textContent = labels.resource ?? 'Resource';
   element.querySelector('[data-field="resource"]').textContent = human.resource ?? '';
 
+  const shopkeeperId = cosmetics?.shopkeeper?.id ?? 'bob';
+  element.querySelector('[data-field="shopkeeper-name"]').textContent = shopkeeperId === 'bob' ? 'Bob' : shopkeeperId;
+  bindArt(element.querySelector('[data-field="shopkeeper-art"]'), shopkeeperArtUrl(modId, cosmetics));
+  bindArt(element.querySelector('[data-field="hero-art"]'), leaderArtUrl(modId, cosmetics, humanPlayer?.leaderId));
+  element.querySelector('.table-stage')?.style.setProperty('--board-art', `url("${boardArtUrl(modId, cosmetics)}")`);
+
   const players = [];
   for (const player of state.players ?? []) {
-    players.push(await createPlayerChip({ id: player.id, leader: player.leader ?? '—', health: player.health, human: player.human, eliminated: player.eliminated }));
+    players.push(await createPlayerChip({
+      id: player.id,
+      leader: player.leader ?? '—',
+      health: player.health,
+      portrait: leaderArtUrl(modId, cosmetics, player.leaderId),
+      human: player.human,
+      eliminated: player.eliminated
+    }));
   }
   appendChildren(element.querySelector('[data-slot="players"]'), players);
 
-  const field = [await createDropSlot({ insertionIndex: 0 })];
-  for (const unit of state.field ?? []) {
-    field.push(await createFieldCard(state, unit, blocked));
-    field.push(await createDropSlot({ insertionIndex: unit.slot + 1 }));
-  }
+  const field = [];
+  for (const unit of state.field ?? []) field.push(await createFieldCard(unit, blocked));
   appendChildren(element.querySelector('[data-slot="field"]'), [await createRow({ children: field, variant: 'field' })]);
 
   const offer = [];
@@ -178,7 +176,7 @@ export async function createPreparationScreen(state) {
   appendChildren(element.querySelector('[data-slot="offer"]'), [await createRow({ children: offer, variant: 'offer' })]);
 
   const reserve = [];
-  for (const entry of state.reserve ?? []) reserve.push(await createReserveCard(state, entry, blocked, canDeploy));
+  for (const entry of state.reserve ?? []) reserve.push(await createReserveCard(entry, blocked, canDeploy));
   appendChildren(element.querySelector('[data-slot="reserve"]'), [await createRow({ children: reserve, variant: 'reserve' })]);
 
   appendChildren(element.querySelector('[data-slot="upgrade"]'), [await createButton({
@@ -208,12 +206,6 @@ export async function createPreparationScreen(state) {
     disabled: blocked || !human.power,
     themeRole: 'button.tavernAction',
     attributes: { title: labels.usePower ?? 'Use power' }
-  })]);
-  appendChildren(element.querySelector('[data-slot="combine"]'), [await createButton({
-    label: labels.combine ?? 'Combine',
-    action: 'begin-combine',
-    disabled: blocked,
-    themeRole: 'button.tavernAction'
   })]);
   appendChildren(element.querySelector('[data-slot="ready"]'), [await createButton({
     label: labels.endPreparation ?? 'Ready',
