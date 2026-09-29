@@ -1,5 +1,3 @@
-const cache = new Map();
-
 const defaults = {
   shopkeeper: { id: 'bob', skin: 'base' },
   board: { id: 'default', skin: 'base' },
@@ -7,48 +5,88 @@ const defaults = {
   byIdentifier: {}
 };
 
+const assetCache = new Map();
+const pendingAssets = new Map();
+let sendAssetRequest = null;
+
 function safeSegment(value, fallback) {
   const text = String(value ?? fallback ?? '').trim();
   return /^[a-zA-Z0-9._-]+$/.test(text) ? text : String(fallback ?? 'default');
 }
 
-export function modAssetUrl(modId, path) {
-  const mod = safeSegment(modId, 'example');
-  const normalized = String(path ?? '').replace(/^\/+/, '');
-  return `res://../../mods/${mod}/${normalized}`;
+function normalizeAssetPath(path) {
+  const normalized = String(path ?? '').replace(/\\/g, '/').replace(/^\/+/, '');
+  if (!normalized.startsWith('assets/') || normalized.split('/').includes('..')) return null;
+  return normalized;
 }
 
-export async function loadCosmetics(modId) {
-  const mod = safeSegment(modId, 'example');
-  if (cache.has(mod)) return cache.get(mod);
+export function configureAssetBridge(send) {
+  sendAssetRequest = send;
+}
 
-  const promise = fetch(modAssetUrl(mod, 'presentation/cosmetics.json'))
-    .then(response => response.ok ? response.json() : defaults)
-    .then(value => ({ ...defaults, ...(value ?? {}) }))
-    .catch(() => defaults);
-  cache.set(mod, promise);
+export function receiveAsset(payload = {}) {
+  const path = normalizeAssetPath(payload.path);
+  if (!path) return;
+
+  const pending = pendingAssets.get(path);
+  if (!pending) return;
+
+  pendingAssets.delete(path);
+  const value = typeof payload.dataUrl === 'string' && payload.dataUrl.length > 0 ? payload.dataUrl : null;
+  assetCache.set(path, value);
+  pending.resolve(value);
+}
+
+export function cosmeticsForState(state) {
+  return { ...defaults, ...(state?.cosmetics ?? {}) };
+}
+
+export function loadAsset(path) {
+  const normalized = normalizeAssetPath(path);
+  if (!normalized) return Promise.resolve(null);
+  if (assetCache.has(normalized)) return Promise.resolve(assetCache.get(normalized));
+  if (pendingAssets.has(normalized)) return pendingAssets.get(normalized).promise;
+  if (typeof sendAssetRequest !== 'function') return Promise.resolve(null);
+
+  let resolve;
+  const promise = new Promise(done => { resolve = done; });
+  pendingAssets.set(normalized, { promise, resolve });
+  sendAssetRequest('request-asset', { path: normalized });
   return promise;
 }
 
-export function shopkeeperArtUrl(modId, cosmetics) {
+export function shopkeeperArtPath(cosmetics) {
   const cosmetic = cosmetics?.shopkeeper ?? defaults.shopkeeper;
   const id = safeSegment(cosmetic.id, defaults.shopkeeper.id);
   const skin = safeSegment(cosmetic.skin, defaults.shopkeeper.skin);
-  return modAssetUrl(modId, `assets/cosmetics/shopkeepers/${id}/${skin}.png`);
+  return `assets/cosmetics/shopkeepers/${id}/${skin}.png`;
 }
 
-export function boardArtUrl(modId, cosmetics) {
+export function boardArtPath(cosmetics) {
   const cosmetic = cosmetics?.board ?? defaults.board;
   const id = safeSegment(cosmetic.id, defaults.board.id);
   const skin = safeSegment(cosmetic.skin, defaults.board.skin);
-  return modAssetUrl(modId, `assets/cosmetics/boards/${id}/${skin}.png`);
+  return `assets/cosmetics/boards/${id}/${skin}.png`;
 }
 
-export function leaderArtUrl(modId, cosmetics, leaderId) {
+export function leaderArtPath(cosmetics, leaderId) {
   if (!leaderId) return null;
   const id = safeSegment(leaderId, 'unknown');
   const override = cosmetics?.leaders?.[id] ?? cosmetics?.byIdentifier?.[id];
   const cosmeticId = safeSegment(override?.id, id);
   const skin = safeSegment(override?.skin, 'base');
-  return modAssetUrl(modId, `assets/cosmetics/leaders/${cosmeticId}/${skin}.png`);
+  return `assets/cosmetics/leaders/${cosmeticId}/${skin}.png`;
+}
+
+export function shopkeeperArtUrl(cosmetics) {
+  return loadAsset(shopkeeperArtPath(cosmetics));
+}
+
+export function boardArtUrl(cosmetics) {
+  return loadAsset(boardArtPath(cosmetics));
+}
+
+export function leaderArtUrl(cosmetics, leaderId) {
+  const path = leaderArtPath(cosmetics, leaderId);
+  return path ? loadAsset(path) : Promise.resolve(null);
 }
