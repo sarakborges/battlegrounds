@@ -2,27 +2,28 @@ import { appendChildren, cloneTemplate, useStyle } from '../../core/template.js'
 import { createButton } from '../../design-system/button/button.js';
 import { createHorizontalStack } from '../../design-system/horizontal-stack/horizontal-stack.js';
 import { createModalDialog } from '../../design-system/modal-dialog/modal-dialog.js';
+import { createEndRecruitmentControl } from '../../components/end-recruitment-control/end-recruitment-control.js';
 import { createHeroCockpit } from '../../components/hero-cockpit/hero-cockpit.js';
 import { createOpponentRail } from '../../components/opponent-rail/opponent-rail.js';
-import { createPlayableToken } from '../../components/playable-token/playable-token.js';
-import {
-  createPlayerFieldUnitToken,
-  createPlayerReserveToken,
-  createTavernOfferToken
-} from '../../components/playable-token/preparation-tokens.js';
 import { createPlayerField } from '../../components/player-field/player-field.js';
 import { createPlayerReserve } from '../../components/player-reserve/player-reserve.js';
+import { createResourceCounter } from '../../components/resource-counter/resource-counter.js';
 import { createTavernControls } from '../../components/tavern-controls/tavern-controls.js';
 import { createTavernOffer } from '../../components/tavern-offer/tavern-offer.js';
-import { createTurnRail } from '../../components/turn-rail/turn-rail.js';
 import { bindPreparationDrag } from '../../interactions/preparation-drag.js';
 import {
   boardArtUrl,
   cosmeticsForState,
-  entityArtUrl,
   leaderArtUrl,
   shopkeeperArtUrl
 } from '../../theme/cosmetics.js';
+import {
+  createChoiceToken,
+  createPlayerFieldUnitToken,
+  createPlayerReserveToken,
+  createTargetUnitToken,
+  createTavernOfferToken
+} from './preparation-tokens.js';
 
 const templateUrl = new URL('./preparation.html', import.meta.url);
 useStyle(new URL('./preparation.css', import.meta.url));
@@ -34,20 +35,7 @@ async function createOverlay(state, cosmetics) {
   if (pending) {
     const tokens = [];
     for (const option of pending.options ?? []) {
-      tokens.push(await createPlayableToken({
-        kind: pending.kind,
-        id: option.id,
-        name: option.name,
-        description: option.description,
-        art: await entityArtUrl(cosmetics, pending.kind, option.id),
-        tier: option.tier,
-        attack: option.attack,
-        health: option.health,
-        cost: option.cost,
-        action: 'resolve-choice',
-        location: 'choice',
-        attributes: { 'data-option-index': option.index }
-      }));
+      tokens.push(await createChoiceToken(pending.kind, option, cosmetics));
     }
 
     return createModalDialog({
@@ -68,19 +56,7 @@ async function createOverlay(state, cosmetics) {
 
   const targets = [];
   for (const candidate of interaction.candidates ?? []) {
-    targets.push(await createPlayableToken({
-      kind: 'unit',
-      id: candidate.id,
-      name: candidate.name,
-      description: candidate.description,
-      art: await entityArtUrl(cosmetics, 'unit', candidate.id),
-      tier: candidate.tier,
-      attack: candidate.attack,
-      health: candidate.health,
-      action: 'select-target',
-      location: 'target',
-      attributes: { 'data-unit-instance-id': candidate.unitInstanceId }
-    }));
+    targets.push(await createTargetUnitToken(candidate, cosmetics));
   }
 
   return createModalDialog({
@@ -171,6 +147,13 @@ export async function createPreparationScreen(state) {
     })
   ]);
 
+  appendChildren(element.querySelector('[data-slot="resource-counter"]'), [
+    await createResourceCounter({
+      value: human.resource ?? 0,
+      label: labels.resource ?? 'Resource'
+    })
+  ]);
+
   const playerReserveTokens = [];
   for (const entry of state.reserve ?? []) {
     playerReserveTokens.push(await createPlayerReserveToken(entry, {
@@ -183,8 +166,8 @@ export async function createPreparationScreen(state) {
     await createPlayerReserve({ tokens: playerReserveTokens })
   ]);
 
-  appendChildren(element.querySelector('[data-slot="turn-rail"]'), [
-    await createTurnRail({
+  appendChildren(element.querySelector('[data-slot="end-recruitment"]'), [
+    await createEndRecruitmentControl({
       label: labels.endPreparation ?? 'Ready',
       blocked,
       canAct: state.canAct,

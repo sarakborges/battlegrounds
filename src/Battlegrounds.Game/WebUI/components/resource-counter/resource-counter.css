@@ -1,0 +1,29 @@
+.resource-counter.panel {
+  min-width: 104px;
+  height: 38px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  padding: 3px 14px;
+  border-radius: 999px;
+  box-shadow: 0 8px 18px rgba(0, 0, 0, .34);
+}
+
+.resource-counter__coin {
+  width: 24px;
+  height: 24px;
+  display: grid;
+  place-items: center;
+  border: 2px solid var(--theme-color-resource-accent, #efba4c);
+  border-radius: 50%;
+  color: var(--theme-color-resource-accent, #efba4c);
+  font-size: 12px;
+  line-height: 1;
+  box-shadow: inset 0 0 0 3px rgba(255, 216, 109, .12);
+}
+
+.resource-counter strong {
+  font-size: 20px;
+  line-height: 1;
+}

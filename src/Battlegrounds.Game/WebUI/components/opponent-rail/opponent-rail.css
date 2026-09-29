@@ -1,42 +1,51 @@
 .opponent-rail.panel {
-  position: relative;
-  z-index: 20;
+  width: 100%;
+  height: 100%;
   min-height: 0;
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  padding: 10px 8px;
-  overflow: hidden;
-  border-width: 0 1px 0 0;
-  border-radius: 0;
-  background: color-mix(
-    in srgb,
-    var(--theme-color-surface-deep, var(--surface-0)) 86%,
-    transparent
-  );
-  box-shadow: 12px 0 28px rgba(0, 0, 0, 0.18);
-  backdrop-filter: blur(5px);
+  align-items: center;
+  gap: 6px;
+  padding: 6px 4px;
+  overflow: visible;
+  border: 0;
+  border-radius: 18px;
+  background: color-mix(in srgb, var(--theme-color-surface-deep, var(--surface-0)) 72%, transparent);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, .22);
+  backdrop-filter: blur(3px);
 }
 
 .opponent-rail__match-mark {
-  padding: 2px 4px 5px;
+  width: 100%;
+  padding: 1px 0 4px;
   display: grid;
-  gap: 2px;
+  place-items: center;
+  gap: 1px;
+  text-align: center;
+}
+
+.opponent-rail__match-mark .eyebrow {
+  max-width: 70px;
+  overflow: hidden;
+  font-size: 7px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .opponent-rail__match-mark strong {
-  font-size: 13px;
+  font-size: 9px;
 }
 
 .opponent-rail__players {
   min-height: 0;
+  width: 100%;
   display: flex;
   flex-direction: column;
-  gap: calc(var(--theme-metric-layout-opponent-rail-entries-gap, 5) * 1px);
-  overflow-y: auto;
+  align-items: center;
+  gap: calc(var(--theme-metric-layout-opponent-rail-entries-gap, 6) * 1px);
+  overflow: visible;
 }
 
 .opponent-rail__players > * {
-  width: 100%;
   flex: 0 0 auto;
 }

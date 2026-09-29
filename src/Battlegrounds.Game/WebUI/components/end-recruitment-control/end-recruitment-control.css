@@ -1,0 +1,27 @@
+.end-recruitment-control {
+  width: 154px;
+  display: grid;
+  justify-items: center;
+  gap: 6px;
+  pointer-events: none;
+}
+
+.action-button.end-recruitment-control__button {
+  width: 154px;
+  min-height: 56px;
+  padding-inline: 18px;
+  border-radius: 18px 6px 6px 18px;
+  box-shadow: 0 9px 22px rgba(0, 0, 0, .36);
+  font-size: 14px;
+  pointer-events: auto;
+}
+
+.end-recruitment-control__waiting {
+  min-height: 18px;
+  color: var(--muted);
+  font-size: 10px;
+}
+
+.end-recruitment-control__waiting[hidden] {
+  display: none;
+}

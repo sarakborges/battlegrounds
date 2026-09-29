@@ -83,6 +83,10 @@
   box-shadow: 0 5px 12px rgba(0, 0, 0, 0.38);
 }
 
+.character-portrait__nameplate[hidden] {
+  display: none;
+}
+
 .character-portrait__nameplate strong {
   width: 100%;
   text-align: center;

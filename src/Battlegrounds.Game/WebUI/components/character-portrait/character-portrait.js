@@ -10,6 +10,7 @@ export async function createCharacterPortrait({
   art = null,
   artAlt = '',
   hint = '',
+  showName = true,
   themeRole = 'panel',
   dropKind = null,
   className = '',
@@ -17,9 +18,11 @@ export async function createCharacterPortrait({
 } = {}) {
   const element = await cloneTemplate(templateUrl);
   element.dataset.themeRole = themeRole;
+  element.dataset.showName = showName ? 'true' : 'false';
 
   const nameElement = element.querySelector('[data-field="name"]');
   nameElement.textContent = name;
+  nameElement.closest('.character-portrait__nameplate').hidden = !showName;
 
   const eyebrowElement = element.querySelector('[data-field="eyebrow"]');
   eyebrowElement.textContent = eyebrow;

@@ -1,0 +1,106 @@
+.action-token {
+  position: relative;
+  width: var(--action-token-width, 78px);
+  height: var(--action-token-height, 112px);
+  flex: 0 0 var(--action-token-width, 78px);
+  padding: 0;
+  overflow: visible;
+  border: 0;
+  background: transparent;
+  color: var(--theme-component-text-color, var(--text));
+  cursor: pointer;
+  transform-origin: 50% 72%;
+  transition: transform 110ms ease, filter 110ms ease, opacity 110ms ease;
+}
+
+.action-token:hover,
+.action-token:focus-visible {
+  z-index: 30;
+  transform: translateY(-6px) scale(1.075);
+  outline: none;
+  filter: brightness(1.08);
+}
+
+.action-token[data-disabled="true"] {
+  cursor: default;
+  opacity: var(--theme-component-disabled-opacity, .62);
+}
+
+.action-token__body {
+  position: absolute;
+  inset: 7px 2px 4px;
+  overflow: hidden;
+  border: 3px solid var(--theme-component-border-color, var(--theme-color-focus, #d2a34b));
+  border-radius: 20px 20px 16px 16px;
+  background: linear-gradient(160deg, #473260, #20162b 72%);
+  box-shadow: 0 8px 14px rgba(0, 0, 0, .42);
+}
+
+.action-token__body::after {
+  content: "";
+  position: absolute;
+  z-index: 4;
+  inset: -1px;
+  background-image: var(--theme-component-background-image, none);
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: 100% 100%;
+  pointer-events: none;
+}
+
+.action-token__art {
+  position: absolute;
+  z-index: 1;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  user-select: none;
+  pointer-events: none;
+}
+
+.action-token__fallback {
+  position: absolute;
+  z-index: 2;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  color: #f3ddff;
+  font-size: 28px;
+  font-weight: 900;
+  opacity: .4;
+}
+
+.action-token__fallback[hidden] {
+  display: none;
+}
+
+.action-token__tier,
+.action-token__cost {
+  position: absolute;
+  z-index: 8;
+  top: -2px;
+  min-width: 27px;
+  height: 27px;
+  display: grid;
+  place-items: center;
+  padding: 0 5px;
+  border: 2px solid;
+  border-radius: 50%;
+  background: #17110d;
+  color: #fff6dc;
+  font-size: 11px;
+  font-weight: 900;
+  box-shadow: 0 4px 9px rgba(0, 0, 0, .48);
+}
+
+.action-token__tier {
+  left: -3px;
+  border-color: #8c4bb5;
+}
+
+.action-token__cost {
+  right: -3px;
+  border-color: var(--theme-color-resource-accent, #edb847);
+}

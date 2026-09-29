@@ -1,27 +1,29 @@
 .hero-cockpit.panel {
-  position: static;
+  width: 220px;
+  height: 136px;
   min-height: 0;
-  transform: none;
+  padding: 0;
+  overflow: visible;
   border: 0;
   background: transparent;
+  box-shadow: none;
 }
 
 .hero-cockpit__cluster {
-  position: absolute;
-  z-index: 22;
-  left: 50%;
-  bottom: 140px;
-  width: 132px;
-  height: 150px;
-  transform: translateX(-50%);
+  position: relative;
+  width: 100%;
+  height: 100%;
 }
 
 .hero-cockpit__portrait-slot {
   position: absolute;
-  inset: 0;
-  --character-portrait-width: 132px;
-  --character-portrait-height: 150px;
-  --character-nameplate-width: 120px;
+  left: 14px;
+  top: 3px;
+  width: 104px;
+  height: 118px;
+  --character-portrait-width: 104px;
+  --character-portrait-height: 118px;
+  --character-nameplate-width: 98px;
 }
 
 .panel.hero-cockpit__stat {
@@ -31,59 +33,28 @@
   place-items: center;
   padding: 0;
   border-radius: 50%;
-  font-size: 18px;
-  font-weight: 800;
-  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.36);
+  font-size: 16px;
+  font-weight: 900;
+  box-shadow: 0 6px 12px rgba(0, 0, 0, .4);
 }
 
 .hero-cockpit__health {
-  width: 46px;
-  height: 46px;
-  right: -9px;
-  bottom: -9px;
+  width: 40px;
+  height: 40px;
+  left: 91px;
+  bottom: 3px;
 }
 
 .hero-cockpit__armor {
-  width: 39px;
-  height: 39px;
-  right: 12px;
-  bottom: 28px;
+  width: 34px;
+  height: 34px;
+  left: 88px;
+  bottom: 39px;
 }
 
 .hero-cockpit__power {
   position: absolute;
   z-index: 26;
-  left: calc(100% + 8px);
-  top: 58%;
-  transform: translateY(-50%);
-}
-
-.action-button.hero-cockpit__power-button {
-  width: 60px;
-  height: 60px;
-  min-width: 60px;
-  padding: 0;
-  border-radius: 50%;
-  font-size: 24px;
-  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.34);
-}
-
-.panel.hero-cockpit__resource {
-  position: absolute;
-  z-index: 24;
-  right: 8.5%;
-  bottom: 58px;
-  min-width: 116px;
-  min-height: 42px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  margin: 0;
-  border-radius: 999px;
-  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.3);
-}
-
-.hero-cockpit__resource strong {
-  font-size: 20px;
+  right: 8px;
+  top: 38px;
 }

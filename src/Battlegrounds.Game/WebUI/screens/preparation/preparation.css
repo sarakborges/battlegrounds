@@ -9,31 +9,96 @@
   height: 100%;
   min-width: 0;
   min-height: 0;
-  display: grid;
-  grid-template-columns: minmax(152px, 176px) minmax(0, 1fr);
-  gap: 0;
   overflow: hidden;
   background: var(--theme-color-background, var(--surface-0));
 }
 
-.preparation-screen > [data-slot="opponents"],
-.preparation-screen > [data-slot="turn-rail"],
-.preparation-screen > [data-slot="overlay"],
-.preparation-board > [data-slot] {
-  display: contents;
-}
-
 .preparation-board {
-  position: relative;
+  position: absolute;
+  inset: 0;
   isolation: isolate;
-  min-width: 0;
-  min-height: 0;
-  display: grid;
-  grid-template-rows: 140px 170px minmax(324px, 1fr) 110px 88px;
   overflow: hidden;
   background-color: var(--theme-color-surface-deep, var(--surface-0));
-  background-image: var(--board-art, none);
+  background-image: var(--board-art, var(--theme-screen-background-image, none));
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
+}
+
+.preparation-anchor {
+  position: absolute;
+  min-width: 0;
+  min-height: 0;
+  overflow: visible;
+}
+
+.preparation-anchor--tavern {
+  z-index: 20;
+  left: 50%;
+  top: calc(var(--theme-metric-layout-preparation-scene-tavern-top, 48) * 1px);
+  width: 430px;
+  height: 142px;
+  transform: translateX(-50%);
+}
+
+.preparation-anchor--offer {
+  z-index: 18;
+  left: 50%;
+  top: calc(var(--theme-metric-layout-preparation-scene-offer-top, 260) * 1px);
+  width: 650px;
+  height: 136px;
+  transform: translateX(-50%);
+}
+
+.preparation-anchor--field {
+  z-index: 16;
+  left: 50%;
+  top: calc(var(--theme-metric-layout-preparation-scene-field-top, 410) * 1px);
+  width: 760px;
+  height: 138px;
+  transform: translateX(-50%);
+}
+
+.preparation-anchor--hero {
+  z-index: 32;
+  left: 50%;
+  bottom: calc(var(--theme-metric-layout-preparation-scene-hero-bottom, 4) * 1px);
+  width: 220px;
+  height: 136px;
+  transform: translateX(-50%);
+}
+
+.preparation-anchor--reserve {
+  z-index: 28;
+  left: 42%;
+  bottom: calc(var(--theme-metric-layout-preparation-scene-reserve-bottom, -52) * 1px);
+  width: 560px;
+  height: 112px;
+  transform: translateX(-50%);
+}
+
+.preparation-anchor--resource {
+  z-index: 35;
+  right: calc(var(--theme-metric-layout-preparation-scene-resource-right, 34) * 1px);
+  bottom: calc(var(--theme-metric-layout-preparation-scene-resource-bottom, 18) * 1px);
+}
+
+.preparation-anchor--end-recruitment {
+  z-index: 35;
+  right: calc(var(--theme-metric-layout-preparation-scene-end-turn-right, 22) * 1px);
+  top: calc(var(--theme-metric-layout-preparation-scene-end-turn-top, 318) * 1px);
+}
+
+.preparation-opponents {
+  position: absolute;
+  z-index: 50;
+  left: 10px;
+  top: 10px;
+  bottom: 10px;
+  width: calc(var(--theme-metric-layout-opponent-rail-width, 82) * 1px);
+  overflow: visible;
+}
+
+.preparation-screen > [data-slot="overlay"] {
+  display: contents;
 }

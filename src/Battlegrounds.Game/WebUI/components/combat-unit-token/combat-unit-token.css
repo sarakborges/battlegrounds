@@ -1,7 +1,11 @@
 .combat-unit-token {
+  --unit-token-width: 90px;
+  --unit-token-height: 118px;
+  --unit-token-portrait-width: 83px;
+  --unit-token-portrait-height: 105px;
   position: relative;
-  width: 126px;
-  min-height: 168px;
+  width: 104px;
+  min-height: 140px;
   display: grid;
   justify-items: center;
   align-content: center;
@@ -16,10 +20,10 @@
 .combat-unit-token__marker {
   position: absolute;
   z-index: 40;
-  top: -7px;
-  right: -2px;
-  min-width: 31px;
-  height: 31px;
+  top: 0;
+  right: 0;
+  min-width: 28px;
+  height: 28px;
   display: grid;
   place-items: center;
   border-radius: 999px;
@@ -31,11 +35,11 @@
 }
 
 .combat-unit-token__status {
-  min-height: 14px;
-  max-width: 126px;
+  min-height: 13px;
+  max-width: 104px;
   overflow: hidden;
   color: var(--muted);
-  font-size: 10px;
+  font-size: 9px;
   text-align: center;
   text-overflow: ellipsis;
   white-space: nowrap;

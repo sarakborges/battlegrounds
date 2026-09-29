@@ -1,21 +1,19 @@
 .shopkeeper {
   position: relative;
   z-index: 12;
-  width: 132px;
-  height: 150px;
+  width: 112px;
+  height: 124px;
   margin: 0;
-  transform: translateY(116px);
-  --character-portrait-width: 132px;
-  --character-portrait-height: 150px;
-  --character-nameplate-width: 120px;
+  --character-portrait-width: 112px;
+  --character-portrait-height: 124px;
+  --character-nameplate-width: 104px;
+}
+
+.shopkeeper__portrait {
+  width: 100%;
+  height: 100%;
 }
 
 .shopkeeper .drag-hint {
-  position: absolute;
-  z-index: 8;
-  left: 50%;
-  top: calc(100% + 24px);
-  width: 150px;
-  transform: translateX(-50%);
-  text-align: center;
+  display: none;
 }

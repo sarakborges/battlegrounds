@@ -1,5 +1,5 @@
 import { appendChildren, cloneTemplate, useStyle } from '../../core/template.js';
-import { createPlayableToken } from '../playable-token/playable-token.js';
+import { createUnitToken } from '../unit-token/unit-token.js';
 
 const templateUrl = new URL('./combat-unit-token.html', import.meta.url);
 useStyle(new URL('./combat-unit-token.css', import.meta.url));
@@ -33,17 +33,14 @@ export async function createCombatUnitToken({
   element.dataset.attackDirection = attackDirection;
   element.dataset.alive = String(unit.alive !== false);
 
-  const token = await createPlayableToken({
-    kind: 'unit',
+  const token = await createUnitToken({
     id: unit.unitId ?? '',
     name: unit.name ?? '',
     description: unit.description ?? '',
     art,
-    artAlt: unit.name ?? '',
     tier: unit.tier,
     attack: unit.attack,
     health: unit.health,
-    location: 'combat',
     attributes: {
       'data-unit-instance-id': unit.instanceId ?? ''
     }

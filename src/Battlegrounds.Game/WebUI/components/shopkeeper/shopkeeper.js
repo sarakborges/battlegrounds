@@ -11,6 +11,7 @@ export async function createShopkeeper({ name = 'Shopkeeper', art = null } = {})
     art,
     artAlt: name,
     hint: 'Drop a board unit to sell',
+    showName: false,
     themeRole: 'panel.shopkeeper',
     dropKind: 'tavern-shopkeeper',
     className: 'shopkeeper__portrait'

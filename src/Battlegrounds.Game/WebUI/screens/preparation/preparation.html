@@ -1,16 +1,16 @@
 <template>
   <div class="preparation-screen" data-screen="preparation">
-    <div data-slot="opponents"></div>
-
     <main class="preparation-board">
-      <div data-slot="tavern-controls"></div>
-      <div data-slot="tavern-offer"></div>
-      <div data-slot="player-field"></div>
-      <div data-slot="hero-cockpit"></div>
-      <div data-slot="player-reserve"></div>
+      <div class="preparation-anchor preparation-anchor--tavern" data-slot="tavern-controls"></div>
+      <div class="preparation-anchor preparation-anchor--offer" data-slot="tavern-offer"></div>
+      <div class="preparation-anchor preparation-anchor--field" data-slot="player-field"></div>
+      <div class="preparation-anchor preparation-anchor--hero" data-slot="hero-cockpit"></div>
+      <div class="preparation-anchor preparation-anchor--reserve" data-slot="player-reserve"></div>
+      <div class="preparation-anchor preparation-anchor--resource" data-slot="resource-counter"></div>
+      <div class="preparation-anchor preparation-anchor--end-recruitment" data-slot="end-recruitment"></div>
     </main>
 
-    <div data-slot="turn-rail"></div>
+    <aside class="preparation-opponents" data-slot="opponents"></aside>
     <div data-slot="overlay"></div>
   </div>
 </template>

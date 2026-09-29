@@ -20,47 +20,31 @@
 
 .preparation-screen [data-drop-kind].is-drop-hover {
   border-color: var(--theme-color-focus, var(--accent));
-  background-color: color-mix(
-    in srgb,
-    var(--theme-color-focus, var(--accent)) 14%,
-    var(--surface-2)
-  );
   box-shadow:
-    0 0 0 3px
-      color-mix(
-        in srgb,
-        var(--theme-color-focus, var(--accent)) 42%,
-        transparent
-      ),
-    0 0 34px
-      color-mix(
-        in srgb,
-        var(--theme-color-focus, var(--accent)) 24%,
-        transparent
-      );
+    0 0 0 3px color-mix(in srgb, var(--theme-color-focus, var(--accent)) 42%, transparent),
+    0 0 34px color-mix(in srgb, var(--theme-color-focus, var(--accent)) 24%, transparent);
 }
 
 .preparation-screen [data-drop-kind].is-drop-invalid {
   border-color: color-mix(in srgb, #ff5b5b 70%, var(--line));
-  background-color: color-mix(in srgb, #ff5b5b 8%, var(--surface-2));
+  filter: saturate(.55);
 }
 
 .preparation-screen[data-drag-kind] [data-drag-kind] {
   cursor: grabbing;
 }
 
-.preparation-screen .playable-token.is-dragging {
+.preparation-screen [data-drag-kind].is-dragging {
   opacity: .32;
   transform: scale(.97);
 }
 
-body > .playable-token.drag-ghost[data-variant] {
+body > [data-drag-kind].drag-ghost {
   position: fixed;
   z-index: 9999;
   transform: translate(-50%, -58%) rotate(2deg) scale(var(--ui-scale)) scale(1.04);
   transform-origin: center center;
   pointer-events: none;
   opacity: .92;
-  filter: none;
-  box-shadow: 0 20px 54px rgba(0, 0, 0, .45);
+  filter: drop-shadow(0 20px 24px rgba(0, 0, 0, .45));
 }

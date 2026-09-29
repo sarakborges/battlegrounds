@@ -1,25 +1,25 @@
 import { appendChildren, cloneTemplate, useStyle } from '../../core/template.js';
 import { createButton } from '../../design-system/button/button.js';
 
-const templateUrl = new URL('./turn-rail.html', import.meta.url);
-useStyle(new URL('../../design-system/panel/panel.css', import.meta.url));
-useStyle(new URL('./turn-rail.css', import.meta.url));
+const templateUrl = new URL('./end-recruitment-control.html', import.meta.url);
+useStyle(new URL('../../design-system/button/button.css', import.meta.url));
+useStyle(new URL('./end-recruitment-control.css', import.meta.url));
 
-export async function createTurnRail({
+export async function createEndRecruitmentControl({
   label = 'Ready',
   blocked = false,
   canAct = true,
   currentPreparationPlayerId = null
 } = {}) {
   const element = await cloneTemplate(templateUrl);
-  appendChildren(element.querySelector('[data-slot="ready"]'), [
+  appendChildren(element.querySelector('[data-slot="button"]'), [
     await createButton({
       label,
       action: 'end-preparation',
       disabled: blocked,
       variant: 'primary',
       themeRole: 'button.primary',
-      className: 'turn-rail__ready-button'
+      className: 'end-recruitment-control__button'
     })
   ]);
 
@@ -30,6 +30,5 @@ export async function createTurnRail({
       ? `P${currentPreparationPlayerId}`
       : '…';
   }
-
   return element;
 }
