@@ -1,0 +1,14 @@
+<template>
+  <section class="mod-selection-screen" data-screen="mod-selection">
+    <header class="mod-selection-screen__header">
+      <div>
+        <span class="eyebrow">Battlegrounds</span>
+        <h1>Select a mod</h1>
+        <p data-field="status"></p>
+      </div>
+      <div data-slot="actions"></div>
+    </header>
+    <div class="mod-selection-screen__error" data-field="discovery-error" hidden></div>
+    <div class="mod-selection-screen__mods" data-slot="mods"></div>
+  </section>
+</template>
