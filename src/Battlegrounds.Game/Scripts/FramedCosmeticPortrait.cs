@@ -16,6 +16,8 @@ internal static class FramedCosmeticPortrait
         ArgumentNullException.ThrowIfNull(frameTexture);
 
         host.ClipContents = true;
+        if (host is PanelContainer panel)
+            panel.AddThemeStyleboxOverride("panel", new StyleBoxEmpty());
 
         var frame = host.GetNodeOrNull<TextureRect>(frameNodeName);
         if (frame is null)
