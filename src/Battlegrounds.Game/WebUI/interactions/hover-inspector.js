@@ -7,12 +7,18 @@ const SHOW_DELAY_MS = 110;
 const HIDE_DELAY_MS = 70;
 const EDGE_PADDING = 18;
 
+function inspectionArt(element) {
+  const image = element.querySelector?.('img:not([hidden])');
+  return image?.currentSrc || image?.src || null;
+}
+
 function readInspection(element) {
   if (!element?.dataset?.inspectKind) return null;
   return {
     kind: element.dataset.inspectKind,
     name: element.dataset.inspectName ?? '',
     description: element.dataset.inspectDescription ?? '',
+    art: inspectionArt(element),
     tier: element.dataset.inspectTier ?? null,
     attack: element.dataset.inspectAttack ?? null,
     health: element.dataset.inspectHealth ?? null,
