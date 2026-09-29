@@ -1,6 +1,6 @@
 .hero-cockpit.panel {
-  width: 220px;
-  height: 136px;
+  width: 204px;
+  height: 126px;
   min-height: 0;
   padding: 0;
   overflow: visible;
@@ -17,13 +17,17 @@
 
 .hero-cockpit__portrait-slot {
   position: absolute;
-  left: 14px;
-  top: 3px;
-  width: 104px;
-  height: 118px;
-  --character-portrait-width: 104px;
-  --character-portrait-height: 118px;
-  --character-nameplate-width: 98px;
+  left: 12px;
+  top: 2px;
+  width: 96px;
+  height: 110px;
+  --character-portrait-width: 96px;
+  --character-portrait-height: 110px;
+  --character-nameplate-width: 90px;
+}
+
+.hero-cockpit .character-portrait__nameplate {
+  display: none;
 }
 
 .panel.hero-cockpit__stat {
@@ -33,28 +37,28 @@
   place-items: center;
   padding: 0;
   border-radius: 50%;
-  font-size: 16px;
+  font-size: 15px;
   font-weight: 900;
-  box-shadow: 0 6px 12px rgba(0, 0, 0, .4);
+  box-shadow: 0 5px 10px rgba(0, 0, 0, .42), inset 0 1px 3px rgba(255, 255, 255, .12);
 }
 
 .hero-cockpit__health {
-  width: 40px;
-  height: 40px;
-  left: 91px;
-  bottom: 3px;
+  width: 38px;
+  height: 38px;
+  left: 82px;
+  bottom: 1px;
 }
 
 .hero-cockpit__armor {
-  width: 34px;
-  height: 34px;
-  left: 88px;
-  bottom: 39px;
+  width: 31px;
+  height: 31px;
+  left: 84px;
+  bottom: 37px;
 }
 
 .hero-cockpit__power {
   position: absolute;
   z-index: 26;
-  right: 8px;
-  top: 38px;
+  right: 5px;
+  top: 32px;
 }
