@@ -5,10 +5,10 @@ const templateUrl = new URL('./player-field.html', import.meta.url);
 useStyle(new URL('../../design-system/panel/panel.css', import.meta.url));
 useStyle(new URL('./player-field.css', import.meta.url));
 
-export async function createPlayerField({ cards = [] } = {}) {
+export async function createPlayerField({ tokens = [] } = {}) {
   const element = await cloneTemplate(templateUrl);
   appendChildren(element.querySelector('[data-slot="content"]'), [
-    await createHorizontalStack({ children: cards, className: 'player-field__cards' })
+    await createHorizontalStack({ children: tokens, className: 'player-field__tokens' })
   ]);
   return element;
 }
