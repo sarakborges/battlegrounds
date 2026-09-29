@@ -1,4 +1,4 @@
-export function createGameBridge({ onState, onError }) {
+export function createGameBridge({ onState, onError, onAsset }) {
   let pollTimer = null;
 
   function send(type, payload = {}) {
@@ -14,6 +14,7 @@ export function createGameBridge({ onState, onError }) {
       const message = typeof raw === 'string' ? JSON.parse(raw) : raw;
       if (!message || typeof message.type !== 'string') return;
       if (message.type === 'state') onState?.(message.payload);
+      else if (message.type === 'asset') onAsset?.(message.payload);
       else if (message.type === 'error') onError?.(message.payload?.message ?? 'Unknown game error');
     } catch (error) {
       onError?.(`Invalid game message: ${error.message}`);
