@@ -8,6 +8,11 @@
       "count": 3,
       "effects": [
         {
+          "kind": "mutateOffer",
+          "operation": "add",
+          "playableKind": "unit"
+        },
+        {
           "kind": "generateActionChoice",
           "actionQuery": {},
           "optionCount": 3

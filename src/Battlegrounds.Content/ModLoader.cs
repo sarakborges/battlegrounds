@@ -8,6 +8,7 @@ using Battlegrounds.Core.Domain.Effects;
 using Battlegrounds.Core.Domain.Ids;
 using Battlegrounds.Core.Domain.Leaders;
 using Battlegrounds.Core.Domain.Match;
+using Battlegrounds.Core.Domain.Playables;
 using Battlegrounds.Core.Domain.Powers;
 using Battlegrounds.Core.Domain.Preparation;
 using Battlegrounds.Core.Domain.Taxonomy;
@@ -177,6 +178,10 @@ public sealed class ModLoader
             "adjustUpgradeCost" => new AdjustUpgradeCostEffectDefinition(BuildRequiredValue(data.Amount, "adjustUpgradeCost.amount")),
             "addAcquireDiscount" => new AddAcquireDiscountEffectDefinition(BuildRequiredValue(data.Amount, "addAcquireDiscount.amount")),
             "refreshOffer" => new RefreshOfferEffectDefinition(),
+            "mutateOffer" => new MutateOfferEffectDefinition(
+                data.Operation ?? throw new InvalidDataException("Validated mutateOffer effect is missing operation."),
+                data.PlayableKind ?? throw new InvalidDataException("Validated mutateOffer effect is missing playableKind."),
+                data.Selection ?? OfferSlotSelection.Random),
             "setPower" => new SetPowerEffectDefinition(new PowerId(data.PowerId ?? throw new InvalidDataException("Validated setPower effect is missing powerId."))),
             _ => throw new InvalidDataException($"Validated effect kind '{data.Kind}' is unsupported."),
         };
@@ -337,7 +342,10 @@ public sealed class ModLoader
         string? ActionId,
         ActionQueryData? ActionQuery,
         string? ModifierKey,
-        UnitModifierDuration? Duration);
+        UnitModifierDuration? Duration,
+        OfferMutationOperation? Operation,
+        PlayableKind? PlayableKind,
+        OfferSlotSelection? Selection);
     private sealed record GenerationQueryData(int? MinimumTier, int? MaximumTier, string? TypeId, string? TagId, bool? ExcludeSource);
     private sealed record ActionQueryData(int? MinimumTier, int? MaximumTier, string? ExcludeActionId);
     private record QueryData(EffectTargetScope Scope, bool? ExcludeSource, string? TypeId, string? TagId);

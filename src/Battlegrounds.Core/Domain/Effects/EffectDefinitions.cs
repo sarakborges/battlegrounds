@@ -2,6 +2,7 @@ using System.Collections.ObjectModel;
 using Battlegrounds.Core.Domain.Behaviors;
 using Battlegrounds.Core.Domain.Combat;
 using Battlegrounds.Core.Domain.Ids;
+using Battlegrounds.Core.Domain.Playables;
 
 namespace Battlegrounds.Core.Domain.Effects;
 
@@ -358,6 +359,38 @@ public sealed record AddAcquireDiscountEffectDefinition : EffectDefinition
 public sealed record RefreshOfferEffectDefinition : EffectDefinition
 {
     public override NativeEffectKey Kind => NativeEffectKeys.RefreshOffer;
+}
+
+public enum OfferMutationOperation
+{
+    Add,
+    Remove,
+    Replace,
+}
+
+public enum OfferSlotSelection
+{
+    Random,
+    Leftmost,
+    Rightmost,
+}
+
+public sealed record MutateOfferEffectDefinition : EffectDefinition
+{
+    public override NativeEffectKey Kind => NativeEffectKeys.MutateOffer;
+    public OfferMutationOperation Operation { get; }
+    public PlayableKind PlayableKind { get; }
+    public OfferSlotSelection Selection { get; }
+
+    public MutateOfferEffectDefinition(
+        OfferMutationOperation operation,
+        PlayableKind playableKind,
+        OfferSlotSelection selection = OfferSlotSelection.Random)
+    {
+        Operation = operation;
+        PlayableKind = playableKind;
+        Selection = selection;
+    }
 }
 
 public sealed record SetPowerEffectDefinition : EffectDefinition

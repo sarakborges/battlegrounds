@@ -4,6 +4,7 @@ using Battlegrounds.Core.Domain.Effects;
 using Battlegrounds.Core.Domain.Ids;
 using Battlegrounds.Core.Domain.Match;
 using Battlegrounds.Core.Domain.Players;
+using Battlegrounds.Core.Domain.Playables;
 using Battlegrounds.Core.Domain.Powers;
 using Battlegrounds.Core.Domain.Units;
 using Battlegrounds.Core.Randomness;
@@ -20,6 +21,7 @@ internal sealed partial class PreparationEffectEngine
     private readonly PowerCatalog? _powerCatalog;
     private readonly ActionCatalog? _actionCatalog;
     private readonly Action<PlayerState> _refreshOffer;
+    private readonly Action<PlayerState, OfferMutationOperation, PlayableKind, OfferSlotSelection> _mutateOffer;
     private MatchState? _runtimeMatch;
     private int _runtimeRound = -1;
     private PreparationEffectWorld? _runtimeWorld;
@@ -34,7 +36,8 @@ internal sealed partial class PreparationEffectEngine
         BehaviorCatalog? behaviorCatalog,
         PowerCatalog? powerCatalog = null,
         ActionCatalog? actionCatalog = null,
-        Action<PlayerState>? refreshOffer = null)
+        Action<PlayerState>? refreshOffer = null,
+        Action<PlayerState, OfferMutationOperation, PlayableKind, OfferSlotSelection>? mutateOffer = null)
     {
         _rules = rules ?? throw new ArgumentNullException(nameof(rules));
         _unitPool = unitPool ?? throw new ArgumentNullException(nameof(unitPool));
@@ -44,6 +47,7 @@ internal sealed partial class PreparationEffectEngine
         _powerCatalog = powerCatalog;
         _actionCatalog = actionCatalog;
         _refreshOffer = refreshOffer ?? (_ => throw new InvalidOperationException("Offer refresh effects require PreparationEngine orchestration."));
+        _mutateOffer = mutateOffer ?? ((_, _, _, _) => throw new InvalidOperationException("Offer mutation effects require PreparationEngine orchestration."));
     }
 
     public void ProcessGameEvent(MatchState match, PlayerState owner, NativeGameEventKey @event, UnitDefinition? unit = null)
@@ -176,7 +180,7 @@ internal sealed partial class PreparationEffectEngine
         {
             _runtimeMatch = match;
             _runtimeRound = match.Round;
-            _runtimeWorld = new PreparationEffectWorld(match, _rules, _unitPool, _powerCatalog, CreatePowerSource, _refreshOffer);
+            _runtimeWorld = new PreparationEffectWorld(match, _rules, _unitPool, _powerCatalog, CreatePowerSource, _refreshOffer, _mutateOffer);
             _runtime = new GameEffectRuntime(_runtimeWorld, _randomSource, _unitCatalog, _behaviorCatalog, _actionCatalog);
         }
         return (_runtimeWorld!, _runtime!);
@@ -190,6 +194,7 @@ internal sealed partial class PreparationEffectEngine
         private readonly PowerCatalog? _powerCatalog;
         private readonly Func<PlayerState, PowerDefinition, PowerRuntimeUnit> _powerSourceFactory;
         private readonly Action<PlayerState> _refreshOffer;
+        private readonly Action<PlayerState, OfferMutationOperation, PlayableKind, OfferSlotSelection> _mutateOffer;
         private readonly Dictionary<UnitInstanceId, PreparationRuntimeUnit> _wrappers = [];
         private readonly Dictionary<UnitInstanceId, (PlayerId OwnerId, int Index)> _deathPositions = [];
         private readonly Dictionary<UnitInstanceId, int> _summonCursors = [];
@@ -200,7 +205,8 @@ internal sealed partial class PreparationEffectEngine
             IUnitPool unitPool,
             PowerCatalog? powerCatalog,
             Func<PlayerState, PowerDefinition, PowerRuntimeUnit> powerSourceFactory,
-            Action<PlayerState> refreshOffer)
+            Action<PlayerState> refreshOffer,
+            Action<PlayerState, OfferMutationOperation, PlayableKind, OfferSlotSelection> mutateOffer)
         {
             _match = match ?? throw new ArgumentNullException(nameof(match));
             _rules = rules ?? throw new ArgumentNullException(nameof(rules));
@@ -208,6 +214,7 @@ internal sealed partial class PreparationEffectEngine
             _powerCatalog = powerCatalog;
             _powerSourceFactory = powerSourceFactory ?? throw new ArgumentNullException(nameof(powerSourceFactory));
             _refreshOffer = refreshOffer ?? throw new ArgumentNullException(nameof(refreshOffer));
+            _mutateOffer = mutateOffer ?? throw new ArgumentNullException(nameof(mutateOffer));
         }
 
         public IReadOnlyList<IEffectRuntimeUnit> Units =>
@@ -347,6 +354,9 @@ internal sealed partial class PreparationEffectEngine
         public void AddAcquireDiscount(PlayerId playerId, int amount) => GetPlayer(playerId).AddAcquireDiscount(amount);
 
         public void RefreshOffer(PlayerId playerId) => _refreshOffer(GetPlayer(playerId));
+
+        public void MutateOffer(PlayerId playerId, OfferMutationOperation operation, PlayableKind playableKind, OfferSlotSelection selection) =>
+            _mutateOffer(GetPlayer(playerId), operation, playableKind, selection);
 
         public void SetPower(PlayerId playerId, PowerId powerId)
         {

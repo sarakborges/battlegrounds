@@ -53,7 +53,7 @@ public sealed class PreparationEngine
         _actionCatalog = actionCatalog;
         _combineCatalog = combineCatalog;
         _effectEngine = new PreparationEffectEngine(
-            _rules, _unitPool, _randomSource, unitCatalog, behaviorCatalog, powerCatalog, actionCatalog, RefreshOfferFromEffect);
+            _rules, _unitPool, _randomSource, unitCatalog, behaviorCatalog, powerCatalog, actionCatalog, RefreshOfferFromEffect, MutateOfferFromEffect);
     }
 
     public void BeginPreparation(MatchState match, IReadOnlyDictionary<PlayerId, int>? resourceAdjustments = null)
@@ -334,6 +334,86 @@ public sealed class PreparationEngine
         player.ReplaceOffer(ValidateUnitOffer(unitOffer, player.Tier));
         player.ReplaceActionOffer(actionOffer);
         player.ClearOfferFrozen();
+    }
+
+    private void MutateOfferFromEffect(
+        PlayerState player,
+        OfferMutationOperation operation,
+        PlayableKind playableKind,
+        OfferSlotSelection selection)
+    {
+        player.ClearOfferFrozen();
+        if (playableKind == PlayableKind.Unit)
+        {
+            MutateUnitOfferFromEffect(player, operation, selection);
+            return;
+        }
+
+        MutateActionOfferFromEffect(player, operation, selection);
+    }
+
+    private void MutateUnitOfferFromEffect(PlayerState player, OfferMutationOperation operation, OfferSlotSelection selection)
+    {
+        if (operation == OfferMutationOperation.Add)
+        {
+            var added = _unitPool.DrawOffer(player.Tier, 1, _randomSource);
+            if (added.Count > 0) player.AddOfferedUnit(ValidateEffectOfferUnit(added[0], player.Tier));
+            return;
+        }
+        if (player.Offer.Count == 0) return;
+
+        var index = ResolveOfferMutationIndex(player.Offer.Count, selection);
+        if (operation == OfferMutationOperation.Remove)
+        {
+            _unitPool.ReturnUnit(player.TakeOfferedUnit(index));
+            return;
+        }
+
+        var current = player.Offer[index];
+        var replacement = _unitPool.ExchangeOffer([current], player.Tier, 1, _randomSource);
+        if (replacement.Count == 0)
+        {
+            player.TakeOfferedUnit(index);
+            return;
+        }
+        player.ReplaceOfferedUnit(index, ValidateEffectOfferUnit(replacement[0], player.Tier));
+    }
+
+    private void MutateActionOfferFromEffect(PlayerState player, OfferMutationOperation operation, OfferSlotSelection selection)
+    {
+        if (operation == OfferMutationOperation.Add)
+        {
+            var added = DrawActionOffer(player.Tier, 1, player.ActionOffer.Select(action => action.Id));
+            if (added.Count > 0) player.AddOfferedAction(added[0]);
+            return;
+        }
+        if (player.ActionOffer.Count == 0) return;
+
+        var index = ResolveOfferMutationIndex(player.ActionOffer.Count, selection);
+        if (operation == OfferMutationOperation.Remove)
+        {
+            player.TakeOfferedAction(index);
+            return;
+        }
+
+        var replacement = DrawActionOffer(player.Tier, 1, player.ActionOffer.Select(action => action.Id));
+        if (replacement.Count > 0) player.ReplaceOfferedAction(index, replacement[0]);
+    }
+
+    private int ResolveOfferMutationIndex(int count, OfferSlotSelection selection) =>
+        selection switch
+        {
+            OfferSlotSelection.Leftmost => 0,
+            OfferSlotSelection.Rightmost => count - 1,
+            OfferSlotSelection.Random => _randomSource.NextInt(0, count),
+            _ => throw new ArgumentOutOfRangeException(nameof(selection)),
+        };
+
+    private static UnitDefinition ValidateEffectOfferUnit(UnitDefinition unit, int tier)
+    {
+        ArgumentNullException.ThrowIfNull(unit);
+        if (unit.Tier > tier) throw new InvalidOperationException("Unit pool returned an ineligible unit.");
+        return unit;
     }
 
     private PreparationCommandResult UpgradeTier(MatchState match, PlayerState player)

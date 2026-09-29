@@ -275,6 +275,10 @@ internal sealed class PowerLifecycleModValidator
                 ValidateKeys(effect, file, path, ["kind"], ["kind"], issues);
                 break;
 
+            case "mutateOffer":
+                ValidateKeys(effect, file, path, ["kind", "operation", "playableKind", "selection"], ["kind", "operation", "playableKind"], issues);
+                break;
+
             case "setPower":
                 ValidateKeys(effect, file, path, ["kind", "powerId"], ["kind", "powerId"], issues);
                 if (TryRequiredString(effect, "powerId", file, path + ".powerId", issues, out var powerId) &&
