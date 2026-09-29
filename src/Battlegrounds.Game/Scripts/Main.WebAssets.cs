@@ -8,32 +8,64 @@ namespace Battlegrounds.Game;
 public partial class Main
 {
     private bool _webCosmeticsLoaded;
-    private JsonElement? _webCosmetics;
+    private Dictionary<string, object?>? _webCosmetics;
     private bool _webPresentationAssetsLoaded;
     private ModPresentationAssetCatalog? _webPresentationAssets;
 
-    private object? BuildWebCosmeticsState()
+    private object BuildWebCosmeticsState()
     {
         if (_webCosmeticsLoaded)
-            return _webCosmetics;
+            return _webCosmetics ?? new Dictionary<string, object?>();
 
         _webCosmeticsLoaded = true;
+        _webCosmetics = new Dictionary<string, object?>(StringComparer.Ordinal);
         try
         {
             var modDirectory = Path.GetFullPath(ProjectSettings.GlobalizePath(ModPath));
             var cosmeticsPath = Path.Combine(modDirectory, "presentation", "cosmetics.json");
-            if (!File.Exists(cosmeticsPath))
-                return null;
-
-            using var document = JsonDocument.Parse(File.ReadAllText(cosmeticsPath));
-            _webCosmetics = document.RootElement.Clone();
-            return _webCosmetics;
+            if (File.Exists(cosmeticsPath))
+            {
+                using var document = JsonDocument.Parse(File.ReadAllText(cosmeticsPath));
+                foreach (var property in document.RootElement.EnumerateObject())
+                    _webCosmetics[property.Name] = property.Value.Clone();
+            }
         }
         catch (Exception exception)
         {
             AppendLog($"Presentation cosmetics could not be loaded: {exception.Message}");
-            return null;
         }
+
+        _webCosmetics["presentationAssets"] = BuildWebPresentationAssetsState();
+        return _webCosmetics;
+    }
+
+    private object BuildWebPresentationAssetsState()
+    {
+        EnsureWebPresentationAssetsLoaded();
+        var leaders = new Dictionary<string, string>(StringComparer.Ordinal);
+        var units = new Dictionary<string, string>(StringComparer.Ordinal);
+        var actions = new Dictionary<string, string>(StringComparer.Ordinal);
+
+        foreach (var entry in _webPresentationAssets?.All ?? [])
+        {
+            if (entry.Asset.Type != ModPresentationAssetType.Image)
+                continue;
+
+            switch (entry.EntityKind)
+            {
+                case ModPresentationEntityKind.Leader when entry.Slot == ModPresentationAssetSlots.Portrait:
+                    leaders[entry.EntityId] = entry.Asset.RelativePath;
+                    break;
+                case ModPresentationEntityKind.Unit when entry.Slot == ModPresentationAssetSlots.Art:
+                    units[entry.EntityId] = entry.Asset.RelativePath;
+                    break;
+                case ModPresentationEntityKind.Action when entry.Slot == ModPresentationAssetSlots.Art:
+                    actions[entry.EntityId] = entry.Asset.RelativePath;
+                    break;
+            }
+        }
+
+        return new { leaders, units, actions };
     }
 
     private string? PlayableArtPath(PlayableKind kind, string id) => kind switch
