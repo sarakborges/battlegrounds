@@ -95,7 +95,7 @@
   left: 10px;
   top: 10px;
   bottom: 10px;
-  width: calc(var(--theme-metric-layout-opponent-rail-width, 82) * 1px);
+  width: calc(var(--theme-metric-layout-preparation-scene-opponent-rail-width, 82) * 1px);
   overflow: visible;
 }
 
