@@ -8,13 +8,6 @@ internal sealed partial class PresentationCardButton
 
     internal void ConfigureTokenFrame(Texture2D? texture)
     {
-        // BoardCardButton already renders the mod-driven token frame as the button
-        // background. Drawing the same SVG again above the portrait hid the art
-        // whenever the frame asset had an opaque center. Keep the content slightly
-        // inset instead, so the background frame remains visible around real art.
-        if (_semanticTokenFrame is not null)
-            _semanticTokenFrame.Visible = false;
-
         var margin = GetChildren().OfType<MarginContainer>().FirstOrDefault();
         if (margin is null)
             return;
@@ -25,6 +18,19 @@ internal sealed partial class PresentationCardButton
         margin.AddThemeConstantOverride("margin_right", inset);
         margin.AddThemeConstantOverride("margin_bottom", inset);
         margin.ZIndex = 1;
+
+        // The token asset is a transparent foreground frame. Keep the actual
+        // portrait below it instead of relying on the Button stylebox, which
+        // otherwise disappears behind the art or gets drawn twice.
+        var empty = new StyleBoxEmpty();
+        foreach (var state in new[] { "normal", "hover", "pressed", "disabled", "focus" })
+            AddThemeStyleboxOverride(state, empty);
+
+        _semanticTokenFrame ??= CreateSemanticTokenFrame();
+        _semanticTokenFrame.Texture = texture;
+        _semanticTokenFrame.Visible = texture is not null;
+        _semanticTokenFrame.ZIndex = 3;
+        _semanticTokenFrame.SetAnchorsAndOffsetsPreset(LayoutPreset.FullRect);
     }
 
     private TextureRect CreateSemanticTokenFrame()
@@ -35,7 +41,7 @@ internal sealed partial class PresentationCardButton
             MouseFilter = MouseFilterEnum.Ignore,
             ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize,
             StretchMode = TextureRect.StretchModeEnum.Scale,
-            ZIndex = 0,
+            ZIndex = 3,
             Visible = false,
         };
         AddChild(frame);
