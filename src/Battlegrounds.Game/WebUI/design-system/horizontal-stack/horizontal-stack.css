@@ -1,3 +1,16 @@
-.horizontal-stack { display: flex; align-items: stretch; justify-content: center; gap: 10px; overflow-x: auto; overflow-y: hidden; padding: 2px 4px 8px; scrollbar-width: thin; }
-.horizontal-stack[data-variant="actions"] { justify-content: flex-end; overflow: visible; padding: 0; }
-@media (max-width: 900px) { .horizontal-stack { justify-content: flex-start; } }
+.horizontal-stack {
+  display: flex;
+  align-items: stretch;
+  justify-content: center;
+  gap: 10px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 2px 4px 8px;
+  scrollbar-width: thin;
+}
+
+.horizontal-stack[data-variant="actions"] {
+  justify-content: flex-end;
+  overflow: visible;
+  padding: 0;
+}
