@@ -61,6 +61,7 @@ public partial class Main
                 ".png" => "image/png",
                 ".jpg" or ".jpeg" => "image/jpeg",
                 ".webp" => "image/webp",
+                ".svg" => "image/svg+xml",
                 _ => null,
             };
             if (mimeType is null)
