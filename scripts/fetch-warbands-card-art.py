@@ -32,7 +32,7 @@ UNITS = {
     "dread-guard": "Deathlord",
     "death-herald": "Deathspeaker",
     "tomb-colossus": "Flesh Behemoth",
-    "grave-champion": "Boneguard Commander",
+    "grave-champion": "Skeletal Knight",
     "scrapbot": "Junkbot",
     "goblin-tinkerer": "Tinkertown Technician",
     "shield-drone": "Shielded Minibot",
@@ -62,6 +62,10 @@ PREFERRED_IDS = {
     "Scavenging Hyena": "EX1_531",
     "Moonfang": "YOP_035",
     "Witchwood Grizzly": "GIL_623",
+    "Bloodfen Raptor": "CS2_172",
+    "Dire Wolf Alpha": "EX1_162",
+    "Risen Rider": "BG25_001",
+    "Deathspeaker": "ICC_467",
     "The Coin": "GAME_005",
 }
 
@@ -69,7 +73,7 @@ PREFERRED_IDS = {
 def fetch_bytes(url: str, timeout: int = 30) -> bytes:
     request = urllib.request.Request(
         url,
-        headers={"User-Agent": "Battlegrounds-Warbands-Card-Art-Fetcher/1.0"},
+        headers={"User-Agent": "Battlegrounds-Warbands-Card-Art-Fetcher/1.1"},
     )
     with urllib.request.urlopen(request, timeout=timeout) as response:
         return response.read()
@@ -84,7 +88,11 @@ def load_cards() -> list[dict]:
 
 def score(card: dict, expected_type: str) -> tuple[int, int, int, int]:
     card_id = str(card.get("id", ""))
-    is_triple = card_id.startswith("TB_BaconUps_") or "_GOLDEN" in card_id.upper()
+    is_triple = (
+        card_id.startswith("TB_BaconUps_")
+        or card_id.endswith("_G")
+        or "_GOLDEN" in card_id.upper()
+    )
     return (
         1 if str(card.get("type", "")) == expected_type else 0,
         1 if card.get("collectible") else 0,
@@ -93,13 +101,7 @@ def score(card: dict, expected_type: str) -> tuple[int, int, int, int]:
     )
 
 
-def find_card(cards: list[dict], name: str, expected_type: str) -> dict:
-    preferred_id = PREFERRED_IDS.get(name)
-    if preferred_id:
-        preferred = next((card for card in cards if card.get("id") == preferred_id), None)
-        if preferred is not None:
-            return preferred
-
+def find_cards(cards: list[dict], name: str, expected_type: str) -> list[dict]:
     matches = [
         card
         for card in cards
@@ -107,18 +109,34 @@ def find_card(cards: list[dict], name: str, expected_type: str) -> dict:
     ]
     if not matches:
         raise LookupError(f"No Hearthstone card named {name!r}")
-    return max(matches, key=lambda card: score(card, expected_type))
+
+    matches.sort(key=lambda card: score(card, expected_type), reverse=True)
+    preferred_id = PREFERRED_IDS.get(name)
+    if preferred_id:
+        preferred = next((card for card in matches if card.get("id") == preferred_id), None)
+        if preferred is not None:
+            matches.remove(preferred)
+            matches.insert(0, preferred)
+    return matches
 
 
-def save_art(card: dict, target: pathlib.Path) -> str:
-    card_id = str(card["id"])
-    art_url = ART_URL.format(card_id=card_id)
-    data = fetch_bytes(art_url)
-    if len(data) < 12 or data[:4] != b"RIFF" or data[8:12] != b"WEBP":
-        raise ValueError(f"Downloaded art for {card_id} is not WebP")
-    target.parent.mkdir(parents=True, exist_ok=True)
-    target.write_bytes(data)
-    return art_url
+def download_art(candidates: list[dict], target: pathlib.Path) -> tuple[dict, str]:
+    failures: list[str] = []
+    for card in candidates:
+        card_id = str(card["id"])
+        art_url = ART_URL.format(card_id=card_id)
+        try:
+            data = fetch_bytes(art_url)
+        except urllib.error.HTTPError as exc:
+            failures.append(f"{card_id}:{exc.code}")
+            continue
+        if len(data) < 12 or data[:4] != b"RIFF" or data[8:12] != b"WEBP":
+            failures.append(f"{card_id}:not-webp")
+            continue
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_bytes(data)
+        return card, art_url
+    raise ValueError(f"No downloadable WebP art among candidates: {', '.join(failures)}")
 
 
 def load_manifest() -> dict:
@@ -138,9 +156,9 @@ def import_group(
 ) -> dict[str, dict]:
     imported: dict[str, dict] = {}
     for entity_id, source_name in mapping.items():
-        card = find_card(cards, source_name, expected_type)
+        candidates = find_cards(cards, source_name, expected_type)
         target = ASSET_ROOT / group / f"{entity_id}.webp"
-        art_url = save_art(card, target)
+        card, art_url = download_art(candidates, target)
         imported[entity_id] = {
             "sourceCardName": source_name,
             "cardId": card.get("id"),
