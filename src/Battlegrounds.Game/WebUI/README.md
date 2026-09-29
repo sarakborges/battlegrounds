@@ -52,6 +52,7 @@ WebUI/
     card/                  # full card surface used where the card itself is the persistent object
     card-preview/          # inspection-only card shown by hover inspector
     character-portrait/
+    combat-unit-token/     # combat-only timeline marker/status composition around a playable token
     hero-cockpit/
     mod-option/
     opponent-rail/
@@ -76,15 +77,15 @@ Every reusable UI module under `design-system/` or `components/` owns a director
 
 Design-system modules are generic presentation primitives and must not know gameplay or application concepts. Components may compose design-system primitives and other components, but they do not own authoritative rules. Screens compose those components from presentation state.
 
-Component names describe their responsibility. Prefer `tavern-offer`, `player-field`, `player-reserve`, `playable-token`, `card-preview`, and `mod-option` over generic containers whose behavior is selected by magic variants such as `area`, `zone`, or `section`.
+Component names describe their responsibility. Prefer `tavern-offer`, `player-field`, `player-reserve`, `playable-token`, `combat-unit-token`, `card-preview`, and `mod-option` over generic containers whose behavior is selected by magic variants such as `area`, `zone`, or `section`.
 
 A reusable module owns its own geometry and visual state. Screen CSS may position component roots as part of screen composition, but it must not reach into reusable component internals.
 
 ## Tokens and inspection
 
-Gameplay uses `playable-token` as the persistent representation of a unit or action. Preparation uses it in the tavern offer, player field, reserve, choice and target surfaces; combat reuses the same token and adds timeline highlight states such as attacker, target, damage, summon and trigger. A full rectangular card is not used as the board piece.
+Gameplay uses `playable-token` as the persistent representation of a unit or action. Preparation uses it in the tavern offer, player field, reserve, choice and target surfaces. Combat composes the same token inside `combat-unit-token`, which owns transient timeline markers, status text and attacker/target/damage/summon/trigger animation. A full rectangular card is not used as the board piece.
 
-Full card presentation belongs to `card-preview` and is created on demand by `interactions/hover-inspector.js`. Any inspectable surface opts in with semantic `data-inspect-*` metadata. The same inspector is used for playable tokens, leaders and hero powers so hover behavior stays consistent rather than being reimplemented per screen.
+Full card presentation belongs to `card-preview` and is created on demand by `interactions/hover-inspector.js`. Any inspectable surface opts in with semantic `data-inspect-*` metadata. The same inspector is used for playable tokens, combat units, leaders and hero powers so hover behavior stays consistent rather than being reimplemented per screen.
 
 Descriptions are presentation content owned by the mod. C# resolves `entity.<kind>.<id>.description` through `ModPresentationText` and sends the resolved description in the Web UI snapshot. The browser must not invent gameplay descriptions.
 
