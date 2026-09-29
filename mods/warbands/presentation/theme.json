@@ -237,24 +237,50 @@
         "focus": { "textColor": "#FFFFFF" }
       }
     },
-    "button.tavernAction": {
-      "fontSize": "heading",
+    "button.tavernUpgrade": {
+      "fontSize": "button",
       "textColor": "primaryText",
-      "backgroundColor": "tavernPurple",
-      "backgroundAsset": "assets/ui/tavern-action.svg",
+      "backgroundColor": "#00000000",
+      "backgroundAsset": "assets/ui/tavern-upgrade.svg",
+      "borderColor": "#00000000",
+      "borderWidth": 0,
       "padding": { "horizontal": "xs", "vertical": "xs" },
       "states": {
-        "hover": { "backgroundColor": "tavernPurpleHover" },
-        "pressed": { "backgroundColor": "tavernPurplePressed" },
-        "disabled": { "textColor": "textDisabled", "opacity": 0.5 },
-        "focus": { "backgroundColor": "tavernPurpleHover" }
+        "hover": { "textColor": "#FFFFFF" },
+        "pressed": { "opacity": 0.85 },
+        "disabled": { "textColor": "textDisabled", "opacity": 0.48 },
+        "focus": { "textColor": "#FFFFFF" }
       }
     },
-    "button.tavernUpgrade": { "backgroundColor": "#7A3FA8" },
-    "button.tavernRefresh": { "backgroundColor": "#6636A1" },
+    "button.tavernRefresh": {
+      "fontSize": "heading",
+      "textColor": "primaryText",
+      "backgroundColor": "#00000000",
+      "backgroundAsset": "assets/ui/tavern-refresh.svg",
+      "borderColor": "#00000000",
+      "borderWidth": 0,
+      "padding": { "horizontal": "xs", "vertical": "xs" },
+      "states": {
+        "hover": { "textColor": "#FFFFFF" },
+        "pressed": { "opacity": 0.85 },
+        "disabled": { "textColor": "textDisabled", "opacity": 0.48 },
+        "focus": { "textColor": "#FFFFFF" }
+      }
+    },
     "button.tavernFreeze": {
-      "backgroundColor": "tavernFreeze",
-      "states": { "pressed": { "backgroundColor": "tavernFreezePressed" } }
+      "fontSize": "heading",
+      "textColor": "#E8FAFF",
+      "backgroundColor": "#00000000",
+      "backgroundAsset": "assets/ui/tavern-freeze.svg",
+      "borderColor": "#00000000",
+      "borderWidth": 0,
+      "padding": { "horizontal": "xs", "vertical": "xs" },
+      "states": {
+        "hover": { "textColor": "#FFFFFF" },
+        "pressed": { "opacity": 0.85 },
+        "disabled": { "textColor": "textDisabled", "opacity": 0.48 },
+        "focus": { "textColor": "#FFFFFF" }
+      }
     },
     "button.heroPower": {
       "textColor": "#E8F7FF",
