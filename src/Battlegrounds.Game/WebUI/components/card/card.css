@@ -77,7 +77,7 @@
   font-weight: 750;
 }
 
-.card .meta {
+.card .badges {
   display: flex;
   flex-wrap: wrap;
   gap: 5px;
@@ -85,7 +85,7 @@
 }
 
 /* Preparation card variants own their geometry here.
-   Screens and zones arrange cards; they do not size the card component. */
+   Screens arrange cards; they do not size the card component. */
 .card[data-variant="offer"] {
   --card-width: 142px;
   min-width: 126px;
@@ -135,7 +135,7 @@
   font-size: 12px;
 }
 
-.card[data-variant="reserve"] .meta {
+.card[data-variant="reserve"] .badges {
   gap: 2px;
 }
 
