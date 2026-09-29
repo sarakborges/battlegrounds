@@ -322,10 +322,10 @@ public sealed class ModLoader
     private sealed record BehaviorData(string Id, string Name, string Handler);
     private sealed record PowerActivationData(int Cost, int MaxUsesPerTurn, int? MaxUsesPerMatch);
     private sealed record PowerData(string Id, string Name, PowerActivationData? Activation, TriggerData[] Triggers);
-    private sealed record ActionData(string Id, string Name, int Tier, int Cost, EffectData[] Effects);
+    private sealed record ActionData(string Id, string Name, int Tier, int Cost, EffectData[] Effects, string? Art);
     private sealed record LeaderData(string Id, string Name, int HealthModifier, int Armor, string InitialPowerId);
     private sealed record NamedIdData(string Id, string Name);
-    private sealed record UnitData(string Id, string Name, int Tier, int Attack, int Health, string[]? Behaviors, string[]? Types, string[]? Tags, TriggerData[]? Triggers, AuraData[]? Auras);
+    private sealed record UnitData(string Id, string Name, int Tier, int Attack, int Health, string[]? Behaviors, string[]? Types, string[]? Tags, TriggerData[]? Triggers, AuraData[]? Auras, string? Art);
     private sealed record AuraData(TargetData Target, int? Attack, int? Health, string[]? BehaviorIds);
     private sealed record UnitCombineData(string Id, string Name, string SourceUnitId, int RequiredCopies, string ResultUnitId, bool? InheritPersistentModifiers);
     private sealed record TriggerData(string Event, EffectData[] Effects, int? Count, ConditionData[]? Conditions, TriggerActivationLimitData? ActivationLimit, HistoryQueryData? Counter);

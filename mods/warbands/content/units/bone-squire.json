@@ -4,8 +4,15 @@
   "tier": 1,
   "attack": 1,
   "health": 3,
-  "behaviors": ["returning"],
-  "types": ["undead"],
-  "tags": ["starter"],
-  "triggers": []
+  "behaviors": [
+    "returning"
+  ],
+  "types": [
+    "undead"
+  ],
+  "tags": [
+    "starter"
+  ],
+  "triggers": [],
+  "art": "assets/units/bone-squire.webp"
 }

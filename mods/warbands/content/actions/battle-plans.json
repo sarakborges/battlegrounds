@@ -6,10 +6,14 @@
   "effects": [
     {
       "kind": "applyUnitModifier",
-      "target": { "scope": "selected", "zone": "reserve" },
+      "target": {
+        "scope": "selected",
+        "zone": "reserve"
+      },
       "modifierKey": "battle-plans",
       "attack": 2,
       "health": 2
     }
-  ]
+  ],
+  "art": "assets/actions/battle-plans.webp"
 }

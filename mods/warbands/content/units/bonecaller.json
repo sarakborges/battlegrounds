@@ -5,7 +5,9 @@
   "attack": 4,
   "health": 6,
   "behaviors": [],
-  "types": ["undead"],
+  "types": [
+    "undead"
+  ],
   "tags": [],
   "triggers": [
     {
@@ -14,11 +16,17 @@
       "effects": [
         {
           "kind": "modifyStats",
-          "target": { "scope": "friendly", "selection": "lowestAttack", "limit": 1, "typeId": "undead" },
+          "target": {
+            "scope": "friendly",
+            "selection": "lowestAttack",
+            "limit": 1,
+            "typeId": "undead"
+          },
           "attack": 1,
           "health": 1
         }
       ]
     }
-  ]
+  ],
+  "art": "assets/units/bonecaller.webp"
 }

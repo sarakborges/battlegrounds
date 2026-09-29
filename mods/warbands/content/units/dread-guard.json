@@ -4,8 +4,14 @@
   "tier": 4,
   "attack": 6,
   "health": 6,
-  "behaviors": ["guarded", "returning"],
-  "types": ["undead"],
+  "behaviors": [
+    "guarded",
+    "returning"
+  ],
+  "types": [
+    "undead"
+  ],
   "tags": [],
-  "triggers": []
+  "triggers": [],
+  "art": "assets/units/dread-guard.webp"
 }

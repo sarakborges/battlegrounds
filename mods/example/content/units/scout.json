@@ -5,14 +5,22 @@
   "attack": 1,
   "health": 2,
   "behaviors": [],
-  "types": ["organic"],
-  "tags": ["starter"],
+  "types": [
+    "organic"
+  ],
+  "tags": [
+    "starter"
+  ],
   "triggers": [
     {
       "event": "onPlay",
       "effects": [
-        { "kind": "addResource", "amount": 1 }
+        {
+          "kind": "addResource",
+          "amount": 1
+        }
       ]
     }
-  ]
+  ],
+  "art": "assets/units/scout.svg"
 }

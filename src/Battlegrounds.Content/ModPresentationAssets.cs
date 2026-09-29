@@ -209,15 +209,45 @@ public sealed class ModPresentationAssetLoader
 
     internal static ModPresentationAssetCatalog LoadValidated(string modDirectory)
     {
-        var manifestPath = Path.Combine(modDirectory, "assets", "presentation.json");
-        if (!File.Exists(manifestPath)) return new ModPresentationAssetCatalog([]);
-
-        using var document = JsonDocument.Parse(File.ReadAllText(manifestPath), DocumentOptions);
         var entries = new List<ModPresentationAssetEntry>();
-        ReadAssetCategory(document.RootElement, "leaders", ModPresentationEntityKind.Leader, ModPresentationAssetSlots.Portrait, entries);
-        ReadAssetCategory(document.RootElement, "units", ModPresentationEntityKind.Unit, ModPresentationAssetSlots.Art, entries);
-        ReadAssetCategory(document.RootElement, "actions", ModPresentationEntityKind.Action, ModPresentationAssetSlots.Art, entries);
+        var manifestPath = Path.Combine(modDirectory, "assets", "presentation.json");
+        if (File.Exists(manifestPath))
+        {
+            using var document = JsonDocument.Parse(File.ReadAllText(manifestPath), DocumentOptions);
+            ReadAssetCategory(document.RootElement, "leaders", ModPresentationEntityKind.Leader, ModPresentationAssetSlots.Portrait, entries);
+        }
+
+        ReadInlineCardArt(modDirectory, "content/units", ModPresentationEntityKind.Unit, entries);
+        ReadInlineCardArt(modDirectory, "content/actions", ModPresentationEntityKind.Action, entries);
         return new ModPresentationAssetCatalog(entries);
+    }
+
+    private static void ReadInlineCardArt(
+        string modDirectory,
+        string contentDirectory,
+        ModPresentationEntityKind kind,
+        ICollection<ModPresentationAssetEntry> entries)
+    {
+        var directory = Path.Combine(modDirectory, contentDirectory.Replace('/', Path.DirectorySeparatorChar));
+        if (!Directory.Exists(directory)) return;
+
+        foreach (var path in Directory.GetFiles(directory, "*.json", SearchOption.TopDirectoryOnly)
+                     .OrderBy(path => Path.GetFileName(path), StringComparer.Ordinal))
+        {
+            using var document = JsonDocument.Parse(File.ReadAllText(path), DocumentOptions);
+            var root = document.RootElement;
+            if (!root.TryGetProperty(ModPresentationAssetSlots.Art, out var artElement)) continue;
+
+            var entityId = root.TryGetProperty("id", out var idElement) ? idElement.GetString() : null;
+            entityId ??= Path.GetFileNameWithoutExtension(path);
+            var relativePath = artElement.GetString()
+                ?? throw new InvalidDataException($"Validated card art '{contentDirectory}/{entityId}.json' has no path.");
+            entries.Add(new ModPresentationAssetEntry(
+                kind,
+                entityId,
+                ModPresentationAssetSlots.Art,
+                new ModPresentationAssetReference(ModPresentationAssetType.Image, relativePath)));
+        }
     }
 
     private static void ReadAssetCategory(

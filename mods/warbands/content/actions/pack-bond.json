@@ -14,5 +14,6 @@
       "attack": 2,
       "health": 2
     }
-  ]
+  ],
+  "art": "assets/actions/pack-bond.webp"
 }

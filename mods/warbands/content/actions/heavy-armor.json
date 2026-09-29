@@ -6,8 +6,11 @@
   "effects": [
     {
       "kind": "modifyStats",
-      "target": { "scope": "selected" },
+      "target": {
+        "scope": "selected"
+      },
       "health": 3
     }
-  ]
+  ],
+  "art": "assets/actions/heavy-armor.webp"
 }

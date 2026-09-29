@@ -13,5 +13,6 @@
       "attack": 4,
       "duration": "untilCombatEnd"
     }
-  ]
+  ],
+  "art": "assets/actions/war-drums.webp"
 }

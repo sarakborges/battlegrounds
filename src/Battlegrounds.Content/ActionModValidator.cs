@@ -49,7 +49,7 @@ internal sealed class ActionModValidator
 
         foreach (var file in actionFiles)
         {
-            ValidateKeys(file.Root, file.Path, "$", ["id", "name", "tier", "cost", "effects"], ["id", "name", "tier", "cost", "effects"], issues);
+            ValidateKeys(file.Root, file.Path, "$", ["id", "name", "tier", "cost", "effects", "art"], ["id", "name", "tier", "cost", "effects"], issues);
             if (TryString(file.Root, "id", file.Path, "$.id", issues, out var id))
             {
                 if (!string.Equals(Path.GetFileNameWithoutExtension(file.Path), id, StringComparison.Ordinal))

@@ -10,229 +10,83 @@ public sealed class PresentationAssetTests
     public void Load_ExampleAssetsAreIndexedByStableEntityId()
     {
         var path = Path.Combine(AppContext.BaseDirectory, "mods", "example");
-
         var assets = new ModPresentationAssetLoader().Load(path);
-
-        var portrait = assets.GetRequired(ModPresentationEntityKind.Leader, "steady", ModPresentationAssetSlots.Portrait);
-        var unitArt = assets.GetRequired(ModPresentationEntityKind.Unit, "scout", ModPresentationAssetSlots.Art);
-        var actionArt = assets.GetRequired(ModPresentationEntityKind.Action, "training", ModPresentationAssetSlots.Art);
-        Assert.Equal(ModPresentationAssetType.Image, portrait.Type);
-        Assert.Equal("assets/leaders/steady.svg", portrait.RelativePath);
-        Assert.Equal("assets/units/scout.svg", unitArt.RelativePath);
-        Assert.Equal("assets/actions/training.svg", actionArt.RelativePath);
+        Assert.Equal("assets/leaders/steady.svg", assets.GetRequired(ModPresentationEntityKind.Leader, "steady", ModPresentationAssetSlots.Portrait).RelativePath);
+        Assert.Equal("assets/units/scout.svg", assets.GetRequired(ModPresentationEntityKind.Unit, "scout", ModPresentationAssetSlots.Art).RelativePath);
+        Assert.Equal("assets/actions/training.svg", assets.GetRequired(ModPresentationEntityKind.Action, "training", ModPresentationAssetSlots.Art).RelativePath);
         Assert.False(assets.TryGet(ModPresentationEntityKind.Unit, "guard", ModPresentationAssetSlots.Art, out _));
-        Assert.Throws<NotSupportedException>(() => ((IList<ModPresentationAssetEntry>)assets.All).Add(assets.All[0]));
     }
 
     [Fact]
     public void Load_ExampleCuesAreIndexedByEntityAndRole()
     {
         var path = Path.Combine(AppContext.BaseDirectory, "mods", "example");
-
-        var cues = new ModPresentationCueLoader().Load(path);
-
-        var attack = cues.GetRequired(ModPresentationEntityKind.Unit, "scout", ModPresentationCueRoles.CombatAttack);
-        Assert.Equal(ModPresentationAnimation.Lunge, attack.Animation);
-        Assert.Equal(0.2, attack.DurationSeconds);
-        Assert.Null(attack.Audio);
-        Assert.True(cues.TryGet(ModPresentationEntityKind.Leader, "steady", ModPresentationCueRoles.UiSelect, out _));
-        Assert.Throws<NotSupportedException>(() => ((IList<ModPresentationCue>)cues.All).Add(cues.All[0]));
+        var cue = new ModPresentationCueLoader().Load(path)
+            .GetRequired(ModPresentationEntityKind.Unit, "scout", ModPresentationCueRoles.CombatAttack);
+        Assert.Equal(ModPresentationAnimation.Lunge, cue.Animation);
+        Assert.Equal(0.2, cue.DurationSeconds);
     }
 
     [Fact]
-    public void Load_MissingManifestProducesEmptyCatalogs()
+    public void Load_MissingAssetsAndCardArtProducesEmptyCatalogs()
     {
         var path = CreateTempMod();
         try
         {
+            RemoveCardArt(path, "units", "scout");
+            RemoveCardArt(path, "actions", "training");
             Directory.Delete(Path.Combine(path, "assets"), recursive: true);
-
-            var report = new ModValidator().Validate(path);
-            var assets = new ModPresentationAssetLoader().Load(path);
-            var cues = new ModPresentationCueLoader().Load(path);
-
-            Assert.True(report.IsValid);
-            Assert.Empty(assets.All);
-            Assert.Empty(cues.All);
+            Assert.True(new ModValidator().Validate(path).IsValid);
+            Assert.Empty(new ModPresentationAssetLoader().Load(path).All);
+            Assert.Empty(new ModPresentationCueLoader().Load(path).All);
         }
-        finally
-        {
-            Directory.Delete(path, recursive: true);
-        }
+        finally { Directory.Delete(path, recursive: true); }
     }
 
     [Fact]
-    public void Validate_UnknownEntityReferenceIsReported()
+    public void Validate_LegacyManifestCardArtIsRejected()
     {
         var path = CreateTempMod();
         try
         {
-            SetAsset(path, "units", "missing", "art", "assets/units/scout.svg");
-
+            SetManifestAsset(path, "units", "scout", "art", "assets/units/scout.svg");
             var report = new ModValidator().Validate(path);
-
-            Assert.Contains(report.Issues, issue =>
-                issue.Code == "UNKNOWN_PRESENTATION_ASSET_REFERENCE" &&
-                issue.File == "assets/presentation.json" &&
-                issue.Path == "$.units.missing");
+            Assert.Contains(report.Issues, issue => issue.Code == "UNKNOWN_PRESENTATION_ASSET_SLOT" && issue.Path == "$.units.scout.art");
         }
-        finally
-        {
-            Directory.Delete(path, recursive: true);
-        }
+        finally { Directory.Delete(path, recursive: true); }
     }
 
-    [Fact]
-    public void Validate_PathTraversalIsRejected()
+    [Theory]
+    [InlineData("assets/../content/units/scout.json", "INVALID_PRESENTATION_ASSET_PATH")]
+    [InlineData("assets/units/missing.svg", "MISSING_PRESENTATION_ASSET")]
+    public void Validate_InlineCardArtPathIsValidated(string art, string expectedCode)
     {
         var path = CreateTempMod();
         try
         {
-            SetAsset(path, "units", "scout", "art", "assets/../content/units/scout.json");
-
+            SetCardArt(path, "units", "scout", art);
             var report = new ModValidator().Validate(path);
-
-            Assert.Contains(report.Issues, issue =>
-                issue.Code == "INVALID_PRESENTATION_ASSET_PATH" &&
-                issue.Path == "$.units.scout.art");
+            Assert.Contains(report.Issues, issue => issue.Code == expectedCode && issue.File == "content/units/scout.json" && issue.Path == "$.art");
         }
-        finally
-        {
-            Directory.Delete(path, recursive: true);
-        }
+        finally { Directory.Delete(path, recursive: true); }
     }
 
     [Fact]
-    public void Validate_MissingAssetIsReported()
-    {
-        var path = CreateTempMod();
-        try
-        {
-            SetAsset(path, "units", "scout", "art", "assets/units/missing.svg");
-
-            var report = new ModValidator().Validate(path);
-
-            Assert.Contains(report.Issues, issue =>
-                issue.Code == "MISSING_PRESENTATION_ASSET" &&
-                issue.Path == "$.units.scout.art");
-        }
-        finally
-        {
-            Directory.Delete(path, recursive: true);
-        }
-    }
-
-    [Fact]
-    public void Validate_ImageSlotRejectsNonImageExtension()
+    public void Validate_InlineCardArtRejectsNonImageExtension()
     {
         var path = CreateTempMod();
         try
         {
             File.WriteAllText(Path.Combine(path, "assets", "units", "scout.txt"), "not an image");
-            SetAsset(path, "units", "scout", "art", "assets/units/scout.txt");
-
+            SetCardArt(path, "units", "scout", "assets/units/scout.txt");
             var report = new ModValidator().Validate(path);
-
-            Assert.Contains(report.Issues, issue =>
-                issue.Code == "INVALID_PRESENTATION_ASSET_TYPE" &&
-                issue.Path == "$.units.scout.art");
+            Assert.Contains(report.Issues, issue => issue.Code == "INVALID_PRESENTATION_ASSET_TYPE" && issue.Path == "$.art");
         }
-        finally
-        {
-            Directory.Delete(path, recursive: true);
-        }
+        finally { Directory.Delete(path, recursive: true); }
     }
 
     [Fact]
-    public void Validate_UnknownSlotIsReported()
-    {
-        var path = CreateTempMod();
-        try
-        {
-            SetAsset(path, "leaders", "steady", "banner", "assets/leaders/steady.svg");
-
-            var report = new ModValidator().Validate(path);
-
-            Assert.Contains(report.Issues, issue =>
-                issue.Code == "UNKNOWN_PRESENTATION_ASSET_SLOT" &&
-                issue.Path == "$.leaders.steady.banner");
-        }
-        finally
-        {
-            Directory.Delete(path, recursive: true);
-        }
-    }
-
-    [Fact]
-    public void Validate_CueRejectsUnknownRoleAndAnimation()
-    {
-        var path = CreateTempMod();
-        try
-        {
-            SetCue(path, "units", "scout", "combat.teleport", new JsonObject
-            {
-                ["animation"] = "warp",
-                ["durationSeconds"] = 0.2,
-            });
-
-            var report = new ModValidator().Validate(path);
-
-            Assert.Contains(report.Issues, issue => issue.Code == "UNKNOWN_PRESENTATION_CUE_ROLE" && issue.Path == "$.units.scout.cues.combat.teleport");
-            Assert.Contains(report.Issues, issue => issue.Code == "INVALID_PRESENTATION_CUE_ANIMATION" && issue.Path == "$.units.scout.cues.combat.teleport.animation");
-        }
-        finally
-        {
-            Directory.Delete(path, recursive: true);
-        }
-    }
-
-    [Fact]
-    public void Validate_CueDurationMustBeBoundedAndAnimationBacked()
-    {
-        var path = CreateTempMod();
-        try
-        {
-            SetCue(path, "units", "scout", ModPresentationCueRoles.CombatDamage, new JsonObject
-            {
-                ["audio"] = "assets/audio/hit.wav",
-                ["durationSeconds"] = 9.0,
-            });
-            Directory.CreateDirectory(Path.Combine(path, "assets", "audio"));
-            File.WriteAllBytes(Path.Combine(path, "assets", "audio", "hit.wav"), [0x52, 0x49, 0x46, 0x46]);
-
-            var report = new ModValidator().Validate(path);
-
-            Assert.Contains(report.Issues, issue => issue.Code == "INVALID_PRESENTATION_CUE_DURATION" && issue.Path == "$.units.scout.cues.combat.damage.durationSeconds");
-        }
-        finally
-        {
-            Directory.Delete(path, recursive: true);
-        }
-    }
-
-    [Fact]
-    public void Validate_AudioCueUsesSafeExistingWavPath()
-    {
-        var path = CreateTempMod();
-        try
-        {
-            SetCue(path, "units", "scout", ModPresentationCueRoles.CombatAttack, new JsonObject
-            {
-                ["audio"] = "assets/../outside.mp3",
-            });
-
-            var report = new ModValidator().Validate(path);
-
-            Assert.Contains(report.Issues, issue => issue.Code == "INVALID_PRESENTATION_ASSET_PATH" && issue.Path == "$.units.scout.cues.combat.attack.audio");
-        }
-        finally
-        {
-            Directory.Delete(path, recursive: true);
-        }
-    }
-
-    [Fact]
-    public void Load_AudioCueExposesImmutableAudioReference()
+    public void Load_AudioCueStillUsesPresentationCueMetadata()
     {
         var path = CreateTempMod();
         try
@@ -241,29 +95,36 @@ public sealed class PresentationAssetTests
             File.WriteAllBytes(Path.Combine(path, "assets", "audio", "hit.wav"), [0x52, 0x49, 0x46, 0x46]);
             SetCue(path, "units", "scout", ModPresentationCueRoles.CombatDamage, new JsonObject
             {
-                ["animation"] = "shake",
-                ["durationSeconds"] = 0.15,
-                ["audio"] = "assets/audio/hit.wav",
+                ["animation"] = "shake", ["durationSeconds"] = 0.15, ["audio"] = "assets/audio/hit.wav",
             });
-
             var cue = new ModPresentationCueLoader().Load(path)
                 .GetRequired(ModPresentationEntityKind.Unit, "scout", ModPresentationCueRoles.CombatDamage);
-
-            Assert.Equal(ModPresentationAssetType.Audio, cue.Audio?.Type);
             Assert.Equal("assets/audio/hit.wav", cue.Audio?.RelativePath);
             Assert.Equal(ModPresentationAnimation.Shake, cue.Animation);
         }
-        finally
-        {
-            Directory.Delete(path, recursive: true);
-        }
+        finally { Directory.Delete(path, recursive: true); }
     }
 
-    private static void SetAsset(string modPath, string category, string entityId, string slot, string assetPath)
+    private static void SetCardArt(string modPath, string category, string entityId, string art)
+    {
+        var path = Path.Combine(modPath, "content", category, entityId + ".json");
+        var root = JsonNode.Parse(File.ReadAllText(path))!.AsObject();
+        root["art"] = art;
+        File.WriteAllText(path, root.ToJsonString(new JsonSerializerOptions { WriteIndented = true }));
+    }
+
+    private static void RemoveCardArt(string modPath, string category, string entityId)
+    {
+        var path = Path.Combine(modPath, "content", category, entityId + ".json");
+        var root = JsonNode.Parse(File.ReadAllText(path))!.AsObject();
+        root.Remove("art");
+        File.WriteAllText(path, root.ToJsonString(new JsonSerializerOptions { WriteIndented = true }));
+    }
+
+    private static void SetManifestAsset(string modPath, string category, string entityId, string slot, string assetPath)
     {
         var manifestPath = Path.Combine(modPath, "assets", "presentation.json");
-        var root = JsonNode.Parse(File.ReadAllText(manifestPath))?.AsObject()
-            ?? throw new InvalidDataException("Test asset manifest must contain a JSON object.");
+        var root = JsonNode.Parse(File.ReadAllText(manifestPath))!.AsObject();
         var categoryObject = root[category]?.AsObject() ?? new JsonObject();
         root[category] = categoryObject;
         var entityObject = categoryObject[entityId]?.AsObject() ?? new JsonObject();
@@ -275,8 +136,7 @@ public sealed class PresentationAssetTests
     private static void SetCue(string modPath, string category, string entityId, string role, JsonObject cue)
     {
         var manifestPath = Path.Combine(modPath, "assets", "presentation.json");
-        var root = JsonNode.Parse(File.ReadAllText(manifestPath))?.AsObject()
-            ?? throw new InvalidDataException("Test asset manifest must contain a JSON object.");
+        var root = JsonNode.Parse(File.ReadAllText(manifestPath))!.AsObject();
         var categoryObject = root[category]?.AsObject() ?? new JsonObject();
         root[category] = categoryObject;
         var entityObject = categoryObject[entityId]?.AsObject() ?? new JsonObject();

@@ -62,6 +62,9 @@ internal sealed class PresentationAssetModValidator
         var issues = new List<ModValidationIssue>();
         if (string.IsNullOrWhiteSpace(modDirectory) || !Directory.Exists(modDirectory)) return issues;
 
+        ValidateInlineCardArtDirectory(modDirectory, "content/units", issues);
+        ValidateInlineCardArtDirectory(modDirectory, "content/actions", issues);
+
         var manifestPath = Path.Combine(modDirectory, "assets", "presentation.json");
         if (!File.Exists(manifestPath)) return issues;
 
@@ -90,9 +93,73 @@ internal sealed class PresentationAssetModValidator
         }
 
         ValidateCategory(modDirectory, root, "leaders", "content/leaders", ModPresentationAssetSlots.Portrait, issues);
-        ValidateCategory(modDirectory, root, "units", "content/units", ModPresentationAssetSlots.Art, issues);
-        ValidateCategory(modDirectory, root, "actions", "content/actions", ModPresentationAssetSlots.Art, issues);
+        ValidateCategory(modDirectory, root, "units", "content/units", null, issues);
+        ValidateCategory(modDirectory, root, "actions", "content/actions", null, issues);
         return issues;
+    }
+
+    private static void ValidateInlineCardArtDirectory(
+        string modDirectory,
+        string contentDirectory,
+        ICollection<ModValidationIssue> issues)
+    {
+        var directory = Path.Combine(modDirectory, contentDirectory.Replace('/', Path.DirectorySeparatorChar));
+        if (!Directory.Exists(directory)) return;
+
+        foreach (var fullPath in Directory.GetFiles(directory, "*.json", SearchOption.TopDirectoryOnly)
+                     .OrderBy(path => Path.GetFileName(path), StringComparer.Ordinal))
+        {
+            var relativeFile = contentDirectory + "/" + Path.GetFileName(fullPath);
+            try
+            {
+                using var document = JsonDocument.Parse(File.ReadAllText(fullPath), DocumentOptions);
+                if (document.RootElement.ValueKind != JsonValueKind.Object) continue;
+                if (!document.RootElement.TryGetProperty(ModPresentationAssetSlots.Art, out var art)) continue;
+                ValidateInlineImagePath(modDirectory, relativeFile, art, "$.art", issues);
+            }
+            catch (JsonException)
+            {
+                // The owning content validator reports malformed card JSON.
+            }
+        }
+    }
+
+    private static void ValidateInlineImagePath(
+        string modDirectory,
+        string file,
+        JsonElement value,
+        string jsonPath,
+        ICollection<ModValidationIssue> issues)
+    {
+        if (value.ValueKind != JsonValueKind.String || string.IsNullOrWhiteSpace(value.GetString()))
+        {
+            issues.Add(new("INVALID_PRESENTATION_ASSET_PATH", file, jsonPath, "Card art path must be a non-empty mod-relative string."));
+            return;
+        }
+
+        var relativePath = value.GetString()!;
+        if (!TryResolveInsideMod(modDirectory, relativePath, out var fullPath))
+        {
+            issues.Add(new(
+                "INVALID_PRESENTATION_ASSET_PATH",
+                file,
+                jsonPath,
+                $"Card art path '{relativePath}' must stay inside the mod and use a forward-slash relative path under assets/."));
+            return;
+        }
+
+        if (!ImageExtensions.Contains(Path.GetExtension(relativePath)))
+        {
+            issues.Add(new(
+                "INVALID_PRESENTATION_ASSET_TYPE",
+                file,
+                jsonPath,
+                $"Card art '{relativePath}' must use one of: {string.Join(", ", ImageExtensions.OrderBy(item => item, StringComparer.Ordinal))}."));
+            return;
+        }
+
+        if (!File.Exists(fullPath))
+            issues.Add(new("MISSING_PRESENTATION_ASSET", file, jsonPath, $"Card art '{relativePath}' does not exist."));
     }
 
     private static void ValidateCategory(
@@ -100,7 +167,7 @@ internal sealed class PresentationAssetModValidator
         JsonElement root,
         string category,
         string contentDirectory,
-        string expectedSlot,
+        string? expectedSlot,
         ICollection<ModValidationIssue> issues)
     {
         if (!root.TryGetProperty(category, out var categoryElement)) return;

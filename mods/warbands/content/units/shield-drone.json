@@ -4,8 +4,14 @@
   "tier": 2,
   "attack": 2,
   "health": 5,
-  "behaviors": ["guarded", "warded"],
-  "types": ["machine"],
+  "behaviors": [
+    "guarded",
+    "warded"
+  ],
+  "types": [
+    "machine"
+  ],
   "tags": [],
-  "triggers": []
+  "triggers": [],
+  "art": "assets/units/shield-drone.webp"
 }

@@ -5,7 +5,12 @@
   "attack": 2,
   "health": 2,
   "behaviors": [],
-  "types": ["beast"],
-  "tags": ["starter"],
-  "triggers": []
+  "types": [
+    "beast"
+  ],
+  "tags": [
+    "starter"
+  ],
+  "triggers": [],
+  "art": "assets/units/wolf-cub.webp"
 }

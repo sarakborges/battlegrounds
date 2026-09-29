@@ -4,15 +4,26 @@
   "tier": 1,
   "attack": 4,
   "health": 7,
-  "behaviors": ["guarded", "returning"],
-  "types": ["undead"],
-  "tags": ["elite"],
+  "behaviors": [
+    "guarded",
+    "returning"
+  ],
+  "types": [
+    "undead"
+  ],
+  "tags": [
+    "elite"
+  ],
   "triggers": [
     {
       "event": "onCombine",
       "effects": [
-        { "kind": "addResource", "amount": 1 }
+        {
+          "kind": "addResource",
+          "amount": 1
+        }
       ]
     }
-  ]
+  ],
+  "art": "assets/units/grave-champion.webp"
 }

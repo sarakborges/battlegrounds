@@ -4,9 +4,15 @@
   "tier": 6,
   "attack": 10,
   "health": 9,
-  "behaviors": ["double-strike"],
-  "types": ["beast"],
-  "tags": ["elite"],
+  "behaviors": [
+    "double-strike"
+  ],
+  "types": [
+    "beast"
+  ],
+  "tags": [
+    "elite"
+  ],
   "triggers": [
     {
       "event": "onAttack",
@@ -22,5 +28,6 @@
         }
       ]
     }
-  ]
+  ],
+  "art": "assets/units/elder-hydra.webp"
 }

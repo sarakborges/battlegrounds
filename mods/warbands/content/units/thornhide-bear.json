@@ -4,8 +4,13 @@
   "tier": 4,
   "attack": 5,
   "health": 8,
-  "behaviors": ["guarded", "warded"],
-  "types": ["beast"],
+  "behaviors": [
+    "guarded",
+    "warded"
+  ],
+  "types": [
+    "beast"
+  ],
   "tags": [],
   "triggers": [
     {
@@ -13,10 +18,13 @@
       "effects": [
         {
           "kind": "dealDamage",
-          "target": { "scope": "selected" },
+          "target": {
+            "scope": "selected"
+          },
           "amount": 2
         }
       ]
     }
-  ]
+  ],
+  "art": "assets/units/thornhide-bear.webp"
 }

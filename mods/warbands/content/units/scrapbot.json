@@ -4,15 +4,25 @@
   "tier": 1,
   "attack": 2,
   "health": 2,
-  "behaviors": ["warded"],
-  "types": ["machine"],
-  "tags": ["starter"],
+  "behaviors": [
+    "warded"
+  ],
+  "types": [
+    "machine"
+  ],
+  "tags": [
+    "starter"
+  ],
   "triggers": [
     {
       "event": "onRelease",
       "effects": [
-        { "kind": "addResource", "amount": 1 }
+        {
+          "kind": "addResource",
+          "amount": 1
+        }
       ]
     }
-  ]
+  ],
+  "art": "assets/units/scrapbot.webp"
 }

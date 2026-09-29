@@ -4,16 +4,30 @@
   "tier": 6,
   "attack": 10,
   "health": 12,
-  "behaviors": ["guarded"],
-  "types": ["undead"],
-  "tags": ["elite"],
+  "behaviors": [
+    "guarded"
+  ],
+  "types": [
+    "undead"
+  ],
+  "tags": [
+    "elite"
+  ],
   "triggers": [
     {
       "event": "afterFriendlyDeaths",
       "count": 2,
       "effects": [
-        { "kind": "modifyStats", "target": { "scope": "self" }, "attack": 2, "health": 2 }
+        {
+          "kind": "modifyStats",
+          "target": {
+            "scope": "self"
+          },
+          "attack": 2,
+          "health": 2
+        }
       ]
     }
-  ]
+  ],
+  "art": "assets/units/tomb-colossus.webp"
 }
