@@ -13,7 +13,7 @@ let toastTimer = null;
 let renderVersion = 0;
 
 initializeViewportScale();
-bindHoverInspector(document);
+const hoverInspector = bindHoverInspector(document);
 
 function showError(message) {
   toast.textContent = message;
@@ -35,6 +35,7 @@ const bridge = createGameBridge({
   onState: async state => {
     const version = ++renderVersion;
     applyTheme(state?.theme, themeScreenRole(state?.status));
+    hoverInspector?.setTheme(state?.theme);
     bridge.setPolling(state?.status === 'combat');
 
     try {
