@@ -3,6 +3,10 @@
     "id": "bob",
     "skin": "base"
   },
+  "board": {
+    "id": "default",
+    "skin": "base"
+  },
   "leaders": {},
   "cardArtLeaderPool": [
     "genn-greymane",
