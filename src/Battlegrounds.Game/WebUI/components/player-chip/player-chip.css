@@ -1,7 +1,7 @@
 .player-chip {
   position: relative;
-  width: 64px;
-  height: 64px;
+  width: 66px;
+  height: 68px;
   display: grid;
   place-items: center;
   padding: 0;
@@ -14,27 +14,47 @@
 
 .player-chip__portrait-wrap {
   position: relative;
-  width: 56px;
-  height: 56px;
+  width: 58px;
+  height: 58px;
+}
+
+.player-chip__portrait-wrap::after {
+  content: "";
+  position: absolute;
+  z-index: 4;
+  inset: -3px;
+  background-image: var(--theme-component-background-image, none);
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: 100% 100%;
+  pointer-events: none;
 }
 
 .player-chip__portrait {
-  width: 56px;
-  height: 56px;
+  position: absolute;
+  z-index: 1;
+  inset: 4px;
+  width: 50px;
+  height: 50px;
   display: block;
   object-fit: cover;
   object-position: center top;
-  border: 3px solid var(--theme-component-border-color, var(--theme-color-border-strong, #765239));
-  border-radius: 12px;
+  clip-path: polygon(50% 0, 89% 13%, 98% 51%, 78% 88%, 50% 100%, 22% 88%, 2% 51%, 11% 13%);
+  border: 0;
   background: var(--theme-color-surface-raised, var(--surface-3));
   box-shadow: 0 5px 12px rgba(0, 0, 0, .4);
+}
+
+.player-chip:not([data-theme-background-asset="true"]) .player-chip__portrait {
+  outline: 3px solid var(--theme-component-border-color, var(--theme-color-border-strong, #765239));
 }
 
 .player-chip__rank,
 .player-chip__health {
   position: absolute;
-  min-width: 20px;
-  height: 20px;
+  z-index: 7;
+  min-width: 21px;
+  height: 21px;
   display: grid;
   place-items: center;
   padding: 0 4px;
@@ -48,21 +68,19 @@
 }
 
 .player-chip__rank {
-  left: -7px;
-  bottom: -5px;
+  left: -6px;
+  top: -3px;
 }
 
 .player-chip__health {
-  right: -7px;
+  right: -6px;
   bottom: -5px;
   border-color: var(--theme-color-health-accent, #d95e50);
+  background: radial-gradient(circle at 38% 28%, #8d302d, #2b1110 70%);
 }
 
-.player-chip[data-variant="human"] .player-chip__portrait {
-  border-color: var(--theme-color-focus, var(--accent));
-  box-shadow:
-    0 0 0 3px color-mix(in srgb, var(--theme-color-focus, var(--accent)) 22%, transparent),
-    0 5px 12px rgba(0, 0, 0, .4);
+.player-chip[data-variant="human"] .player-chip__portrait-wrap {
+  filter: drop-shadow(0 0 6px color-mix(in srgb, var(--theme-color-focus, var(--accent)) 68%, transparent));
 }
 
 .player-chip[data-eliminated="true"] {
