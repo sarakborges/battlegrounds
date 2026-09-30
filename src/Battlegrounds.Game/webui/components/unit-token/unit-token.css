@@ -30,8 +30,8 @@
   position: absolute;
   left: 50%;
   top: 2px;
-  width: 118px;
-  height: 118px;
+  width: 132px;
+  height: 132px;
   transform: translateX(-50%);
   overflow: visible;
   border: 0;
@@ -58,7 +58,14 @@
   height: 100%;
   object-fit: cover;
   object-position: center;
-  clip-path: ellipse(41.5% 41.1% at 50% 49%);
+  -webkit-mask-image: var(--theme-component-background-image, none);
+  mask-image: var(--theme-component-background-image, none);
+  -webkit-mask-size: 100% 100%;
+  mask-size: 100% 100%;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-position: center;
+  mask-position: center;
   user-select: none;
   pointer-events: none;
 }
