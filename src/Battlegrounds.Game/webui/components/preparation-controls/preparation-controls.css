@@ -93,6 +93,11 @@
 
 .preparation-controls__cost[hidden] { display: none; }
 
+.preparation-controls__tier-badge [data-tier] {
+  display: grid;
+  place-items: center;
+}
+
 .preparation-controls__tier-badge {
   align-self: center;
   margin-top: 8px;
