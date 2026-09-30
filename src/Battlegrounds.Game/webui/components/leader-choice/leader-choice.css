@@ -31,26 +31,30 @@
   transform: translateX(-50%);
 }
 
-.leader-choice__armor {
+.leader-choice__armor.panel {
   position: absolute;
   z-index: 12;
   right: 0;
   bottom: 17px;
   width: 42px;
+  min-width: 42px;
   height: 47px;
   display: grid;
   place-items: center;
   padding: 0 0 2px;
   border: 0;
   border-radius: 0;
-  clip-path: polygon(50% 0, 92% 14%, 86% 66%, 50% 100%, 14% 66%, 8% 14%);
-  background: linear-gradient(145deg, #e6f4f8 0 8%, #8da7b3 22%, #435d69 58%, #1c2d35 100%);
+  background-color: transparent;
+  background-image: var(--theme-component-background-image, none);
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: contain;
   color: #f5fdff;
   font-size: 15px;
   font-weight: 900;
   line-height: 1;
   text-shadow: 0 2px 2px #000;
-  box-shadow: inset 0 0 0 4px color-mix(in srgb, var(--theme-color-armor-accent, #a7c2cf) 72%, #314852);
+  box-shadow: none;
   filter: drop-shadow(0 5px 5px rgba(0, 0, 0, .48));
 }
 
