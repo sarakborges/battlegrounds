@@ -1,5 +1,6 @@
 const assetCache = new Map();
 const pendingAssets = new Map();
+const chunkedAssets = new Map();
 let sendAssetRequest = null;
 
 function normalizeAssetPath(path) {
@@ -18,6 +19,32 @@ export function receiveAsset(payload = {}) {
 
   const pending = pendingAssets.get(path);
   if (!pending) return;
+
+  if (payload.chunked === true && Number.isInteger(payload.chunkCount)) {
+    chunkedAssets.set(path, {
+      mimeType: typeof payload.mimeType === 'string' ? payload.mimeType : 'application/octet-stream',
+      chunks: new Array(payload.chunkCount),
+      received: 0
+    });
+    return;
+  }
+
+  if (Number.isInteger(payload.chunkIndex) && typeof payload.chunkData === 'string') {
+    const state = chunkedAssets.get(path);
+    if (!state || payload.chunkIndex < 0 || payload.chunkIndex >= state.chunks.length) return;
+    if (state.chunks[payload.chunkIndex] === undefined) {
+      state.chunks[payload.chunkIndex] = payload.chunkData;
+      state.received += 1;
+    }
+    if (state.received !== state.chunks.length) return;
+
+    chunkedAssets.delete(path);
+    pendingAssets.delete(path);
+    const value = `data:${state.mimeType};base64,${state.chunks.join('')}`;
+    assetCache.set(path, value);
+    pending.resolve(value);
+    return;
+  }
 
   pendingAssets.delete(path);
   const value = typeof payload.dataUrl === 'string' && payload.dataUrl.length > 0 ? payload.dataUrl : null;
