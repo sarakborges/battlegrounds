@@ -57,6 +57,8 @@ export function preparationHostArtPath(cosmetics) {
 
 export function boardArtPath(cosmetics) {
   const cosmetic = cosmetics?.board ?? defaults.board;
+  const authoredPath = safeAssetPath(cosmetic?.asset);
+  if (authoredPath) return authoredPath;
   const id = safeSegment(cosmetic.id, defaults.board.id);
   const skin = safeSegment(cosmetic.skin, defaults.board.skin);
   return `assets/cosmetics/boards/${id}/${skin}.png`;
