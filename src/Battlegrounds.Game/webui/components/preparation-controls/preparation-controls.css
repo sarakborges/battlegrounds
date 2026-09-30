@@ -99,7 +99,7 @@
 }
 
 .preparation-controls__tier-badge [data-tier][hidden] {
-  display: none !important;
+  display: none;
 }
 
 .preparation-controls__tier-badge {
