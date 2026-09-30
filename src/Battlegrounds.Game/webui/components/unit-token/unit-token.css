@@ -121,42 +121,10 @@
   position: absolute;
   z-index: 6;
   inset: 0;
-  overflow: hidden;
-  border-radius: inherit;
-  background:
-    linear-gradient(64deg, transparent 0 45%, rgba(221, 249, 255, .72) 46% 47%, transparent 48% 100%),
-    linear-gradient(118deg, transparent 0 59%, rgba(190, 239, 255, .58) 60% 61%, transparent 62% 100%),
-    linear-gradient(22deg, transparent 0 67%, rgba(233, 253, 255, .5) 68% 69%, transparent 70% 100%),
-    radial-gradient(circle at 50% 45%, transparent 30%, rgba(104, 205, 249, .18) 60%, rgba(159, 229, 255, .42) 100%);
-  box-shadow:
-    inset 0 0 0 2px rgba(192, 240, 255, .48),
-    inset 0 0 16px rgba(78, 185, 235, .45);
+  width: 100%;
+  height: 100%;
+  background-size: 100% 100%;
   pointer-events: none;
-}
-
-.unit-token__frozen::before,
-.unit-token__frozen::after {
-  content: "";
-  position: absolute;
-  background: linear-gradient(135deg, rgba(235, 254, 255, .9), rgba(95, 193, 239, .18));
-  clip-path: polygon(50% 0, 100% 100%, 55% 78%, 0 100%);
-  filter: drop-shadow(0 0 4px rgba(115, 220, 255, .65));
-}
-
-.unit-token__frozen::before {
-  left: -2px;
-  top: 3px;
-  width: 17px;
-  height: 31px;
-  transform: rotate(-18deg);
-}
-
-.unit-token__frozen::after {
-  right: -1px;
-  bottom: 3px;
-  width: 19px;
-  height: 34px;
-  transform: rotate(22deg) scaleY(-1);
 }
 
 .unit-token.is-selected .unit-token__portrait {
