@@ -1,7 +1,9 @@
 {
-  "shopkeeper": {
+  "preparationHost": {
     "id": "bob",
-    "skin": "base"
+    "skin": "base",
+    "name": "Bob",
+    "asset": "assets/cosmetics/shopkeepers/bob/base.png"
   },
   "board": {
     "id": "default",
