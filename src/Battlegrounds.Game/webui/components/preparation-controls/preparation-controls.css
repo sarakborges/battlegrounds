@@ -93,9 +93,13 @@
 
 .preparation-controls__cost[hidden] { display: none; }
 
-.preparation-controls__tier-badge [data-tier] {
+.preparation-controls__tier-badge [data-tier]:not([hidden]) {
   display: grid;
   place-items: center;
+}
+
+.preparation-controls__tier-badge [data-tier][hidden] {
+  display: none !important;
 }
 
 .preparation-controls__tier-badge {
