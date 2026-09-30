@@ -18,10 +18,11 @@ export async function createPreparationControls({
   const currentTier = Math.max(1, Math.trunc(Number(participant.tier) || 1));
 
   const tierField = element.querySelector('[data-field="tier"]');
-  tierField.dataset.component = 'icon';
-  tierField.dataset.themeRole = `icon.tier.${currentTier}`;
   tierField.setAttribute('role', 'img');
   tierField.setAttribute('aria-label', `${tierLabel}: ${currentTier}`);
+  tierField.querySelectorAll('[data-tier]').forEach(icon => {
+    icon.hidden = Number(icon.dataset.tier) !== currentTier;
+  });
 
   const upgrade = await createButton({
     label: '',
