@@ -31,10 +31,6 @@ func _ready() -> void:
 		_dev_css_snapshot = _snapshot_css_files()
 	set_process(_dev_css_watch_enabled)
 
-	# This project intentionally uses Godot's GL Compatibility renderer.
-	# Godot CEF accelerated OSR is not supported by the OpenGL backend, so
-	# requesting it only emits warnings before falling back to software OSR.
-	_browser.set("enable_accelerated_osr", false)
 	_browser.set("url", "res://webui/index.html")
 	_browser.call("set_anchors_and_offsets_preset", Control.PRESET_FULL_RECT)
 	_browser.connect("ipc_message", Callable(self, "_on_ipc_message"))
