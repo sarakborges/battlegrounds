@@ -13,6 +13,7 @@ public static class ModThemePanelRoles
     public const string OpponentEntrySelf = "panel.opponent.self";
     public const string OpponentEntryEliminated = "panel.opponent.eliminated";
     public const string OpponentPortrait = "panel.opponentPortrait";
+    public const string OpponentRankBadge = "panel.opponentRankBadge";
     public const string TierBadge = "panel.tierBadge";
     public const string AttackBadge = "panel.attackBadge";
     public const string HealthBadge = "panel.healthBadge";
