@@ -21,6 +21,7 @@ function readInspection(element) {
   if (!element?.dataset?.inspectKind) return null;
   return {
     kind: element.dataset.inspectKind,
+    placement: element.dataset.inspectPlacement ?? 'auto',
     name: element.dataset.inspectName ?? '',
     description: element.dataset.inspectDescription ?? '',
     art: inspectionArt(element),
@@ -68,16 +69,60 @@ function sidePosition(targetRect, previewWidth, previewHeight, logicalWidth) {
   return { left, top: targetRect.centerY - previewHeight / 2 };
 }
 
-function inspectionPosition(kind, targetRect, previewWidth, previewHeight, logicalWidth, logicalHeight) {
-  let position;
-  if (kind === 'power') {
-    position = {
-      left: targetRect.centerX - previewWidth / 2,
-      top: targetRect.top - previewHeight - TARGET_GAP
-    };
-    if (position.top < EDGE_PADDING) position.top = targetRect.bottom + TARGET_GAP;
-  } else {
+function directionalPosition(placement, targetRect, previewWidth, previewHeight) {
+  switch (placement) {
+    case 'right':
+      return {
+        left: targetRect.right + TARGET_GAP,
+        top: targetRect.centerY - previewHeight / 2
+      };
+    case 'left':
+      return {
+        left: targetRect.left - previewWidth - TARGET_GAP,
+        top: targetRect.centerY - previewHeight / 2
+      };
+    case 'top':
+      return {
+        left: targetRect.centerX - previewWidth / 2,
+        top: targetRect.top - previewHeight - TARGET_GAP
+      };
+    case 'bottom':
+      return {
+        left: targetRect.centerX - previewWidth / 2,
+        top: targetRect.bottom + TARGET_GAP
+      };
+    default:
+      return null;
+  }
+}
+
+function inspectionPosition(inspection, targetRect, previewWidth, previewHeight, logicalWidth, logicalHeight) {
+  let position = directionalPosition(
+    inspection.placement,
+    targetRect,
+    previewWidth,
+    previewHeight
+  );
+
+  if (!position && inspection.kind === 'power') {
+    position = directionalPosition('top', targetRect, previewWidth, previewHeight);
+    if (position.top < EDGE_PADDING) {
+      position = directionalPosition('bottom', targetRect, previewWidth, previewHeight);
+    }
+  }
+
+  if (!position) {
     position = sidePosition(targetRect, previewWidth, previewHeight, logicalWidth);
+  }
+
+  if (inspection.placement === 'top' && position.top < EDGE_PADDING) {
+    position = directionalPosition('bottom', targetRect, previewWidth, previewHeight);
+  } else if (inspection.placement === 'bottom' && position.top + previewHeight > logicalHeight - EDGE_PADDING) {
+    position = directionalPosition('top', targetRect, previewWidth, previewHeight);
+  } else if (inspection.placement === 'right' && position.left + previewWidth > logicalWidth - EDGE_PADDING) {
+    position = directionalPosition('left', targetRect, previewWidth, previewHeight);
+  } else if (inspection.placement === 'left' && position.left < EDGE_PADDING) {
+    position = directionalPosition('right', targetRect, previewWidth, previewHeight);
   }
 
   return {
@@ -140,7 +185,7 @@ export function bindHoverInspector(root = document) {
       const previewWidth = mount.offsetWidth;
       const previewHeight = mount.offsetHeight;
       const position = inspectionPosition(
-        inspection.kind,
+        inspection,
         targetRect,
         previewWidth,
         previewHeight,
