@@ -19,6 +19,7 @@ public static class ModThemeRoleNames
     public const string PowerTooltip = "power-tooltip";
     public const string PlayerChip = "player-chip";
     public const string EndPreparationButton = "button.endPreparation";
+    public const string TierIconPrefix = "icon.tier.";
 
     private static readonly HashSet<string> ComponentRoles = new(StringComparer.Ordinal)
     {
@@ -28,6 +29,7 @@ public static class ModThemeRoleNames
         ModThemeComponentRoles.ButtonOfferRefresh,
         ModThemeComponentRoles.ButtonOfferFreeze,
         ModThemeComponentRoles.ButtonPower,
+        ModThemeComponentRoles.Icon,
         EndPreparationButton,
         UnitToken,
         ActionToken,
@@ -77,8 +79,13 @@ public static class ModThemeRoleNames
         ModThemeScreenRoles.Combat,
     };
 
-    public static bool IsSupportedComponent(string role) =>
-        !string.IsNullOrWhiteSpace(role) && ComponentRoles.Contains(role);
+    public static bool IsSupportedComponent(string role)
+    {
+        if (string.IsNullOrWhiteSpace(role)) return false;
+        if (ComponentRoles.Contains(role)) return true;
+        if (!role.StartsWith(TierIconPrefix, StringComparison.Ordinal)) return false;
+        return int.TryParse(role[TierIconPrefix.Length..], out var tier) && tier > 0 && tier <= 99;
+    }
 
     public static bool IsSupportedScreen(string role) =>
         !string.IsNullOrWhiteSpace(role) && ScreenRoles.Contains(role);
