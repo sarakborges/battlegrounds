@@ -71,6 +71,17 @@ public partial class Main
         var units = new Dictionary<string, string>(StringComparer.Ordinal);
         var actions = new Dictionary<string, string>(StringComparer.Ordinal);
 
+        // Populate conventional paths first so one malformed/partial presentation
+        // catalog cannot make authored card art disappear from the Web UI.
+        foreach (var leader in _session?.Mod.Leaders.All ?? [])
+            leaders[leader.Id.Value] = $"assets/cosmetics/leaders/{leader.Id.Value}/base.png";
+
+        foreach (var unit in _session?.Mod.Units.All ?? [])
+            units[unit.Id.Value] = $"assets/units/{unit.Id.Value}.webp";
+
+        foreach (var action in _session?.Mod.Actions.All ?? [])
+            actions[action.Id.Value] = $"assets/actions/{action.Id.Value}.webp";
+
         foreach (var entry in _webPresentationAssets?.All ?? [])
         {
             if (entry.Asset.Type != ModPresentationAssetType.Image)
