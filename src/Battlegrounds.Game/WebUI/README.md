@@ -52,10 +52,12 @@ WebUI/
     action-card-preview/
     action-token/
     character-portrait/
+    combat-player-hero/
     combat-unit-token/
     end-recruitment-control/
     hero-cockpit/
     hero-power-button/
+    leader-choice/
     leader-inspector/
     mod-option/
     opponent-rail/
@@ -82,17 +84,21 @@ Every reusable UI module under `design-system/` or `components/` owns a director
 
 Design-system modules are generic presentation primitives and must not know gameplay or application concepts. Components may compose design-system primitives and other components, but they do not own authoritative rules. Screens compose those components from presentation state.
 
-Component names describe responsibility rather than selecting gameplay meaning through magic variants. A unit token, tavern action, hero power, resource counter and end-recruitment control are different components even when they share lower-level primitives.
+Component names describe responsibility rather than selecting gameplay meaning through magic variants. A unit token, tavern action, leader choice, hero power, resource counter and end-recruitment control are different components even when they share lower-level primitives.
 
-A reusable component owns its internal geometry and visual state. The screen owns where the component lives in the scene. Components must not use screen-specific offsets to compensate for other components.
+A reusable component owns its internal geometry and visual state. The screen owns where the component lives in the scene. Components must not use screen-specific offsets to compensate for other components. Generic card components are intentionally absent: persistent entities and inspection views have semantic components instead.
 
-## Preparation scene
+## Board scenes
 
-Preparation is a logical `1280x720` board scene rather than a vertical page layout. `screens/preparation/preparation.html` declares semantic anchors for the tavern cluster, offer, player field, hero HUD, reserve, resource counter and end-recruitment control. The screen owns those anchors; the reusable components only own their local composition.
+Preparation and combat are logical `1280x720` board scenes rather than vertical page layouts or dashboard grids. Screens own semantic anchors; reusable components own only their local anatomy.
 
-Scene positions are expressed in logical pixels and may be exposed as supported theme metrics. Do not reintroduce grid rows, viewport-relative layout, or component-owned screen offsets such as `top`, `bottom` or transforms whose purpose is to compensate for another component.
+Preparation declares anchors for the tavern cluster, offer, player field, hero HUD, reserve, resource counter and end-recruitment control. The opponent rail overlays the left board edge instead of consuming a page column. Tavern controls form one visual cluster around the shopkeeper. The hero, hero power, resource counter and end-recruitment control are independent HUD pieces anchored to the board.
 
-The opponent rail overlays the left board edge instead of consuming a page column. Tavern controls form one visual cluster around the shopkeeper. The hero, hero power, resource counter and end-recruitment control are independent HUD pieces anchored to the board.
+Combat uses the same board/cosmetic scene instead of opening a separate dashboard. The human combat side is normalized to the lower half of the board, the opponent to the upper half, each side has an anchored hero presentation, and combat units remain physical tokens in two board rows. Timeline text is transient feedback over the board rather than a permanent panel separating the armies. Archived/ghost opponents may omit live player metadata without invalidating playback.
+
+Scene positions are expressed in logical pixels and may be exposed as supported theme metrics under semantic scene roles such as `layout.preparationScene.*` and `layout.combatScene.*`. Do not reintroduce grid rows, viewport-relative layout, or component-owned screen offsets whose purpose is to compensate for another component.
+
+Leader selection also uses a semantic `leader-choice` component instead of styling internals of a generic card from screen CSS. Screen CSS stays at the composition boundary.
 
 ## Tokens and inspection
 
@@ -105,6 +111,8 @@ Persistent gameplay pieces use semantic representations:
 A full card is never the persistent board piece.
 
 `interactions/hover-inspector.js` owns the common pointer/focus lifecycle but dispatches to entity-specific inspection views. Units use `unit-card-preview`, tavern actions use `action-card-preview`, leaders use `leader-inspector`, and hero powers use `power-tooltip`. Inspectable surfaces opt in through semantic `data-inspect-*` metadata.
+
+Inspection placement may also be semantic. Board-edge portraits open inward, lower HUD pieces prefer opening upward, upper combat heroes prefer opening downward, and otherwise the inspector chooses the side with available space. This prevents inspection content from arbitrarily crossing the center of the board.
 
 Descriptions are presentation content owned by the mod. C# resolves localized entity descriptions and sends them in presentation snapshots; browser code must not invent gameplay descriptions.
 
@@ -120,9 +128,11 @@ Component role inheritance includes state dictionaries. Base and specific roles 
 
 Theme asset fields use the same rule. `theme/assets.js` requests mod-local assets through the C# bridge. Image assets and authored fonts are supported. Screen background assets and component background assets resolve through CSS variables; component CSS determines placement. Sliced assets are consumed by primitives that explicitly support slicing.
 
+Authored frame assets must respect component anatomy. Overlay frames keep their content windows transparent so they do not cover entity art. Physical board controls such as hero power, Tavern controls, resource counter and end recruitment own independent theme roles instead of inheriting unrelated generic button imagery.
+
 Theme typography may provide authored font assets. The runtime installs those fonts with generated `@font-face` rules and exposes them as `--theme-font-*` variables. Components can select semantic font roles through the theme instead of depending on a fixed browser font.
 
-The cascade is intentional: primitive defaults are the baseline, composed components use selectors that describe their composition, and interaction-state selectors describe temporary state. `!important` is forbidden by CI. If a rule cannot win without it, fix ownership, selector intent, or stylesheet structure instead of increasing force.
+The cascade is intentional: primitive defaults are the baseline, composed components use selectors that describe their composition, and interaction-state selectors describe temporary state. `!important` is forbidden by CI. If a rule cannot win without it, fix ownership, selector intent, or stylesheet structure instead of increasing force. Component CSS must not wipe authored assets with shorthand declarations such as `background:` when the component is expected to preserve a theme-provided background image.
 
 `app.js` does not know component markup. It maps application status to a screen, applies the supported screen theme and waits for async theme assets before committing the screen render. Authoritative state and commands remain in C#.
 
