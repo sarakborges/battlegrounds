@@ -1,7 +1,7 @@
 .leader-hud.panel {
   position: relative;
-  width: 282px;
-  height: 188px;
+  width: var(--theme-component-width, 282px);
+  height: var(--theme-component-height, 188px);
   min-height: 0;
   padding: 0;
   overflow: visible;
@@ -19,8 +19,8 @@
   position: absolute;
   left: 14px;
   top: -4px;
-  width: 126px;
-  height: 132px;
+  width: var(--theme-component-width, 126px);
+  height: var(--theme-component-height, 132px);
   padding: 0;
   overflow: visible;
   border: 0;
@@ -35,7 +35,7 @@
   content: "";
   position: absolute;
   z-index: 4;
-  inset: -4px;
+  inset: 0;
   background-image: var(--theme-component-background-image, none);
   background-position: center;
   background-repeat: no-repeat;
@@ -46,13 +46,11 @@
 .leader-hud__art {
   position: absolute;
   z-index: 1;
-  left: 17px;
-  top: 13px;
-  width: 92px;
-  height: 104px;
-  object-fit: cover;
-  object-position: center top;
-  border-radius: 25px 25px 15px 15px;
+  inset: 10%;
+  width: 80%;
+  height: 80%;
+  object-fit: contain;
+  object-position: center;
   user-select: none;
   pointer-events: none;
 }
@@ -62,14 +60,10 @@
 .leader-hud__fallback {
   position: absolute;
   z-index: 1;
-  left: 17px;
-  top: 13px;
-  width: 92px;
-  height: 104px;
+  inset: 10%;
   display: grid;
   place-items: center;
-  border-radius: 25px 25px 15px 15px;
-  background: linear-gradient(#463129, #1b1210);
+  background: transparent;
   color: #c7a375;
   font-size: 34px;
 }
@@ -79,13 +73,20 @@
 .leader-hud__stat.panel {
   position: absolute;
   z-index: 8;
+  width: var(--theme-component-width, 40px);
+  height: var(--theme-component-height, 40px);
   display: grid;
   place-items: center;
   padding: 0;
   border: 0;
   border-radius: 0;
-  color: #fff8e8;
-  font-size: 18px;
+  background-color: transparent;
+  background-image: var(--theme-component-background-image, none);
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: 100% 100%;
+  color: var(--theme-component-text-color, #fff8e8);
+  font-size: var(--theme-component-font-size, 18px);
   font-weight: 900;
   line-height: 1;
   text-shadow: 0 2px 2px rgba(0, 0, 0, .9);
@@ -94,22 +95,13 @@
 }
 
 .leader-hud__health {
-  width: 46px;
-  height: 50px;
   left: 124px;
   bottom: 1px;
-  clip-path: polygon(50% 0, 88% 14%, 100% 46%, 82% 78%, 50% 100%, 18% 78%, 0 46%, 12% 14%);
-  background: radial-gradient(circle at 38% 27%, #f38c70 0 9%, #c84035 24%, #761c1d 62%, #321012 100%);
 }
 
 .leader-hud__armor {
-  width: 40px;
-  height: 44px;
   left: 127px;
   bottom: 50px;
-  clip-path: polygon(50% 0, 92% 14%, 86% 66%, 50% 100%, 14% 66%, 8% 14%);
-  background: linear-gradient(145deg, #d9edf5 0 8%, #718d9c 23%, #314955 58%, #17262d 100%);
-  font-size: 15px;
 }
 
 .leader-hud__power {
