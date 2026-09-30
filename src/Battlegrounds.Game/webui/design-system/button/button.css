@@ -25,6 +25,25 @@
   white-space: nowrap;
 }
 
+.action-button__icon {
+  display: none;
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: var(--theme-component-icon-width, 0px);
+  height: var(--theme-component-icon-height, 0px);
+  transform: translate(-50%, -50%);
+  background-image: var(--theme-component-icon-image, none);
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: contain;
+  pointer-events: none;
+}
+
+.action-button[data-theme-icon-asset="true"] .action-button__icon {
+  display: block;
+}
+
 .action-button[data-theme-sliced-background="true"] {
   background-image: none;
 }
