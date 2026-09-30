@@ -13,7 +13,7 @@ public sealed class ModThemeDefaultsTests
         Assert.False(theme.IsEmpty);
         Assert.Equal(8, theme.Metrics[ModThemeMetricKeys.Layout.OuterMargin]);
         Assert.Equal(64, theme.Metrics[ModThemeMetricKeys.Launcher.MarginHorizontal]);
-        Assert.Equal(48, theme.Metrics[ModThemeMetricKeys.Layout.PreparationScene.TavernTop]);
+        Assert.Equal(48, theme.Metrics[ModThemeMetricKeys.Layout.PreparationScene.ControlsTop]);
         Assert.Equal(395, theme.Metrics[ModThemeMetricKeys.Layout.CombatScene.PlayerFieldTop]);
         Assert.Equal(3, theme.Metrics[ModThemeMetricKeys.Drag.DropTargetShadowScale]);
         Assert.Equal(0.9, theme.Metrics[ModThemeMetricKeys.Motion.CombatPlaybackStepSeconds]);
