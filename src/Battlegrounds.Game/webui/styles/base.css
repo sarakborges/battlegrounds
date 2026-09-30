@@ -43,10 +43,13 @@ h1 { margin-top: 5px; font-size: 32px; }
   display: block;
   width: var(--theme-component-icon-width, var(--theme-component-width, 0px));
   height: var(--theme-component-icon-height, var(--theme-component-height, 0px));
+  background-color: var(--theme-component-background-color, transparent);
   background-image: var(--theme-component-icon-image, var(--theme-component-background-image, none));
   background-position: center;
   background-repeat: no-repeat;
   background-size: contain;
+  border: var(--theme-component-border-width, 0) solid var(--theme-component-border-color, transparent);
+  border-radius: var(--theme-component-radius, 0);
   opacity: var(--theme-component-opacity, 1);
   pointer-events: none;
 }

@@ -173,6 +173,8 @@
     "panel.healthBadge": { "backgroundColor": "surfaceDeep", "borderColor": "healthAccent", "borderWidth": 2, "radius": "round" },
     "panel.armorBadge": { "backgroundColor": "surfaceDeep", "borderColor": "armorAccent", "borderWidth": 2, "radius": "round" },
     "panel.resourceBadge": { "backgroundColor": "surfaceDeep", "borderColor": "resourceAccent", "borderWidth": 2, "radius": "round" },
+    "icon.resourcePip.active": { "width": 5, "height": 5, "backgroundColor": "resourceAccent", "radius": "round" },
+    "icon.resourcePip.inactive": { "width": 5, "height": 5, "backgroundColor": "resourceAccent", "radius": "round", "opacity": 0.24 },
     "panel.interaction": { "backgroundColor": "surfaceDeep", "borderColor": "focus", "borderWidth": 2 },
     "panel.preparationHost": { "backgroundColor": "#00000000", "borderColor": "borderStrong", "borderWidth": 0 },
     "panel.combat": { "backgroundColor": "#00000000", "borderColor": "#00000000", "borderWidth": 0 },
