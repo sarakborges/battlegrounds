@@ -1,7 +1,7 @@
 .player-chip {
   position: relative;
-  width: 74px;
-  height: 78px;
+  width: 84px;
+  height: 88px;
   display: grid;
   place-items: center;
   padding: 0;
@@ -14,9 +14,9 @@
 
 .player-chip__portrait-wrap {
   position: relative;
-  width: 66px;
-  height: 66px;
-  filter: drop-shadow(0 5px 6px rgba(0, 0, 0, .38));
+  width: 76px;
+  height: 76px;
+  filter: drop-shadow(0 6px 7px rgba(0, 0, 0, .42));
 }
 
 .player-chip__portrait-wrap::after {
@@ -34,9 +34,9 @@
 .player-chip__portrait {
   position: absolute;
   z-index: 1;
-  inset: 4px;
-  width: 58px;
-  height: 58px;
+  inset: 5px;
+  width: 66px;
+  height: 66px;
   display: block;
   object-fit: cover;
   object-position: center top;
@@ -60,7 +60,7 @@
   border: 0;
   border-radius: 0;
   color: #fff7e7;
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 900;
   line-height: 1;
   text-shadow: 0 1px 2px #000;
@@ -68,25 +68,25 @@
 }
 
 .player-chip__rank {
-  left: -6px;
-  top: -5px;
-  width: 25px;
-  height: 27px;
+  left: -7px;
+  top: -6px;
+  width: 28px;
+  height: 30px;
   clip-path: polygon(50% 0, 90% 18%, 100% 58%, 50% 100%, 0 58%, 10% 18%);
   background: linear-gradient(145deg, #d7b778, #674525 68%, #29180f);
 }
 
 .player-chip__health {
-  right: -7px;
-  bottom: -7px;
-  width: 27px;
-  height: 29px;
+  right: -8px;
+  bottom: -8px;
+  width: 30px;
+  height: 32px;
   clip-path: polygon(50% 0, 88% 14%, 100% 46%, 82% 78%, 50% 100%, 18% 78%, 0 46%, 12% 14%);
   background: radial-gradient(circle at 38% 27%, #f18a71 0 8%, #bd3b34 26%, #6a191a 65%, #2b0e10 100%);
 }
 
 .player-chip[data-variant="human"] .player-chip__portrait-wrap {
-  filter: drop-shadow(0 0 8px color-mix(in srgb, var(--theme-color-focus, var(--accent)) 72%, transparent));
+  filter: drop-shadow(0 0 9px color-mix(in srgb, var(--theme-color-focus, var(--accent)) 72%, transparent));
 }
 
 .player-chip[data-eliminated="true"] {
