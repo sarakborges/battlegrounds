@@ -28,11 +28,10 @@
 .action-card-preview__art-wrap {
   position: absolute;
   z-index: 2;
-  left: 14%;
-  right: 14%;
-  top: 7%;
-  height: auto;
-  aspect-ratio: 1 / 1;
+  left: 24.1%;
+  right: 26.4%;
+  top: 7.4%;
+  height: 42.6%;
   overflow: hidden;
   border: 0;
   background: transparent;
