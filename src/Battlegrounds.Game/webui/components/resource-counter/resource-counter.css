@@ -15,9 +15,9 @@
 
 .resource-counter__coin {
   grid-row: 1 / span 2;
-  width: var(--theme-component-icon-width, 0px);
-  height: var(--theme-component-icon-height, 0px);
-  background-image: var(--theme-component-icon-image, none);
+  width: var(--theme-component-icon-width, var(--theme-component-width, 30px));
+  height: var(--theme-component-icon-height, var(--theme-component-height, 30px));
+  background-image: var(--theme-component-icon-image, var(--theme-component-background-image, none));
   background-position: center;
   background-repeat: no-repeat;
   background-size: contain;
