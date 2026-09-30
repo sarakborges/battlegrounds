@@ -1,0 +1,18 @@
+<template>
+  <section class="preparation-controls panel" data-component="panel" data-ui-component="preparation-controls" data-theme-role="panel.preparationControls">
+    <div class="preparation-controls__side preparation-controls__side--left">
+      <div data-slot="upgrade"></div>
+      <div class="preparation-controls__tier-badge panel" data-component="panel" data-theme-role="panel.tierBadge">
+        <span class="eyebrow" data-field="tier-label"></span>
+        <strong data-field="tier"></strong>
+      </div>
+    </div>
+
+    <div class="preparation-controls__host-slot" data-slot="host"></div>
+
+    <div class="preparation-controls__side preparation-controls__side--right">
+      <div data-slot="refresh"></div>
+      <div data-slot="freeze"></div>
+    </div>
+  </section>
+</template>
