@@ -29,28 +29,10 @@
   },
   "typography": {
     "fonts": {},
-    "sizes": {
-      "caption": 12,
-      "body": 15,
-      "button": 15,
-      "heading": 18,
-      "title": 32
-    }
+    "sizes": { "caption": 12, "body": 15, "button": 15, "heading": 18, "title": 32 }
   },
-  "spacing": {
-    "xs": 4,
-    "cardInset": 6,
-    "sm": 8,
-    "md": 12,
-    "lg": 20,
-    "xl": 32
-  },
-  "shape": {
-    "small": 5,
-    "medium": 9,
-    "large": 12,
-    "round": 99
-  },
+  "spacing": { "xs": 4, "cardInset": 6, "sm": 8, "md": 12, "lg": 20, "xl": 32 },
+  "shape": { "small": 5, "medium": 9, "large": 12, "round": 99 },
   "metrics": {
     "launcher.marginHorizontal": 64,
     "launcher.marginVertical": 48,
@@ -163,135 +145,22 @@
     "motion.cue.pop.durationSeconds": 0.28
   },
   "components": {
-    "button": {
-      "fontSize": "button",
-      "textColor": "text",
-      "backgroundColor": "surfaceRaised",
-      "borderColor": "border",
-      "borderWidth": 1,
-      "radius": "medium",
-      "padding": { "horizontal": "md", "vertical": "sm" },
-      "states": {
-        "hover": { "backgroundColor": "surfaceHover" },
-        "pressed": { "backgroundColor": "surfacePressed" },
-        "disabled": { "textColor": "textDisabled", "opacity": 0.55 },
-        "focus": { "borderColor": "focus", "borderWidth": 2 }
-      }
-    },
-    "button.primary": {
-      "textColor": "primaryText",
-      "backgroundColor": "primary",
-      "states": {
-        "hover": { "backgroundColor": "primaryHover" },
-        "pressed": { "backgroundColor": "primaryPressed" },
-        "disabled": { "opacity": 0.5 }
-      }
-    },
-    "button.endPreparation": {
-      "textColor": "primaryText",
-      "backgroundColor": "primary",
-      "borderColor": "borderStrong",
-      "borderWidth": 2,
-      "states": {
-        "hover": { "backgroundColor": "primaryHover" },
-        "pressed": { "backgroundColor": "primaryPressed" },
-        "disabled": { "opacity": 0.5 }
-      }
-    },
-    "button.tierUpgrade": {
-      "fontSize": "button",
-      "textColor": "primaryText",
-      "backgroundColor": "primary",
-      "borderColor": "borderStrong",
-      "borderWidth": 2
-    },
-    "button.offerRefresh": {
-      "fontSize": "heading",
-      "textColor": "primaryText",
-      "backgroundColor": "surfaceRaised",
-      "borderColor": "focus",
-      "borderWidth": 2
-    },
-    "button.offerFreeze": {
-      "fontSize": "heading",
-      "textColor": "primaryText",
-      "backgroundColor": "surfaceRaised",
-      "borderColor": "focus",
-      "borderWidth": 2
-    },
-    "button.power": {
-      "textColor": "primaryText",
-      "backgroundColor": "surfaceRaised",
-      "borderColor": "focus",
-      "borderWidth": 2,
-      "states": { "disabled": { "opacity": 0.48 } }
-    },
-    "unit-token": {
-      "textColor": "text",
-      "backgroundColor": "#00000000",
-      "borderColor": "borderStrong",
-      "borderWidth": 0,
-      "states": { "disabled": { "opacity": 0.58 } }
-    },
-    "action-token": {
-      "textColor": "text",
-      "backgroundColor": "#00000000",
-      "borderColor": "focus",
-      "borderWidth": 0,
-      "states": { "disabled": { "opacity": 0.58 } }
-    },
-    "unit-card-preview": {
-      "fontSize": "body",
-      "textColor": "text",
-      "backgroundColor": "#00000000",
-      "borderColor": "borderStrong",
-      "borderWidth": 0
-    },
-    "action-card-preview": {
-      "fontSize": "body",
-      "textColor": "text",
-      "backgroundColor": "#00000000",
-      "borderColor": "focus",
-      "borderWidth": 0
-    },
-    "leader-inspector": {
-      "fontSize": "body",
-      "textColor": "text",
-      "backgroundColor": "surfaceDeep",
-      "borderColor": "borderStrong",
-      "borderWidth": 2,
-      "radius": "large"
-    },
-    "power-tooltip": {
-      "fontSize": "body",
-      "textColor": "text",
-      "backgroundColor": "surfaceDeep",
-      "borderColor": "focus",
-      "borderWidth": 2,
-      "radius": "large"
-    },
-    "player-chip": {
-      "backgroundColor": "#00000000",
-      "borderColor": "borderStrong",
-      "borderWidth": 0
-    },
-    "input": {
-      "fontSize": "body",
-      "textColor": "text",
-      "backgroundColor": "surface",
-      "borderColor": "border",
-      "borderWidth": 1,
-      "radius": "medium",
-      "padding": { "horizontal": "md", "vertical": "sm" },
-      "states": { "focus": { "borderColor": "focus", "borderWidth": 2 } }
-    },
-    "panel": {
-      "backgroundColor": "surface",
-      "borderColor": "border",
-      "borderWidth": 1,
-      "radius": "large",
-      "padding": { "horizontal": "lg", "vertical": "lg" }
-    },
+    "button": { "fontSize": "button", "textColor": "text", "backgroundColor": "surfaceRaised", "borderColor": "border", "borderWidth": 1, "radius": "medium", "padding": { "horizontal": "md", "vertical": "sm" }, "states": { "hover": { "backgroundColor": "surfaceHover" }, "pressed": { "backgroundColor": "surfacePressed" }, "disabled": { "textColor": "textDisabled", "opacity": 0.55 }, "focus": { "borderColor": "focus", "borderWidth": 2 } } },
+    "button.primary": { "textColor": "primaryText", "backgroundColor": "primary", "states": { "hover": { "backgroundColor": "primaryHover" }, "pressed": { "backgroundColor": "primaryPressed" }, "disabled": { "opacity": 0.5 } } },
+    "button.endPreparation": { "textColor": "primaryText", "backgroundColor": "primary", "borderColor": "borderStrong", "borderWidth": 2 },
+    "button.tierUpgrade": { "fontSize": "button", "textColor": "primaryText", "backgroundColor": "primary", "borderColor": "borderStrong", "borderWidth": 2 },
+    "button.offerRefresh": { "fontSize": "heading", "textColor": "primaryText", "backgroundColor": "surfaceRaised", "borderColor": "focus", "borderWidth": 2 },
+    "button.offerFreeze": { "fontSize": "heading", "textColor": "primaryText", "backgroundColor": "surfaceRaised", "borderColor": "focus", "borderWidth": 2 },
+    "button.power": { "textColor": "primaryText", "backgroundColor": "surfaceRaised", "borderColor": "focus", "borderWidth": 2, "states": { "disabled": { "opacity": 0.48 } } },
+    "unit-token": { "textColor": "text", "backgroundColor": "#00000000", "borderColor": "borderStrong", "borderWidth": 0 },
+    "action-token": { "textColor": "text", "backgroundColor": "#00000000", "borderColor": "focus", "borderWidth": 0 },
+    "unit-card-preview": { "fontSize": "body", "textColor": "text", "backgroundColor": "#00000000", "borderColor": "borderStrong", "borderWidth": 0 },
+    "action-card-preview": { "fontSize": "body", "textColor": "text", "backgroundColor": "#00000000", "borderColor": "focus", "borderWidth": 0 },
+    "leader-inspector": { "fontSize": "body", "textColor": "text", "backgroundColor": "surfaceDeep", "borderColor": "borderStrong", "borderWidth": 2, "radius": "large" },
+    "power-tooltip": { "fontSize": "body", "textColor": "text", "backgroundColor": "surfaceDeep", "borderColor": "focus", "borderWidth": 2, "radius": "large" },
+    "player-chip": { "backgroundColor": "#00000000", "borderColor": "borderStrong", "borderWidth": 0 },
+    "input": { "fontSize": "body", "textColor": "text", "backgroundColor": "surface", "borderColor": "border", "borderWidth": 1, "radius": "medium", "padding": { "horizontal": "md", "vertical": "sm" }, "states": { "focus": { "borderColor": "focus", "borderWidth": 2 } } },
+    "panel": { "backgroundColor": "surface", "borderColor": "border", "borderWidth": 1, "radius": "large", "padding": { "horizontal": "lg", "vertical": "lg" } },
     "panel.opponentRail": { "backgroundColor": "#00000000", "borderColor": "#00000000", "borderWidth": 0 },
     "panel.preparationControls": { "backgroundColor": "#00000000", "borderColor": "#00000000", "borderWidth": 0 },
     "panel.offer": { "backgroundColor": "#00000000", "borderColor": "#00000000", "borderWidth": 0 },
@@ -314,32 +183,10 @@
     "label.tier": { "textColor": "tierAccent", "fontSize": "heading" },
     "label.resource": { "textColor": "resourceAccent", "fontSize": "heading" },
     "drag.preview": { "opacity": 0.12 },
-    "dropTarget.valid": {
-      "backgroundColor": "#00000000",
-      "borderColor": "success",
-      "borderWidth": 2,
-      "radius": "large",
-      "padding": { "horizontal": "sm", "vertical": "sm" }
-    },
-    "dropTarget.valid.active": {
-      "backgroundColor": "#00000000",
-      "borderColor": "successActive",
-      "borderWidth": 3,
-      "radius": "large"
-    },
-    "dropTarget.invalid": {
-      "backgroundColor": "#00000000",
-      "borderColor": "danger",
-      "borderWidth": 2,
-      "radius": "large",
-      "padding": { "horizontal": "sm", "vertical": "sm" }
-    },
-    "dropTarget.invalid.active": {
-      "backgroundColor": "#00000000",
-      "borderColor": "dangerActive",
-      "borderWidth": 3,
-      "radius": "large"
-    }
+    "dropTarget.valid": { "backgroundColor": "#00000000", "borderColor": "success", "borderWidth": 2, "radius": "large", "padding": { "horizontal": "sm", "vertical": "sm" } },
+    "dropTarget.valid.active": { "backgroundColor": "#00000000", "borderColor": "successActive", "borderWidth": 3, "radius": "large" },
+    "dropTarget.invalid": { "backgroundColor": "#00000000", "borderColor": "danger", "borderWidth": 2, "radius": "large", "padding": { "horizontal": "sm", "vertical": "sm" } },
+    "dropTarget.invalid.active": { "backgroundColor": "#00000000", "borderColor": "dangerActive", "borderWidth": 3, "radius": "large" }
   },
   "screens": {
     "launcher": { "backgroundColor": "background" },
