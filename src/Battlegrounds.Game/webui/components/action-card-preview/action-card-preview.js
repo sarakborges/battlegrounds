@@ -13,12 +13,25 @@ function setOptionalText(element, value) {
   element.textContent = value;
 }
 
+function setTierIcon(element, tier) {
+  const value = Math.trunc(Number(tier));
+  if (!Number.isFinite(value) || value <= 0) {
+    element.hidden = true;
+    return;
+  }
+  element.hidden = false;
+  element.textContent = '';
+  element.dataset.component = 'icon';
+  element.dataset.themeRole = `icon.tier.${value}`;
+  element.setAttribute('aria-hidden', 'true');
+}
+
 export async function createActionCardPreview({ name = '', description = '', art = null, tier = null, cost = null } = {}) {
   const element = await cloneTemplate(templateUrl);
   element.querySelector('[data-field="name"]').textContent = name;
   const fallback = element.querySelector('[data-field="fallback"]');
-  fallback.textContent = name.trim().slice(0, 1).toUpperCase() || '✦';
-  setOptionalText(element.querySelector('[data-field="tier"]'), tier);
+  fallback.textContent = name.trim().slice(0, 1).toUpperCase() || '';
+  setTierIcon(element.querySelector('[data-field="tier"]'), tier);
   setOptionalText(element.querySelector('[data-field="cost"]'), cost);
   setOptionalText(element.querySelector('[data-field="description"]'), description);
 
