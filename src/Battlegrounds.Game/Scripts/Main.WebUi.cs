@@ -36,7 +36,7 @@ public partial class Main
     {
         try
         {
-            var scene = GD.Load<PackedScene>("res://WebUI/WebUiHost.tscn");
+            var scene = GD.Load<PackedScene>("res://webui/WebUiHost.tscn");
             if (scene is null)
             {
                 AppendLog("Web UI host scene was not found.");
