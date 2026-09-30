@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 282 188">
+  <defs>
+    <linearGradient id="wood" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#6c4728"/>
+      <stop offset="0.42" stop-color="#3a2416"/>
+      <stop offset="1" stop-color="#170d09"/>
+    </linearGradient>
+    <linearGradient id="gold" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#ffe6a3"/>
+      <stop offset="0.3" stop-color="#d8a44c"/>
+      <stop offset="0.68" stop-color="#805022"/>
+      <stop offset="1" stop-color="#3d2414"/>
+    </linearGradient>
+    <radialGradient id="socket" cx="45%" cy="35%" r="70%">
+      <stop offset="0" stop-color="#4a4b51"/>
+      <stop offset="0.65" stop-color="#23262c"/>
+      <stop offset="1" stop-color="#0f1013"/>
+    </radialGradient>
+    <filter id="shadow" x="-20%" y="-30%" width="140%" height="180%">
+      <feDropShadow dx="0" dy="8" stdDeviation="6" flood-color="#000" flood-opacity=".55"/>
+    </filter>
+  </defs>
+  <g filter="url(#shadow)">
+    <path d="M15 107c18-19 45-29 77-31h58c23 0 43 8 58 22l44 8 15 21-15 36-42 10H58l-37-12-9-27Z" fill="#110a07" opacity=".82"/>
+    <path d="M22 110c17-16 41-24 70-26h55c22 0 40 7 53 20l46 8 10 17-11 27-38 9H61l-31-10-9-22Z" fill="url(#wood)" stroke="url(#gold)" stroke-width="4"/>
+    <path d="M39 122c33-17 73-21 112-18 22 1 42 7 58 18" fill="none" stroke="#d6a85c" stroke-width="2" opacity=".48"/>
+    <path d="M166 116c14-17 31-25 51-25 19 0 35 8 47 23l-6 45-38 16-39-13Z" fill="#160f0c" stroke="url(#gold)" stroke-width="4" opacity=".96"/>
+    <ellipse cx="220" cy="132" rx="34" ry="31" fill="url(#socket)" stroke="#6d4825" stroke-width="3"/>
+    <ellipse cx="220" cy="132" rx="26" ry="24" fill="none" stroke="#b5833d" stroke-width="2" opacity=".58"/>
+    <path d="M63 164h99" stroke="#e0b76d" stroke-width="2" opacity=".42"/>
+    <circle cx="44" cy="137" r="4" fill="#d7a552" stroke="#4a2a16" stroke-width="2"/>
+    <circle cx="240" cy="137" r="4" fill="#d7a552" stroke="#4a2a16" stroke-width="2"/>
+  </g>
+</svg>
