@@ -8,7 +8,7 @@ public partial class ModSelectionController : Control
 {
     [Export] public string ModsRoot { get; set; } = "res://../../mods";
     [Export] public string GameplayScenePath { get; set; } = "res://Scenes/Main.tscn";
-    [Export] public int Seed { get; set; } = 20260927;
+    [Export] public int Seed { get; set; }
     [Export] public int ParticipantCount { get; set; } = 4;
     [Export] public string Locale { get; set; } = string.Empty;
 
