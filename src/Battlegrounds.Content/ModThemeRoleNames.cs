@@ -19,7 +19,7 @@ public static class ModThemeRoleNames
     public const string PowerTooltip = "power-tooltip";
     public const string PlayerChip = "player-chip";
     public const string EndPreparationButton = "button.endPreparation";
-    public const string TierIconPrefix = "icon.tier.";
+    public const string IconPrefix = "icon.";
 
     private static readonly HashSet<string> ComponentRoles = new(StringComparer.Ordinal)
     {
@@ -83,8 +83,9 @@ public static class ModThemeRoleNames
     {
         if (string.IsNullOrWhiteSpace(role)) return false;
         if (ComponentRoles.Contains(role)) return true;
-        if (!role.StartsWith(TierIconPrefix, StringComparison.Ordinal)) return false;
-        return int.TryParse(role[TierIconPrefix.Length..], out var tier) && tier > 0 && tier <= 99;
+        if (!role.StartsWith(IconPrefix, StringComparison.Ordinal) || role.Length == IconPrefix.Length) return false;
+        return role[IconPrefix.Length..].All(character =>
+            char.IsLetterOrDigit(character) || character is '.' or '-' or '_');
     }
 
     public static bool IsSupportedScreen(string role) =>
