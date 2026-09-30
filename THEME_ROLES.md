@@ -14,9 +14,13 @@ action-card-preview
 leader-inspector
 power-tooltip
 player-chip
+artMask.unit
+artMask.hero
 ```
 
 A token is the persistent offer/field/reserve representation. A preview or inspector is the transient hover/focus representation. These are deliberately separate roles because units, actions, leaders and powers do not share one visual anatomy.
+
+`artMask.unit` and `artMask.hero` describe the aperture used to clip artwork beneath decorative frames. They let a mod provide non-rectangular token and portrait frames without leaking rectangular source art through transparent regions.
 
 There is intentionally no generic `card`, `card.board`, `playable-token` or `card-preview` role. Those legacy abstractions are rejected by theme validation.
 
@@ -44,6 +48,7 @@ panel.opponentRail
 panel.preparationControls
 panel.offer
 panel.board
+panel.boardFrame
 panel.reserve
 panel.leaderDock
 panel.leaderPortrait
@@ -61,6 +66,8 @@ panel.preparationHost
 panel.combat
 ```
 
+`panel.boardFrame` is a presentation layer over the screen background and below gameplay pieces. It is intended for transparent board shells/chrome rather than scenery itself.
+
 These roles let a mod visually distinguish scene pieces and HUD/status surfaces without referring to implementation classes or a particular game's display vocabulary.
 
 Example:
@@ -72,13 +79,19 @@ Example:
       "backgroundAsset": "assets/ui/unit-token-frame.svg",
       "borderWidth": 0
     },
-    "action-token": {
-      "backgroundAsset": "assets/ui/action-token-frame.svg",
+    "artMask.unit": {
+      "backgroundAsset": "assets/ui/unit-art-mask.svg"
+    },
+    "panel.boardFrame": {
+      "backgroundAsset": "assets/ui/board-frame.png",
       "borderWidth": 0
     },
     "panel.leaderPortrait": {
       "backgroundAsset": "assets/ui/leader-portrait-frame.svg",
       "borderWidth": 0
+    },
+    "artMask.hero": {
+      "backgroundAsset": "assets/ui/hero-art-mask.svg"
     },
     "button.power": {
       "backgroundAsset": "assets/ui/power-frame.svg",
