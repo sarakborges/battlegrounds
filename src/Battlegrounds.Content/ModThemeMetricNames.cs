@@ -80,16 +80,6 @@ public static class ModThemeMetricNames
         ModThemeMetricKeys.Layout.Combat.BoardsGap,
         ModThemeMetricKeys.Layout.Combat.UnitGap,
         ModThemeMetricKeys.Layout.Combat.ControlsGap,
-        ModThemeMetricKeys.Card.ContentGap,
-        ModThemeMetricKeys.Card.TokenBadgeSize,
-        ModThemeMetricKeys.Card.TokenBadgeInset,
-        ModThemeMetricKeys.Card.InspectWidth,
-        ModThemeMetricKeys.Card.InspectMinimumHeight,
-        ModThemeMetricKeys.Card.InspectArtHeight,
-        ModThemeMetricKeys.Card.InspectOffset,
-        ModThemeMetricKeys.Card.InspectBadgeSize,
-        ModThemeMetricKeys.Card.InspectBadgeInset,
-        ModThemeMetricKeys.Card.InspectContentGap,
         ModThemeMetricKeys.Hud.HeroDockMinimumHeight,
         ModThemeMetricKeys.Hud.HeroPortraitSize,
         ModThemeMetricKeys.Hud.OpponentEntryHeight,
@@ -125,47 +115,6 @@ public static class ModThemeMetricNames
         ModThemeMetricKeys.Launcher.DiagnosticsMinimumHeight,
     };
 
-    private static readonly HashSet<string> RowRoles = new(StringComparer.Ordinal)
-    {
-        ModThemeMetricKeys.Row.LeaderRole,
-        ModThemeMetricKeys.Row.OfferRole,
-        ModThemeMetricKeys.Row.FieldRole,
-        ModThemeMetricKeys.Row.ReserveRole,
-    };
-
-    private static readonly HashSet<string> RowProperties = new(StringComparer.Ordinal)
-    {
-        "gap", "preferredCardWidth", "minimumCardWidth", "preferredCardHeight", "padding",
-    };
-
-    private static readonly HashSet<string> CardRoles = new(StringComparer.Ordinal)
-    {
-        ModThemeMetricKeys.Card.DefaultRole,
-        ModThemeMetricKeys.Card.LeaderRole,
-        ModThemeMetricKeys.Card.ShopRole,
-        ModThemeMetricKeys.Card.BoardRole,
-        ModThemeMetricKeys.Card.ReserveRole,
-        ModThemeMetricKeys.Card.ChoiceRole,
-    };
-
-    private static readonly HashSet<string> CardProperties = new(StringComparer.Ordinal)
-    {
-        "minimumWidth", "artHeight",
-    };
-
-    public static bool IsSupported(string name)
-    {
-        if (string.IsNullOrWhiteSpace(name)) return false;
-        if (ExactNames.Contains(name)) return true;
-
-        var parts = name.Split('.', StringSplitOptions.None);
-        if (parts.Length != 3) return false;
-
-        return parts[0] switch
-        {
-            "row" => RowRoles.Contains(parts[1]) && RowProperties.Contains(parts[2]),
-            "card" => CardRoles.Contains(parts[1]) && CardProperties.Contains(parts[2]),
-            _ => false,
-        };
-    }
+    public static bool IsSupported(string name) =>
+        !string.IsNullOrWhiteSpace(name) && ExactNames.Contains(name);
 }
