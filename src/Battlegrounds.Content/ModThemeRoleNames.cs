@@ -22,6 +22,7 @@ public static class ModThemeRoleNames
     public const string BoardFrame = "panel.boardFrame";
     public const string UnitArtMask = "artMask.unit";
     public const string HeroArtMask = "artMask.hero";
+    public const string CardArtMask = "artMask.card";
     public const string IconPrefix = "icon.";
 
     private static readonly HashSet<string> ComponentRoles = new(StringComparer.Ordinal)
@@ -67,6 +68,7 @@ public static class ModThemeRoleNames
         ModThemePanelRoles.CombatOverlay,
         UnitArtMask,
         HeroArtMask,
+        CardArtMask,
         ModThemeLabelRoles.LeaderName,
         ModThemeLabelRoles.AttackValue,
         ModThemeLabelRoles.HealthValue,
