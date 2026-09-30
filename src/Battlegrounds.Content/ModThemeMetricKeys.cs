@@ -71,6 +71,18 @@ public static class ModThemeMetricKeys
             public const string EndTurnTop = "layout.preparationScene.endTurnTop";
         }
 
+        public static class CombatScene
+        {
+            public const string OpponentRailWidth = "layout.combatScene.opponentRailWidth";
+            public const string OpponentHeroTop = "layout.combatScene.opponentHeroTop";
+            public const string OpponentFieldTop = "layout.combatScene.opponentFieldTop";
+            public const string PlayerFieldTop = "layout.combatScene.playerFieldTop";
+            public const string PlayerHeroBottom = "layout.combatScene.playerHeroBottom";
+            public const string EventTop = "layout.combatScene.eventTop";
+            public const string RoundRight = "layout.combatScene.roundRight";
+            public const string RoundTop = "layout.combatScene.roundTop";
+        }
+
         public static class Interaction
         {
             public const string AnchorLeft = "layout.interaction.anchorLeft";
