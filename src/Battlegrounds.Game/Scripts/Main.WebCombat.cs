@@ -22,6 +22,7 @@ public partial class Main
             labels = BuildWebLabels(),
             cosmetics = BuildWebCosmeticsState(),
             theme = BuildWebThemeState(),
+            players = BuildWebCombatPlayersState(),
             combat = new
             {
                 round = playback.Record.Round,
@@ -42,6 +43,29 @@ public partial class Main
         };
     }
 
+    private object[] BuildWebCombatPlayersState()
+    {
+        if (_session?.Match is null)
+            return [];
+
+        return _session.Match.Players
+            .OrderBy(player => player.Id.Value)
+            .Select(player => (object)new
+            {
+                id = player.Id.Value,
+                human = player.Id == _session.HumanPlayerId,
+                health = player.Health,
+                armor = player.Leader?.Armor ?? 0,
+                tier = player.Tier,
+                eliminated = player.IsEliminated,
+                ready = player.IsReadyForCombat,
+                leaderId = player.Leader?.Definition.Id.Value,
+                leader = player.Leader is null ? null : LeaderName(player.Leader.Definition.Id),
+                leaderDescription = player.Leader is null ? null : LeaderDescription(player.Leader.Definition.Id),
+            })
+            .ToArray();
+    }
+
     private object BuildWebCombatSide(
         PlayerId playerId,
         IReadOnlyList<CombatPlaybackUnitState> units,
@@ -49,6 +73,8 @@ public partial class Main
     {
         if (_session is null)
             throw new InvalidOperationException("Web combat side requires an active session.");
+        if (_session.Match is null || !_session.Match.TryGetPlayer(playerId, out var player))
+            throw new InvalidOperationException($"Combat player '{playerId.Value}' is missing from the active match.");
 
         var label = playerId == _session.HumanPlayerId
             ? Text("ui.sideYou", ("player", playerId.Value))
@@ -62,6 +88,12 @@ public partial class Main
             human = playerId == _session.HumanPlayerId,
             archived,
             label,
+            health = player.Health,
+            armor = player.Leader?.Armor ?? 0,
+            tier = player.Tier,
+            leaderId = player.Leader?.Definition.Id.Value,
+            leader = player.Leader is null ? null : LeaderName(player.Leader.Definition.Id),
+            leaderDescription = player.Leader is null ? null : LeaderDescription(player.Leader.Definition.Id),
             units = units.Select(unit =>
             {
                 var unitId = ResolveCombatUnitId(unit.InstanceId);
