@@ -232,10 +232,10 @@
     "leader-inspector": {
       "fontSize": "body",
       "textColor": "text",
-      "backgroundColor": "surfaceDeep",
-      "borderColor": "borderStrong",
-      "borderWidth": 2,
-      "radius": "large"
+      "backgroundColor": "#00000000",
+      "backgroundAsset": "assets/ui/leader-inspector-frame.svg",
+      "borderColor": "#00000000",
+      "borderWidth": 0
     },
     "power-tooltip": {
       "fontSize": "body",
