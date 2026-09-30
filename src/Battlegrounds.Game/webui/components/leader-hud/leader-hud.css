@@ -6,14 +6,19 @@
   padding: 0;
   overflow: visible;
   border: 0;
-  background: transparent;
+  border-radius: 0;
+  background-color: var(--theme-component-background-color, transparent);
+  background-image: var(--theme-component-background-image, none);
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: 100% 100%;
   box-shadow: none;
 }
 
 .leader-hud__portrait.panel {
   position: absolute;
   left: 14px;
-  top: 0;
+  top: -4px;
   width: 146px;
   height: 168px;
   padding: 0;
@@ -110,8 +115,8 @@
 .leader-hud__power {
   position: absolute;
   z-index: 6;
-  right: 2px;
-  top: 66px;
+  right: 8px;
+  top: 89px;
 }
 
 .leader-hud__portrait.is-drop-hover {
