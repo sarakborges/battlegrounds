@@ -31,7 +31,10 @@ func _ready() -> void:
 		_dev_css_snapshot = _snapshot_css_files()
 	set_process(_dev_css_watch_enabled)
 
-	_browser.set("enable_accelerated_osr", true)
+	# This project intentionally uses Godot's GL Compatibility renderer.
+	# Godot CEF accelerated OSR is not supported by the OpenGL backend, so
+	# requesting it only emits warnings before falling back to software OSR.
+	_browser.set("enable_accelerated_osr", false)
 	_browser.set("url", "res://webui/index.html")
 	_browser.call("set_anchors_and_offsets_preset", Control.PRESET_FULL_RECT)
 	_browser.connect("ipc_message", Callable(self, "_on_ipc_message"))
@@ -73,16 +76,16 @@ func _collect_css_files(directory_path: String, snapshot: Dictionary) -> void:
 
 	directory.list_dir_begin()
 	while true:
-		var name := directory.get_next()
-		if name.is_empty():
+		var entry_name := directory.get_next()
+		if entry_name.is_empty():
 			break
-		if name.begins_with("."):
+		if entry_name.begins_with("."):
 			continue
 
-		var path := directory_path.path_join(name)
+		var path := directory_path.path_join(entry_name)
 		if directory.current_is_dir():
 			_collect_css_files(path, snapshot)
-		elif name.get_extension().to_lower() == "css":
+		elif entry_name.get_extension().to_lower() == "css":
 			snapshot[path] = FileAccess.get_md5(path)
 	directory.list_dir_end()
 
