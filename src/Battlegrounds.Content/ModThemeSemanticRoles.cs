@@ -19,6 +19,7 @@ public static class ModThemePanelRoles
     public const string HealthBadge = "panel.healthBadge";
     public const string ArmorBadge = "panel.armorBadge";
     public const string ResourceBadge = "panel.resourceBadge";
+    public const string ResourceCostBadge = "panel.resourceCostBadge";
     public const string Interaction = "panel.interaction";
     public const string PreparationHost = "panel.preparationHost";
     public const string CombatOverlay = "panel.combat";
