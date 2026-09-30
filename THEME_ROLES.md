@@ -1,18 +1,56 @@
 # Semantic theme roles
 
-`presentation/theme.json` component keys are engine-neutral semantic roles. The Godot adapter maps the stable roles below to its concrete control variations.
+`presentation/theme.json` component keys are engine-neutral semantic roles. The Web UI consumes those roles directly; mods do not theme DOM tags or Godot control types.
 
-All roles are optional. Missing semantic panel roles inherit the mod's generic `panel` style. Missing semantic HUD label roles keep the theme's normal heading typography and text color.
+All roles are optional. Missing specific roles fall back to the engine default theme.
 
-## Panels
+## Gameplay pieces
 
 ```text
+unit-token
+action-token
+unit-card-preview
+action-card-preview
+leader-inspector
+power-tooltip
+player-chip
+```
+
+A token is the persistent board/shop/reserve representation. A preview or inspector is the transient hover/focus representation. These are deliberately separate roles because a minion, Tavern Spell/action, leader and hero power do not share one visual anatomy.
+
+There is intentionally no generic `card`, `card.board`, `playable-token` or `card-preview` role. Those legacy abstractions are rejected by theme validation.
+
+## Buttons
+
+```text
+button
+button.primary
+button.endRecruitment
+button.tavernUpgrade
+button.tavernRefresh
+button.tavernFreeze
+button.heroPower
+```
+
+Specific board controls own their visual identity instead of inheriting application-button semantics accidentally. Each role may declare normal, hover, pressed, disabled and focus state overrides.
+
+## Panels and board pieces
+
+```text
+panel
+panel.opponentRail
+panel.tavernControls
+panel.tavern
+panel.board
+panel.reserve
+panel.heroDock
 panel.heroPortrait
 panel.opponent
 panel.opponent.self
 panel.opponent.eliminated
 panel.opponentPortrait
 panel.tierBadge
+panel.attackBadge
 panel.healthBadge
 panel.armorBadge
 panel.resourceBadge
@@ -21,26 +59,28 @@ panel.shopkeeper
 panel.combat
 ```
 
-These let a mod visually distinguish HUD/status surfaces without referring to Godot type names such as `PanelContainer`, `OpponentEntrySelf` or `HealthBadge`.
+These roles let a mod visually distinguish scene pieces and HUD/status surfaces without referring to implementation classes.
 
 Example:
 
 ```json
 {
   "components": {
-    "panel": {
-      "backgroundColor": "surface",
-      "borderColor": "border",
-      "borderWidth": 1,
-      "radius": "large"
+    "unit-token": {
+      "backgroundAsset": "assets/ui/unit-token-frame.svg",
+      "borderWidth": 0
     },
-    "panel.healthBadge": {
-      "backgroundColor": "healthSurface",
-      "borderColor": "healthAccent"
+    "action-token": {
+      "backgroundAsset": "assets/ui/action-token-frame.svg",
+      "borderWidth": 0
     },
-    "panel.opponent.self": {
-      "borderColor": "primary",
-      "borderWidth": 2
+    "panel.heroPortrait": {
+      "backgroundAsset": "assets/ui/hero-portrait-frame.svg",
+      "borderWidth": 0
+    },
+    "button.heroPower": {
+      "backgroundAsset": "assets/ui/hero-power-frame.svg",
+      "borderWidth": 0
     }
   }
 }
@@ -50,28 +90,23 @@ Example:
 
 ```text
 label.heroName
+label.attack
 label.health
 label.armor
 label.tier
 label.resource
 ```
 
-A label role accepts the same typography/text properties available to component styles, such as `font`, `fontSize`, `textColor` and `opacity`. If omitted, the adapter seeds the role from the theme's semantic heading typography.
+A label role accepts typography/text properties such as `font`, `fontSize`, `textColor` and `opacity`.
 
-Example:
+## Interaction roles
 
-```json
-{
-  "components": {
-    "label.health": {
-      "textColor": "healthAccent",
-      "fontSize": "heading"
-    },
-    "label.resource": {
-      "textColor": "resourceAccent"
-    }
-  }
-}
+```text
+drag.preview
+dropTarget.valid
+dropTarget.valid.active
+dropTarget.invalid
+dropTarget.invalid.active
 ```
 
-These roles are presentation-only. They do not alter Health, Armor, Tier, Resource, leader identity or any authoritative state.
+These roles are presentation-only. They never alter authoritative gameplay state.
