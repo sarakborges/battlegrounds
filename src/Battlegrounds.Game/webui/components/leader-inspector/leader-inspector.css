@@ -27,8 +27,14 @@
   height: 134px;
   overflow: hidden;
   border: 0;
-  border-radius: 42% 42% 28% 28%;
   background: #16110e;
+  -webkit-mask-image: var(--theme-component-background-image, none);
+  mask-image: var(--theme-component-background-image, none);
+  -webkit-mask-size: 100% 100%;
+  mask-size: 100% 100%;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-position: center;
   box-shadow: inset 0 0 15px rgba(0, 0, 0, .38);
 }
 
