@@ -44,7 +44,7 @@ async function createOfferActionToken(entry, { cosmetics, blocked, canAcquire })
   });
 }
 
-export async function createTavernOfferToken(entry, options = {}) {
+export async function createOfferToken(entry, options = {}) {
   return entry.kind === 'action'
     ? createOfferActionToken(entry, options)
     : createOfferUnitToken(entry, options);
