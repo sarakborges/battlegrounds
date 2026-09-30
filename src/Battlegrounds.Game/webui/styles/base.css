@@ -61,6 +61,13 @@ h1 { margin-top: 5px; font-size: 32px; }
   background-size: cover;
 }
 
+.boot-state {
+  place-self: center;
+  color: var(--muted);
+  font-size: 15px;
+  letter-spacing: .04em;
+}
+
 .ui-overlay-shell {
   pointer-events: none;
   z-index: 2000;
