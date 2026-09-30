@@ -18,17 +18,17 @@ public static class ModThemeRoleNames
     public const string LeaderInspector = "leader-inspector";
     public const string PowerTooltip = "power-tooltip";
     public const string PlayerChip = "player-chip";
-    public const string EndRecruitmentButton = "button.endRecruitment";
+    public const string EndPreparationButton = "button.endPreparation";
 
     private static readonly HashSet<string> ComponentRoles = new(StringComparer.Ordinal)
     {
         ModThemeComponentRoles.Button,
         ModThemeComponentRoles.ButtonPrimary,
-        ModThemeComponentRoles.ButtonTavernUpgrade,
-        ModThemeComponentRoles.ButtonTavernRefresh,
-        ModThemeComponentRoles.ButtonTavernFreeze,
-        ModThemeComponentRoles.ButtonHeroPower,
-        EndRecruitmentButton,
+        ModThemeComponentRoles.ButtonTierUpgrade,
+        ModThemeComponentRoles.ButtonOfferRefresh,
+        ModThemeComponentRoles.ButtonOfferFreeze,
+        ModThemeComponentRoles.ButtonPower,
+        EndPreparationButton,
         UnitToken,
         ActionToken,
         UnitCardPreview,
@@ -39,12 +39,12 @@ public static class ModThemeRoleNames
         ModThemeComponentRoles.Input,
         ModThemeComponentRoles.Panel,
         ModThemePanelRoles.OpponentRail,
-        ModThemePanelRoles.TavernControls,
-        ModThemePanelRoles.Tavern,
+        ModThemePanelRoles.PreparationControls,
+        ModThemePanelRoles.Offer,
         ModThemePanelRoles.Board,
         ModThemePanelRoles.Reserve,
-        ModThemePanelRoles.HeroDock,
-        ModThemePanelRoles.HeroPortrait,
+        ModThemePanelRoles.LeaderDock,
+        ModThemePanelRoles.LeaderPortrait,
         ModThemePanelRoles.OpponentEntry,
         ModThemePanelRoles.OpponentEntrySelf,
         ModThemePanelRoles.OpponentEntryEliminated,
@@ -55,9 +55,9 @@ public static class ModThemeRoleNames
         ModThemePanelRoles.ArmorBadge,
         ModThemePanelRoles.ResourceBadge,
         ModThemePanelRoles.Interaction,
-        ModThemePanelRoles.Shopkeeper,
+        ModThemePanelRoles.PreparationHost,
         ModThemePanelRoles.CombatOverlay,
-        ModThemeLabelRoles.HeroName,
+        ModThemeLabelRoles.LeaderName,
         ModThemeLabelRoles.AttackValue,
         ModThemeLabelRoles.HealthValue,
         ModThemeLabelRoles.ArmorValue,
