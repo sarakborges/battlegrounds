@@ -14,6 +14,19 @@ function setOptionalText(element, value) {
   element.textContent = value;
 }
 
+function setTierIcon(element, tier) {
+  const value = Math.trunc(Number(tier));
+  if (!Number.isFinite(value) || value <= 0) {
+    element.hidden = true;
+    return;
+  }
+  element.hidden = false;
+  element.textContent = '';
+  element.dataset.component = 'icon';
+  element.dataset.themeRole = `icon.tier.${value}`;
+  element.setAttribute('aria-hidden', 'true');
+}
+
 export async function createUnitToken({
   id = '',
   name = '',
@@ -35,10 +48,20 @@ export async function createUnitToken({
   element.setAttribute('aria-label', name || 'Unit');
 
   const fallback = element.querySelector('[data-field="fallback"]');
-  fallback.textContent = name.trim().slice(0, 1).toUpperCase() || '•';
-  setOptionalText(element.querySelector('[data-field="tier"]'), tier);
-  setOptionalText(element.querySelector('[data-field="attack"]'), attack);
-  setOptionalText(element.querySelector('[data-field="health"]'), health);
+  fallback.textContent = name.trim().slice(0, 1).toUpperCase() || '';
+
+  setTierIcon(element.querySelector('[data-field="tier"]'), tier);
+
+  const attackField = element.querySelector('[data-field="attack"]');
+  attackField.dataset.component = 'panel';
+  attackField.dataset.themeRole = 'panel.attackBadge';
+  setOptionalText(attackField, attack);
+
+  const healthField = element.querySelector('[data-field="health"]');
+  healthField.dataset.component = 'panel';
+  healthField.dataset.themeRole = 'panel.healthBadge';
+  setOptionalText(healthField, health);
+
   element.querySelector('[data-field="frozen"]').hidden = !frozen;
 
   const image = element.querySelector('[data-field="art"]');
