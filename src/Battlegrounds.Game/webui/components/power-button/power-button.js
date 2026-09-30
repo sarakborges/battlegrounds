@@ -22,12 +22,12 @@ export async function createPowerButton({ power = null, label = 'Use power', blo
   }
 
   const control = await createButton({
-    label: '✦',
+    label: '',
     action: 'use-power',
     disabled: blocked || !power?.id || power.activatable === false,
     themeRole: 'button.power',
     className: 'power-button__control',
-    attributes: { title: label }
+    attributes: { title: label, 'aria-label': label }
   });
   appendChildren(element.querySelector('[data-slot="button"]'), [control]);
 

@@ -19,8 +19,8 @@
   position: absolute;
   left: 14px;
   top: -4px;
-  width: 146px;
-  height: 168px;
+  width: 126px;
+  height: 132px;
   padding: 0;
   overflow: visible;
   border: 0;
@@ -28,14 +28,14 @@
   background-color: transparent;
   background-image: none;
   box-shadow: none;
-  filter: drop-shadow(0 12px 13px rgba(0, 0, 0, .48));
+  filter: drop-shadow(0 9px 10px rgba(0, 0, 0, .42));
 }
 
 .leader-hud__portrait::after {
   content: "";
   position: absolute;
   z-index: 4;
-  inset: -5px;
+  inset: -4px;
   background-image: var(--theme-component-background-image, none);
   background-position: center;
   background-repeat: no-repeat;
@@ -46,13 +46,13 @@
 .leader-hud__art {
   position: absolute;
   z-index: 1;
-  left: 14px;
-  top: 9px;
-  width: 118px;
-  height: 142px;
+  left: 17px;
+  top: 13px;
+  width: 92px;
+  height: 104px;
   object-fit: cover;
   object-position: center top;
-  border-radius: 45% 45% 34% 34%;
+  border-radius: 25px 25px 15px 15px;
   user-select: none;
   pointer-events: none;
 }
@@ -62,16 +62,16 @@
 .leader-hud__fallback {
   position: absolute;
   z-index: 1;
-  left: 14px;
-  top: 9px;
-  width: 118px;
-  height: 142px;
+  left: 17px;
+  top: 13px;
+  width: 92px;
+  height: 104px;
   display: grid;
   place-items: center;
-  border-radius: 45% 45% 34% 34%;
+  border-radius: 25px 25px 15px 15px;
   background: linear-gradient(#463129, #1b1210);
   color: #c7a375;
-  font-size: 36px;
+  font-size: 34px;
 }
 
 .leader-hud__fallback[hidden] { display: none; }

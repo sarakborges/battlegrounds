@@ -151,6 +151,7 @@ export async function createPreparationScreen(state) {
   appendChildren(element.querySelector('[data-slot="resource"]'), [
     await createResourceCounter({
       value: human.resource ?? 0,
+      maximum: human.resourceMaximum ?? human.resource ?? 0,
       label: labels.resource ?? 'Resource'
     })
   ]);

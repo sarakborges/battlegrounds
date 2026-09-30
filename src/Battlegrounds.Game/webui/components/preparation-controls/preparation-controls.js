@@ -14,11 +14,23 @@ export async function createPreparationControls({
   hostArt = null
 } = {}) {
   const element = await cloneTemplate(templateUrl);
-  element.querySelector('[data-field="tier-label"]').textContent = labels.tier ?? 'Tier';
-  element.querySelector('[data-field="tier"]').textContent = participant.tier ?? '';
+  const tierLabel = labels.tier ?? 'Tier';
+  const currentTier = Math.max(1, Math.trunc(Number(participant.tier) || 1));
+  const maximumTier = Math.max(currentTier, Math.trunc(Number(participant.maximumTier) || currentTier));
+
+  element.querySelector('[data-field="tier-label"]').textContent = tierLabel;
+  const tierField = element.querySelector('[data-field="tier"]');
+  tierField.textContent = '';
+  tierField.setAttribute('aria-label', `${tierLabel}: ${currentTier}`);
+  for (let index = 0; index < maximumTier; index += 1) {
+    const pip = document.createElement('span');
+    pip.className = 'preparation-controls__tier-pip';
+    if (index < currentTier) pip.dataset.active = 'true';
+    tierField.append(pip);
+  }
 
   const upgrade = await createButton({
-    label: '★',
+    label: '↑',
     action: 'upgrade',
     disabled: blocked || participant.upgradeCost == null,
     themeRole: 'button.tierUpgrade',
@@ -36,7 +48,7 @@ export async function createPreparationControls({
   });
 
   const freeze = await createButton({
-    label: '❄',
+    label: '❄︎',
     action: 'toggle-freeze',
     disabled: blocked,
     themeRole: 'button.offerFreeze',
