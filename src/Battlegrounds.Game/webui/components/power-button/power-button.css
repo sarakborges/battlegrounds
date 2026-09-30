@@ -1,27 +1,26 @@
 .power-button {
   position: relative;
-  width: 82px;
-  height: 86px;
+  width: var(--theme-component-width, 82px);
+  height: var(--theme-component-height, 86px);
   display: grid;
   place-items: center;
 }
 
 .action-button.power-button__control {
-  width: 68px;
-  height: 68px;
-  min-width: 68px;
-  min-height: 68px;
+  width: var(--theme-component-width, 68px);
+  height: var(--theme-component-height, 68px);
+  min-width: 0;
+  min-height: 0;
   padding: 0;
-  border: 3px solid var(--theme-color-focus, #e4af62);
-  border-radius: 50%;
-  background-color: var(--theme-color-surface-cool, #263743);
-  background-image: radial-gradient(circle at 42% 34%, rgba(255, 255, 255, .16), transparent 34%), radial-gradient(circle at 50% 55%, #334954, #18252d 72%) !important;
-  box-shadow: 0 8px 14px rgba(0, 0, 0, .42), inset 0 0 0 2px rgba(255, 255, 255, .06);
+  border: var(--theme-component-border-width, 0) solid var(--theme-component-border-color, transparent);
+  border-radius: var(--theme-component-radius, 0);
+  background-color: var(--theme-component-background-color, transparent);
+  background-image: var(--theme-component-background-image, none);
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: 100% 100%;
+  box-shadow: none;
   transform-origin: 50% 78%;
-}
-
-.action-button.power-button__control[data-theme-background-asset="true"] {
-  background-image: radial-gradient(circle at 42% 34%, rgba(255, 255, 255, .16), transparent 34%), radial-gradient(circle at 50% 55%, #334954, #18252d 72%) !important;
 }
 
 .action-button.power-button__control:hover:not(:disabled),
@@ -40,13 +39,11 @@
   display: grid;
   place-items: center;
   padding: 0 5px;
-  border: 2px solid #5b351a;
-  border-radius: 50%;
-  background: radial-gradient(circle at 38% 27%, #ffe59b 0 8%, var(--theme-color-resource-accent, #e8b34b) 31%, #8a5b19 66%, #2f1b08 100%);
+  border: 0;
+  background: transparent;
   color: #fff6d4;
   font-size: 12px;
   font-weight: 900;
   line-height: 1;
   text-shadow: 0 1px 2px #000;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, .42);
 }
