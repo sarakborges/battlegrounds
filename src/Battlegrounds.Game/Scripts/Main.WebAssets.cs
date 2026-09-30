@@ -8,6 +8,7 @@ public partial class Main
 {
     private bool _webCosmeticsLoaded;
     private Dictionary<string, object?>? _webCosmetics;
+    private readonly Dictionary<string, (byte[] Bytes, string MimeType)> _webTransportAssets = new(StringComparer.Ordinal);
     private bool _webPresentationAssetsLoaded;
     private ModPresentationAssetCatalog? _webPresentationAssets;
 
@@ -165,7 +166,29 @@ public partial class Main
             }
 
             var bytes = File.ReadAllBytes(fullPath);
-            const int maxIpcBytes = 96 * 1024;
+            if (Path.GetExtension(fullPath).Equals(".png", StringComparison.OrdinalIgnoreCase) &&
+                bytes.Length > 512 * 1024 &&
+                !_webTransportAssets.TryGetValue(normalized, out var cachedTransport))
+            {
+                var image = Image.LoadFromFile(fullPath);
+                if (image is not null && !image.IsEmpty())
+                {
+                    var webp = image.SaveWebpToBuffer(false);
+                    if (webp is not null && webp.Length > 0 && webp.Length < bytes.Length)
+                    {
+                        _webTransportAssets[normalized] = (webp, "image/webp");
+                        bytes = webp;
+                        mimeType = "image/webp";
+                    }
+                }
+            }
+            else if (cachedTransport.Bytes is not null)
+            {
+                bytes = cachedTransport.Bytes;
+                mimeType = cachedTransport.MimeType;
+            }
+
+            const int maxIpcBytes = 48 * 1024;
             if (bytes.Length <= maxIpcBytes)
             {
                 var dataUrl = $"data:{mimeType};base64,{Convert.ToBase64String(bytes)}";
