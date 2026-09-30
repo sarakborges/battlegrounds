@@ -15,7 +15,10 @@ export async function createLeaderSelectionScreen(state) {
   const leaders = [];
   for (const leader of state.leaders ?? []) {
     leaders.push(await createLeaderChoice({
-      leader,
+      leader: {
+        ...leader,
+        power: cosmetics?.leaderPowers?.[leader.id] ?? null
+      },
       art: await leaderArtUrl(cosmetics, leader.id)
     }));
   }
