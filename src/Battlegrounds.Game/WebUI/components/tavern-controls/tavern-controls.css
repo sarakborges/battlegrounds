@@ -67,15 +67,26 @@
 }
 
 .panel.tavern-controls__tier-badge {
-  width: 42px;
-  height: 52px;
+  position: relative;
+  width: 48px;
+  height: 58px;
   display: grid;
   place-content: center;
   align-self: center;
-  padding: 2px;
-  border-radius: 12px 12px 17px 17px;
-  clip-path: polygon(9% 0, 91% 0, 100% 72%, 50% 100%, 0 72%);
-  box-shadow: 0 7px 15px rgba(0, 0, 0, .3);
+  padding: 0 0 4px;
+  border: 0;
+  border-radius: 0;
+  clip-path: polygon(50% 0, 88% 13%, 100% 42%, 82% 76%, 50% 100%, 18% 76%, 0 42%, 12% 13%);
+  color: #fff3cf;
+  text-shadow: 0 2px 2px rgba(0, 0, 0, .9);
+  box-shadow: none;
+  filter: drop-shadow(0 6px 6px rgba(0, 0, 0, .42));
+}
+
+.panel.tavern-controls__tier-badge:not([data-theme-background-asset="true"]) {
+  background:
+    radial-gradient(circle at 42% 28%, #ba78e3 0 8%, #7036a2 30%, #3e205d 67%, #1e122e 100%);
+  box-shadow: inset 0 0 0 4px color-mix(in srgb, var(--theme-color-focus, #e4af62) 72%, #3a1c4e);
 }
 
 .tavern-controls__tier-badge .eyebrow {
@@ -83,6 +94,6 @@
 }
 
 .tavern-controls__tier-badge strong {
-  font-size: 21px;
+  font-size: 22px;
   line-height: 1;
 }
