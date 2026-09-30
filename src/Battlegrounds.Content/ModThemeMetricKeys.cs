@@ -107,48 +107,6 @@ public static class ModThemeMetricKeys
         }
     }
 
-    public static class Card
-    {
-        public const string DefaultRole = "default";
-        public const string LeaderRole = "leader";
-        public const string ShopRole = "shop";
-        public const string BoardRole = "board";
-        public const string ReserveRole = "reserve";
-        public const string ChoiceRole = "choice";
-        public const string ContentGap = "card.contentGap";
-        public const string TokenBadgeSize = "card.token.badgeSize";
-        public const string TokenBadgeInset = "card.token.badgeInset";
-        public const string InspectWidth = "card.inspect.width";
-        public const string InspectMinimumHeight = "card.inspect.minimumHeight";
-        public const string InspectArtHeight = "card.inspect.artHeight";
-        public const string InspectOffset = "card.inspect.offset";
-        public const string InspectBadgeSize = "card.inspect.badgeSize";
-        public const string InspectBadgeInset = "card.inspect.badgeInset";
-        public const string InspectContentGap = "card.inspect.contentGap";
-
-        public static string MinimumWidth(string role) => $"card.{role}.minimumWidth";
-        public static string ArtHeight(string role) => $"card.{role}.artHeight";
-    }
-
-    public static class Row
-    {
-        public const string LeaderRole = "leader";
-        public const string OfferRole = "offer";
-        public const string FieldRole = "field";
-        public const string ReserveRole = "reserve";
-
-        public const string Leader = "row.leader";
-        public const string Offer = "row.offer";
-        public const string Field = "row.field";
-        public const string Reserve = "row.reserve";
-
-        public static string Gap(string prefix) => prefix + ".gap";
-        public static string PreferredCardWidth(string prefix) => prefix + ".preferredCardWidth";
-        public static string MinimumCardWidth(string prefix) => prefix + ".minimumCardWidth";
-        public static string PreferredCardHeight(string prefix) => prefix + ".preferredCardHeight";
-        public static string Padding(string prefix) => prefix + ".padding";
-    }
-
     public static class Hud
     {
         public const string HeroDockMinimumHeight = "hud.heroDock.minimumHeight";
