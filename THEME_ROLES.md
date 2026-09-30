@@ -1,6 +1,6 @@
 # Semantic theme roles
 
-`presentation/theme.json` component keys are engine-neutral semantic roles. The Web UI consumes those roles directly; mods do not theme DOM tags or Godot control types.
+`presentation/theme.json` component keys are engine-neutral semantic roles. The Web UI consumes those roles directly; mods do not theme DOM tags, Godot control types, or game-specific display names.
 
 All roles are optional. Missing specific roles fall back to the engine default theme.
 
@@ -16,7 +16,7 @@ power-tooltip
 player-chip
 ```
 
-A token is the persistent board/shop/reserve representation. A preview or inspector is the transient hover/focus representation. These are deliberately separate roles because a minion, Tavern Spell/action, leader and hero power do not share one visual anatomy.
+A token is the persistent offer/field/reserve representation. A preview or inspector is the transient hover/focus representation. These are deliberately separate roles because units, actions, leaders and powers do not share one visual anatomy.
 
 There is intentionally no generic `card`, `card.board`, `playable-token` or `card-preview` role. Those legacy abstractions are rejected by theme validation.
 
@@ -25,26 +25,28 @@ There is intentionally no generic `card`, `card.board`, `playable-token` or `car
 ```text
 button
 button.primary
-button.endRecruitment
-button.tavernUpgrade
-button.tavernRefresh
-button.tavernFreeze
-button.heroPower
+button.endPreparation
+button.tierUpgrade
+button.offerRefresh
+button.offerFreeze
+button.power
 ```
 
-Specific board controls own their visual identity instead of inheriting application-button semantics accidentally. Each role may declare normal, hover, pressed, disabled and focus state overrides.
+Specific preparation controls own their visual identity instead of inheriting application-button semantics accidentally. Display terminology such as “Recruit”, “Tavern”, “Hero Power” or equivalent belongs to mod localization, not these shared role names.
 
-## Panels and board pieces
+Each role may declare normal, hover, pressed, disabled and focus state overrides.
+
+## Panels and scene pieces
 
 ```text
 panel
 panel.opponentRail
-panel.tavernControls
-panel.tavern
+panel.preparationControls
+panel.offer
 panel.board
 panel.reserve
-panel.heroDock
-panel.heroPortrait
+panel.leaderDock
+panel.leaderPortrait
 panel.opponent
 panel.opponent.self
 panel.opponent.eliminated
@@ -55,11 +57,11 @@ panel.healthBadge
 panel.armorBadge
 panel.resourceBadge
 panel.interaction
-panel.shopkeeper
+panel.preparationHost
 panel.combat
 ```
 
-These roles let a mod visually distinguish scene pieces and HUD/status surfaces without referring to implementation classes.
+These roles let a mod visually distinguish scene pieces and HUD/status surfaces without referring to implementation classes or a particular game's display vocabulary.
 
 Example:
 
@@ -74,22 +76,24 @@ Example:
       "backgroundAsset": "assets/ui/action-token-frame.svg",
       "borderWidth": 0
     },
-    "panel.heroPortrait": {
-      "backgroundAsset": "assets/ui/hero-portrait-frame.svg",
+    "panel.leaderPortrait": {
+      "backgroundAsset": "assets/ui/leader-portrait-frame.svg",
       "borderWidth": 0
     },
-    "button.heroPower": {
-      "backgroundAsset": "assets/ui/hero-power-frame.svg",
+    "button.power": {
+      "backgroundAsset": "assets/ui/power-frame.svg",
       "borderWidth": 0
     }
   }
 }
 ```
 
+The filenames in a mod may use any vocabulary the mod author wants. Only the shared role keys are engine contract.
+
 ## HUD labels
 
 ```text
-label.heroName
+label.leaderName
 label.attack
 label.health
 label.armor
