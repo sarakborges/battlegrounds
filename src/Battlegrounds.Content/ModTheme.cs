@@ -8,10 +8,10 @@ public static class ModThemeComponentRoles
 {
     public const string Button = "button";
     public const string ButtonPrimary = "button.primary";
-    public const string ButtonTavernUpgrade = "button.tavernUpgrade";
-    public const string ButtonTavernRefresh = "button.tavernRefresh";
-    public const string ButtonTavernFreeze = "button.tavernFreeze";
-    public const string ButtonHeroPower = "button.heroPower";
+    public const string ButtonTierUpgrade = "button.tierUpgrade";
+    public const string ButtonOfferRefresh = "button.offerRefresh";
+    public const string ButtonOfferFreeze = "button.offerFreeze";
+    public const string ButtonPower = "button.power";
     public const string Input = "input";
     public const string Panel = "panel";
 }
