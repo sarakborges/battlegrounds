@@ -3,7 +3,7 @@ import { createButton } from '../../design-system/button/button.js';
 import { createHorizontalStack } from '../../design-system/horizontal-stack/horizontal-stack.js';
 import { createModalDialog } from '../../design-system/modal-dialog/modal-dialog.js';
 import { createEndRecruitmentControl } from '../../components/end-recruitment-control/end-recruitment-control.js';
-import { createHeroCockpit } from '../../components/hero-cockpit/hero-cockpit.js';
+import { createLeaderHud } from '../../components/leader-hud/leader-hud.js';
 import { createOpponentRail } from '../../components/opponent-rail/opponent-rail.js';
 import { createPlayerField } from '../../components/player-field/player-field.js';
 import { createPlayerReserve } from '../../components/player-reserve/player-reserve.js';
@@ -136,14 +136,14 @@ export async function createPreparationScreen(state) {
   ]);
 
   appendChildren(element.querySelector('[data-slot="leader"]'), [
-    await createHeroCockpit({
+    await createLeaderHud({
       labels,
-      human,
+      participant: human,
       power: human.powerInfo,
-      heroId: humanPlayer?.leaderId ?? '',
-      heroName: humanPlayer?.leader ?? '—',
-      heroDescription: humanPlayer?.leaderDescription ?? '',
-      heroArt: await leaderArtUrl(cosmetics, humanPlayer?.leaderId),
+      leaderId: humanPlayer?.leaderId ?? '',
+      leaderName: humanPlayer?.leader ?? '—',
+      leaderDescription: humanPlayer?.leaderDescription ?? '',
+      leaderArt: await leaderArtUrl(cosmetics, humanPlayer?.leaderId),
       blocked
     })
   ]);
