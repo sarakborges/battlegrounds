@@ -25,7 +25,7 @@ export async function createHeroPowerButton({ heroPower = null, label = 'Use her
     label: '✦',
     action: 'use-power',
     disabled: blocked || !heroPower?.id || heroPower.activatable === false,
-    themeRole: 'button.heroPower',
+    themeRole: 'button.power',
     className: 'hero-power-button__control',
     attributes: { title: label }
   });
