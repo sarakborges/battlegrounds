@@ -1,8 +1,8 @@
 .unit-token {
   position: relative;
-  width: var(--theme-component-width, var(--unit-token-width, 116px));
-  height: var(--theme-component-height, var(--unit-token-height, 136px));
-  flex: 0 0 var(--theme-component-width, var(--unit-token-width, 116px));
+  width: var(--theme-component-width, var(--unit-token-width, 118px));
+  height: var(--theme-component-height, var(--unit-token-height, 132px));
+  flex: 0 0 var(--theme-component-width, var(--unit-token-width, 118px));
   padding: 0;
   overflow: visible;
   border: 0;
@@ -29,11 +29,11 @@
 .unit-token__portrait {
   position: absolute;
   left: 50%;
-  top: 7px;
-  width: var(--unit-token-portrait-width, 108px);
-  height: var(--unit-token-portrait-height, 118px);
+  top: 2px;
+  width: 118px;
+  height: 118px;
   transform: translateX(-50%);
-  overflow: hidden;
+  overflow: visible;
   border: 0;
   background: transparent;
 }
@@ -42,7 +42,7 @@
   content: "";
   position: absolute;
   z-index: 4;
-  inset: -3px;
+  inset: 0;
   background-image: var(--theme-component-background-image, none);
   background-position: center;
   background-repeat: no-repeat;
@@ -53,11 +53,19 @@
 .unit-token__art {
   position: absolute;
   z-index: 1;
-  inset: 5px 7px 7px;
-  width: calc(100% - 14px);
-  height: calc(100% - 12px);
-  object-fit: contain;
-  object-position: center top;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  -webkit-mask-image: var(--theme-component-background-image, none);
+  mask-image: var(--theme-component-background-image, none);
+  -webkit-mask-size: 100% 100%;
+  mask-size: 100% 100%;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-position: center;
+  mask-position: center;
   user-select: none;
   pointer-events: none;
 }
@@ -65,7 +73,7 @@
 .unit-token__fallback {
   position: absolute;
   z-index: 2;
-  inset: 7px;
+  inset: 12px;
   display: grid;
   place-items: center;
   font-size: 34px;
@@ -79,7 +87,7 @@
   position: absolute;
   z-index: 8;
   left: 50%;
-  top: -6px;
+  top: -8px;
   transform: translateX(-50%);
   filter: drop-shadow(0 4px 5px rgba(0, 0, 0, .45));
 }
@@ -89,7 +97,7 @@
   z-index: 10;
   left: 0;
   right: 0;
-  bottom: -8px;
+  bottom: -4px;
   display: flex;
   justify-content: space-between;
   pointer-events: none;
