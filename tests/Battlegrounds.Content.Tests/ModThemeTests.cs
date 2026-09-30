@@ -27,24 +27,29 @@ public sealed class ModThemeTests
         Assert.Equal("primaryHover", primary.States["hover"].BackgroundColor);
         Assert.Equal("background", theme.Screens[ModThemeScreenRoles.Preparation].BackgroundColor);
 
-        var dragPreview = theme.Components["drag.preview"];
+        Assert.True(theme.Components.ContainsKey(ModThemeRoleNames.UnitToken));
+        Assert.True(theme.Components.ContainsKey(ModThemeRoleNames.ActionToken));
+        Assert.True(theme.Components.ContainsKey(ModThemeRoleNames.UnitCardPreview));
+        Assert.True(theme.Components.ContainsKey(ModThemeRoleNames.ActionCardPreview));
+
+        var dragPreview = theme.Components[ModThemeInteractionRoles.DragPreview];
         Assert.Equal(0.12, dragPreview.Opacity);
 
-        var validDropTarget = theme.Components["dropTarget.valid"];
+        var validDropTarget = theme.Components[ModThemeInteractionRoles.DropTargetValid];
         Assert.Equal("success", validDropTarget.BorderColor);
         Assert.Equal(2, validDropTarget.BorderWidth);
         Assert.Equal("sm", validDropTarget.Padding?.Horizontal);
 
-        var activeValidDropTarget = theme.Components["dropTarget.valid.active"];
+        var activeValidDropTarget = theme.Components[ModThemeInteractionRoles.DropTargetValidActive];
         Assert.Equal("successActive", activeValidDropTarget.BorderColor);
         Assert.Equal(4, activeValidDropTarget.BorderWidth);
 
-        var invalidDropTarget = theme.Components["dropTarget.invalid"];
+        var invalidDropTarget = theme.Components[ModThemeInteractionRoles.DropTargetInvalid];
         Assert.Equal("danger", invalidDropTarget.BorderColor);
         Assert.Equal(2, invalidDropTarget.BorderWidth);
         Assert.Equal("sm", invalidDropTarget.Padding?.Horizontal);
 
-        var activeInvalidDropTarget = theme.Components["dropTarget.invalid.active"];
+        var activeInvalidDropTarget = theme.Components[ModThemeInteractionRoles.DropTargetInvalidActive];
         Assert.Equal("dangerActive", activeInvalidDropTarget.BorderColor);
         Assert.Equal(4, activeInvalidDropTarget.BorderWidth);
     }
@@ -59,8 +64,8 @@ public sealed class ModThemeTests
             {
                 root["metrics"] = new JsonObject
                 {
-                    ["row.offer.gap"] = 13.5,
-                    ["row.offer.preferredCardWidth"] = 144,
+                    [ModThemeMetricKeys.Layout.PreparationScene.OfferTop] = 244.5,
+                    [ModThemeMetricKeys.Layout.CombatScene.PlayerFieldTop] = 401,
                 };
             });
 
@@ -68,8 +73,8 @@ public sealed class ModThemeTests
             var theme = new ModThemeLoader().Load(path);
 
             Assert.True(report.IsValid);
-            Assert.Equal(13.5, theme.Metrics["row.offer.gap"]);
-            Assert.Equal(144, theme.Metrics["row.offer.preferredCardWidth"]);
+            Assert.Equal(244.5, theme.Metrics[ModThemeMetricKeys.Layout.PreparationScene.OfferTop]);
+            Assert.Equal(401, theme.Metrics[ModThemeMetricKeys.Layout.CombatScene.PlayerFieldTop]);
         }
         finally
         {
@@ -87,7 +92,7 @@ public sealed class ModThemeTests
             {
                 root["metrics"] = new JsonObject
                 {
-                    ["row.offer.gap"] = "wide",
+                    [ModThemeMetricKeys.Layout.PreparationScene.OfferTop] = "wide",
                 };
             });
 
@@ -96,7 +101,47 @@ public sealed class ModThemeTests
             Assert.Contains(report.Issues, issue =>
                 issue.Code == "INVALID_VALUE" &&
                 issue.File == "presentation/theme.json" &&
-                issue.Path == "$.metrics.row.offer.gap");
+                issue.Path == "$.metrics." + ModThemeMetricKeys.Layout.PreparationScene.OfferTop);
+        }
+        finally
+        {
+            Directory.Delete(path, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void Validate_LegacyCardAndRowThemeContractsAreRejected()
+    {
+        var path = CreateTempMod();
+        try
+        {
+            UpdateTheme(path, root =>
+            {
+                root["metrics"] = new JsonObject
+                {
+                    ["row.offer.gap"] = 12,
+                    ["card.board.minimumWidth"] = 120,
+                };
+                root["components"]!["card"] = new JsonObject { ["backgroundColor"] = "surface" };
+                root["components"]!["card.board"] = new JsonObject { ["backgroundColor"] = "surface" };
+                root["components"]!["playable-token"] = new JsonObject { ["backgroundColor"] = "surface" };
+                root["components"]!["card-preview"] = new JsonObject { ["backgroundColor"] = "surface" };
+            });
+
+            var report = new ModValidator().Validate(path);
+
+            Assert.Contains(report.Issues, issue =>
+                issue.Code == "UNKNOWN_THEME_METRIC" && issue.Path == "$.metrics.row.offer.gap");
+            Assert.Contains(report.Issues, issue =>
+                issue.Code == "UNKNOWN_THEME_METRIC" && issue.Path == "$.metrics.card.board.minimumWidth");
+            Assert.Contains(report.Issues, issue =>
+                issue.Code == "UNKNOWN_THEME_COMPONENT_ROLE" && issue.Path == "$.components.card");
+            Assert.Contains(report.Issues, issue =>
+                issue.Code == "UNKNOWN_THEME_COMPONENT_ROLE" && issue.Path == "$.components.card.board");
+            Assert.Contains(report.Issues, issue =>
+                issue.Code == "UNKNOWN_THEME_COMPONENT_ROLE" && issue.Path == "$.components.playable-token");
+            Assert.Contains(report.Issues, issue =>
+                issue.Code == "UNKNOWN_THEME_COMPONENT_ROLE" && issue.Path == "$.components.card-preview");
         }
         finally
         {
