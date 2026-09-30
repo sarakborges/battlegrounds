@@ -34,8 +34,8 @@ function isDragEnabled(element) {
 function isCompatibleDropTarget(target, dragSource) {
   const dropKind = target?.dataset.dropKind;
   if (!dropKind || !dragSource) return false;
-  if (dropKind === 'player-hero') return dragSource.kind === 'tavern-offer-token';
-  if (dropKind === 'tavern-shopkeeper') return dragSource.kind === 'player-field-unit';
+  if (dropKind === 'player-leader') return dragSource.kind === 'offer-token';
+  if (dropKind === 'preparation-host') return dragSource.kind === 'player-field-unit';
   if (dropKind === 'player-field') {
     return dragSource.kind === 'player-field-unit' || dragSource.kind === 'player-reserve-unit';
   }
@@ -44,7 +44,7 @@ function isCompatibleDropTarget(target, dragSource) {
 
 function isValidDrop(target, dragSource) {
   if (!isCompatibleDropTarget(target, dragSource)) return false;
-  if (target.dataset.dropKind === 'player-hero') return dragSource.valid;
+  if (target.dataset.dropKind === 'player-leader') return dragSource.valid;
   if (target.dataset.dropKind === 'player-field' && dragSource.kind === 'player-reserve-unit') {
     return dragSource.valid;
   }
@@ -110,10 +110,10 @@ export function bindPreparationDrag(root) {
     const dropTarget = hitElement?.closest?.('[data-drop-kind]');
     if (dropTarget && isValidDrop(dropTarget, activeDrag)) {
       switch (dropTarget.dataset.dropKind) {
-        case 'player-hero':
+        case 'player-leader':
           dispatchPreparationAction(root, 'acquire', { slot: activeDrag.slot });
           break;
-        case 'tavern-shopkeeper':
+        case 'preparation-host':
           dispatchPreparationAction(root, 'release', { slot: activeDrag.index });
           break;
         case 'player-field': {
