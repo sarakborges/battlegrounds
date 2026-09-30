@@ -18,6 +18,8 @@ export async function createResourceCounter({ value = 0, maximum = value, label 
   for (let index = 0; index < resolvedMaximum; index += 1) {
     const pip = document.createElement('span');
     pip.className = 'resource-counter__pip';
+    pip.dataset.component = 'icon';
+    pip.dataset.themeRole = 'icon.resourcePip';
     if (index < current) pip.dataset.active = 'true';
     pips.append(pip);
   }
