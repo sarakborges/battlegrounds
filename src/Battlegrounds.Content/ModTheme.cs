@@ -12,6 +12,7 @@ public static class ModThemeComponentRoles
     public const string ButtonOfferRefresh = "button.offerRefresh";
     public const string ButtonOfferFreeze = "button.offerFreeze";
     public const string ButtonPower = "button.power";
+    public const string Icon = "icon";
     public const string Input = "input";
     public const string Panel = "panel";
 }
@@ -40,6 +41,11 @@ public sealed class ModThemeStyle
     public string? Radius { get; }
     public ModThemePadding? Padding { get; }
     public string? BackgroundAsset { get; }
+    public string? IconAsset { get; }
+    public int? Width { get; }
+    public int? Height { get; }
+    public int? IconWidth { get; }
+    public int? IconHeight { get; }
     public ModThemeSlice? Slice { get; }
     public double? Opacity { get; }
     public IReadOnlyDictionary<string, ModThemeStyle> States => _states;
@@ -54,6 +60,11 @@ public sealed class ModThemeStyle
         string? radius,
         ModThemePadding? padding,
         string? backgroundAsset,
+        string? iconAsset,
+        int? width,
+        int? height,
+        int? iconWidth,
+        int? iconHeight,
         ModThemeSlice? slice,
         double? opacity,
         IReadOnlyDictionary<string, ModThemeStyle>? states = null)
@@ -67,6 +78,11 @@ public sealed class ModThemeStyle
         Radius = radius;
         Padding = padding;
         BackgroundAsset = backgroundAsset;
+        IconAsset = iconAsset;
+        Width = width;
+        Height = height;
+        IconWidth = iconWidth;
+        IconHeight = iconHeight;
         Slice = slice;
         Opacity = opacity;
         _states = new ReadOnlyDictionary<string, ModThemeStyle>(
@@ -229,6 +245,11 @@ public sealed partial class ModThemeLoader
             data.Radius,
             data.Padding is null ? null : new ModThemePadding(data.Padding.Horizontal, data.Padding.Vertical),
             data.BackgroundAsset,
+            data.IconAsset,
+            data.Width,
+            data.Height,
+            data.IconWidth,
+            data.IconHeight,
             data.Slice is null ? null : new ModThemeSlice(data.Slice.Left, data.Slice.Top, data.Slice.Right, data.Slice.Bottom),
             data.Opacity,
             states);
@@ -282,6 +303,11 @@ public sealed partial class ModThemeLoader
         public string? Radius { get; set; }
         public ThemePaddingData? Padding { get; set; }
         public string? BackgroundAsset { get; set; }
+        public string? IconAsset { get; set; }
+        public int? Width { get; set; }
+        public int? Height { get; set; }
+        public int? IconWidth { get; set; }
+        public int? IconHeight { get; set; }
         public ThemeSliceData? Slice { get; set; }
         public double? Opacity { get; set; }
         public Dictionary<string, ThemeStyleData>? States { get; set; }
