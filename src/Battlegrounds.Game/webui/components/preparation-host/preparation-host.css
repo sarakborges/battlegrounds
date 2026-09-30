@@ -1,7 +1,7 @@
 .preparation-host.panel {
   position: relative;
-  width: var(--theme-component-width, 126px);
-  height: var(--theme-component-height, 132px);
+  width: 108px;
+  height: 144px;
   padding: 0;
   overflow: visible;
   border: 0;
@@ -27,11 +27,19 @@
 .preparation-host__art {
   position: absolute;
   z-index: 1;
-  inset: 10%;
-  width: 80%;
-  height: 80%;
-  object-fit: contain;
-  object-position: center;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center top;
+  -webkit-mask-image: var(--theme-component-background-image, none);
+  mask-image: var(--theme-component-background-image, none);
+  -webkit-mask-size: 100% 100%;
+  mask-size: 100% 100%;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-position: center;
+  mask-position: center;
   user-select: none;
   pointer-events: none;
 }
@@ -41,7 +49,7 @@
 .preparation-host__fallback {
   position: absolute;
   z-index: 1;
-  inset: 10%;
+  inset: 15%;
   display: grid;
   place-items: center;
   background: transparent;
