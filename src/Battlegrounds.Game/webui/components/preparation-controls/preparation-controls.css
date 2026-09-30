@@ -105,8 +105,8 @@
 .preparation-controls__tier-badge {
   align-self: center;
   margin-top: 8px;
-  width: var(--theme-component-icon-width, var(--theme-component-width, 0px));
-  height: var(--theme-component-icon-height, var(--theme-component-height, 0px));
+  width: 34px;
+  height: 34px;
   background-image: var(--theme-component-icon-image, none);
   background-position: center;
   background-repeat: no-repeat;
