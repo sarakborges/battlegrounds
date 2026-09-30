@@ -30,6 +30,13 @@
   place-items: start center;
 }
 
+.preparation-controls__control-wrap {
+  position: relative;
+  width: 68px;
+  height: 88px;
+  overflow: visible;
+}
+
 .action-button.preparation-controls__button {
   width: 64px;
   height: 84px;
@@ -42,7 +49,7 @@
   background-repeat: no-repeat;
   background-size: 100% 100%;
   color: var(--action-button-text-color);
-  font-size: 18px;
+  font-size: 22px;
   font-weight: 900;
   line-height: 1;
   text-shadow: 0 2px 3px rgba(0, 0, 0, .82);
@@ -60,8 +67,33 @@
   width: 68px;
   min-width: 68px;
   padding-bottom: 9px;
-  font-size: 13px;
+  font-size: 20px;
 }
+
+.preparation-controls__cost {
+  position: absolute;
+  z-index: 8;
+  left: 50%;
+  top: -9px;
+  min-width: 28px;
+  height: 28px;
+  transform: translateX(-50%);
+  display: grid;
+  place-items: center;
+  padding: 0 5px;
+  border: 2px solid #5b351a;
+  border-radius: 50%;
+  background: radial-gradient(circle at 38% 27%, #ffe59b 0 8%, var(--theme-color-resource-accent, #e8b34b) 31%, #8a5b19 66%, #2f1b08 100%);
+  color: #fff6d4;
+  font-size: 12px;
+  font-weight: 900;
+  line-height: 1;
+  text-shadow: 0 1px 2px #000;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, .42);
+  pointer-events: none;
+}
+
+.preparation-controls__cost[hidden] { display: none; }
 
 .panel.preparation-controls__tier-badge {
   position: relative;
