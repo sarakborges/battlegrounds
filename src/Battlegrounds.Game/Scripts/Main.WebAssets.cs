@@ -35,7 +35,33 @@ public partial class Main
         }
 
         _webCosmetics["presentationAssets"] = BuildWebPresentationAssetsState();
+        _webCosmetics["leaderPowers"] = BuildWebLeaderPowersState();
         return _webCosmetics;
+    }
+
+    private object BuildWebLeaderPowersState()
+    {
+        var powers = new Dictionary<string, object?>(StringComparer.Ordinal);
+        if (_session is null)
+            return powers;
+
+        foreach (var leader in _session.Mod.Leaders.All)
+        {
+            if (leader.InitialPowerId is null)
+                continue;
+
+            var power = _session.Mod.Powers.GetRequired(leader.InitialPowerId.Value);
+            powers[leader.Id.Value] = new
+            {
+                id = power.Id.Value,
+                name = PowerName(power.Id),
+                description = PowerDescription(power.Id),
+                cost = power.Cost,
+                activatable = power.IsActivatable,
+            };
+        }
+
+        return powers;
     }
 
     private object BuildWebPresentationAssetsState()
