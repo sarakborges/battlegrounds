@@ -166,9 +166,13 @@ public partial class Main
             }
 
             var bytes = File.ReadAllBytes(fullPath);
-            if (Path.GetExtension(fullPath).Equals(".png", StringComparison.OrdinalIgnoreCase) &&
-                bytes.Length > 512 * 1024 &&
-                !_webTransportAssets.TryGetValue(normalized, out var cachedTransport))
+            if (_webTransportAssets.TryGetValue(normalized, out var cachedTransport))
+            {
+                bytes = cachedTransport.Bytes;
+                mimeType = cachedTransport.MimeType;
+            }
+            else if (Path.GetExtension(fullPath).Equals(".png", StringComparison.OrdinalIgnoreCase) &&
+                     bytes.Length > 512 * 1024)
             {
                 var image = Image.LoadFromFile(fullPath);
                 if (image is not null && !image.IsEmpty())
@@ -181,11 +185,6 @@ public partial class Main
                         mimeType = "image/webp";
                     }
                 }
-            }
-            else if (cachedTransport.Bytes is not null)
-            {
-                bytes = cachedTransport.Bytes;
-                mimeType = cachedTransport.MimeType;
             }
 
             const int maxIpcBytes = 48 * 1024;
