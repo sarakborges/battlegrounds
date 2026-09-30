@@ -44,43 +44,43 @@
 .preparation-anchor--offer {
   z-index: 18;
   left: 50%;
-  top: calc(var(--theme-metric-layout-preparation-scene-offer-top, 226) * 1px);
+  top: calc(var(--theme-metric-layout-preparation-scene-offer-top, 224) * 1px);
   width: 820px;
-  height: 128px;
+  height: 140px;
   transform: translateX(-50%);
 }
 
 .preparation-anchor--field {
   z-index: 16;
   left: 50%;
-  top: calc(var(--theme-metric-layout-preparation-scene-field-top, 390) * 1px);
+  top: calc(var(--theme-metric-layout-preparation-scene-field-top, 386) * 1px);
   width: 820px;
-  height: 132px;
+  height: 140px;
   transform: translateX(-50%);
 }
 
 .preparation-anchor--leader {
   z-index: 32;
   left: 50%;
-  bottom: calc(var(--theme-metric-layout-preparation-scene-leader-bottom, -4) * 1px);
-  width: 232px;
-  height: 150px;
+  bottom: calc(var(--theme-metric-layout-preparation-scene-leader-bottom, 34) * 1px);
+  width: 258px;
+  height: 172px;
   transform: translateX(-50%);
 }
 
 .preparation-anchor--reserve {
   z-index: 28;
   left: 42%;
-  bottom: calc(var(--theme-metric-layout-preparation-scene-reserve-bottom, -52) * 1px);
+  bottom: calc(var(--theme-metric-layout-preparation-scene-reserve-bottom, -44) * 1px);
   width: 600px;
-  height: 116px;
+  height: 124px;
   transform: translateX(-50%);
 }
 
 .preparation-anchor--resource {
   z-index: 35;
   right: calc(var(--theme-metric-layout-preparation-scene-resource-right, 34) * 1px);
-  bottom: calc(var(--theme-metric-layout-preparation-scene-resource-bottom, 18) * 1px);
+  bottom: calc(var(--theme-metric-layout-preparation-scene-resource-bottom, 36) * 1px);
 }
 
 .preparation-anchor--end-preparation {
