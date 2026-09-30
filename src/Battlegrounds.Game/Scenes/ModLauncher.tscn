@@ -1,0 +1,79 @@
+[gd_scene format=3 uid="uid://bw47cjvyae68d"]
+
+[ext_resource type="Script" path="res://Scripts/ModLauncher.cs" id="1_launcher"]
+
+[node name="ModLauncher" type="Control" unique_id=90391523]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_launcher")
+ModsRoot = null
+GameplayScenePath = null
+Seed = null
+ParticipantCount = null
+Locale = null
+
+[node name="Background" type="ColorRect" parent="." unique_id=1945980388]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="Margin" type="MarginContainer" parent="." unique_id=709329634]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Root" type="VBoxContainer" parent="Margin" unique_id=795463986]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="Margin/Root" unique_id=921700863]
+layout_mode = 2
+text = "Battlegrounds"
+
+[node name="Subtitle" type="Label" parent="Margin/Root" unique_id=520645576]
+layout_mode = 2
+text = "Mod selection"
+
+[node name="Status" type="Label" parent="Margin/Root" unique_id=1979447039]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Discovering mods..."
+
+[node name="RefreshButton" type="Button" parent="Margin/Root" unique_id=1905813329]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Refresh mods"
+
+[node name="DividerA" type="HSeparator" parent="Margin/Root" unique_id=1298332527]
+layout_mode = 2
+
+[node name="ModScroll" type="ScrollContainer" parent="Margin/Root" unique_id=1391818829]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="ModButtons" type="VBoxContainer" parent="Margin/Root/ModScroll" unique_id=1360797326]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="DividerB" type="HSeparator" parent="Margin/Root" unique_id=1959896358]
+layout_mode = 2
+
+[node name="DiagnosticsTitle" type="Label" parent="Margin/Root" unique_id=1261989591]
+layout_mode = 2
+text = "Validation diagnostics"
+
+[node name="Diagnostics" type="RichTextLabel" parent="Margin/Root" unique_id=2142935336]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 3
