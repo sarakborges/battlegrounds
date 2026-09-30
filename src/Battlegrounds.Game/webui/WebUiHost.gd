@@ -31,6 +31,10 @@ func _ready() -> void:
 		_dev_css_snapshot = _snapshot_css_files()
 	set_process(_dev_css_watch_enabled)
 
+	# The project uses Godot's OpenGL Compatibility renderer. gdCEF v1.16.2
+	# cannot use accelerated OSR with this backend, so opt into software OSR
+	# explicitly before the browser enters the scene tree.
+	_browser.call("set_enable_accelerated_osr", false)
 	_browser.set("url", "res://webui/index.html")
 	_browser.call("set_anchors_and_offsets_preset", Control.PRESET_FULL_RECT)
 	_browser.connect("ipc_message", Callable(self, "_on_ipc_message"))
