@@ -88,29 +88,30 @@
 .action-token__cost {
   position: absolute;
   z-index: 8;
-  top: -4px;
-  min-width: 29px;
-  height: 29px;
+  top: -5px;
+  min-width: 30px;
+  height: 31px;
   display: grid;
   place-items: center;
-  padding: 0 5px;
-  border: 3px solid;
-  border-radius: 50%;
+  padding: 0 5px 2px;
+  border: 0;
+  border-radius: 0;
   color: #fff6dc;
   font-size: 11px;
   font-weight: 900;
+  line-height: 1;
   text-shadow: 0 1px 2px #000;
-  box-shadow: 0 4px 9px rgba(0, 0, 0, .48), inset 0 1px 3px rgba(255, 255, 255, .15);
+  filter: drop-shadow(0 4px 4px rgba(0, 0, 0, .48));
 }
 
 .action-token__tier {
-  left: -5px;
-  border-color: #a45ac5;
-  background: radial-gradient(circle at 38% 28%, #6f4a83, #28172f 70%);
+  left: -6px;
+  clip-path: polygon(50% 0, 87% 13%, 100% 48%, 79% 82%, 50% 100%, 21% 82%, 0 48%, 13% 13%);
+  background: radial-gradient(circle at 42% 28%, #c183df 0 8%, #8050a2 30%, #452452 68%, #211229 100%);
 }
 
 .action-token__cost {
-  right: -5px;
-  border-color: var(--theme-color-resource-accent, #edb847);
-  background: radial-gradient(circle at 38% 28%, #7c5a22, #24170c 70%);
+  right: -6px;
+  clip-path: polygon(50% 0, 86% 16%, 100% 50%, 84% 84%, 50% 100%, 16% 84%, 0 50%, 14% 16%);
+  background: radial-gradient(circle at 40% 28%, #ffe59a 0 9%, var(--theme-color-resource-accent, #edb847) 30%, #91631b 65%, #332008 100%);
 }
