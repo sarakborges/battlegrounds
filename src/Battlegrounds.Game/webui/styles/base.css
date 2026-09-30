@@ -34,14 +34,12 @@ body {
   color: var(--text);
 }
 
-[hidden] { display: none !important; }
-
 button { font: inherit; }
 h1, h2, h3, p { margin: 0; }
 h1 { margin-top: 5px; font-size: 32px; }
 .eyebrow { display: block; color: var(--muted); text-transform: uppercase; letter-spacing: .14em; font-size: 11px; font-weight: 700; }
 
-[data-component="icon"] {
+[data-component="icon"]:not([hidden]) {
   display: block;
   width: var(--theme-component-icon-width, var(--theme-component-width, 0px));
   height: var(--theme-component-icon-height, var(--theme-component-height, 0px));
