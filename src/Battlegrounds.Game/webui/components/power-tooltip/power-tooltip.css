@@ -19,32 +19,10 @@
   content: none;
 }
 
-.power-tooltip__medallion {
-  position: absolute;
-  z-index: 2;
-  left: 50%;
-  top: 47px;
-  width: 96px;
-  height: 96px;
-  transform: translateX(-50%);
-  display: grid;
-  place-items: center;
-  border: 0;
-  border-radius: 50%;
-  background: radial-gradient(circle at 40% 32%, #a5c4de 0 7%, #496887 26%, #253b56 62%, #101c2a 100%);
-  box-shadow: inset 0 0 0 4px #b88a48, inset 0 0 0 7px #4b2e19;
-}
-
-.power-tooltip__glyph {
-  color: #fff4cf;
-  font-size: 34px;
-  text-shadow: 0 2px 3px #000;
-}
-
 .power-tooltip__cost {
   position: absolute;
-  left: -8px;
-  top: -8px;
+  left: 8px;
+  top: 8px;
   width: 30px;
   height: 30px;
   display: grid;
@@ -64,13 +42,13 @@
   z-index: 2;
   left: 27px;
   right: 27px;
-  top: 184px;
-  bottom: 29px;
+  top: 53%;
+  bottom: 8%;
   min-width: 0;
   display: grid;
   align-content: center;
   justify-items: center;
-  gap: 5px;
+  gap: 7px;
   text-align: center;
 }
 
