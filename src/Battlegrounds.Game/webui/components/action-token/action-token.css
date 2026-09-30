@@ -1,8 +1,8 @@
 .action-token {
   position: relative;
-  width: var(--theme-component-width, var(--action-token-width, 96px));
-  height: var(--theme-component-height, var(--action-token-height, 128px));
-  flex: 0 0 var(--theme-component-width, var(--action-token-width, 96px));
+  width: var(--theme-component-width, var(--action-token-width, 118px));
+  height: var(--theme-component-height, var(--action-token-height, 132px));
+  flex: 0 0 var(--theme-component-width, var(--action-token-width, 118px));
   padding: 0;
   overflow: visible;
   border: 0;
@@ -28,8 +28,12 @@
 
 .action-token__body {
   position: absolute;
-  inset: 6px 1px 3px;
-  overflow: hidden;
+  left: 50%;
+  top: 2px;
+  width: 118px;
+  height: 118px;
+  transform: translateX(-50%);
+  overflow: visible;
   border: 0;
   background: transparent;
 }
@@ -38,7 +42,7 @@
   content: "";
   position: absolute;
   z-index: 4;
-  inset: -2px;
+  inset: 0;
   background-image: var(--theme-component-background-image, none);
   background-position: center;
   background-repeat: no-repeat;
@@ -49,11 +53,19 @@
 .action-token__art {
   position: absolute;
   z-index: 1;
-  inset: 7px 8px 8px;
-  width: calc(100% - 16px);
-  height: calc(100% - 15px);
-  object-fit: contain;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
   object-position: center;
+  -webkit-mask-image: var(--theme-component-background-image, none);
+  mask-image: var(--theme-component-background-image, none);
+  -webkit-mask-size: 100% 100%;
+  mask-size: 100% 100%;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-position: center;
+  mask-position: center;
   user-select: none;
   pointer-events: none;
 }
@@ -61,7 +73,7 @@
 .action-token__fallback {
   position: absolute;
   z-index: 2;
-  inset: 8px;
+  inset: 12px;
   display: grid;
   place-items: center;
   color: #f3ddff;
@@ -76,19 +88,21 @@
 .action-token__cost {
   position: absolute;
   z-index: 8;
-  top: -6px;
   filter: drop-shadow(0 4px 4px rgba(0, 0, 0, .48));
 }
 
 .action-token__tier {
-  left: -6px;
+  left: 50%;
+  top: -8px;
+  transform: translateX(-50%);
 }
 
 .action-token__cost.panel {
-  right: -6px;
+  right: -8px;
+  top: 1px;
   width: var(--theme-component-width, 34px);
   min-width: var(--theme-component-width, 34px);
-  height: var(--theme-component-height, 35px);
+  height: var(--theme-component-height, 34px);
   display: grid;
   place-items: center;
   padding: 0;
@@ -98,11 +112,11 @@
   background-image: var(--theme-component-background-image, none);
   background-position: center;
   background-repeat: no-repeat;
-  background-size: 100% 100%;
-  color: var(--theme-component-text-color, #fff6dc);
+  background-size: contain;
+  color: var(--theme-component-text-color, #4A2A00);
   font-size: var(--theme-component-font-size, 13px);
   font-weight: 900;
   line-height: 1;
-  text-shadow: 0 1px 2px #000;
+  text-shadow: 0 1px 1px rgba(255,255,255,.45);
   box-shadow: none;
 }
