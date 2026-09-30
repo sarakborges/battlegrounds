@@ -18,7 +18,7 @@ export async function createPreparationControls({
   element.querySelector('[data-field="tier"]').textContent = participant.tier ?? '';
 
   const upgrade = await createButton({
-    label: `★ ${participant.upgradeCost ?? '—'}`,
+    label: '★',
     action: 'upgrade',
     disabled: blocked || participant.upgradeCost == null,
     themeRole: 'button.tierUpgrade',
@@ -47,6 +47,14 @@ export async function createPreparationControls({
         : (labels.freeze ?? 'Freeze')
     }
   });
+
+  const upgradeCost = element.querySelector('[data-field="upgrade-cost"]');
+  upgradeCost.textContent = participant.upgradeCost ?? '';
+  upgradeCost.hidden = participant.upgradeCost == null;
+
+  const refreshCost = element.querySelector('[data-field="refresh-cost"]');
+  refreshCost.textContent = participant.refreshCost ?? '';
+  refreshCost.hidden = participant.refreshCost == null;
 
   appendChildren(element.querySelector('[data-slot="upgrade"]'), [upgrade]);
   appendChildren(element.querySelector('[data-slot="refresh"]'), [refresh]);
