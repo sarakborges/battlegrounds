@@ -58,14 +58,7 @@
   height: 100%;
   object-fit: cover;
   object-position: center;
-  -webkit-mask-image: var(--theme-component-background-image, none);
-  mask-image: var(--theme-component-background-image, none);
-  -webkit-mask-size: 100% 100%;
-  mask-size: 100% 100%;
-  -webkit-mask-repeat: no-repeat;
-  mask-repeat: no-repeat;
-  -webkit-mask-position: center;
-  mask-position: center;
+  clip-path: ellipse(41.5% 41.1% at 50% 49%);
   user-select: none;
   pointer-events: none;
 }
