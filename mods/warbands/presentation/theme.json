@@ -270,12 +270,14 @@
     },
     "panel.opponentRail": {
       "backgroundColor": "#00000000",
+      "backgroundAsset": "assets/ui/opponent-rail-dock.svg",
       "borderColor": "#00000000",
       "borderWidth": 0,
       "padding": { "horizontal": "xs", "vertical": "xs" }
     },
     "panel.preparationControls": {
       "backgroundColor": "#00000000",
+      "backgroundAsset": "assets/ui/preparation-controls-dock.svg",
       "borderColor": "#00000000",
       "borderWidth": 0,
       "padding": { "horizontal": "xs", "vertical": "xs" }
@@ -301,6 +303,7 @@
     },
     "panel.leaderDock": {
       "backgroundColor": "#00000000",
+      "backgroundAsset": "assets/ui/leader-dock.svg",
       "borderColor": "#00000000",
       "borderWidth": 0,
       "padding": { "horizontal": "sm", "vertical": "xs" }
