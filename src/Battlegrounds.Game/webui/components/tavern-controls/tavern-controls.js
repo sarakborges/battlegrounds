@@ -21,7 +21,7 @@ export async function createTavernControls({
     label: `★ ${human.upgradeCost ?? '—'}`,
     action: 'upgrade',
     disabled: blocked || human.upgradeCost == null,
-    themeRole: 'button.tavernUpgrade',
+    themeRole: 'button.tierUpgrade',
     className: 'tavern-controls__button tavern-controls__button--upgrade',
     attributes: { title: labels.upgrade ?? 'Upgrade' }
   });
@@ -30,7 +30,7 @@ export async function createTavernControls({
     label: '↻',
     action: 'refresh',
     disabled: blocked,
-    themeRole: 'button.tavernRefresh',
+    themeRole: 'button.offerRefresh',
     className: 'tavern-controls__button',
     attributes: { title: labels.refresh ?? 'Refresh' }
   });
@@ -39,7 +39,7 @@ export async function createTavernControls({
     label: '❄',
     action: 'toggle-freeze',
     disabled: blocked,
-    themeRole: 'button.tavernFreeze',
+    themeRole: 'button.offerFreeze',
     className: 'tavern-controls__button',
     attributes: {
       title: human.offerFrozen
