@@ -32,39 +32,39 @@
   overflow: visible;
 }
 
-.preparation-anchor--tavern {
+.preparation-anchor--controls {
   z-index: 20;
   left: 50%;
-  top: calc(var(--theme-metric-layout-preparation-scene-tavern-top, 48) * 1px);
-  width: 390px;
-  height: 122px;
+  top: calc(var(--theme-metric-layout-preparation-scene-controls-top, 38) * 1px);
+  width: 450px;
+  height: 136px;
   transform: translateX(-50%);
 }
 
 .preparation-anchor--offer {
   z-index: 18;
   left: 50%;
-  top: calc(var(--theme-metric-layout-preparation-scene-offer-top, 238) * 1px);
-  width: 650px;
-  height: 124px;
+  top: calc(var(--theme-metric-layout-preparation-scene-offer-top, 226) * 1px);
+  width: 820px;
+  height: 128px;
   transform: translateX(-50%);
 }
 
 .preparation-anchor--field {
   z-index: 16;
   left: 50%;
-  top: calc(var(--theme-metric-layout-preparation-scene-field-top, 398) * 1px);
-  width: 760px;
-  height: 126px;
+  top: calc(var(--theme-metric-layout-preparation-scene-field-top, 390) * 1px);
+  width: 820px;
+  height: 132px;
   transform: translateX(-50%);
 }
 
-.preparation-anchor--hero {
+.preparation-anchor--leader {
   z-index: 32;
   left: 50%;
-  bottom: calc(var(--theme-metric-layout-preparation-scene-hero-bottom, 4) * 1px);
-  width: 204px;
-  height: 126px;
+  bottom: calc(var(--theme-metric-layout-preparation-scene-leader-bottom, -4) * 1px);
+  width: 232px;
+  height: 150px;
   transform: translateX(-50%);
 }
 
@@ -72,8 +72,8 @@
   z-index: 28;
   left: 42%;
   bottom: calc(var(--theme-metric-layout-preparation-scene-reserve-bottom, -52) * 1px);
-  width: 560px;
-  height: 112px;
+  width: 600px;
+  height: 116px;
   transform: translateX(-50%);
 }
 
@@ -83,10 +83,10 @@
   bottom: calc(var(--theme-metric-layout-preparation-scene-resource-bottom, 18) * 1px);
 }
 
-.preparation-anchor--end-recruitment {
+.preparation-anchor--end-preparation {
   z-index: 35;
-  right: calc(var(--theme-metric-layout-preparation-scene-end-turn-right, 22) * 1px);
-  top: calc(var(--theme-metric-layout-preparation-scene-end-turn-top, 318) * 1px);
+  right: calc(var(--theme-metric-layout-preparation-scene-end-preparation-right, 18) * 1px);
+  top: calc(var(--theme-metric-layout-preparation-scene-end-preparation-top, 306) * 1px);
 }
 
 .preparation-opponents {
@@ -95,7 +95,7 @@
   left: 10px;
   top: 10px;
   bottom: 10px;
-  width: calc(var(--theme-metric-layout-preparation-scene-opponent-rail-width, 82) * 1px);
+  width: calc(var(--theme-metric-layout-preparation-scene-opponent-rail-width, 88) * 1px);
   overflow: visible;
 }
 
