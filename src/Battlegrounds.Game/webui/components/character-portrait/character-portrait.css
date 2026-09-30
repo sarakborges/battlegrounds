@@ -48,14 +48,7 @@
   display: block;
   object-fit: cover;
   object-position: center top;
-  -webkit-mask-image: var(--theme-component-background-image, none);
-  mask-image: var(--theme-component-background-image, none);
-  -webkit-mask-size: 100% 100%;
-  mask-size: 100% 100%;
-  -webkit-mask-repeat: no-repeat;
-  mask-repeat: no-repeat;
-  -webkit-mask-position: center;
-  mask-position: center;
+  clip-path: polygon(50% 3%, 61% 6%, 72% 12%, 81% 22%, 87% 35%, 89% 48%, 89% 100%, 11% 100%, 11% 48%, 13% 35%, 19% 22%, 28% 12%, 39% 6%);
   user-select: none;
   pointer-events: none;
 }
