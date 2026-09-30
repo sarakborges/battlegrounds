@@ -106,8 +106,10 @@ function roleStyle(theme, element) {
 }
 
 function setThemeVariable(element, name, value) {
-  if (value == null) element.style.removeProperty(name);
-  else element.style.setProperty(name, String(value));
+  // Component theme variables must never inherit from an ancestor component.
+  // `initial` makes an unspecified custom property invalid at this boundary, so
+  // the consuming var(...) expression uses its own fallback instead.
+  element.style.setProperty(name, value == null ? 'initial' : String(value));
 }
 
 async function applyStyleVariables(element, style, theme, stateName = null) {
