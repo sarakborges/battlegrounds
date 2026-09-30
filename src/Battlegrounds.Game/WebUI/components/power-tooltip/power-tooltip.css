@@ -1,71 +1,97 @@
 .power-tooltip {
-  width: 232px;
-  min-height: 118px;
+  position: relative;
+  width: 238px;
+  min-height: 122px;
   display: grid;
-  grid-template-columns: 66px 1fr;
+  grid-template-columns: 68px 1fr;
   align-items: center;
-  gap: 12px;
-  padding: 13px 15px;
-  border: 3px solid #8b6038;
-  border-radius: 18px;
-  background: linear-gradient(145deg, #412b1d, #1d1410);
-  color: #fff0d5;
-  box-shadow: 0 16px 28px rgba(0, 0, 0, .5);
+  gap: 11px;
+  padding: 14px 16px 14px 14px;
+  border: 0;
+  border-radius: 0;
+  clip-path: polygon(4% 3%, 96% 0, 100% 11%, 98% 89%, 92% 100%, 7% 97%, 0 88%, 2% 12%);
+  background:
+    linear-gradient(145deg, #f1dfb8 0, #d7bd8e 58%, #b79361 100%);
+  color: #2a1a11;
+  box-shadow: inset 0 0 0 3px #76502d;
+  filter: drop-shadow(0 14px 16px rgba(0, 0, 0, .46));
+}
+
+.power-tooltip::before {
+  content: "";
+  position: absolute;
+  inset: 5px;
+  clip-path: inherit;
+  border: 1px solid rgba(88, 52, 27, .55);
+  pointer-events: none;
 }
 
 .power-tooltip__medallion {
   position: relative;
-  width: 62px;
-  height: 62px;
+  z-index: 2;
+  width: 64px;
+  height: 64px;
   display: grid;
   place-items: center;
-  border: 4px solid #d6a956;
+  border: 0;
   border-radius: 50%;
-  background: radial-gradient(circle at 42% 36%, #53647e, #1b2637 72%);
-  box-shadow: inset 0 0 0 4px rgba(255, 255, 255, .06);
+  background:
+    radial-gradient(circle at 40% 32%, #a5c4de 0 7%, #496887 26%, #253b56 62%, #101c2a 100%);
+  box-shadow:
+    inset 0 0 0 4px #b88a48,
+    inset 0 0 0 7px #4b2e19,
+    0 4px 8px rgba(0, 0, 0, .36);
 }
 
 .power-tooltip__glyph {
   color: #fff4cf;
   font-size: 26px;
+  text-shadow: 0 2px 3px #000;
 }
 
 .power-tooltip__cost {
   position: absolute;
-  left: -9px;
-  top: -9px;
-  width: 27px;
-  height: 27px;
+  left: -8px;
+  top: -8px;
+  width: 29px;
+  height: 30px;
   display: grid;
   place-items: center;
-  border: 2px solid #ddb14e;
-  border-radius: 50%;
-  background: #19110d;
+  border: 0;
+  border-radius: 0;
+  clip-path: polygon(50% 0, 86% 16%, 100% 50%, 84% 84%, 50% 100%, 16% 84%, 0 50%, 14% 16%);
+  background: radial-gradient(circle at 40% 28%, #ffe59a 0 9%, var(--theme-color-resource-accent, #ddb14e) 30%, #91631b 65%, #332008 100%);
+  color: #fff7d8;
   font-size: 11px;
   font-weight: 900;
+  text-shadow: 0 1px 2px #000;
+  filter: drop-shadow(0 3px 3px rgba(0, 0, 0, .45));
 }
 
 .power-tooltip__copy {
+  position: relative;
+  z-index: 2;
   min-width: 0;
   display: grid;
   gap: 4px;
 }
 
 .power-tooltip__kind {
-  color: #b9a68f;
+  color: #765a3d;
   text-transform: uppercase;
-  letter-spacing: .12em;
+  letter-spacing: .1em;
   font-size: 8px;
-  font-weight: 800;
+  font-weight: 900;
 }
 
 .power-tooltip__copy strong {
+  color: #28170e;
   font-size: 15px;
   line-height: 1.05;
 }
 
 .power-tooltip__copy p {
-  color: #e4d5be;
+  color: #49321f;
   font-size: 10px;
   line-height: 1.3;
 }
