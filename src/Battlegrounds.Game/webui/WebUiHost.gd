@@ -38,8 +38,11 @@ func _ready() -> void:
 	_browser.set("url", "res://webui/index.html")
 	_browser.call("set_anchors_and_offsets_preset", Control.PRESET_FULL_RECT)
 	_browser.connect("ipc_message", Callable(self, "_on_ipc_message"))
+	_browser.connect("load_started", Callable(self, "_on_load_started"))
 	_browser.connect("load_finished", Callable(self, "_on_load_finished"))
 	_browser.connect("load_error", Callable(self, "_on_load_error"))
+	_browser.connect("console_message", Callable(self, "_on_console_message"))
+	_browser.connect("render_process_terminated", Callable(self, "_on_render_process_terminated"))
 	add_child(_browser)
 
 func _process(delta: float) -> void:
@@ -125,7 +128,11 @@ func send_message(message: String) -> void:
 func _on_ipc_message(message: String) -> void:
 	web_message.emit(message)
 
-func _on_load_finished(_url: String, _status: int) -> void:
+func _on_load_started(url: String) -> void:
+	print("[WebUI] Loading %s" % url)
+
+func _on_load_finished(url: String, status: int) -> void:
+	print("[WebUI] Loaded %s (status %d)" % [url, status])
 	if _ready_emitted:
 		return
 	_ready_emitted = true
@@ -135,6 +142,18 @@ func _on_load_finished(_url: String, _status: int) -> void:
 
 func _on_load_error(url: String, error_code: int, error_text: String) -> void:
 	_fail("Failed to load %s (%d): %s" % [url, error_code, error_text])
+
+func _on_console_message(level: int, message: String, source: String, line: int) -> void:
+	var rendered := "[WebUI/JS] %s (%s:%d)" % [message, source, line]
+	if level >= 3:
+		push_error(rendered)
+	elif level == 2:
+		push_warning(rendered)
+	else:
+		print(rendered)
+
+func _on_render_process_terminated(status: int, error_message: String) -> void:
+	push_error("[WebUI] CEF render process terminated (%d): %s" % [status, error_message])
 
 func _fail(reason: String) -> void:
 	visible = false
