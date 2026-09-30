@@ -1,7 +1,7 @@
 import { loadAsset } from './assets.js';
 
 const defaults = {
-  shopkeeper: { id: 'bob', skin: 'base' },
+  preparationHost: { id: 'default', skin: 'base', name: '', asset: null },
   board: { id: 'default', skin: 'base' },
   leaders: {},
   byIdentifier: {},
@@ -11,6 +11,12 @@ const defaults = {
 function safeSegment(value, fallback) {
   const text = String(value ?? fallback ?? '').trim();
   return /^[a-zA-Z0-9._-]+$/.test(text) ? text : String(fallback ?? 'default');
+}
+
+function safeAssetPath(value) {
+  const path = String(value ?? '').replaceAll('\\', '/').replace(/^\/+/, '');
+  if (!path.startsWith('assets/') || path.split('/').some(segment => segment === '..' || segment === '.')) return null;
+  return path;
 }
 
 function assetCategory(kind) {
@@ -36,11 +42,17 @@ export function entityArtUrl(cosmetics, kind, entityId) {
   return path ? loadAsset(path) : Promise.resolve(null);
 }
 
-export function shopkeeperArtPath(cosmetics) {
-  const cosmetic = cosmetics?.shopkeeper ?? defaults.shopkeeper;
-  const id = safeSegment(cosmetic.id, defaults.shopkeeper.id);
-  const skin = safeSegment(cosmetic.skin, defaults.shopkeeper.skin);
-  return `assets/cosmetics/shopkeepers/${id}/${skin}.png`;
+export function preparationHost(cosmetics) {
+  return { ...defaults.preparationHost, ...(cosmetics?.preparationHost ?? {}) };
+}
+
+export function preparationHostArtPath(cosmetics) {
+  const host = preparationHost(cosmetics);
+  const authoredPath = safeAssetPath(host.asset);
+  if (authoredPath) return authoredPath;
+  const id = safeSegment(host.id, defaults.preparationHost.id);
+  const skin = safeSegment(host.skin, defaults.preparationHost.skin);
+  return `assets/cosmetics/preparation-hosts/${id}/${skin}.png`;
 }
 
 export function boardArtPath(cosmetics) {
@@ -61,8 +73,8 @@ export function leaderArtPath(cosmetics, leaderId) {
   return `assets/cosmetics/leaders/${cosmeticId}/${skin}.png`;
 }
 
-export function shopkeeperArtUrl(cosmetics) {
-  return loadAsset(shopkeeperArtPath(cosmetics));
+export function preparationHostArtUrl(cosmetics) {
+  return loadAsset(preparationHostArtPath(cosmetics));
 }
 
 export function boardArtUrl(cosmetics) {
