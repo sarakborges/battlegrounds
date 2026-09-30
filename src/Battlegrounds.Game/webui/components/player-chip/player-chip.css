@@ -1,7 +1,7 @@
 .player-chip {
   position: relative;
-  width: 84px;
-  height: 88px;
+  width: var(--theme-component-width, 84px);
+  height: var(--theme-component-height, 88px);
   display: grid;
   place-items: center;
   padding: 0;
@@ -14,8 +14,8 @@
 
 .player-chip__portrait-wrap {
   position: relative;
-  width: 76px;
-  height: 76px;
+  width: 90%;
+  height: 86%;
   filter: drop-shadow(0 6px 7px rgba(0, 0, 0, .42));
 }
 
@@ -23,7 +23,7 @@
   content: "";
   position: absolute;
   z-index: 4;
-  inset: -4px;
+  inset: 0;
   background-image: var(--theme-component-background-image, none);
   background-position: center;
   background-repeat: no-repeat;
@@ -34,55 +34,49 @@
 .player-chip__portrait {
   position: absolute;
   z-index: 1;
-  inset: 5px;
-  width: 66px;
-  height: 66px;
+  inset: 8%;
+  width: 84%;
+  height: 84%;
   display: block;
-  object-fit: cover;
-  object-position: center top;
-  clip-path: polygon(50% 0, 89% 13%, 98% 51%, 78% 88%, 50% 100%, 22% 88%, 2% 51%, 11% 13%);
+  object-fit: contain;
+  object-position: center;
   border: 0;
-  background: var(--theme-color-surface-raised, var(--surface-3));
-  box-shadow: 0 5px 12px rgba(0, 0, 0, .4);
-}
-
-.player-chip:not([data-theme-background-asset="true"]) .player-chip__portrait {
-  outline: 3px solid var(--theme-component-border-color, var(--theme-color-border-strong, #765239));
+  background: transparent;
 }
 
 .player-chip__rank,
 .player-chip__health {
   position: absolute;
   z-index: 7;
+  width: var(--theme-component-width, 30px);
+  height: var(--theme-component-height, 30px);
   display: grid;
   place-items: center;
   padding: 0;
   border: 0;
   border-radius: 0;
-  color: #fff7e7;
-  font-size: 11px;
+  background-color: transparent;
+  background-image: var(--theme-component-background-image, none);
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: 100% 100%;
+  color: var(--theme-component-text-color, #fff7e7);
+  font-size: var(--theme-component-font-size, 11px);
   font-weight: 900;
   line-height: 1;
   text-shadow: 0 1px 2px #000;
   filter: drop-shadow(0 3px 3px rgba(0, 0, 0, .48));
+  box-shadow: none;
 }
 
 .player-chip__rank {
   left: -7px;
   top: -6px;
-  width: 28px;
-  height: 30px;
-  clip-path: polygon(50% 0, 90% 18%, 100% 58%, 50% 100%, 0 58%, 10% 18%);
-  background: linear-gradient(145deg, #d7b778, #674525 68%, #29180f);
 }
 
 .player-chip__health {
   right: -8px;
   bottom: -8px;
-  width: 30px;
-  height: 32px;
-  clip-path: polygon(50% 0, 88% 14%, 100% 46%, 82% 78%, 50% 100%, 18% 78%, 0 46%, 12% 14%);
-  background: radial-gradient(circle at 38% 27%, #f18a71 0 8%, #bd3b34 26%, #6a191a 65%, #2b0e10 100%);
 }
 
 .player-chip[data-variant="human"] .player-chip__portrait-wrap {
