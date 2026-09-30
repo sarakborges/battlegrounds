@@ -1,0 +1,123 @@
+.leader-hud.panel {
+  position: relative;
+  width: 232px;
+  height: 150px;
+  min-height: 0;
+  padding: 0;
+  overflow: visible;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.leader-hud__portrait.panel {
+  position: absolute;
+  left: 12px;
+  top: 0;
+  width: 118px;
+  height: 138px;
+  padding: 0;
+  overflow: visible;
+  border: 0;
+  border-radius: 0;
+  background-color: transparent;
+  background-image: none;
+  box-shadow: none;
+  filter: drop-shadow(0 10px 11px rgba(0, 0, 0, .42));
+}
+
+.leader-hud__portrait::after {
+  content: "";
+  position: absolute;
+  z-index: 4;
+  inset: -5px;
+  background-image: var(--theme-component-background-image, none);
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: 100% 100%;
+  pointer-events: none;
+}
+
+.leader-hud__art {
+  position: absolute;
+  z-index: 1;
+  left: 12px;
+  top: 8px;
+  width: 94px;
+  height: 116px;
+  object-fit: cover;
+  object-position: center top;
+  border-radius: 45% 45% 34% 34%;
+  user-select: none;
+  pointer-events: none;
+}
+
+.leader-hud__art[hidden] { display: none; }
+
+.leader-hud__fallback {
+  position: absolute;
+  z-index: 1;
+  left: 12px;
+  top: 8px;
+  width: 94px;
+  height: 116px;
+  display: grid;
+  place-items: center;
+  border-radius: 45% 45% 34% 34%;
+  background: linear-gradient(#463129, #1b1210);
+  color: #c7a375;
+  font-size: 32px;
+}
+
+.leader-hud__fallback[hidden] { display: none; }
+
+.leader-hud__stat.panel {
+  position: absolute;
+  z-index: 8;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  color: #fff8e8;
+  font-size: 16px;
+  font-weight: 900;
+  line-height: 1;
+  text-shadow: 0 2px 2px rgba(0, 0, 0, .9);
+  box-shadow: none;
+  filter: drop-shadow(0 5px 5px rgba(0, 0, 0, .48));
+}
+
+.leader-hud__health {
+  width: 42px;
+  height: 46px;
+  left: 98px;
+  bottom: -1px;
+  clip-path: polygon(50% 0, 88% 14%, 100% 46%, 82% 78%, 50% 100%, 18% 78%, 0 46%, 12% 14%);
+  background: radial-gradient(circle at 38% 27%, #f38c70 0 9%, #c84035 24%, #761c1d 62%, #321012 100%);
+}
+
+.leader-hud__armor {
+  width: 36px;
+  height: 40px;
+  left: 101px;
+  bottom: 42px;
+  clip-path: polygon(50% 0, 92% 14%, 86% 66%, 50% 100%, 14% 66%, 8% 14%);
+  background: linear-gradient(145deg, #d9edf5 0 8%, #718d9c 23%, #314955 58%, #17262d 100%);
+  font-size: 13px;
+}
+
+.leader-hud__power {
+  position: absolute;
+  z-index: 6;
+  right: 0;
+  top: 48px;
+}
+
+.leader-hud__portrait.is-drop-hover {
+  filter: brightness(1.08) drop-shadow(0 0 11px var(--theme-color-success-active, #a6c979));
+}
+
+.leader-hud__portrait.is-drop-invalid {
+  filter: saturate(.65) drop-shadow(0 0 9px var(--theme-color-danger-active, #e36a59));
+}
