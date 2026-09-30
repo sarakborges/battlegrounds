@@ -78,15 +78,15 @@
 .unit-card-preview__tier {
   position: absolute;
   z-index: 7;
-  left: 10px;
-  top: 10px;
-  min-width: 35px;
-  height: 37px;
+  left: 9px;
+  top: 8px;
+  min-width: 37px;
+  height: 39px;
   display: grid;
   place-items: center;
   padding: 0 7px 3px;
-  clip-path: polygon(10% 0, 90% 0, 100% 70%, 50% 100%, 0 70%);
-  background: linear-gradient(#9945c0, #4c1e6c);
+  clip-path: polygon(50% 0, 87% 13%, 100% 48%, 79% 82%, 50% 100%, 21% 82%, 0 48%, 13% 13%);
+  background: radial-gradient(circle at 42% 28%, #bb79e6 0 8%, #7f3aae 30%, #4b206d 68%, #241331 100%);
   color: #fff4cf;
   font-size: 13px;
   font-weight: 900;
@@ -141,30 +141,31 @@
 .unit-card-preview__stat {
   position: absolute;
   z-index: 8;
-  bottom: 7px;
-  width: 41px;
-  height: 41px;
+  bottom: 5px;
+  width: 43px;
+  height: 44px;
   display: grid;
   place-items: center;
-  border: 3px solid;
-  border-radius: 50%;
+  border: 0;
+  border-radius: 0;
   color: #fff5d8;
   font-size: 18px;
   font-weight: 900;
+  line-height: 1;
   text-shadow: 0 1px 2px #000;
-  box-shadow: 0 5px 10px rgba(0, 0, 0, .48), inset 0 1px 3px rgba(255, 255, 255, .15);
+  filter: drop-shadow(0 5px 5px rgba(0, 0, 0, .5));
 }
 
 .unit-card-preview__stat--attack {
-  left: 8px;
-  border-color: var(--theme-color-attack-accent, #d4a23f);
-  background: radial-gradient(circle at 38% 28%, #806329, #25190c 70%);
+  left: 6px;
+  clip-path: polygon(50% 0, 67% 18%, 94% 15%, 84% 42%, 100% 62%, 72% 70%, 61% 100%, 39% 100%, 28% 70%, 0 62%, 16% 42%, 6% 15%, 33% 18%);
+  background: radial-gradient(circle at 40% 28%, #ffe09a 0 8%, var(--theme-color-attack-accent, #d4a23f) 28%, #8a5d18 62%, #2a1a08 100%);
 }
 
 .unit-card-preview__stat--health {
-  right: 8px;
-  border-color: var(--theme-color-health-accent, #d15348);
-  background: radial-gradient(circle at 38% 28%, #8d302d, #2b1110 70%);
+  right: 6px;
+  clip-path: polygon(50% 0, 86% 12%, 100% 43%, 82% 76%, 50% 100%, 18% 76%, 0 43%, 14% 12%);
+  background: radial-gradient(circle at 38% 27%, #f39177 0 8%, var(--theme-color-health-accent, #d15348) 28%, #731b1b 64%, #2d0e10 100%);
 }
 
 .unit-card-preview__status {
