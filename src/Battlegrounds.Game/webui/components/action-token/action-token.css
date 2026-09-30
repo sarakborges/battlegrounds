@@ -1,8 +1,8 @@
 .action-token {
   position: relative;
-  width: var(--action-token-width, 96px);
-  height: var(--action-token-height, 128px);
-  flex: 0 0 var(--action-token-width, 96px);
+  width: var(--theme-component-width, var(--action-token-width, 96px));
+  height: var(--theme-component-height, var(--action-token-height, 128px));
+  flex: 0 0 var(--theme-component-width, var(--action-token-width, 96px));
   padding: 0;
   overflow: visible;
   border: 0;
@@ -30,16 +30,8 @@
   position: absolute;
   inset: 6px 1px 3px;
   overflow: hidden;
-  border: 3px solid var(--theme-component-border-color, var(--theme-color-focus, #d2a34b));
-  border-radius: 23px 23px 16px 16px;
-  background: linear-gradient(160deg, #553b6f, #21172b 72%);
-  box-shadow: 0 8px 14px rgba(0, 0, 0, .42);
-}
-
-.action-token[data-theme-background-asset="true"] .action-token__body {
-  border-color: transparent;
+  border: 0;
   background: transparent;
-  box-shadow: none;
 }
 
 .action-token__body::after {
@@ -60,8 +52,7 @@
   inset: 7px 8px 8px;
   width: calc(100% - 16px);
   height: calc(100% - 15px);
-  border-radius: 17px 17px 11px 11px;
-  object-fit: cover;
+  object-fit: contain;
   object-position: center;
   user-select: none;
   pointer-events: none;
@@ -73,45 +64,38 @@
   inset: 8px;
   display: grid;
   place-items: center;
-  border-radius: 14px;
   color: #f3ddff;
   font-size: 31px;
   font-weight: 900;
   opacity: .4;
 }
 
-.action-token__fallback[hidden] {
-  display: none;
-}
+.action-token__fallback[hidden] { display: none; }
 
 .action-token__tier,
 .action-token__cost {
   position: absolute;
   z-index: 8;
   top: -6px;
+  filter: drop-shadow(0 4px 4px rgba(0, 0, 0, .48));
+}
+
+.action-token__tier {
+  left: -6px;
+}
+
+.action-token__cost {
+  right: -6px;
   min-width: 34px;
   height: 35px;
   display: grid;
   place-items: center;
   padding: 0 5px 2px;
   border: 0;
-  border-radius: 0;
+  background: transparent;
   color: #fff6dc;
   font-size: 13px;
   font-weight: 900;
   line-height: 1;
   text-shadow: 0 1px 2px #000;
-  filter: drop-shadow(0 4px 4px rgba(0, 0, 0, .48));
-}
-
-.action-token__tier {
-  left: -6px;
-  clip-path: polygon(50% 0, 87% 13%, 100% 48%, 79% 82%, 50% 100%, 21% 82%, 0 48%, 13% 13%);
-  background: radial-gradient(circle at 42% 28%, #c183df 0 8%, #8050a2 30%, #452452 68%, #211229 100%);
-}
-
-.action-token__cost {
-  right: -6px;
-  clip-path: polygon(50% 0, 86% 16%, 100% 50%, 84% 84%, 50% 100%, 16% 84%, 0 50%, 14% 16%);
-  background: radial-gradient(circle at 40% 28%, #ffe59a 0 9%, var(--theme-color-resource-accent, #edb847) 30%, #91631b 65%, #332008 100%);
 }
