@@ -46,7 +46,7 @@ public partial class ModSelectionController : Control
 
     private void InitializeWebUi()
     {
-        var scene = GD.Load<PackedScene>("res://WebUI/WebUiHost.tscn")
+        var scene = GD.Load<PackedScene>("res://webui/WebUiHost.tscn")
             ?? throw new InvalidOperationException("Web UI host scene was not found.");
 
         _webUiHost = scene.Instantiate<Control>();
