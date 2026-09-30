@@ -36,8 +36,8 @@
   z-index: 20;
   left: 50%;
   top: calc(var(--theme-metric-layout-preparation-scene-controls-top, 38) * 1px);
-  width: 450px;
-  height: 136px;
+  width: 480px;
+  height: 146px;
   transform: translateX(-50%);
 }
 
@@ -45,8 +45,8 @@
   z-index: 18;
   left: 50%;
   top: calc(var(--theme-metric-layout-preparation-scene-offer-top, 224) * 1px);
-  width: 820px;
-  height: 140px;
+  width: 900px;
+  height: 158px;
   transform: translateX(-50%);
 }
 
@@ -54,8 +54,8 @@
   z-index: 16;
   left: 50%;
   top: calc(var(--theme-metric-layout-preparation-scene-field-top, 386) * 1px);
-  width: 820px;
-  height: 140px;
+  width: 900px;
+  height: 158px;
   transform: translateX(-50%);
 }
 
@@ -63,8 +63,8 @@
   z-index: 32;
   left: 50%;
   bottom: calc(var(--theme-metric-layout-preparation-scene-leader-bottom, 34) * 1px);
-  width: 258px;
-  height: 172px;
+  width: 282px;
+  height: 188px;
   transform: translateX(-50%);
 }
 
@@ -72,8 +72,8 @@
   z-index: 28;
   left: 42%;
   bottom: calc(var(--theme-metric-layout-preparation-scene-reserve-bottom, -44) * 1px);
-  width: 600px;
-  height: 124px;
+  width: 640px;
+  height: 136px;
   transform: translateX(-50%);
 }
 
@@ -92,7 +92,7 @@
 .preparation-opponents {
   position: absolute;
   z-index: 50;
-  left: 10px;
+  left: 14px;
   top: 10px;
   bottom: 10px;
   width: calc(var(--theme-metric-layout-preparation-scene-opponent-rail-width, 88) * 1px);
