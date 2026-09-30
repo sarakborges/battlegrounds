@@ -112,15 +112,21 @@ function roleStyle(theme, element) {
 }
 
 function setThemeVariable(element, name, value) {
-  // Component theme variables must never inherit from an ancestor component.
-  // `initial` makes an unspecified custom property invalid at this boundary, so
-  // the consuming var(...) expression uses its own fallback instead.
+  // Base component variables are isolated from ancestor components.
   element.style.setProperty(name, value == null ? 'initial' : String(value));
+}
+
+function setThemeStateVariable(element, name, value) {
+  // State variables are optional: when a state does not override a property,
+  // the component CSS must fall back to the base variable.
+  if (value == null) element.style.removeProperty(name);
+  else element.style.setProperty(name, String(value));
 }
 
 async function applyStyleVariables(element, style, theme, stateName = null) {
   const suffix = stateName ? `-${stateName}` : '';
   const variable = property => `--theme-component${suffix}-${property}`;
+  const setVariable = stateName ? setThemeStateVariable : setThemeVariable;
   const textColor = resolveColor(theme, style?.textColor);
   const backgroundColor = resolveColor(theme, style?.backgroundColor);
   const borderColor = resolveColor(theme, style?.borderColor);
@@ -134,32 +140,32 @@ async function applyStyleVariables(element, style, theme, stateName = null) {
     style?.iconAsset ? loadAsset(style.iconAsset) : null
   ]);
 
-  setThemeVariable(element, variable('text-color'), textColor);
-  setThemeVariable(element, variable('background-color'), backgroundColor);
-  setThemeVariable(element, variable('background-image'), backgroundAsset ? `url("${backgroundAsset}")` : null);
-  setThemeVariable(element, variable('icon-image'), iconAsset ? `url("${iconAsset}")` : null);
-  setThemeVariable(element, variable('width'), pixelValue(style?.width));
-  setThemeVariable(element, variable('height'), pixelValue(style?.height));
-  setThemeVariable(element, variable('icon-width'), pixelValue(style?.iconWidth));
-  setThemeVariable(element, variable('icon-height'), pixelValue(style?.iconHeight));
-  setThemeVariable(element, variable('border-color'), borderColor);
-  setThemeVariable(element, variable('border-width'), style?.borderWidth == null ? null : `${style.borderWidth}px`);
-  setThemeVariable(element, variable('font-family'), fontFamily);
-  setThemeVariable(element, variable('font-size'), fontSize);
-  setThemeVariable(element, variable('radius'), radius);
-  setThemeVariable(element, variable('padding-x'), padX);
-  setThemeVariable(element, variable('padding-y'), padY);
-  setThemeVariable(element, variable('opacity'), style?.opacity);
+  setVariable(element, variable('text-color'), textColor);
+  setVariable(element, variable('background-color'), backgroundColor);
+  setVariable(element, variable('background-image'), backgroundAsset ? `url("${backgroundAsset}")` : null);
+  setVariable(element, variable('icon-image'), iconAsset ? `url("${iconAsset}")` : null);
+  setVariable(element, variable('width'), pixelValue(style?.width));
+  setVariable(element, variable('height'), pixelValue(style?.height));
+  setVariable(element, variable('icon-width'), pixelValue(style?.iconWidth));
+  setVariable(element, variable('icon-height'), pixelValue(style?.iconHeight));
+  setVariable(element, variable('border-color'), borderColor);
+  setVariable(element, variable('border-width'), style?.borderWidth == null ? null : `${style.borderWidth}px`);
+  setVariable(element, variable('font-family'), fontFamily);
+  setVariable(element, variable('font-size'), fontSize);
+  setVariable(element, variable('radius'), radius);
+  setVariable(element, variable('padding-x'), padX);
+  setVariable(element, variable('padding-y'), padY);
+  setVariable(element, variable('opacity'), style?.opacity);
 
   const slice = style?.slice;
-  setThemeVariable(element, variable('slice-left'), slice?.left ?? null);
-  setThemeVariable(element, variable('slice-top'), slice?.top ?? null);
-  setThemeVariable(element, variable('slice-right'), slice?.right ?? null);
-  setThemeVariable(element, variable('slice-bottom'), slice?.bottom ?? null);
-  setThemeVariable(element, variable('slice-left-width'), slice == null ? null : `${slice.left}px`);
-  setThemeVariable(element, variable('slice-top-width'), slice == null ? null : `${slice.top}px`);
-  setThemeVariable(element, variable('slice-right-width'), slice == null ? null : `${slice.right}px`);
-  setThemeVariable(element, variable('slice-bottom-width'), slice == null ? null : `${slice.bottom}px`);
+  setVariable(element, variable('slice-left'), slice?.left ?? null);
+  setVariable(element, variable('slice-top'), slice?.top ?? null);
+  setVariable(element, variable('slice-right'), slice?.right ?? null);
+  setVariable(element, variable('slice-bottom'), slice?.bottom ?? null);
+  setVariable(element, variable('slice-left-width'), slice == null ? null : `${slice.left}px`);
+  setVariable(element, variable('slice-top-width'), slice == null ? null : `${slice.top}px`);
+  setVariable(element, variable('slice-right-width'), slice == null ? null : `${slice.right}px`);
+  setVariable(element, variable('slice-bottom-width'), slice == null ? null : `${slice.bottom}px`);
 
   return {
     hasBackgroundAsset: !!backgroundAsset,
