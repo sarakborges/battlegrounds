@@ -1,0 +1,78 @@
+.combat-player-hero {
+  position: relative;
+  width: 132px;
+  height: 118px;
+  --character-portrait-width: 92px;
+  --character-portrait-height: 104px;
+  --character-nameplate-width: 88px;
+}
+
+.combat-player-hero__portrait {
+  position: absolute;
+  left: 50%;
+  top: 0;
+  width: 92px;
+  height: 104px;
+  transform: translateX(-50%);
+}
+
+.combat-player-hero .character-portrait__nameplate {
+  display: none;
+}
+
+.combat-player-hero__label {
+  position: absolute;
+  z-index: 12;
+  left: 50%;
+  max-width: 104px;
+  transform: translateX(-50%);
+  padding: 2px 7px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--theme-color-surface-deep, #120c09) 78%, transparent);
+  color: var(--theme-color-text-muted, var(--muted));
+  font-size: 9px;
+  font-weight: 800;
+  line-height: 1.15;
+  text-align: center;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  overflow: hidden;
+  text-shadow: 0 1px 2px #000;
+}
+
+.combat-player-hero[data-placement="top"] .combat-player-hero__label {
+  bottom: -1px;
+}
+
+.combat-player-hero[data-placement="bottom"] .combat-player-hero__label {
+  top: -8px;
+}
+
+.combat-player-hero__stat {
+  position: absolute;
+  z-index: 14;
+  bottom: 0;
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  border: 3px solid;
+  border-radius: 50%;
+  color: #fff5dc;
+  font-size: 14px;
+  font-weight: 900;
+  text-shadow: 0 1px 2px #000;
+  box-shadow: 0 5px 10px rgba(0, 0, 0, .45), inset 0 1px 3px rgba(255, 255, 255, .15);
+}
+
+.combat-player-hero__stat--armor {
+  left: 12px;
+  border-color: var(--theme-color-armor-accent, #a7c2cf);
+  background: radial-gradient(circle at 38% 28%, #4a6573, #17252d 70%);
+}
+
+.combat-player-hero__stat--health {
+  right: 12px;
+  border-color: var(--theme-color-health-accent, #d15348);
+  background: radial-gradient(circle at 38% 28%, #8d302d, #2b1110 70%);
+}
