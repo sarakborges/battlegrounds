@@ -16,6 +16,7 @@ power-tooltip
 player-chip
 artMask.unit
 artMask.hero
+artMask.card
 ```
 
 A token is the persistent offer/field/reserve representation. A preview or inspector is the transient hover/focus representation. These are deliberately separate roles because units, actions, leaders and powers do not share one visual anatomy.
