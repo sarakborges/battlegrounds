@@ -1,6 +1,6 @@
 [gd_scene load_steps=2 format=3]
 
-[ext_resource type="Script" path="res://WebUI/WebUiHost.gd" id="1_web_ui_host"]
+[ext_resource type="Script" path="res://webui/WebUiHost.gd" id="1_web_ui_host"]
 
 [node name="WebUiHost" type="Control"]
 layout_mode = 3
