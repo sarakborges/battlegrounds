@@ -68,6 +68,11 @@ public sealed partial class ModThemeCatalog
             own.Radius ?? inherited.Radius,
             own.Padding ?? inherited.Padding,
             own.BackgroundAsset ?? inherited.BackgroundAsset,
+            own.IconAsset ?? inherited.IconAsset,
+            own.Width ?? inherited.Width,
+            own.Height ?? inherited.Height,
+            own.IconWidth ?? inherited.IconWidth,
+            own.IconHeight ?? inherited.IconHeight,
             own.Slice ?? inherited.Slice,
             own.Opacity ?? inherited.Opacity,
             states);
@@ -131,5 +136,7 @@ public sealed partial class ModThemeLoader
     }
 
     private static bool ContainsAsset(ModThemeStyle style) =>
-        !string.IsNullOrWhiteSpace(style.BackgroundAsset) || style.States.Values.Any(ContainsAsset);
+        !string.IsNullOrWhiteSpace(style.BackgroundAsset) ||
+        !string.IsNullOrWhiteSpace(style.IconAsset) ||
+        style.States.Values.Any(ContainsAsset);
 }
