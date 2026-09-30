@@ -102,3 +102,9 @@
 .preparation-screen > [data-slot="overlay"] {
   display: contents;
 }
+
+.preparation-board .unit-token__art,
+.preparation-board .action-token__art {
+  object-fit: contain;
+  object-position: center;
+}
