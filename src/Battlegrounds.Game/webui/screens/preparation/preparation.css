@@ -81,8 +81,8 @@
   z-index: 32;
   left: 50%;
   bottom: calc(var(--theme-metric-layout-preparation-scene-leader-bottom, 34) * 1px);
-  width: 246px;
-  height: 166px;
+  width: 278px;
+  height: 184px;
   transform: translateX(-50%);
 }
 
