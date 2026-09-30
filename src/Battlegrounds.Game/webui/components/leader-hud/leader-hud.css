@@ -1,7 +1,7 @@
 .leader-hud.panel {
   position: relative;
-  width: var(--theme-component-width, 246px);
-  height: var(--theme-component-height, 166px);
+  width: var(--theme-component-width, 278px);
+  height: var(--theme-component-height, 184px);
   min-height: 0;
   padding: 0;
   overflow: visible;
@@ -14,10 +14,10 @@
 
 .leader-hud__portrait.panel {
   position: absolute;
-  left: 18px;
+  left: 20px;
   top: 0;
-  width: 108px;
-  height: 144px;
+  width: 125px;
+  height: 160px;
   padding: 0;
   overflow: visible;
   border: 0;
@@ -100,20 +100,20 @@
 }
 
 .leader-hud__health {
-  left: 98px;
+  left: 113px;
   bottom: 0;
 }
 
 .leader-hud__armor {
-  left: 101px;
-  bottom: 42px;
+  left: 116px;
+  bottom: 46px;
 }
 
 .leader-hud__power {
   position: absolute;
   z-index: 6;
-  right: 18px;
-  bottom: 12px;
+  right: 20px;
+  bottom: 14px;
 }
 
 .leader-hud__portrait.is-drop-hover {
