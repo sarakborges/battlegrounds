@@ -19,6 +19,9 @@ public static class ModThemeRoleNames
     public const string PowerTooltip = "power-tooltip";
     public const string PlayerChip = "player-chip";
     public const string EndPreparationButton = "button.endPreparation";
+    public const string BoardFrame = "panel.boardFrame";
+    public const string UnitArtMask = "artMask.unit";
+    public const string HeroArtMask = "artMask.hero";
     public const string IconPrefix = "icon.";
 
     private static readonly HashSet<string> ComponentRoles = new(StringComparer.Ordinal)
@@ -44,6 +47,7 @@ public static class ModThemeRoleNames
         ModThemePanelRoles.PreparationControls,
         ModThemePanelRoles.Offer,
         ModThemePanelRoles.Board,
+        BoardFrame,
         ModThemePanelRoles.Reserve,
         ModThemePanelRoles.LeaderDock,
         ModThemePanelRoles.LeaderPortrait,
@@ -61,6 +65,8 @@ public static class ModThemeRoleNames
         ModThemePanelRoles.Interaction,
         ModThemePanelRoles.PreparationHost,
         ModThemePanelRoles.CombatOverlay,
+        UnitArtMask,
+        HeroArtMask,
         ModThemeLabelRoles.LeaderName,
         ModThemeLabelRoles.AttackValue,
         ModThemeLabelRoles.HealthValue,
