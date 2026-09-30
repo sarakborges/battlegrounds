@@ -9,13 +9,16 @@ useStyle(new URL('./hero-power-button.css', import.meta.url));
 export async function createHeroPowerButton({ heroPower = null, label = 'Use hero power', blocked = false } = {}) {
   const element = await cloneTemplate(templateUrl);
   if (heroPower?.id) {
-    applyAttributes(element, inspectionAttributes({
-      kind: 'power',
-      id: heroPower.id,
-      name: heroPower.name ?? heroPower.id,
-      description: heroPower.description,
-      cost: heroPower.cost
-    }));
+    applyAttributes(element, {
+      ...inspectionAttributes({
+        kind: 'power',
+        id: heroPower.id,
+        name: heroPower.name ?? heroPower.id,
+        description: heroPower.description,
+        cost: heroPower.cost
+      }),
+      'data-inspect-placement': 'top'
+    });
   }
 
   const control = await createButton({
