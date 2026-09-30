@@ -16,47 +16,49 @@ export async function createPreparationControls({
   const element = await cloneTemplate(templateUrl);
   const tierLabel = labels.tier ?? 'Tier';
   const currentTier = Math.max(1, Math.trunc(Number(participant.tier) || 1));
-  const maximumTier = Math.max(currentTier, Math.trunc(Number(participant.maximumTier) || currentTier));
 
-  element.querySelector('[data-field="tier-label"]').textContent = tierLabel;
   const tierField = element.querySelector('[data-field="tier"]');
-  tierField.textContent = '';
+  tierField.dataset.component = 'icon';
+  tierField.dataset.themeRole = `icon.tier.${currentTier}`;
+  tierField.setAttribute('role', 'img');
   tierField.setAttribute('aria-label', `${tierLabel}: ${currentTier}`);
-  for (let index = 0; index < maximumTier; index += 1) {
-    const pip = document.createElement('span');
-    pip.className = 'preparation-controls__tier-pip';
-    if (index < currentTier) pip.dataset.active = 'true';
-    tierField.append(pip);
-  }
 
   const upgrade = await createButton({
-    label: '↑',
+    label: '',
     action: 'upgrade',
     disabled: blocked || participant.upgradeCost == null,
     themeRole: 'button.tierUpgrade',
     className: 'preparation-controls__button preparation-controls__button--upgrade',
-    attributes: { title: labels.upgrade ?? 'Upgrade' }
+    attributes: {
+      title: labels.upgrade ?? 'Upgrade',
+      'aria-label': labels.upgrade ?? 'Upgrade'
+    }
   });
 
   const refresh = await createButton({
-    label: '↻',
+    label: '',
     action: 'refresh',
     disabled: blocked,
     themeRole: 'button.offerRefresh',
     className: 'preparation-controls__button preparation-controls__button--refresh',
-    attributes: { title: labels.refresh ?? 'Refresh' }
+    attributes: {
+      title: labels.refresh ?? 'Refresh',
+      'aria-label': labels.refresh ?? 'Refresh'
+    }
   });
 
+  const freezeLabel = participant.offerFrozen
+    ? (labels.unfreeze ?? 'Unfreeze')
+    : (labels.freeze ?? 'Freeze');
   const freeze = await createButton({
-    label: '❄︎',
+    label: '',
     action: 'toggle-freeze',
     disabled: blocked,
     themeRole: 'button.offerFreeze',
     className: 'preparation-controls__button preparation-controls__button--freeze',
     attributes: {
-      title: participant.offerFrozen
-        ? (labels.unfreeze ?? 'Unfreeze')
-        : (labels.freeze ?? 'Freeze')
+      title: freezeLabel,
+      'aria-label': freezeLabel
     }
   });
 
