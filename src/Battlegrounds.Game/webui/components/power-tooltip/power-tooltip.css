@@ -1,51 +1,43 @@
 .power-tooltip {
   position: relative;
-  width: 238px;
-  min-height: 122px;
-  display: grid;
-  grid-template-columns: 68px 1fr;
-  align-items: center;
-  gap: 11px;
-  padding: 14px 16px 14px 14px;
+  width: 220px;
+  height: 328px;
+  display: block;
+  padding: 0;
   border: 0;
   border-radius: 0;
-  clip-path: polygon(4% 3%, 96% 0, 100% 11%, 98% 89%, 92% 100%, 7% 97%, 0 88%, 2% 12%);
-  background:
-    linear-gradient(145deg, #f1dfb8 0, #d7bd8e 58%, #b79361 100%);
+  background-color: transparent;
+  background-image: var(--theme-component-background-image, none);
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: 100% 100%;
   color: #2a1a11;
-  box-shadow: inset 0 0 0 3px #76502d;
   filter: drop-shadow(0 14px 16px rgba(0, 0, 0, .46));
 }
 
 .power-tooltip::before {
-  content: "";
-  position: absolute;
-  inset: 5px;
-  clip-path: inherit;
-  border: 1px solid rgba(88, 52, 27, .55);
-  pointer-events: none;
+  content: none;
 }
 
 .power-tooltip__medallion {
-  position: relative;
+  position: absolute;
   z-index: 2;
-  width: 64px;
-  height: 64px;
+  left: 50%;
+  top: 47px;
+  width: 96px;
+  height: 96px;
+  transform: translateX(-50%);
   display: grid;
   place-items: center;
   border: 0;
   border-radius: 50%;
-  background:
-    radial-gradient(circle at 40% 32%, #a5c4de 0 7%, #496887 26%, #253b56 62%, #101c2a 100%);
-  box-shadow:
-    inset 0 0 0 4px #b88a48,
-    inset 0 0 0 7px #4b2e19,
-    0 4px 8px rgba(0, 0, 0, .36);
+  background: radial-gradient(circle at 40% 32%, #a5c4de 0 7%, #496887 26%, #253b56 62%, #101c2a 100%);
+  box-shadow: inset 0 0 0 4px #b88a48, inset 0 0 0 7px #4b2e19;
 }
 
 .power-tooltip__glyph {
   color: #fff4cf;
-  font-size: 26px;
+  font-size: 34px;
   text-shadow: 0 2px 3px #000;
 }
 
@@ -53,13 +45,12 @@
   position: absolute;
   left: -8px;
   top: -8px;
-  width: 29px;
+  width: 30px;
   height: 30px;
   display: grid;
   place-items: center;
   border: 0;
-  border-radius: 0;
-  clip-path: polygon(50% 0, 86% 16%, 100% 50%, 84% 84%, 50% 100%, 16% 84%, 0 50%, 14% 16%);
+  border-radius: 50%;
   background: radial-gradient(circle at 40% 28%, #ffe59a 0 9%, var(--theme-color-resource-accent, #ddb14e) 30%, #91631b 65%, #332008 100%);
   color: #fff7d8;
   font-size: 11px;
@@ -69,11 +60,18 @@
 }
 
 .power-tooltip__copy {
-  position: relative;
+  position: absolute;
   z-index: 2;
+  left: 27px;
+  right: 27px;
+  top: 184px;
+  bottom: 29px;
   min-width: 0;
   display: grid;
-  gap: 4px;
+  align-content: center;
+  justify-items: center;
+  gap: 5px;
+  text-align: center;
 }
 
 .power-tooltip__kind {
@@ -91,6 +89,7 @@
 }
 
 .power-tooltip__copy p {
+  margin: 0;
   color: #49321f;
   font-size: 10px;
   line-height: 1.3;
