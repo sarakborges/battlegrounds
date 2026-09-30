@@ -5,7 +5,7 @@ signal web_message(message: String)
 signal web_unavailable(reason: String)
 
 const CEF_EXTENSION_PATH := "res://addons/godot_cef/godot_cef.gdextension"
-const WEB_UI_PATH := "res://WebUI"
+const WEB_UI_PATH := "res://webui"
 const DEV_CSS_POLL_SECONDS := 0.35
 
 var _browser: Object
@@ -32,7 +32,7 @@ func _ready() -> void:
 	set_process(_dev_css_watch_enabled)
 
 	_browser.set("enable_accelerated_osr", true)
-	_browser.set("url", "res://WebUI/index.html")
+	_browser.set("url", "res://webui/index.html")
 	_browser.call("set_anchors_and_offsets_preset", Control.PRESET_FULL_RECT)
 	_browser.connect("ipc_message", Callable(self, "_on_ipc_message"))
 	_browser.connect("load_finished", Callable(self, "_on_load_finished"))
