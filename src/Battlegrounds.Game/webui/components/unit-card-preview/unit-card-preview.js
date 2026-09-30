@@ -13,18 +13,45 @@ function setOptionalText(element, value) {
   element.textContent = value;
 }
 
+function setTierIcon(element, tier) {
+  const value = Math.trunc(Number(tier));
+  if (!Number.isFinite(value) || value <= 0) {
+    element.hidden = true;
+    return;
+  }
+  element.hidden = false;
+  element.textContent = '';
+  element.dataset.component = 'icon';
+  element.dataset.themeRole = `icon.tier.${value}`;
+  element.setAttribute('aria-hidden', 'true');
+}
+
 export async function createUnitCardPreview({
   name = '', description = '', art = null, tier = null, attack = null, health = null, frozen = false
 } = {}) {
   const element = await cloneTemplate(templateUrl);
   element.querySelector('[data-field="name"]').textContent = name;
   const fallback = element.querySelector('[data-field="fallback"]');
-  fallback.textContent = name.trim().slice(0, 1).toUpperCase() || '•';
-  setOptionalText(element.querySelector('[data-field="tier"]'), tier);
+  fallback.textContent = name.trim().slice(0, 1).toUpperCase() || '';
+
+  setTierIcon(element.querySelector('[data-field="tier"]'), tier);
   setOptionalText(element.querySelector('[data-field="description"]'), description);
-  setOptionalText(element.querySelector('[data-field="attack"]'), attack);
-  setOptionalText(element.querySelector('[data-field="health"]'), health);
-  setOptionalText(element.querySelector('[data-field="status"]'), frozen ? 'Frozen' : null);
+
+  const attackField = element.querySelector('[data-field="attack"]');
+  attackField.dataset.component = 'panel';
+  attackField.dataset.themeRole = 'panel.attackBadge';
+  setOptionalText(attackField, attack);
+
+  const healthField = element.querySelector('[data-field="health"]');
+  healthField.dataset.component = 'panel';
+  healthField.dataset.themeRole = 'panel.healthBadge';
+  setOptionalText(healthField, health);
+
+  const status = element.querySelector('[data-field="status"]');
+  status.dataset.component = 'icon';
+  status.dataset.themeRole = 'icon.frozenOverlay';
+  status.textContent = '';
+  status.hidden = !frozen;
 
   const image = element.querySelector('[data-field="art"]');
   if (art) {
