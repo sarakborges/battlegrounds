@@ -25,6 +25,7 @@ export async function createHeroCockpit({
     portraitAttributes['data-inspect-kind'] = 'leader';
     portraitAttributes['data-inspect-id'] = heroId;
     portraitAttributes['data-inspect-name'] = heroName;
+    portraitAttributes['data-inspect-placement'] = 'top';
     if (heroDescription) portraitAttributes['data-inspect-description'] = heroDescription;
   }
 
