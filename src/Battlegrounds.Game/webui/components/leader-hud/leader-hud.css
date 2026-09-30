@@ -1,6 +1,6 @@
 .leader-hud.panel {
   position: relative;
-  width: var(--theme-component-width, 278px);
+  width: var(--theme-component-width, 272px);
   height: var(--theme-component-height, 184px);
   min-height: 0;
   padding: 0;
@@ -16,7 +16,7 @@
   position: absolute;
   left: 20px;
   top: 0;
-  width: 125px;
+  width: 120px;
   height: 160px;
   padding: 0;
   overflow: visible;
@@ -100,12 +100,12 @@
 }
 
 .leader-hud__health {
-  left: 113px;
+  left: 108px;
   bottom: 0;
 }
 
 .leader-hud__armor {
-  left: 116px;
+  left: 111px;
   bottom: 46px;
 }
 
