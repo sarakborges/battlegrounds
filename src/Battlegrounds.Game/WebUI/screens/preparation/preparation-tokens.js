@@ -53,7 +53,8 @@ export async function createTavernOfferToken(entry, options = {}) {
 export async function createPlayerReserveToken(entry, { cosmetics = null, blocked = false, canDeployUnit = false } = {}) {
   const attributes = {
     'data-slot': entry.slot,
-    'data-unit-instance-id': entry.unitInstanceId ?? ''
+    'data-unit-instance-id': entry.unitInstanceId ?? '',
+    'data-inspect-placement': 'top'
   };
 
   if (entry.kind === 'unit') {
