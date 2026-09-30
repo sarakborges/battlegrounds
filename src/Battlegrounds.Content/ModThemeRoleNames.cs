@@ -11,10 +11,8 @@ public static class ModThemeInteractionRoles
 
 public static class ModThemeRoleNames
 {
-    public const string PlayableToken = "playable-token";
     public const string UnitToken = "unit-token";
     public const string ActionToken = "action-token";
-    public const string CardPreview = "card-preview";
     public const string UnitCardPreview = "unit-card-preview";
     public const string ActionCardPreview = "action-card-preview";
     public const string LeaderInspector = "leader-inspector";
@@ -26,18 +24,13 @@ public static class ModThemeRoleNames
     {
         ModThemeComponentRoles.Button,
         ModThemeComponentRoles.ButtonPrimary,
-        ModThemeComponentRoles.ButtonTavernAction,
         ModThemeComponentRoles.ButtonTavernUpgrade,
         ModThemeComponentRoles.ButtonTavernRefresh,
         ModThemeComponentRoles.ButtonTavernFreeze,
         ModThemeComponentRoles.ButtonHeroPower,
         EndRecruitmentButton,
-        ModThemeComponentRoles.Card,
-        ModThemeComponentRoles.CardBoard,
-        PlayableToken,
         UnitToken,
         ActionToken,
-        CardPreview,
         UnitCardPreview,
         ActionCardPreview,
         LeaderInspector,
@@ -51,7 +44,6 @@ public static class ModThemeRoleNames
         ModThemePanelRoles.Board,
         ModThemePanelRoles.Reserve,
         ModThemePanelRoles.HeroDock,
-        ModThemePanelRoles.TurnRail,
         ModThemePanelRoles.HeroPortrait,
         ModThemePanelRoles.OpponentEntry,
         ModThemePanelRoles.OpponentEntrySelf,
@@ -62,7 +54,6 @@ public static class ModThemeRoleNames
         ModThemePanelRoles.HealthBadge,
         ModThemePanelRoles.ArmorBadge,
         ModThemePanelRoles.ResourceBadge,
-        ModThemePanelRoles.CardInspect,
         ModThemePanelRoles.Interaction,
         ModThemePanelRoles.Shopkeeper,
         ModThemePanelRoles.CombatOverlay,
