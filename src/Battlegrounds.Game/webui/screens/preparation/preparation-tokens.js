@@ -17,7 +17,7 @@ async function createOfferUnitToken(entry, { cosmetics, blocked, canAcquire }) {
     disabled: blocked,
     attributes: {
       'data-slot': entry.slot,
-      'data-drag-kind': 'tavern-offer-token',
+      'data-drag-kind': 'offer-token',
       'data-drag-slot': entry.slot,
       'data-drag-enabled': boolText(!blocked),
       'data-drag-valid': boolText(canAcquire)
@@ -36,7 +36,7 @@ async function createOfferActionToken(entry, { cosmetics, blocked, canAcquire })
     disabled: blocked,
     attributes: {
       'data-slot': entry.slot,
-      'data-drag-kind': 'tavern-offer-token',
+      'data-drag-kind': 'offer-token',
       'data-drag-slot': entry.slot,
       'data-drag-enabled': boolText(!blocked),
       'data-drag-valid': boolText(canAcquire)
