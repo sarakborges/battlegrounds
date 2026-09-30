@@ -32,6 +32,7 @@ export async function createPlayerChip({
     element.dataset.inspectKind = 'leader';
     element.dataset.inspectId = leaderId;
     element.dataset.inspectName = leader;
+    element.dataset.inspectPlacement = 'right';
     if (leaderDescription) element.dataset.inspectDescription = leaderDescription;
   }
   return element;
