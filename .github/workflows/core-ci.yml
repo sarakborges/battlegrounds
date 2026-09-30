@@ -20,8 +20,8 @@ jobs:
         run: |
           set -euo pipefail
           for root in \
-            src/Battlegrounds.Game/WebUI/design-system \
-            src/Battlegrounds.Game/WebUI/components; do
+            src/Battlegrounds.Game/webui/design-system \
+            src/Battlegrounds.Game/webui/components; do
             for dir in "$root"/*; do
               name="$(basename "$dir")"
               test -f "$dir/$name.html"
@@ -30,29 +30,29 @@ jobs:
             done
           done
           if grep -R --include='*.js' -nE 'innerHTML|insertAdjacentHTML|`[[:space:]]*<' \
-            src/Battlegrounds.Game/WebUI/design-system \
-            src/Battlegrounds.Game/WebUI/components \
-            src/Battlegrounds.Game/WebUI/screens; then
+            src/Battlegrounds.Game/webui/design-system \
+            src/Battlegrounds.Game/webui/components \
+            src/Battlegrounds.Game/webui/screens; then
             echo 'HTML markup must live in .html templates, not JavaScript.' >&2
             exit 1
           fi
-          if grep -R --include='*.css' -nE '\.(card|action-button|horizontal-stack|player-chip|character-portrait)([^a-zA-Z0-9_-]|$)' src/Battlegrounds.Game/WebUI/screens/preparation; then
+          if grep -R --include='*.css' -nE '\.(card|action-button|horizontal-stack|player-chip|character-portrait)([^a-zA-Z0-9_-]|$)' src/Battlegrounds.Game/webui/screens/preparation; then
             echo 'Preparation screen CSS must not style reusable component internals.' >&2
             exit 1
           fi
           if grep -R --include='*.css' -nE '@media|[0-9.]+(vw|vh)' \
-            src/Battlegrounds.Game/WebUI/design-system \
-            src/Battlegrounds.Game/WebUI/components \
-            src/Battlegrounds.Game/WebUI/screens; then
+            src/Battlegrounds.Game/webui/design-system \
+            src/Battlegrounds.Game/webui/components \
+            src/Battlegrounds.Game/webui/screens; then
             echo 'Reusable UI and screens must use the shared logical viewport scale instead of viewport media queries or vw/vh geometry.' >&2
             exit 1
           fi
-          if grep -R --include='*.css' -n '!important' src/Battlegrounds.Game/WebUI; then
+          if grep -R --include='*.css' -n '!important' src/Battlegrounds.Game/webui; then
             echo 'CSS must rely on ownership, load order, and appropriate selector specificity instead of !important.' >&2
             exit 1
           fi
       - name: Check web UI JavaScript syntax
-        run: find src/Battlegrounds.Game/WebUI -type f -name '*.js' -print0 | xargs -0 -n1 node --check
+        run: find src/Battlegrounds.Game/webui -type f -name '*.js' -print0 | xargs -0 -n1 node --check
       - name: Test core
         run: dotnet test tests/Battlegrounds.Core.Tests/Battlegrounds.Core.Tests.csproj --configuration Release
       - name: Test mod content boundary
