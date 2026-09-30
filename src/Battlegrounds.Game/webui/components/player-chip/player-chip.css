@@ -1,7 +1,7 @@
 .player-chip {
   position: relative;
-  width: 66px;
-  height: 68px;
+  width: 74px;
+  height: 78px;
   display: grid;
   place-items: center;
   padding: 0;
@@ -14,15 +14,16 @@
 
 .player-chip__portrait-wrap {
   position: relative;
-  width: 58px;
-  height: 58px;
+  width: 66px;
+  height: 66px;
+  filter: drop-shadow(0 5px 6px rgba(0, 0, 0, .38));
 }
 
 .player-chip__portrait-wrap::after {
   content: "";
   position: absolute;
   z-index: 4;
-  inset: -3px;
+  inset: -4px;
   background-image: var(--theme-component-background-image, none);
   background-position: center;
   background-repeat: no-repeat;
@@ -34,8 +35,8 @@
   position: absolute;
   z-index: 1;
   inset: 4px;
-  width: 50px;
-  height: 50px;
+  width: 58px;
+  height: 58px;
   display: block;
   object-fit: cover;
   object-position: center top;
@@ -59,7 +60,7 @@
   border: 0;
   border-radius: 0;
   color: #fff7e7;
-  font-size: 9px;
+  font-size: 10px;
   font-weight: 900;
   line-height: 1;
   text-shadow: 0 1px 2px #000;
@@ -69,25 +70,23 @@
 .player-chip__rank {
   left: -6px;
   top: -5px;
-  width: 22px;
-  height: 24px;
+  width: 25px;
+  height: 27px;
   clip-path: polygon(50% 0, 90% 18%, 100% 58%, 50% 100%, 0 58%, 10% 18%);
   background: linear-gradient(145deg, #d7b778, #674525 68%, #29180f);
-  box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--theme-color-focus, #e4af62) 60%, #4b2c19);
 }
 
 .player-chip__health {
   right: -7px;
   bottom: -7px;
-  width: 24px;
-  height: 26px;
+  width: 27px;
+  height: 29px;
   clip-path: polygon(50% 0, 88% 14%, 100% 46%, 82% 78%, 50% 100%, 18% 78%, 0 46%, 12% 14%);
   background: radial-gradient(circle at 38% 27%, #f18a71 0 8%, #bd3b34 26%, #6a191a 65%, #2b0e10 100%);
-  box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--theme-color-health-accent, #d95e50) 76%, #491416);
 }
 
 .player-chip[data-variant="human"] .player-chip__portrait-wrap {
-  filter: drop-shadow(0 0 6px color-mix(in srgb, var(--theme-color-focus, var(--accent)) 68%, transparent));
+  filter: drop-shadow(0 0 8px color-mix(in srgb, var(--theme-color-focus, var(--accent)) 72%, transparent));
 }
 
 .player-chip[data-eliminated="true"] {
