@@ -7,8 +7,8 @@ import { createHeroCockpit } from '../../components/hero-cockpit/hero-cockpit.js
 import { createOpponentRail } from '../../components/opponent-rail/opponent-rail.js';
 import { createPlayerField } from '../../components/player-field/player-field.js';
 import { createPlayerReserve } from '../../components/player-reserve/player-reserve.js';
+import { createPreparationControls } from '../../components/preparation-controls/preparation-controls.js';
 import { createResourceCounter } from '../../components/resource-counter/resource-counter.js';
-import { createTavernControls } from '../../components/tavern-controls/tavern-controls.js';
 import { createTavernOffer } from '../../components/tavern-offer/tavern-offer.js';
 import { bindPreparationDrag } from '../../interactions/preparation-drag.js';
 import {
@@ -20,10 +20,10 @@ import {
 } from '../../theme/cosmetics.js';
 import {
   createChoiceToken,
+  createOfferToken,
   createPlayerFieldUnitToken,
   createPlayerReserveToken,
-  createTargetUnitToken,
-  createTavernOfferToken
+  createTargetUnitToken
 } from './preparation-tokens.js';
 
 const templateUrl = new URL('./preparation.html', import.meta.url);
@@ -106,36 +106,36 @@ export async function createPreparationScreen(state) {
   ]);
 
   const host = preparationHost(cosmetics);
-  appendChildren(element.querySelector('[data-slot="tavern-controls"]'), [
-    await createTavernControls({
+  appendChildren(element.querySelector('[data-slot="controls"]'), [
+    await createPreparationControls({
       labels,
-      human,
+      participant: human,
       blocked,
-      shopkeeperName: host.name || host.id || '',
-      shopkeeperArt: await preparationHostArtUrl(cosmetics)
+      hostName: host.name || host.id || '',
+      hostArt: await preparationHostArtUrl(cosmetics)
     })
   ]);
 
-  const tavernOfferTokens = [];
+  const offerTokens = [];
   for (const entry of state.offer ?? []) {
     const canAcquire = !blocked &&
       reserveCount < (limits.reserveCapacity ?? Number.POSITIVE_INFINITY) &&
       (human.resource ?? 0) >= (entry.cost ?? Number.POSITIVE_INFINITY);
-    tavernOfferTokens.push(await createTavernOfferToken(entry, { cosmetics, blocked, canAcquire }));
+    offerTokens.push(await createOfferToken(entry, { cosmetics, blocked, canAcquire }));
   }
-  appendChildren(element.querySelector('[data-slot="tavern-offer"]'), [
-    await createTavernOffer({ tokens: tavernOfferTokens })
+  appendChildren(element.querySelector('[data-slot="offer"]'), [
+    await createTavernOffer({ tokens: offerTokens })
   ]);
 
-  const playerFieldTokens = [];
+  const fieldTokens = [];
   for (const unit of state.field ?? []) {
-    playerFieldTokens.push(await createPlayerFieldUnitToken(unit, { cosmetics, blocked }));
+    fieldTokens.push(await createPlayerFieldUnitToken(unit, { cosmetics, blocked }));
   }
-  appendChildren(element.querySelector('[data-slot="player-field"]'), [
-    await createPlayerField({ tokens: playerFieldTokens })
+  appendChildren(element.querySelector('[data-slot="field"]'), [
+    await createPlayerField({ tokens: fieldTokens })
   ]);
 
-  appendChildren(element.querySelector('[data-slot="hero-cockpit"]'), [
+  appendChildren(element.querySelector('[data-slot="leader"]'), [
     await createHeroCockpit({
       labels,
       human,
@@ -148,26 +148,26 @@ export async function createPreparationScreen(state) {
     })
   ]);
 
-  appendChildren(element.querySelector('[data-slot="resource-counter"]'), [
+  appendChildren(element.querySelector('[data-slot="resource"]'), [
     await createResourceCounter({
       value: human.resource ?? 0,
       label: labels.resource ?? 'Resource'
     })
   ]);
 
-  const playerReserveTokens = [];
+  const reserveTokens = [];
   for (const entry of state.reserve ?? []) {
-    playerReserveTokens.push(await createPlayerReserveToken(entry, {
+    reserveTokens.push(await createPlayerReserveToken(entry, {
       cosmetics,
       blocked,
       canDeployUnit: canDeployReserveUnit
     }));
   }
-  appendChildren(element.querySelector('[data-slot="player-reserve"]'), [
-    await createPlayerReserve({ tokens: playerReserveTokens })
+  appendChildren(element.querySelector('[data-slot="reserve"]'), [
+    await createPlayerReserve({ tokens: reserveTokens })
   ]);
 
-  appendChildren(element.querySelector('[data-slot="end-recruitment"]'), [
+  appendChildren(element.querySelector('[data-slot="end-preparation"]'), [
     await createEndRecruitmentControl({
       label: labels.endPreparation ?? 'Ready',
       blocked,
