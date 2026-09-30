@@ -1,6 +1,8 @@
 const assetCache = new Map();
 const pendingAssets = new Map();
 const chunkedAssets = new Map();
+const requestQueue = [];
+let activeRequest = null;
 let sendAssetRequest = null;
 
 function normalizeAssetPath(path) {
@@ -43,6 +45,7 @@ export function receiveAsset(payload = {}) {
     const value = `data:${state.mimeType};base64,${state.chunks.join('')}`;
     assetCache.set(path, value);
     pending.resolve(value);
+    finishAssetRequest(path);
     return;
   }
 
@@ -50,6 +53,20 @@ export function receiveAsset(payload = {}) {
   const value = typeof payload.dataUrl === 'string' && payload.dataUrl.length > 0 ? payload.dataUrl : null;
   assetCache.set(path, value);
   pending.resolve(value);
+  finishAssetRequest(path);
+}
+
+function finishAssetRequest(path) {
+  if (activeRequest !== path) return;
+  activeRequest = null;
+  pumpAssetQueue();
+}
+
+function pumpAssetQueue() {
+  if (activeRequest || requestQueue.length === 0 || typeof sendAssetRequest !== 'function') return;
+  const path = requestQueue.shift();
+  activeRequest = path;
+  sendAssetRequest('request-asset', { path });
 }
 
 export function loadAsset(path) {
@@ -62,6 +79,7 @@ export function loadAsset(path) {
   let resolve;
   const promise = new Promise(done => { resolve = done; });
   pendingAssets.set(normalized, { promise, resolve });
-  sendAssetRequest('request-asset', { path: normalized });
+  requestQueue.push(normalized);
+  pumpAssetQueue();
   return promise;
 }
