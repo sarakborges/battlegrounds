@@ -1,0 +1,93 @@
+.preparation-controls.panel {
+  width: 450px;
+  height: 136px;
+  display: grid;
+  grid-template-columns: 152px 126px 152px;
+  align-items: start;
+  justify-content: center;
+  gap: 10px;
+  padding: 0;
+  overflow: visible;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.preparation-controls__side {
+  height: 132px;
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding-top: 24px;
+}
+
+.preparation-controls__side--left { justify-content: flex-end; }
+.preparation-controls__side--right { justify-content: flex-start; }
+
+.preparation-controls__host-slot {
+  display: grid;
+  place-items: start center;
+}
+
+.action-button.preparation-controls__button {
+  width: 64px;
+  height: 84px;
+  min-width: 64px;
+  min-height: 84px;
+  padding: 0 5px 7px;
+  border: 0;
+  border-radius: 0;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: 100% 100%;
+  color: var(--action-button-text-color);
+  font-size: 18px;
+  font-weight: 900;
+  line-height: 1;
+  text-shadow: 0 2px 3px rgba(0, 0, 0, .82);
+  box-shadow: none;
+  transform-origin: 50% 82%;
+}
+
+.action-button.preparation-controls__button:hover:not(:disabled),
+.action-button.preparation-controls__button:focus-visible {
+  transform: translateY(-4px) scale(1.045);
+  filter: brightness(1.1) drop-shadow(0 6px 6px rgba(0, 0, 0, .28));
+}
+
+.action-button.preparation-controls__button--upgrade {
+  width: 68px;
+  min-width: 68px;
+  padding-bottom: 9px;
+  font-size: 13px;
+}
+
+.panel.preparation-controls__tier-badge {
+  position: relative;
+  width: 48px;
+  height: 64px;
+  display: grid;
+  place-content: center;
+  align-self: center;
+  margin-top: 8px;
+  padding: 0 0 4px;
+  border: 0;
+  border-radius: 0;
+  clip-path: polygon(50% 0, 88% 12%, 100% 40%, 86% 74%, 50% 100%, 14% 74%, 0 40%, 12% 12%);
+  color: #fff3cf;
+  text-shadow: 0 2px 2px rgba(0, 0, 0, .9);
+  box-shadow: none;
+  filter: drop-shadow(0 6px 6px rgba(0, 0, 0, .42));
+}
+
+.panel.preparation-controls__tier-badge:not([data-theme-background-asset="true"]) {
+  background: radial-gradient(circle at 42% 28%, #ba78e3 0 8%, #7036a2 30%, #3e205d 67%, #1e122e 100%);
+}
+
+.preparation-controls__tier-badge .eyebrow { display: none; }
+
+.preparation-controls__tier-badge strong {
+  font-size: 22px;
+  line-height: 1;
+}
