@@ -24,60 +24,60 @@ public static class ModThemeMetricKeys
         public const string LeaderPanelGap = "layout.leaderPanel.gap";
         public const string LeaderPanelCardsMinimumHeight = "layout.leaderPanel.cardsMinimumHeight";
         public const string PreparationGap = "layout.preparation.gap";
-        public const string TavernControlsMinimumHeight = "layout.tavern.controls.minimumHeight";
-        public const string TavernControlsGap = "layout.tavern.controls.gap";
-        public const string TavernTierBadgeWidth = "layout.tavern.tierBadge.width";
-        public const string TavernTierBadgeHeight = "layout.tavern.tierBadge.height";
-        public const string TavernUpgradeButtonWidth = "layout.tavern.upgradeButton.width";
-        public const string TavernControlHeight = "layout.tavern.controlHeight";
-        public const string TavernControlSpacerWidth = "layout.tavern.controlSpacerWidth";
-        public const string TavernRefreshButtonWidth = "layout.tavern.refreshButton.width";
-        public const string TavernFreezeButtonWidth = "layout.tavern.freezeButton.width";
-        public const string TavernShelfMinimumHeight = "layout.tavern.shelf.minimumHeight";
-        public const string TavernShelfGap = "layout.tavern.shelf.gap";
-        public const string TavernShopkeeperWidth = "layout.tavern.shopkeeperWidth";
-        public const string TavernShopkeeperContentGap = "layout.tavern.shopkeeperContentGap";
-        public const string TavernBalanceSpacerWidth = "layout.tavern.balanceSpacerWidth";
+        public const string PreparationControlsMinimumHeight = "layout.preparation.controls.minimumHeight";
+        public const string PreparationControlsGap = "layout.preparation.controls.gap";
+        public const string TierBadgeWidth = "layout.preparation.tierBadge.width";
+        public const string TierBadgeHeight = "layout.preparation.tierBadge.height";
+        public const string TierUpgradeButtonWidth = "layout.preparation.tierUpgradeButton.width";
+        public const string PreparationControlHeight = "layout.preparation.controlHeight";
+        public const string PreparationControlSpacerWidth = "layout.preparation.controlSpacerWidth";
+        public const string OfferRefreshButtonWidth = "layout.preparation.offerRefreshButton.width";
+        public const string OfferFreezeButtonWidth = "layout.preparation.offerFreezeButton.width";
+        public const string OfferSurfaceMinimumHeight = "layout.preparation.offerSurface.minimumHeight";
+        public const string OfferSurfaceGap = "layout.preparation.offerSurface.gap";
+        public const string PreparationHostWidth = "layout.preparation.hostWidth";
+        public const string PreparationHostContentGap = "layout.preparation.hostContentGap";
+        public const string PreparationBalanceSpacerWidth = "layout.preparation.balanceSpacerWidth";
         public const string BoardMinimumHeight = "layout.board.minimumHeight";
         public const string ReserveMinimumHeight = "layout.reserve.minimumHeight";
-        public const string HeroDockGap = "layout.heroDock.gap";
-        public const string HeroDockHealthBadgeWidth = "layout.heroDock.healthBadge.width";
-        public const string HeroDockHealthBadgeHeight = "layout.heroDock.healthBadge.height";
-        public const string HeroDockArmorBadgeWidth = "layout.heroDock.armorBadge.width";
-        public const string HeroDockArmorBadgeHeight = "layout.heroDock.armorBadge.height";
-        public const string HeroDockHeroCoreWidth = "layout.heroDock.heroCoreWidth";
-        public const string HeroDockHeroCoreGap = "layout.heroDock.heroCoreGap";
-        public const string HeroDockPowerButtonWidth = "layout.heroDock.powerButton.width";
-        public const string HeroDockPowerButtonHeight = "layout.heroDock.powerButton.height";
-        public const string HeroDockCombineButtonWidth = "layout.heroDock.combineButton.width";
-        public const string HeroDockCombineButtonHeight = "layout.heroDock.combineButton.height";
-        public const string HeroDockResourceBadgeWidth = "layout.heroDock.resourceBadge.width";
-        public const string HeroDockResourceBadgeHeight = "layout.heroDock.resourceBadge.height";
-        public const string TurnRailWidth = "layout.turnRail.width";
-        public const string TurnRailGap = "layout.turnRail.gap";
-        public const string TurnRailEndButtonHeight = "layout.turnRail.endButtonHeight";
+        public const string LeaderDockGap = "layout.leaderDock.gap";
+        public const string LeaderDockHealthBadgeWidth = "layout.leaderDock.healthBadge.width";
+        public const string LeaderDockHealthBadgeHeight = "layout.leaderDock.healthBadge.height";
+        public const string LeaderDockArmorBadgeWidth = "layout.leaderDock.armorBadge.width";
+        public const string LeaderDockArmorBadgeHeight = "layout.leaderDock.armorBadge.height";
+        public const string LeaderDockLeaderCoreWidth = "layout.leaderDock.leaderCoreWidth";
+        public const string LeaderDockLeaderCoreGap = "layout.leaderDock.leaderCoreGap";
+        public const string LeaderDockPowerButtonWidth = "layout.leaderDock.powerButton.width";
+        public const string LeaderDockPowerButtonHeight = "layout.leaderDock.powerButton.height";
+        public const string LeaderDockCombineButtonWidth = "layout.leaderDock.combineButton.width";
+        public const string LeaderDockCombineButtonHeight = "layout.leaderDock.combineButton.height";
+        public const string LeaderDockResourceBadgeWidth = "layout.leaderDock.resourceBadge.width";
+        public const string LeaderDockResourceBadgeHeight = "layout.leaderDock.resourceBadge.height";
+        public const string EndPreparationControlWidth = "layout.endPreparation.width";
+        public const string EndPreparationControlGap = "layout.endPreparation.gap";
+        public const string EndPreparationButtonHeight = "layout.endPreparation.buttonHeight";
 
         public static class PreparationScene
         {
             public const string OpponentRailWidth = "layout.preparationScene.opponentRailWidth";
-            public const string TavernTop = "layout.preparationScene.tavernTop";
+            public const string ControlsTop = "layout.preparationScene.controlsTop";
             public const string OfferTop = "layout.preparationScene.offerTop";
             public const string FieldTop = "layout.preparationScene.fieldTop";
-            public const string HeroBottom = "layout.preparationScene.heroBottom";
+            public const string LeaderBottom = "layout.preparationScene.leaderBottom";
             public const string ReserveBottom = "layout.preparationScene.reserveBottom";
             public const string ResourceRight = "layout.preparationScene.resourceRight";
             public const string ResourceBottom = "layout.preparationScene.resourceBottom";
-            public const string EndTurnRight = "layout.preparationScene.endTurnRight";
-            public const string EndTurnTop = "layout.preparationScene.endTurnTop";
+            public const string EndPreparationRight = "layout.preparationScene.endPreparationRight";
+            public const string EndPreparationTop = "layout.preparationScene.endPreparationTop";
         }
 
         public static class CombatScene
         {
             public const string OpponentRailWidth = "layout.combatScene.opponentRailWidth";
-            public const string OpponentHeroTop = "layout.combatScene.opponentHeroTop";
+            public const string OpponentLeaderTop = "layout.combatScene.opponentLeaderTop";
             public const string OpponentFieldTop = "layout.combatScene.opponentFieldTop";
             public const string PlayerFieldTop = "layout.combatScene.playerFieldTop";
-            public const string PlayerHeroBottom = "layout.combatScene.playerHeroBottom";
+            public const string PlayerLeaderBottom = "layout.combatScene.playerLeaderBottom";
             public const string EventTop = "layout.combatScene.eventTop";
             public const string RoundRight = "layout.combatScene.roundRight";
             public const string RoundTop = "layout.combatScene.roundTop";
@@ -109,8 +109,8 @@ public static class ModThemeMetricKeys
 
     public static class Hud
     {
-        public const string HeroDockMinimumHeight = "hud.heroDock.minimumHeight";
-        public const string HeroPortraitSize = "hud.heroPortrait.size";
+        public const string LeaderDockMinimumHeight = "hud.leaderDock.minimumHeight";
+        public const string LeaderPortraitSize = "hud.leaderPortrait.size";
         public const string OpponentEntryHeight = "hud.opponent.entryHeight";
         public const string OpponentMarginHorizontal = "hud.opponent.marginHorizontal";
         public const string OpponentMarginVertical = "hud.opponent.marginVertical";
