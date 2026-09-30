@@ -1,7 +1,7 @@
 .player-chip {
   position: relative;
-  width: var(--theme-component-width, 72px);
-  height: var(--theme-component-height, 94px);
+  width: var(--theme-component-width, 76px);
+  height: var(--theme-component-height, 96px);
   display: grid;
   place-items: center;
   padding: 0;
@@ -14,8 +14,8 @@
 
 .player-chip__portrait-wrap {
   position: relative;
-  width: 70px;
-  height: 93px;
+  width: 73px;
+  height: 94px;
   filter: drop-shadow(0 6px 7px rgba(0, 0, 0, .42));
 }
 
