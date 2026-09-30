@@ -67,20 +67,20 @@
   },
   "metrics": {
     "layout.preparationScene.opponentRailWidth": 82,
-    "layout.preparationScene.tavernTop": 48,
+    "layout.preparationScene.controlsTop": 48,
     "layout.preparationScene.offerTop": 238,
     "layout.preparationScene.fieldTop": 398,
-    "layout.preparationScene.heroBottom": 4,
+    "layout.preparationScene.leaderBottom": 4,
     "layout.preparationScene.reserveBottom": -52,
     "layout.preparationScene.resourceRight": 34,
     "layout.preparationScene.resourceBottom": 18,
-    "layout.preparationScene.endTurnRight": 22,
-    "layout.preparationScene.endTurnTop": 318,
+    "layout.preparationScene.endPreparationRight": 22,
+    "layout.preparationScene.endPreparationTop": 318,
     "layout.combatScene.opponentRailWidth": 82,
-    "layout.combatScene.opponentHeroTop": 18,
+    "layout.combatScene.opponentLeaderTop": 18,
     "layout.combatScene.opponentFieldTop": 172,
     "layout.combatScene.playerFieldTop": 395,
-    "layout.combatScene.playerHeroBottom": 6,
+    "layout.combatScene.playerLeaderBottom": 6,
     "layout.combatScene.eventTop": 337,
     "layout.combatScene.roundRight": 28,
     "layout.combatScene.roundTop": 24,
@@ -125,7 +125,7 @@
         "disabled": { "opacity": 0.5 }
       }
     },
-    "button.endRecruitment": {
+    "button.endPreparation": {
       "textColor": "primaryText",
       "backgroundColor": "#00000000",
       "backgroundAsset": "assets/ui/end-recruitment.svg",
@@ -139,7 +139,7 @@
         "focus": { "textColor": "#FFFFFF" }
       }
     },
-    "button.tavernUpgrade": {
+    "button.tierUpgrade": {
       "fontSize": "button",
       "textColor": "primaryText",
       "backgroundColor": "#00000000",
@@ -154,7 +154,7 @@
         "focus": { "textColor": "#FFFFFF" }
       }
     },
-    "button.tavernRefresh": {
+    "button.offerRefresh": {
       "fontSize": "heading",
       "textColor": "primaryText",
       "backgroundColor": "#00000000",
@@ -169,7 +169,7 @@
         "focus": { "textColor": "#FFFFFF" }
       }
     },
-    "button.tavernFreeze": {
+    "button.offerFreeze": {
       "fontSize": "heading",
       "textColor": "#E8FAFF",
       "backgroundColor": "#00000000",
@@ -184,7 +184,7 @@
         "focus": { "textColor": "#FFFFFF" }
       }
     },
-    "button.heroPower": {
+    "button.power": {
       "textColor": "#E8F7FF",
       "backgroundColor": "#00000000",
       "backgroundAsset": "assets/ui/hero-power-frame.svg",
@@ -274,13 +274,13 @@
       "borderWidth": 0,
       "padding": { "horizontal": "xs", "vertical": "xs" }
     },
-    "panel.tavernControls": {
+    "panel.preparationControls": {
       "backgroundColor": "#00000000",
       "borderColor": "#00000000",
       "borderWidth": 0,
       "padding": { "horizontal": "xs", "vertical": "xs" }
     },
-    "panel.tavern": {
+    "panel.offer": {
       "backgroundColor": "#00000000",
       "borderColor": "#00000000",
       "borderWidth": 0,
@@ -299,13 +299,13 @@
       "radius": "medium",
       "padding": { "horizontal": "sm", "vertical": "xs" }
     },
-    "panel.heroDock": {
+    "panel.leaderDock": {
       "backgroundColor": "#00000000",
       "borderColor": "#00000000",
       "borderWidth": 0,
       "padding": { "horizontal": "sm", "vertical": "xs" }
     },
-    "panel.heroPortrait": {
+    "panel.leaderPortrait": {
       "backgroundColor": "#00000000",
       "backgroundAsset": "assets/ui/hero-portrait-frame.svg",
       "borderColor": "#00000000",
@@ -354,7 +354,7 @@
       "borderWidth": 2,
       "padding": { "horizontal": "md", "vertical": "md" }
     },
-    "panel.shopkeeper": {
+    "panel.preparationHost": {
       "backgroundColor": "#00000000",
       "backgroundAsset": "assets/ui/tavern-keeper-frame.svg",
       "borderColor": "#00000000",
@@ -366,7 +366,7 @@
       "borderColor": "#00000000",
       "borderWidth": 0
     },
-    "label.heroName": { "textColor": "textMuted", "fontSize": "body" },
+    "label.leaderName": { "textColor": "textMuted", "fontSize": "body" },
     "label.attack": { "textColor": "attackAccent", "fontSize": "heading" },
     "label.health": { "textColor": "healthAccent", "fontSize": "heading" },
     "label.armor": { "textColor": "armorAccent", "fontSize": "heading" },
