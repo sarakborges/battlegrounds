@@ -51,6 +51,7 @@ public static class ModThemeRoleNames
         ModThemePanelRoles.OpponentEntrySelf,
         ModThemePanelRoles.OpponentEntryEliminated,
         ModThemePanelRoles.OpponentPortrait,
+        ModThemePanelRoles.OpponentRankBadge,
         ModThemePanelRoles.TierBadge,
         ModThemePanelRoles.AttackBadge,
         ModThemePanelRoles.HealthBadge,
