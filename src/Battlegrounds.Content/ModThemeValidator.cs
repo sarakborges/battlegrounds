@@ -18,11 +18,11 @@ internal sealed partial class ModThemeValidator
     private static readonly HashSet<string> PaddingKeys = ["horizontal", "vertical"];
     private static readonly HashSet<string> SliceKeys = ["left", "top", "right", "bottom"];
     private static readonly HashSet<string> StyleKeys = [
-        "font", "fontSize", "textColor", "backgroundColor", "borderColor", "borderWidth", "radius",
+        "font", "fontSize", "width", "height", "textColor", "backgroundColor", "borderColor", "borderWidth", "radius",
         "padding", "backgroundAsset", "slice", "opacity", "states"
     ];
     private static readonly HashSet<string> StateStyleKeys = [
-        "font", "fontSize", "textColor", "backgroundColor", "borderColor", "borderWidth", "radius",
+        "font", "fontSize", "width", "height", "textColor", "backgroundColor", "borderColor", "borderWidth", "radius",
         "padding", "backgroundAsset", "slice", "opacity"
     ];
     private static readonly HashSet<string> ScreenKeys = ["backgroundColor", "backgroundAsset"];
