@@ -2,14 +2,14 @@ import { appendChildren, cloneTemplate, useStyle } from '../../core/template.js'
 import { createButton } from '../../design-system/button/button.js';
 import { createHorizontalStack } from '../../design-system/horizontal-stack/horizontal-stack.js';
 import { createModalDialog } from '../../design-system/modal-dialog/modal-dialog.js';
-import { createEndRecruitmentControl } from '../../components/end-recruitment-control/end-recruitment-control.js';
+import { createEndPreparationControl } from '../../components/end-preparation-control/end-preparation-control.js';
 import { createLeaderHud } from '../../components/leader-hud/leader-hud.js';
+import { createOfferRow } from '../../components/offer-row/offer-row.js';
 import { createOpponentRail } from '../../components/opponent-rail/opponent-rail.js';
 import { createPlayerField } from '../../components/player-field/player-field.js';
 import { createPlayerReserve } from '../../components/player-reserve/player-reserve.js';
 import { createPreparationControls } from '../../components/preparation-controls/preparation-controls.js';
 import { createResourceCounter } from '../../components/resource-counter/resource-counter.js';
-import { createTavernOffer } from '../../components/tavern-offer/tavern-offer.js';
 import { bindPreparationDrag } from '../../interactions/preparation-drag.js';
 import {
   boardArtUrl,
@@ -124,7 +124,7 @@ export async function createPreparationScreen(state) {
     offerTokens.push(await createOfferToken(entry, { cosmetics, blocked, canAcquire }));
   }
   appendChildren(element.querySelector('[data-slot="offer"]'), [
-    await createTavernOffer({ tokens: offerTokens })
+    await createOfferRow({ tokens: offerTokens })
   ]);
 
   const fieldTokens = [];
@@ -168,11 +168,11 @@ export async function createPreparationScreen(state) {
   ]);
 
   appendChildren(element.querySelector('[data-slot="end-preparation"]'), [
-    await createEndRecruitmentControl({
+    await createEndPreparationControl({
       label: labels.endPreparation ?? 'Ready',
       blocked,
       canAct: state.canAct,
-      currentPreparationPlayerId: state.currentPreparationPlayerId
+      currentParticipantId: state.currentPreparationPlayerId
     })
   ]);
 
