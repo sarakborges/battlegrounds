@@ -22,6 +22,12 @@ export function resolveMetric(collection, value) {
   return resolved == null ? null : `${resolved}px`;
 }
 
+function pixelValue(value) {
+  if (value == null) return null;
+  const number = Number(value);
+  return Number.isFinite(number) && number > 0 ? `${number}px` : null;
+}
+
 function resolveFontFamily(theme, value) {
   if (!value) return null;
   if (theme?.fonts?.[value]) return `var(--theme-font-${slug(value)})`;
@@ -123,11 +129,19 @@ async function applyStyleVariables(element, style, theme, stateName = null) {
   const padX = resolveMetric(theme.spacing, style?.padding?.horizontal);
   const padY = resolveMetric(theme.spacing, style?.padding?.vertical);
   const fontFamily = resolveFontFamily(theme, style?.font);
-  const backgroundAsset = style?.backgroundAsset ? await loadAsset(style.backgroundAsset) : null;
+  const [backgroundAsset, iconAsset] = await Promise.all([
+    style?.backgroundAsset ? loadAsset(style.backgroundAsset) : null,
+    style?.iconAsset ? loadAsset(style.iconAsset) : null
+  ]);
 
   setThemeVariable(element, variable('text-color'), textColor);
   setThemeVariable(element, variable('background-color'), backgroundColor);
   setThemeVariable(element, variable('background-image'), backgroundAsset ? `url("${backgroundAsset}")` : null);
+  setThemeVariable(element, variable('icon-image'), iconAsset ? `url("${iconAsset}")` : null);
+  setThemeVariable(element, variable('width'), pixelValue(style?.width));
+  setThemeVariable(element, variable('height'), pixelValue(style?.height));
+  setThemeVariable(element, variable('icon-width'), pixelValue(style?.iconWidth));
+  setThemeVariable(element, variable('icon-height'), pixelValue(style?.iconHeight));
   setThemeVariable(element, variable('border-color'), borderColor);
   setThemeVariable(element, variable('border-width'), style?.borderWidth == null ? null : `${style.borderWidth}px`);
   setThemeVariable(element, variable('font-family'), fontFamily);
@@ -147,13 +161,25 @@ async function applyStyleVariables(element, style, theme, stateName = null) {
   setThemeVariable(element, variable('slice-right-width'), slice == null ? null : `${slice.right}px`);
   setThemeVariable(element, variable('slice-bottom-width'), slice == null ? null : `${slice.bottom}px`);
 
-  return { hasBackgroundAsset: !!backgroundAsset, hasSlice: !!backgroundAsset && !!slice };
+  return {
+    hasBackgroundAsset: !!backgroundAsset,
+    hasIconAsset: !!iconAsset,
+    hasSlice: !!backgroundAsset && !!slice
+  };
 }
 
 async function applyResolvedComponentStyle(element, style, theme) {
   const baseResult = await applyStyleVariables(element, style, theme);
   element.dataset.themeBackgroundAsset = baseResult.hasBackgroundAsset ? 'true' : 'false';
+  element.dataset.themeIconAsset = baseResult.hasIconAsset ? 'true' : 'false';
   element.dataset.themeSlicedBackground = baseResult.hasSlice ? 'true' : 'false';
+
+  const width = pixelValue(style?.width);
+  const height = pixelValue(style?.height);
+  if (width) element.style.width = width;
+  else element.style.removeProperty('width');
+  if (height) element.style.height = height;
+  else element.style.removeProperty('height');
 
   const stateNames = new Set([
     'hover',
