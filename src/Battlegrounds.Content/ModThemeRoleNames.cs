@@ -57,6 +57,7 @@ public static class ModThemeRoleNames
         ModThemePanelRoles.HealthBadge,
         ModThemePanelRoles.ArmorBadge,
         ModThemePanelRoles.ResourceBadge,
+        ModThemePanelRoles.ResourceCostBadge,
         ModThemePanelRoles.Interaction,
         ModThemePanelRoles.PreparationHost,
         ModThemePanelRoles.CombatOverlay,
