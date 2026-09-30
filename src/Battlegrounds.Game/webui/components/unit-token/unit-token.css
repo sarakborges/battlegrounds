@@ -1,8 +1,8 @@
 .unit-token {
   position: relative;
-  width: var(--unit-token-width, 108px);
-  height: var(--unit-token-height, 124px);
-  flex: 0 0 var(--unit-token-width, 108px);
+  width: var(--unit-token-width, 116px);
+  height: var(--unit-token-height, 136px);
+  flex: 0 0 var(--unit-token-width, 116px);
   padding: 0;
   overflow: visible;
   border: 0;
@@ -30,8 +30,8 @@
   position: absolute;
   left: 50%;
   top: 7px;
-  width: var(--unit-token-portrait-width, 100px);
-  height: var(--unit-token-portrait-height, 108px);
+  width: var(--unit-token-portrait-width, 108px);
+  height: var(--unit-token-portrait-height, 118px);
   transform: translateX(-50%);
   overflow: hidden;
   border: 3px solid var(--theme-component-border-color, var(--theme-color-border-strong, #7d5838));
@@ -81,7 +81,7 @@
   display: grid;
   place-items: center;
   border-radius: 48%;
-  font-size: 32px;
+  font-size: 34px;
   font-weight: 900;
   opacity: .25;
 }
@@ -94,9 +94,9 @@
   position: absolute;
   z-index: 8;
   left: 50%;
-  top: -5px;
-  min-width: 32px;
-  height: 33px;
+  top: -6px;
+  min-width: 34px;
+  height: 35px;
   transform: translateX(-50%);
   display: grid;
   place-items: center;
@@ -104,7 +104,7 @@
   clip-path: polygon(50% 0, 87% 13%, 100% 48%, 79% 82%, 50% 100%, 21% 82%, 0 48%, 13% 13%);
   background: radial-gradient(circle at 42% 28%, #bb79e6 0 8%, #7f3aae 30%, #4b206d 68%, #241331 100%);
   color: #fff7db;
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 900;
   text-shadow: 0 1px 2px #1a0f0a;
   filter: drop-shadow(0 4px 5px rgba(0, 0, 0, .45));
@@ -122,14 +122,14 @@
 }
 
 .unit-token__stat {
-  width: 37px;
-  height: 38px;
+  width: 40px;
+  height: 41px;
   display: grid;
   place-items: center;
   border: 0;
   border-radius: 0;
   color: #fff6dc;
-  font-size: 16px;
+  font-size: 17px;
   font-weight: 900;
   line-height: 1;
   text-shadow: 0 1px 2px #000;
