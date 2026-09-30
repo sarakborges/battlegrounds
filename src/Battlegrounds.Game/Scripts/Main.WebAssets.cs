@@ -165,7 +165,7 @@ public partial class Main
             }
 
             var bytes = File.ReadAllBytes(fullPath);
-            const int maxIpcBytes = 256 * 1024;
+            const int maxIpcBytes = 96 * 1024;
             if (bytes.Length <= maxIpcBytes)
             {
                 var dataUrl = $"data:{mimeType};base64,{Convert.ToBase64String(bytes)}";
@@ -187,12 +187,19 @@ public partial class Main
                 var offset = chunkIndex * maxIpcBytes;
                 var count = Math.Min(maxIpcBytes, bytes.Length - offset);
                 var chunkData = Convert.ToBase64String(bytes, offset, count);
-                SendWebUi("asset", new
+                // Keep each CEF IPC message comfortably below the transport limit.
+                // Godot/CEF serializes the base64 string inside JSON, so the raw
+                // byte chunk must be smaller than the apparent IPC budget.
+                _webUiHost?.CallDeferred("send_message", JsonSerializer.Serialize(new
                 {
-                    path = normalized,
-                    chunkIndex,
-                    chunkData
-                });
+                    type = "asset",
+                    payload = new
+                    {
+                        path = normalized,
+                        chunkIndex,
+                        chunkData
+                    }
+                }, WebJsonOptions));
             }
         }
         catch (Exception exception)
