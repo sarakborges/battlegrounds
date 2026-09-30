@@ -94,15 +94,15 @@
   position: absolute;
   z-index: 8;
   left: 50%;
-  top: -4px;
-  min-width: 29px;
-  height: 30px;
+  top: -5px;
+  min-width: 30px;
+  height: 31px;
   transform: translateX(-50%);
   display: grid;
   place-items: center;
   padding: 0 6px 3px;
-  clip-path: polygon(12% 0, 88% 0, 100% 68%, 50% 100%, 0 68%);
-  background: linear-gradient(#9b46c5, #4c1e70 72%);
+  clip-path: polygon(50% 0, 87% 13%, 100% 48%, 79% 82%, 50% 100%, 21% 82%, 0 48%, 13% 13%);
+  background: radial-gradient(circle at 42% 28%, #bb79e6 0 8%, #7f3aae 30%, #4b206d 68%, #241331 100%);
   color: #fff7db;
   font-size: 11px;
   font-weight: 900;
@@ -113,36 +113,39 @@
 .unit-token__stats {
   position: absolute;
   z-index: 10;
-  left: 2px;
-  right: 2px;
-  bottom: -6px;
+  left: 0;
+  right: 0;
+  bottom: -8px;
   display: flex;
   justify-content: space-between;
   pointer-events: none;
 }
 
 .unit-token__stat {
-  width: 32px;
-  height: 32px;
+  width: 34px;
+  height: 35px;
   display: grid;
   place-items: center;
-  border: 3px solid;
-  border-radius: 50%;
+  border: 0;
+  border-radius: 0;
   color: #fff6dc;
   font-size: 15px;
   font-weight: 900;
+  line-height: 1;
   text-shadow: 0 1px 2px #000;
-  box-shadow: 0 4px 9px rgba(0, 0, 0, .48), inset 0 1px 3px rgba(255, 255, 255, .16);
+  filter: drop-shadow(0 4px 4px rgba(0, 0, 0, .5));
 }
 
 .unit-token__stat--attack {
-  border-color: var(--theme-color-attack-accent, #e4b34c);
-  background: radial-gradient(circle at 38% 28%, #7c6024, #23190c 68%);
+  clip-path: polygon(50% 0, 67% 18%, 94% 15%, 84% 42%, 100% 62%, 72% 70%, 61% 100%, 39% 100%, 28% 70%, 0 62%, 16% 42%, 6% 15%, 33% 18%);
+  background:
+    radial-gradient(circle at 40% 28%, #ffe09a 0 8%, var(--theme-color-attack-accent, #e4b34c) 28%, #8a5d18 62%, #2a1a08 100%);
 }
 
 .unit-token__stat--health {
-  border-color: var(--theme-color-health-accent, #d65348);
-  background: radial-gradient(circle at 38% 28%, #8d302d, #2b1110 68%);
+  clip-path: polygon(50% 0, 86% 12%, 100% 43%, 82% 76%, 50% 100%, 18% 76%, 0 43%, 14% 12%);
+  background:
+    radial-gradient(circle at 38% 27%, #f39177 0 8%, var(--theme-color-health-accent, #d65348) 28%, #731b1b 64%, #2d0e10 100%);
 }
 
 .unit-token__frozen {
