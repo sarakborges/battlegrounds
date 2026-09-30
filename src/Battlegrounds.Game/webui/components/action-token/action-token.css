@@ -84,18 +84,25 @@
   left: -6px;
 }
 
-.action-token__cost {
+.action-token__cost.panel {
   right: -6px;
-  min-width: 34px;
-  height: 35px;
+  width: var(--theme-component-width, 34px);
+  min-width: var(--theme-component-width, 34px);
+  height: var(--theme-component-height, 35px);
   display: grid;
   place-items: center;
-  padding: 0 5px 2px;
+  padding: 0;
   border: 0;
-  background: transparent;
-  color: #fff6dc;
-  font-size: 13px;
+  border-radius: 0;
+  background-color: transparent;
+  background-image: var(--theme-component-background-image, none);
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: 100% 100%;
+  color: var(--theme-component-text-color, #fff6dc);
+  font-size: var(--theme-component-font-size, 13px);
   font-weight: 900;
   line-height: 1;
   text-shadow: 0 1px 2px #000;
+  box-shadow: none;
 }
