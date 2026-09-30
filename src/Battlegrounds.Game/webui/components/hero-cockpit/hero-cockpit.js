@@ -33,10 +33,10 @@ export async function createHeroCockpit({
     name: heroName,
     art: heroArt,
     artAlt: heroName,
-    hint: 'Drop a tavern token to buy',
+    hint: 'Drop an offer token to acquire',
     showName: false,
-    themeRole: 'panel.heroPortrait',
-    dropKind: 'player-hero',
+    themeRole: 'panel.leaderPortrait',
+    dropKind: 'player-leader',
     className: 'hero-cockpit__portrait',
     attributes: portraitAttributes
   });
