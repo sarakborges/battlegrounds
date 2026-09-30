@@ -17,7 +17,11 @@
   content: "";
   position: absolute;
   z-index: 3;
-  inset: 0;
+  width: 328px;
+  height: 328px;
+  left: 50%;
+  top: -5px;
+  transform: translateX(-50%);
   background-image: var(--theme-component-background-image, none);
   background-position: center;
   background-repeat: no-repeat;
