@@ -15,7 +15,8 @@ import {
   boardArtUrl,
   cosmeticsForState,
   leaderArtUrl,
-  shopkeeperArtUrl
+  preparationHost,
+  preparationHostArtUrl
 } from '../../theme/cosmetics.js';
 import {
   createChoiceToken,
@@ -104,14 +105,14 @@ export async function createPreparationScreen(state) {
     })
   ]);
 
-  const shopkeeperId = cosmetics?.shopkeeper?.id ?? 'bob';
+  const host = preparationHost(cosmetics);
   appendChildren(element.querySelector('[data-slot="tavern-controls"]'), [
     await createTavernControls({
       labels,
       human,
       blocked,
-      shopkeeperName: shopkeeperId === 'bob' ? 'Bob' : shopkeeperId,
-      shopkeeperArt: await shopkeeperArtUrl(cosmetics)
+      shopkeeperName: host.name || host.id || '',
+      shopkeeperArt: await preparationHostArtUrl(cosmetics)
     })
   ]);
 
