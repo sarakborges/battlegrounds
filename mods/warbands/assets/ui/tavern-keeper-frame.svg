@@ -1,26 +1,16 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 160">
   <defs>
-    <linearGradient id="wood" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#e0ad6a"/>
-      <stop offset="0.48" stop-color="#a3683c"/>
-      <stop offset="1" stop-color="#563421"/>
-    </linearGradient>
-    <linearGradient id="gold" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#f4cd83"/>
-      <stop offset="0.55" stop-color="#c88745"/>
-      <stop offset="1" stop-color="#6f4328"/>
-    </linearGradient>
+    <linearGradient id="wood" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#d69b60"/><stop offset=".5" stop-color="#875034"/><stop offset="1" stop-color="#43291d"/></linearGradient>
+    <linearGradient id="gold" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ffe3a0"/><stop offset=".42" stop-color="#c98a43"/><stop offset="1" stop-color="#65401f"/></linearGradient>
+    <filter id="shadow" x="-20%" y="-15%" width="140%" height="145%"><feDropShadow dx="0" dy="6" stdDeviation="4" flood-color="#000" flood-opacity=".55"/></filter>
   </defs>
-
-  <!-- Transparent outside the frame: the board scenery remains visible around
-       both shopkeeper and leader cosmetics. -->
-  <rect x="14" y="14" width="132" height="136" rx="30" fill="none" stroke="#321d13" stroke-width="10"/>
-  <rect x="18" y="18" width="124" height="128" rx="26" fill="none" stroke="url(#wood)" stroke-width="6"/>
-  <rect x="24" y="24" width="112" height="112" rx="18" fill="none" stroke="url(#gold)" stroke-width="3"/>
-
-  <path d="M42 24C52 14 65 10 80 10s28 4 38 14" fill="none" stroke="#f3c77f" stroke-width="3" stroke-linecap="round"/>
-  <path d="M20 134h120" stroke="#d89b55" stroke-width="7" stroke-linecap="round"/>
-  <path d="M26 145h108" stroke="#593520" stroke-width="6" stroke-linecap="round"/>
-  <circle cx="24" cy="135" r="5" fill="#f2ca82" stroke="#53301d" stroke-width="2"/>
-  <circle cx="136" cy="135" r="5" fill="#f2ca82" stroke="#53301d" stroke-width="2"/>
+  <g filter="url(#shadow)">
+    <path d="M80 5c36 0 61 24 64 61v60l-12 24H28l-12-24V66C19 29 44 5 80 5Z" fill="none" stroke="#24150f" stroke-width="12"/>
+    <path d="M80 10c32 0 54 22 57 57v56l-10 19H33l-10-19V67C26 32 48 10 80 10Z" fill="none" stroke="url(#wood)" stroke-width="7"/>
+    <path d="M80 16c28 0 47 20 50 52v49H30V68c3-32 22-52 50-52Z" fill="none" stroke="url(#gold)" stroke-width="3.5"/>
+    <path d="M44 19C54 11 66 7 80 7s26 4 36 12" fill="none" stroke="#ffe5a3" stroke-width="2.5" stroke-linecap="round" opacity=".55"/>
+    <path d="M25 119h110l-8 22H33Z" fill="#5a351f" stroke="url(#gold)" stroke-width="4"/>
+    <path d="M42 133h76" stroke="#efbe70" stroke-width="2" stroke-linecap="round" opacity=".45"/>
+    <circle cx="27" cy="81" r="4" fill="#f0c774" stroke="#5a341e" stroke-width="2"/><circle cx="133" cy="81" r="4" fill="#f0c774" stroke="#5a341e" stroke-width="2"/>
+  </g>
 </svg>
