@@ -14,13 +14,40 @@
   padding: 0;
   border: var(--theme-component-border-width, 0) solid var(--theme-component-border-color, transparent);
   border-radius: var(--theme-component-radius, 0);
-  background-color: var(--theme-power-fallback, #304b66);
+  background-color: transparent;
+  background-image: none;
+  box-shadow: inset 0 0 0 2px rgba(255,255,255,.18), 0 3px 7px rgba(0,0,0,.35);
+  transform-origin: 50% 78%;
+  position: relative;
+  overflow: visible;
+}
+
+.action-button.power-button__control::before {
+  content: "";
+  position: absolute;
+  z-index: 0;
+  inset: 9px;
+  border-radius: 50%;
+  background: var(--theme-power-fallback, #304b66);
+  box-shadow: inset 0 0 0 2px rgba(255,255,255,.18), 0 3px 7px rgba(0,0,0,.35);
+  pointer-events: none;
+}
+
+.action-button.power-button__control::after {
+  content: "";
+  position: absolute;
+  z-index: 1;
+  inset: 0;
   background-image: var(--theme-component-background-image, none);
   background-position: center;
   background-repeat: no-repeat;
-  background-size: 100% 100%;
-  box-shadow: inset 0 0 0 2px rgba(255,255,255,.18), 0 3px 7px rgba(0,0,0,.35);
-  transform-origin: 50% 78%;
+  background-size: contain;
+  pointer-events: none;
+}
+
+.action-button.power-button__control > * {
+  position: relative;
+  z-index: 2;
 }
 
 .action-button.power-button__control:hover:not(:disabled),
