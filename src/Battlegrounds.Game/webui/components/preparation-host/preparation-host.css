@@ -9,10 +9,6 @@
   filter: drop-shadow(0 9px 10px rgba(0, 0, 0, .42));
 }
 
-.preparation-host__portrait {
-  --character-portrait-width: 120px;
-}
-
 .preparation-host.is-drop-hover {
   filter: brightness(1.08) drop-shadow(0 0 11px var(--theme-color-success-active, #a6c979));
 }
