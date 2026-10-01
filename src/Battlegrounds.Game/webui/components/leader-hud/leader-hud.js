@@ -35,7 +35,7 @@ export async function createLeaderHud({
     art: leaderArt,
     artAlt: leaderName,
     showName: false,
-    themeRole: 'panel.leaderPortrait',
+    themeRole: 'panel.leaderChoicePortrait',
     className: 'leader-hud__portrait',
     dropKind: 'player-leader',
     attributes: portraitAttributes
