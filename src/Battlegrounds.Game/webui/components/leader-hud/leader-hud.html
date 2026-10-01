@@ -1,9 +1,6 @@
 <template>
   <section class="leader-hud panel" data-component="panel" data-ui-component="leader-hud" data-theme-role="panel.leaderDock">
-    <div class="leader-hud__portrait panel" data-component="panel" data-theme-role="panel.leaderPortrait">
-      <img class="leader-hud__art" data-field="art" data-component="art-mask" data-theme-role="artMask.hero" alt="" hidden>
-      <div class="leader-hud__fallback" data-field="fallback" aria-hidden="true"></div>
-    </div>
+    <div class="leader-hud__portrait-slot" data-slot="portrait"></div>
 
     <div class="leader-hud__stat leader-hud__health panel" data-component="panel" data-theme-role="panel.healthBadge">
       <span data-field="health"></span>
