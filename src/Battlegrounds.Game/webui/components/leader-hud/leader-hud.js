@@ -1,4 +1,5 @@
-import { appendChildren, applyAttributes, cloneTemplate, useStyle } from '../../core/template.js';
+import { appendChildren, cloneTemplate, useStyle } from '../../core/template.js';
+import { createCharacterPortrait } from '../character-portrait/character-portrait.js';
 import { createPowerButton } from '../power-button/power-button.js';
 
 const templateUrl = new URL('./leader-hud.html', import.meta.url);
@@ -19,33 +20,26 @@ export async function createLeaderHud({
   element.querySelector('[data-field="health"]').textContent = participant.health ?? '';
   element.querySelector('[data-field="armor"]').textContent = participant.armor ?? '';
 
-  const portrait = element.querySelector('.leader-hud__portrait');
-  if (leaderId) {
-    applyAttributes(portrait, {
-      'data-inspect-kind': 'leader',
-      'data-inspect-id': leaderId,
-      'data-inspect-name': leaderName,
-      'data-inspect-placement': 'top',
-      'data-drop-kind': 'player-leader'
-    });
-    if (leaderDescription) portrait.dataset.inspectDescription = leaderDescription;
-  } else {
-    portrait.dataset.dropKind = 'player-leader';
-  }
-  portrait.classList.add('drag-target');
+  const portraitAttributes = {
+    'data-drop-kind': 'player-leader',
+    'data-inspect-kind': 'power',
+    'data-inspect-id': power?.id ?? '',
+    'data-inspect-name': power?.name ?? '',
+    'data-inspect-description': power?.description ?? '',
+    'data-inspect-cost': power?.cost ?? '',
+    'data-inspect-placement': 'top'
+  };
 
-  const image = element.querySelector('[data-field="art"]');
-  const fallback = element.querySelector('[data-field="fallback"]');
-  if (leaderArt) {
-    image.src = leaderArt;
-    image.alt = leaderName;
-    image.hidden = false;
-    fallback.hidden = true;
-    image.addEventListener('error', () => {
-      image.hidden = true;
-      fallback.hidden = false;
-    }, { once: true });
-  }
+  const portrait = await createCharacterPortrait({
+    name: leaderName,
+    art: leaderArt,
+    artAlt: leaderName,
+    showName: false,
+    themeRole: 'panel.leaderChoicePortrait',
+    className: 'leader-hud__portrait',
+    attributes: portraitAttributes
+  });
+  appendChildren(element.querySelector('[data-slot="portrait"]'), [portrait]);
 
   appendChildren(element.querySelector('[data-slot="power"]'), [
     await createPowerButton({
