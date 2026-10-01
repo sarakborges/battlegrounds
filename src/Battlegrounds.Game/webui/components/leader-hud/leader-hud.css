@@ -14,8 +14,8 @@
 
 .leader-hud__portrait-slot {
   position: relative;
-  width: 120px;
-  height: 160px;
+  width: 172px;
+  height: 229px;
   display: grid;
   place-items: start center;
 }
@@ -48,12 +48,12 @@
 }
 
 .leader-hud__health {
-  left: 108px;
+  left: 154px;
   bottom: 0;
 }
 
 .leader-hud__armor {
-  left: 111px;
+  left: 154px;
   bottom: 46px;
 }
 
