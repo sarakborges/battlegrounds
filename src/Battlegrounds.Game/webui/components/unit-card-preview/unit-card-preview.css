@@ -88,7 +88,7 @@
   place-items: center;
   padding: 5px 12px;
   background: transparent;
-  color: var(--theme-component-text-color, #22160f);
+  color: #28170e;
   text-align: center;
 }
 
@@ -109,7 +109,7 @@
   place-items: center;
   padding: 8px 7px;
   background: transparent;
-  color: var(--theme-component-text-color, #2a1c13);
+  color: #49321f;
   font-family: var(--theme-component-font-family, inherit);
   font-size: 10px;
   line-height: 1.25;
