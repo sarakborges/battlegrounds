@@ -35,7 +35,7 @@ export async function createLeaderHud({
     art: leaderArt,
     artAlt: leaderName,
     showName: false,
-    themeRole: 'panel.leaderChoicePortrait',
+    themeRole: 'panel.leaderPortrait',
     className: 'leader-hud__portrait',
     attributes: portraitAttributes
   });
