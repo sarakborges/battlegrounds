@@ -45,7 +45,7 @@
 .action-card-preview__art {
   width: 100%;
   height: 100%;
-  object-fit: contain;
+  object-fit: cover;
   object-position: center;
   -webkit-mask-image: var(--theme-component-background-image, none);
   mask-image: var(--theme-component-background-image, none);
