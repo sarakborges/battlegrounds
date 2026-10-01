@@ -29,6 +29,7 @@
 
 .power-tooltip__cost {
   position: absolute;
+  z-index: 3;
   left: 8px;
   top: 8px;
   width: 30px;
