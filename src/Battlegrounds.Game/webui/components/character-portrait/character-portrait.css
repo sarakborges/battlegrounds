@@ -45,7 +45,7 @@
   width: calc(100% - 8px);
   height: calc(100% - 8px);
   display: block;
-  object-fit: contain;
+  object-fit: cover;
   object-position: center top;
   -webkit-mask-image: var(--theme-component-background-image, none);
   mask-image: var(--theme-component-background-image, none);
