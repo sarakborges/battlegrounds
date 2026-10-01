@@ -1,7 +1,8 @@
 .preparation-host.panel {
   position: relative;
-  width: 120px;
-  height: 160px;
+  width: var(--theme-component-width, 120px);
+  height: auto;
+  aspect-ratio: 3 / 4;
   padding: 0;
   overflow: visible;
   border: 0;
