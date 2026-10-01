@@ -29,7 +29,7 @@ export async function createLeaderChoice({
     art,
     artAlt: leader.name ?? '',
     showName: true,
-    themeRole: 'panel.leaderPortrait',
+    themeRole: 'panel.leaderChoicePortrait',
     className: 'leader-choice__portrait'
   });
   appendChildren(element.querySelector('[data-slot="portrait"]'), [portrait]);
