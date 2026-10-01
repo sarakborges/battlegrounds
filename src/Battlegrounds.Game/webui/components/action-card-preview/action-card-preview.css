@@ -113,7 +113,7 @@
   place-items: center;
   padding: 5px 10px;
   background: transparent;
-  color: var(--theme-component-text-color, #24170f);
+  color: #28170e;
   text-align: center;
 }
 
@@ -134,7 +134,7 @@
   place-items: center;
   padding: 8px;
   background: transparent;
-  color: var(--theme-component-text-color, #291b13);
+  color: #49321f;
   font-family: var(--theme-component-font-family, inherit);
   font-size: 10px;
   line-height: 1.3;
