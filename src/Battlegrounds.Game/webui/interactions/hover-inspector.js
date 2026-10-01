@@ -1,6 +1,6 @@
 import { useStyle } from '../core/template.js';
 import { createActionCardPreview } from '../components/action-card-preview/action-card-preview.js';
-import { createLeaderInspector } from '../components/leader-inspector/leader-inspector.js';
+import { createCharacterPortrait } from '../components/character-portrait/character-portrait.js';
 import { createPowerTooltip } from '../components/power-tooltip/power-tooltip.js';
 import { createUnitCardPreview } from '../components/unit-card-preview/unit-card-preview.js';
 import { applyComponentStyles } from '../theme/theme.js';
@@ -37,7 +37,15 @@ async function createInspectionView(inspection) {
   switch (inspection.kind) {
     case 'unit': return createUnitCardPreview(inspection);
     case 'action': return createActionCardPreview(inspection);
-    case 'leader': return createLeaderInspector(inspection);
+    case 'leader':
+      return createCharacterPortrait({
+        name: inspection.name,
+        art: inspection.art,
+        artAlt: inspection.name,
+        showName: true,
+        themeRole: 'panel.leaderChoicePortrait',
+        className: 'hover-leader-portrait'
+      });
     case 'power': return createPowerTooltip(inspection);
     default: return null;
   }
