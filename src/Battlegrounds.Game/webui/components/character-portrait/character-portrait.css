@@ -48,7 +48,7 @@
   display: block;
   object-fit: cover;
   object-position: center top;
-  clip-path: polygon(50% 3%, 61% 6%, 72% 12%, 81% 22%, 87% 35%, 89% 48%, 89% 100%, 11% 100%, 11% 48%, 13% 35%, 19% 22%, 28% 12%, 39% 6%);
+  clip-path: polygon(50% 13.6%, 60% 15%, 70% 17.5%, 79% 21.5%, 85% 28%, 88.5% 36%, 88.5% 88%, 85% 91%, 15% 91%, 11.5% 88%, 11.5% 36%, 15% 28%, 21% 21.5%, 30% 17.5%, 40% 15%);
   user-select: none;
   pointer-events: none;
 }
