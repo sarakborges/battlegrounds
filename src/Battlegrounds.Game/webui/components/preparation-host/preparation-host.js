@@ -7,6 +7,11 @@ useStyle(new URL('./preparation-host.css', import.meta.url));
 
 export async function createPreparationHost({ name = 'Host', art = null } = {}) {
   const element = await cloneTemplate(templateUrl);
+  applyAttributes(element, {
+    'data-drop-kind': 'preparation-host'
+  });
+  element.classList.add('drag-target');
+
   const portrait = await createCharacterPortrait({
     name,
     art,
@@ -21,6 +26,5 @@ export async function createPreparationHost({ name = 'Host', art = null } = {}) 
     }
   });
   appendChildren(element.querySelector('[data-slot="portrait"]'), [portrait]);
-  element.classList.add('drag-target');
   return element;
 }
