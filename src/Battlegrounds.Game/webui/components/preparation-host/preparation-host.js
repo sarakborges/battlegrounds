@@ -17,7 +17,7 @@ export async function createPreparationHost({ name = 'Host', art = null } = {}) 
     art,
     artAlt: name,
     showName: false,
-    themeRole: 'panel.preparationHost',
+    themeRole: 'panel.leaderChoicePortrait',
     className: 'preparation-host__portrait',
     attributes: {
       title: name,
