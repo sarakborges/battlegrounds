@@ -33,7 +33,13 @@
   height: 100%;
   object-fit: cover;
   object-position: center top;
-  clip-path: polygon(50% 13.6%, 60% 15%, 70% 17.5%, 79% 21.5%, 85% 28%, 88.5% 36%, 88.5% 88%, 85% 91%, 15% 91%, 11.5% 88%, 11.5% 36%, 15% 28%, 21% 21.5%, 30% 17.5%, 40% 15%);
+  -webkit-mask-image: var(--theme-component-background-image, none);
+  mask-image: var(--theme-component-background-image, none);
+  -webkit-mask-size: 100% 100%;
+  mask-size: 100% 100%;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-position: center;
   user-select: none;
   pointer-events: none;
 }
