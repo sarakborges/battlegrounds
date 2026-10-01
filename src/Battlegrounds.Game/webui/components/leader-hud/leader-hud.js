@@ -37,6 +37,7 @@ export async function createLeaderHud({
     showName: false,
     themeRole: 'panel.leaderPortrait',
     className: 'leader-hud__portrait',
+    dropKind: 'player-leader',
     attributes: portraitAttributes
   });
   appendChildren(element.querySelector('[data-slot="portrait"]'), [portrait]);
