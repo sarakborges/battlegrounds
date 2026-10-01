@@ -1,8 +1,8 @@
 .preparation-host {
   position: relative;
-  width: 120px;
-  height: auto;
-  min-height: 160px;
+  width: 172px;
+  height: 229px;
+  min-height: 229px;
   display: grid;
   place-items: start center;
   overflow: visible;
