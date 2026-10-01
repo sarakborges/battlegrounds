@@ -1,13 +1,14 @@
 .leader-inspector {
   position: relative;
-  width: 210px;
-  min-height: 260px;
+  width: 208px;
+  height: 312px;
+  min-height: 0;
   display: grid;
-  grid-template-rows: 142px 34px minmax(58px, auto);
+  grid-template-rows: 176px 34px minmax(58px, 1fr);
   justify-items: center;
   align-content: start;
   gap: 0;
-  padding: 22px 22px 18px;
+  padding: 18px 16px 14px;
   border: 0;
   border-radius: 0;
   background-color: var(--theme-component-background-color, transparent);
@@ -23,9 +24,8 @@
 .leader-inspector__portrait {
   position: relative;
   z-index: 2;
-  width: 154px;
-  height: auto;
-  aspect-ratio: 3 / 4;
+  width: 176px;
+  height: 176px;
   overflow: hidden;
   border: 0;
   background: transparent;
@@ -37,7 +37,7 @@
   width: 100%;
   height: 100%;
   object-fit: contain;
-  object-position: center top;
+  object-position: center;
   -webkit-mask-image: var(--theme-component-background-image, none);
   mask-image: var(--theme-component-background-image, none);
   -webkit-mask-size: contain;
