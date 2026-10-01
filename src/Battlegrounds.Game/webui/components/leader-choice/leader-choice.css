@@ -8,8 +8,7 @@
   background: transparent;
   color: inherit;
   cursor: pointer;
-  --character-portrait-width: 172px;
-  --character-portrait-height: 230px;
+
   --character-nameplate-width: 158px;
   transition: transform 120ms ease, filter 120ms ease;
 }
@@ -27,7 +26,8 @@
   left: 50%;
   top: 5px;
   width: 172px;
-  height: 230px;
+  aspect-ratio: 3 / 4;
+  height: auto;
   transform: translateX(-50%);
 }
 
