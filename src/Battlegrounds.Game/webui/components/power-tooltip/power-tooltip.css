@@ -6,11 +6,8 @@
   padding: 0;
   border: 0;
   border-radius: 0;
-  background-color: #3c2b1e;
-  background-image: var(--theme-component-background-image, none);
-  background-position: center;
-  background-repeat: no-repeat;
-  background-size: 100% 100%;
+  background-color: transparent;
+  background-image: none;
   color: #2a1a11;
   filter: drop-shadow(0 14px 16px rgba(0, 0, 0, .46));
 }
