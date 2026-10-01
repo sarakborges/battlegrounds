@@ -12,6 +12,18 @@
   filter: drop-shadow(0 14px 16px rgba(0, 0, 0, .46));
 }
 
+.power-tooltip::after {
+  content: "";
+  position: absolute;
+  z-index: 1;
+  inset: 0;
+  background-image: var(--theme-component-background-image, none);
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: contain;
+  pointer-events: none;
+}
+
 .power-tooltip::before {
   content: "";
   position: absolute;
