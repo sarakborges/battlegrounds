@@ -1,0 +1,32 @@
+name: Web UI Storybook
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'src/Battlegrounds.Game/webui/**'
+      - '.github/workflows/webui-storybook.yml'
+  pull_request:
+    paths:
+      - 'src/Battlegrounds.Game/webui/**'
+      - '.github/workflows/webui-storybook.yml'
+
+jobs:
+  storybook:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: src/Battlegrounds.Game/webui
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install Storybook dependencies
+        run: npm install --no-audit --no-fund
+      - name: Build Storybook
+        run: npm run build-storybook
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+      - name: Test Storybook stories
+        run: npm run test-storybook
