@@ -98,6 +98,7 @@ jobs:
           for (const file of files) {
             const source = fs.readFileSync(file, 'utf8');
             for (const match of source.matchAll(pattern)) {
+              if (match[1].includes('*')) continue;
               const target = path.resolve(path.dirname(file), match[1]);
               if (!fs.existsSync(target)) missing.push(`${file} -> ${match[1]}`);
             }
