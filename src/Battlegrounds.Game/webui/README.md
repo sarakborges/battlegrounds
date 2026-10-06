@@ -26,71 +26,100 @@ Gameplay then uses `Main.WebUi.cs` to serialize presentation state from `SingleP
 
 The browser UI uses the same `1280x720` logical viewport declared by `project.godot`. `core/viewport-scale.js` computes one uniform scale from the actual CEF viewport using `min(actualWidth / 1280, actualHeight / 720)` and applies it to the application shell. The scaler recomputes on both window and visual-viewport resize events.
 
-All screens and reusable modules lay themselves out in logical pixels. Window resizing must not introduce independent viewport breakpoints, `vw`/`vh` geometry, or per-screen scaling rules. If the physical window has a different aspect ratio, the logical viewport remains centered and the unused area is letterboxed. This keeps component geometry, drag/drop hit targets, hover inspection and screen composition stable at every window size.
+All pages, templates and reusable modules lay themselves out in logical pixels. Window resizing must not introduce independent viewport breakpoints, `vw`/`vh` geometry, or per-page scaling rules. If the physical window has a different aspect ratio, the logical viewport remains centered and the unused area is letterboxed. This keeps component geometry, drag/drop hit targets, hover inspection and screen composition stable at every window size.
 
-## Source layout
+## Atomic Design architecture
 
-The browser UI is deliberately componentized without a frontend framework or build step:
+The Web UI follows Atomic Design. This is an architectural boundary, not just a naming convention.
+
+Dependency direction is intentionally one-way:
 
 ```text
-WebUI/
+pages -> templates -> organisms -> molecules -> atoms
+```
+
+Same-layer composition is allowed when it keeps a public component cohesive, but a lower layer must never import a higher layer. `core/`, `theme/`, `bridge/` and `interactions/` are cross-cutting infrastructure outside the Atomic Design hierarchy.
+
+- **Atoms** are generic, indivisible presentation primitives. They must not know gameplay/application concepts. Examples: `button`, `panel`, `badge`, `stat`.
+- **Molecules** are small reusable semantic components built from atoms and local markup. Examples: `unit-token`, `action-token`, `resource-counter`, `power-button`.
+- **Organisms** are reusable feature-level compositions that coordinate multiple atoms/molecules. Examples: `leader-hud`, `opponent-rail`, `preparation-controls`, `combat-unit-token`.
+- **Templates** own structural scene/layout markup and CSS. They define slots and anchors but do not interpret application state or dispatch gameplay intent.
+- **Pages** receive presentation snapshots, choose data for a template, compose organisms/molecules/atoms, and attach page-level interactions. Pages are the only Atomic Design layer that understands application statuses such as mod selection, preparation and combat.
+
+The browser UI remains framework-free at runtime:
+
+```text
+webui/
   app.js
   index.html
   bridge/                 # Godot CEF IPC and action dispatch
-  core/                   # templates, inspection metadata and viewport infrastructure
-  interactions/           # shared hover/drag interaction behavior
-  theme/                  # asset bridge + resolved ModThemeCatalog -> CSS variables
+  core/                   # template helpers, inspection metadata, viewport infrastructure
+  interactions/           # shared hover/drag behavior
+  theme/                  # asset bridge + ModThemeCatalog -> CSS variables
   styles/                 # global baseline only
-  design-system/          # generic reusable UI primitives
+
+  atoms/
     badge/
     button/
     empty-state/
     horizontal-stack/
     modal-dialog/
     panel/
-  components/             # gameplay/application-aware reusable composition
+    stat/
+
+  molecules/
     action-card-preview/
     action-token/
     character-portrait/
-    combat-player-hero/
-    combat-unit-token/
-    end-recruitment-control/
-    hero-cockpit/
-    hero-power-button/
-    leader-choice/
+    end-preparation-control/
     leader-inspector/
     mod-option/
-    opponent-rail/
     player-chip/
-    player-field/
-    player-reserve/
+    power-button/
     power-tooltip/
     resource-counter/
-    shopkeeper/
-    tavern-controls/
-    tavern-offer/
     unit-card-preview/
     unit-token/
-  screens/
+
+  organisms/
+    combat-player-hero/
+    combat-unit-token/
+    leader-choice/
+    leader-hud/
+    offer-row/
+    opponent-rail/
+    player-field/
+    player-reserve/
+    preparation-controls/
+    preparation-host/
+
+  templates/
+    loading/
+    mod-selection/
+    leader-selection/
+    preparation/
+    combat/
+
+  pages/
+    index.js
+    loading/
     mod-selection/
     leader-selection/
     preparation/
     combat/
 ```
 
-HTML structure must live in `.html` templates. Design-system, component and screen JavaScript clones those templates, fills text/state, assigns semantic `data-*` properties and connects behavior. It must not build markup with template strings or `innerHTML`.
+HTML structure must live in `.html` templates. Atoms, molecules, organisms and templates own a directory named after the module with matching `.html`, `.css` and `.js` files. Pages are state-binding modules and may be JavaScript-only because their structural markup belongs to `templates/`. JavaScript must not construct markup with template strings, `innerHTML` or `insertAdjacentHTML`.
 
-Every reusable UI module under `design-system/` or `components/` owns a directory named after the module and contains matching `.html`, `.css`, and `.js` files. CI checks this convention and rejects HTML construction in reusable modules and screens.
+CI checks the module shape, rejects upward Atomic Design dependencies, and rejects the legacy `design-system/`, `components/` and `screens/` directories.
 
-Design-system modules are generic presentation primitives and must not know gameplay or application concepts. Components may compose design-system primitives and other components, but they do not own authoritative rules. Screens compose those components from presentation state.
+Names describe semantic responsibility rather than selecting gameplay meaning through magic variants. A unit token, action token, leader choice, power button, resource counter and end-preparation control remain distinct components even when they share atoms.
 
-Component names describe responsibility rather than selecting gameplay meaning through magic variants. A unit token, tavern action, leader choice, hero power, resource counter and end-recruitment control are different components even when they share lower-level primitives.
-
-A reusable component owns its internal geometry and visual state. The screen owns where the component lives in the scene. Components must not use screen-specific offsets to compensate for other components. Generic card components are intentionally absent: persistent entities and inspection views have semantic components instead.
+A reusable component owns its internal geometry and visual state. Templates own where components live in the scene. Pages own state binding. Components must not use page-specific offsets to compensate for unrelated components. Generic card components are intentionally absent: persistent entities and inspection views have semantic components instead.
 
 ## Board scenes
 
-Preparation and combat are logical `1280x720` board scenes rather than vertical page layouts or dashboard grids. Screens own semantic anchors; reusable components own only their local anatomy.
+Preparation and combat are logical `1280x720` board scenes rather than vertical dashboard grids. Templates own semantic anchors; reusable components own only their local anatomy.
 
 Preparation declares anchors for the tavern cluster, offer, player field, hero HUD, reserve, resource counter and end-recruitment control. The opponent rail overlays the left board edge instead of consuming a page column. Tavern controls form one visual cluster around the shopkeeper. The hero, hero power, resource counter and end-recruitment control are independent HUD pieces anchored to the board.
 
@@ -98,7 +127,7 @@ Combat uses the same board/cosmetic scene instead of opening a separate dashboar
 
 Scene positions are expressed in logical pixels and may be exposed as supported theme metrics under semantic scene roles such as `layout.preparationScene.*` and `layout.combatScene.*`. Do not reintroduce grid rows, viewport-relative layout, or component-owned screen offsets whose purpose is to compensate for another component.
 
-Leader selection also uses a semantic `leader-choice` component instead of styling internals of a generic card from screen CSS. Screen CSS stays at the composition boundary.
+Leader selection also uses a semantic `leader-choice` organism instead of styling internals of a generic card from page code. Template CSS stays at the composition boundary.
 
 ## Tokens and inspection
 
@@ -134,7 +163,7 @@ Theme typography may provide authored font assets. The runtime installs those fo
 
 The cascade is intentional: primitive defaults are the baseline, composed components use selectors that describe their composition, and interaction-state selectors describe temporary state. `!important` is forbidden by CI. If a rule cannot win without it, fix ownership, selector intent, or stylesheet structure instead of increasing force. Component CSS must not wipe authored assets with shorthand declarations such as `background:` when the component is expected to preserve a theme-provided background image.
 
-`app.js` does not know component markup. It maps application status to a screen, applies the supported screen theme and waits for async theme assets before committing the screen render. Authoritative state and commands remain in C#.
+`app.js` does not know component markup. It maps application status to a page, applies the supported screen theme and waits for async theme assets before committing the page render. Authoritative state and commands remain in C#.
 
 ## Contract
 

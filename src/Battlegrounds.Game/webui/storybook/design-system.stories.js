@@ -1,13 +1,13 @@
 import { expect } from 'storybook/test';
-import { createBadge } from '../design-system/badge/badge.js';
-import { createButton } from '../design-system/button/button.js';
-import { createEmptyState } from '../design-system/empty-state/empty-state.js';
-import { createModalDialog } from '../design-system/modal-dialog/modal-dialog.js';
-import { createPanel } from '../design-system/panel/panel.js';
+import { createBadge } from '../atoms/badge/badge.js';
+import { createButton } from '../atoms/button/button.js';
+import { createEmptyState } from '../atoms/empty-state/empty-state.js';
+import { createModalDialog } from '../atoms/modal-dialog/modal-dialog.js';
+import { createPanel } from '../atoms/panel/panel.js';
 import { renderAsync } from '../.storybook/story-renderer.js';
 
 export default {
-  title: 'Design System/Primitives',
+  title: 'Atomic Design/Atoms/Primitives',
   tags: ['autodocs', 'test']
 };
 

@@ -1,14 +1,14 @@
 import { expect } from 'storybook/test';
-import { createActionToken } from '../components/action-token/action-token.js';
-import { createPowerButton } from '../components/power-button/power-button.js';
-import { createResourceCounter } from '../components/resource-counter/resource-counter.js';
-import { createUnitToken } from '../components/unit-token/unit-token.js';
-import { createBadge } from '../design-system/badge/badge.js';
-import { createButton } from '../design-system/button/button.js';
+import { createActionToken } from '../molecules/action-token/action-token.js';
+import { createPowerButton } from '../molecules/power-button/power-button.js';
+import { createResourceCounter } from '../molecules/resource-counter/resource-counter.js';
+import { createUnitToken } from '../molecules/unit-token/unit-token.js';
+import { createBadge } from '../atoms/badge/badge.js';
+import { createButton } from '../atoms/button/button.js';
 import { renderAsync } from '../.storybook/story-renderer.js';
 
 export default {
-  title: 'Storybook/Component Gallery',
+  title: 'Atomic Design/Overview/Component Gallery',
   tags: ['autodocs', 'test']
 };
 

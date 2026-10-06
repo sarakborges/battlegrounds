@@ -1,8 +1,8 @@
 import { useStyle } from '../core/template.js';
-import { createActionCardPreview } from '../components/action-card-preview/action-card-preview.js';
-import { createCharacterPortrait } from '../components/character-portrait/character-portrait.js';
-import { createPowerTooltip } from '../components/power-tooltip/power-tooltip.js';
-import { createUnitCardPreview } from '../components/unit-card-preview/unit-card-preview.js';
+import { createActionCardPreview } from '../molecules/action-card-preview/action-card-preview.js';
+import { createCharacterPortrait } from '../molecules/character-portrait/character-portrait.js';
+import { createPowerTooltip } from '../molecules/power-tooltip/power-tooltip.js';
+import { createUnitCardPreview } from '../molecules/unit-card-preview/unit-card-preview.js';
 import { applyComponentStyles } from '../theme/theme.js';
 
 useStyle(new URL('./hover-inspector.css', import.meta.url));

@@ -3,7 +3,7 @@ import { createGameBridge } from './bridge/game-bridge.js';
 import { reloadStyles } from './core/template.js';
 import { initializeViewportScale } from './core/viewport-scale.js';
 import { bindHoverInspector } from './interactions/hover-inspector.js';
-import { createScreen } from './screens/index.js';
+import { createPage } from './pages/index.js';
 import { configureAssetBridge, receiveAsset } from './theme/assets.js';
 import { applyComponentStyles, applyTheme } from './theme/theme.js';
 
@@ -41,10 +41,10 @@ const bridge = createGameBridge({
       if (version !== renderVersion) return;
       hoverInspector?.setTheme(state?.theme);
 
-      const screen = await createScreen(state);
+      const page = await createPage(state);
       if (version !== renderVersion) return;
-      app.replaceChildren(screen);
-      await applyComponentStyles(state?.theme, screen);
+      app.replaceChildren(page);
+      await applyComponentStyles(state?.theme, page);
     } catch (error) {
       showError(`Unable to render game UI: ${error.message}`);
     }

@@ -1,14 +1,13 @@
 import { expect } from 'storybook/test';
-import { createActionToken } from '../components/action-token/action-token.js';
-import { createLeaderChoice } from '../components/leader-choice/leader-choice.js';
-import { createPlayerChip } from '../components/player-chip/player-chip.js';
-import { createPowerButton } from '../components/power-button/power-button.js';
-import { createResourceCounter } from '../components/resource-counter/resource-counter.js';
-import { createUnitToken } from '../components/unit-token/unit-token.js';
+import { createActionToken } from '../molecules/action-token/action-token.js';
+import { createPlayerChip } from '../molecules/player-chip/player-chip.js';
+import { createPowerButton } from '../molecules/power-button/power-button.js';
+import { createResourceCounter } from '../molecules/resource-counter/resource-counter.js';
+import { createUnitToken } from '../molecules/unit-token/unit-token.js';
 import { renderAsync } from '../.storybook/story-renderer.js';
 
 export default {
-  title: 'Game Components/Tokens & HUD',
+  title: 'Atomic Design/Molecules/Game Components',
   tags: ['autodocs', 'test']
 };
 
@@ -113,28 +112,5 @@ export const PowerButton = {
     const control = await canvas.findByRole('button', { name: 'Use hero power' });
     await expect(control).toBeEnabled();
     await expect(control).toHaveAttribute('data-action', 'use-power');
-  }
-};
-
-export const LeaderChoice = {
-  args: {
-    leader: {
-      id: 'leader-choice-demo',
-      name: 'Mecha Regent',
-      armor: 7,
-      power: {
-        id: 'power-choice-demo',
-        name: 'Overclock',
-        description: 'Refresh once for free each turn.',
-        cost: 0
-      }
-    }
-  },
-  render: args => renderAsync(options => createLeaderChoice(options), args),
-  play: async ({ canvas }) => {
-    const leaderName = await canvas.findByText('Mecha Regent');
-    await expect(leaderName).toBeVisible();
-    const choice = leaderName.closest('[data-action="select-leader"]');
-    await expect(choice).toHaveAttribute('data-leader-id', 'leader-choice-demo');
   }
 };
