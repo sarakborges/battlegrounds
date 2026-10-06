@@ -10,9 +10,11 @@ export default defineConfig({
   test: {
     projects: [
       defineProject({
+        extends: true,
         plugins: [
           storybookTest({
-            configDir: path.join(dirname, '.storybook')
+            configDir: path.join(dirname, '.storybook'),
+            storybookScript: 'npm run storybook'
           })
         ],
         test: {
