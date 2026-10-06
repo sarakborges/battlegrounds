@@ -24,3 +24,7 @@ Thumbs.db
 # Local artifacts
 artifacts/
 coverage/
+
+# Node / Storybook
+**/node_modules/
+**/storybook-static/
