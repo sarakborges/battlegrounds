@@ -16,43 +16,99 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Check web UI component structure
+      - name: Check web UI Atomic Design structure
         run: |
           set -euo pipefail
-          for root in \
-            src/Battlegrounds.Game/webui/design-system \
-            src/Battlegrounds.Game/webui/components; do
-            for dir in "$root"/*; do
+
+          webui=src/Battlegrounds.Game/webui
+
+          for legacy in design-system components screens; do
+            test ! -e "$webui/$legacy"
+          done
+
+          for layer in atoms molecules organisms templates; do
+            for dir in "$webui/$layer"/*; do
               name="$(basename "$dir")"
               test -f "$dir/$name.html"
               test -f "$dir/$name.css"
               test -f "$dir/$name.js"
             done
           done
-          if grep -R --include='*.js' -nE 'innerHTML|insertAdjacentHTML|`[[:space:]]*<' \
-            src/Battlegrounds.Game/webui/design-system \
-            src/Battlegrounds.Game/webui/components \
-            src/Battlegrounds.Game/webui/screens; then
-            echo 'HTML markup must live in .html templates, not JavaScript.' >&2
+
+          if grep -R --include='*.js' -nE 'innerHTML|insertAdjacentHTML|`[[:space:]]*<'             "$webui/atoms"             "$webui/molecules"             "$webui/organisms"             "$webui/templates"             "$webui/pages"; then
+            echo 'HTML markup must live in .html template files, not JavaScript.' >&2
             exit 1
           fi
-          if grep -R --include='*.css' -nE '\.(card|action-button|horizontal-stack|player-chip|character-portrait)([^a-zA-Z0-9_-]|$)' src/Battlegrounds.Game/webui/screens/preparation; then
-            echo 'Preparation screen CSS must not style reusable component internals.' >&2
+
+          if grep -R --include='*.js' -nE '../../(molecules|organisms|templates|pages)/' "$webui/atoms"; then
+            echo 'Atoms must not import higher Atomic Design layers.' >&2
             exit 1
           fi
-          if grep -R --include='*.css' -nE '@media|[0-9.]+(vw|vh)' \
-            src/Battlegrounds.Game/webui/design-system \
-            src/Battlegrounds.Game/webui/components \
-            src/Battlegrounds.Game/webui/screens; then
-            echo 'Reusable UI and screens must use the shared logical viewport scale instead of viewport media queries or vw/vh geometry.' >&2
+          if grep -R --include='*.js' -nE '../../(organisms|templates|pages)/' "$webui/molecules"; then
+            echo 'Molecules must not import organisms, templates, or pages.' >&2
             exit 1
           fi
-          if grep -R --include='*.css' -n '!important' src/Battlegrounds.Game/webui; then
-            echo 'CSS must rely on ownership, load order, and appropriate selector specificity instead of !important.' >&2
+          if grep -R --include='*.js' -nE '../../(templates|pages)/' "$webui/organisms"; then
+            echo 'Organisms must not import templates or pages.' >&2
+            exit 1
+          fi
+          if grep -R --include='*.js' -nE '../../pages/' "$webui/templates"; then
+            echo 'Templates must not import pages.' >&2
+            exit 1
+          fi
+
+          if grep -R --include='*.css' -nE '\.(card|action-button|horizontal-stack|player-chip|character-portrait)([^a-zA-Z0-9_-]|$)' "$webui/templates/preparation"; then
+            echo 'Preparation template CSS must not style reusable component internals.' >&2
+            exit 1
+          fi
+
+          if grep -R --include='*.css' -nE '@media|[0-9.]+(vw|vh)'             "$webui/atoms"             "$webui/molecules"             "$webui/organisms"             "$webui/templates"; then
+            echo 'Atomic UI layers must use the shared logical viewport scale instead of media queries or vw/vh geometry.' >&2
+            exit 1
+          fi
+
+          if grep -R --include='*.css' -n '!important' "$webui"; then
+            echo 'CSS must rely on ownership, load order, and selector specificity instead of !important.' >&2
             exit 1
           fi
       - name: Check web UI JavaScript syntax
         run: find src/Battlegrounds.Game/webui -type f -name '*.js' -print0 | xargs -0 -n1 node --check
+      - name: Check web UI relative references
+        run: |
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          import path from 'node:path';
+
+          const root = 'src/Battlegrounds.Game/webui';
+          const files = [];
+
+          function walk(directory) {
+            for (const entry of fs.readdirSync(directory, { withFileTypes: true })) {
+              if (entry.name === 'node_modules' || entry.name === 'storybook-static') continue;
+              const full = path.join(directory, entry.name);
+              if (entry.isDirectory()) walk(full);
+              else if (entry.name.endsWith('.js')) files.push(full);
+            }
+          }
+
+          walk(root);
+          const pattern = /['"]((?:\.\.\/|\.\/)[^'"]+\.(?:js|css|html))['"]/g;
+          const missing = [];
+
+          for (const file of files) {
+            const source = fs.readFileSync(file, 'utf8');
+            for (const match of source.matchAll(pattern)) {
+              if (match[1].includes('*')) continue;
+              const target = path.resolve(path.dirname(file), match[1]);
+              if (!fs.existsSync(target)) missing.push(`${file} -> ${match[1]}`);
+            }
+          }
+
+          if (missing.length) {
+            console.error('Broken Web UI relative references:\n' + missing.join('\n'));
+            process.exit(1);
+          }
+          NODE
       - name: Test core
         run: dotnet test tests/Battlegrounds.Core.Tests/Battlegrounds.Core.Tests.csproj --configuration Release
       - name: Test mod content boundary
